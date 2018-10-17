@@ -2,5 +2,7 @@
 name = "only"
 version = "0.1.0"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+license = "MIT"
+description = "Experimental UI component library."
 
 [dependencies]
