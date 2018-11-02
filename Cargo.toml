@@ -1,8 +1,12 @@
 [package]
 name = "only"
 version = "0.1.0"
+edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
-license = "MIT"
+license = "Apache 2.0/MIT"
 description = "Experimental UI component library."
 
-[dependencies]
+[workspace]
+members = [
+    "only-web/crate/",
+]
