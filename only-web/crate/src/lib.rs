@@ -85,6 +85,7 @@ pub struct StdElem {
 
 impl Element {
     fn render(&self, document: &Document, parent_dom: &Node) {
+        let append = |node: &Node| parent_dom.append_child(node).unwrap();
         match self {
             Element::Standard(StdElem {
                 ty,
@@ -103,13 +104,11 @@ impl Element {
                 children
                     .iter()
                     .for_each(|child| child.render(document, &dom_node));
-                parent_dom.append_child(&dom_node).unwrap();
+                append(&dom_node);
             }
             Element::Text(contents) => {
                 let text: Node = document.create_text_node(&contents).into();
-
-                // TODO make this the responsibility of the "renderer"
-                parent_dom.append_child(&text).unwrap();
+                append(&text);
             }
         }
     }
