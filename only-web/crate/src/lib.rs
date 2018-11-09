@@ -38,10 +38,10 @@ pub fn run() {
     let body = document.body().unwrap();
     let body: &web_sys::Node = body.as_ref();
 
-    let element = elements::Standard {
+    let element = Element::Standard(StdElem {
         ty: "div".to_string(),
         children: vec![
-            Box::new(elements::Standard {
+            Element::Standard(StdElem {
                 ty: "input".to_string(),
                 props: btreemap! {
                     "value".to_string() => "foo".to_string(),
@@ -49,18 +49,16 @@ pub fn run() {
                 },
                 ..Default::default()
             }),
-            Box::new(elements::Standard {
+            Element::Standard(StdElem {
                 ty: "a".to_string(),
                 props: btreemap! {
                     "href".to_string() => "/bar".to_string(),
                 },
                 ..Default::default()
             }),
-            Box::new(elements::Standard {
+            Element::Standard(StdElem {
                 ty: "span".to_string(),
-                children: vec![Box::new(elements::Text {
-                    contents: "hello world".to_string(),
-                })],
+                children: vec![Element::Text("hello world now".to_string())],
                 ..Default::default()
             }),
         ],
@@ -68,80 +66,80 @@ pub fn run() {
             "id".to_string() => "container".to_string(),
         },
         ..Default::default()
-    };
+    });
+
     element.render(&document, body);
 }
 
-pub trait Element {
-    fn render(&self, document: &Document, parent_dom: &Node);
+pub enum Element {
+    Standard(StdElem),
+    Text(String),
 }
 
-mod elements {
-    use super::*;
-    use wasm_bindgen::{closure::Closure, JsCast};
-    use web_sys::Event;
+#[derive(Default)]
+pub struct StdElem {
+    ty: String,
+    children: Vec<Element>,
+    props: BTreeMap<String, String>,
+    // listeners: Listeners,
+}
 
-    #[derive(Default)]
-    pub struct Standard {
-        pub ty: String,
-        pub children: Vec<Box<dyn Element>>,
-        pub props: BTreeMap<String, String>,
-        pub listeners: Listeners,
-    }
+use wasm_bindgen::{closure::Closure, JsCast};
+use web_sys::Event;
 
-    impl Element for Standard {
-        fn render(&self, document: &Document, parent_dom: &Node) {
-            let dom = document.create_element(&self.ty).unwrap();
+impl Element {
+    fn render(&self, document: &Document, parent_dom: &Node) {
+        match self {
+            Element::Standard(StdElem {
+                ty,
+                children,
+                props,
+                // listeners,
+            }) => {
+                let dom = document.create_element(&ty).unwrap();
 
-            self.listeners.register(dom.as_ref());
+                // listeners.register(dom.as_ref());
 
-            for (property, value) in &self.props {
-                dom.set_attribute(&property, &value).unwrap();
+                for (property, value) in props {
+                    dom.set_attribute(property, value).unwrap();
+                }
+
+                let dom_node: Node = dom.into();
+                children
+                    .iter()
+                    .for_each(|child| child.render(document, &dom_node));
+                parent_dom.append_child(&dom_node).unwrap();
             }
+            Element::Text(contents) => {
+                let text: Node = document.create_text_node(&contents).into();
 
-            let dom_node: Node = dom.into();
-            self.children
-                .iter()
-                .for_each(|child| child.render(document, &dom_node));
-
-            parent_dom.append_child(&dom_node).unwrap();
-        }
-    }
-
-    #[derive(Default)]
-    pub struct Listeners {
-        pub listeners: HashMap<String, Closure<Fn(Event)>>,
-    }
-
-    impl Listeners {
-        fn register(&self, et: &web_sys::EventTarget) {
-            for (event_type, cb) in &self.listeners {
-                et.add_event_listener_with_callback(&event_type, cb.as_ref().unchecked_ref())
-                    .unwrap();
+                // TODO make this the responsibility of the "renderer"
+                parent_dom.append_child(&text).unwrap();
             }
-        }
-    }
-
-    impl Drop for Listeners {
-        fn drop(&mut self) {
-            // FIXME(anp): we need to xfer ownership to the imported add event listener fn
-            // so that the callbacks can be correctly destroyed
-            for (_, callback) in self.listeners.drain() {
-                callback.forget();
-            }
-        }
-    }
-
-    pub struct Text {
-        pub contents: String,
-    }
-
-    impl Element for Text {
-        fn render(&self, document: &Document, parent_dom: &Node) {
-            let text: Node = document.create_text_node(&self.contents).into();
-
-            // TODO make this the responsibility of the "renderer"
-            parent_dom.append_child(&text).unwrap();
         }
     }
 }
+
+// #[derive(Default)]
+// pub struct Listeners {
+//     pub listeners: HashMap<String, Closure<Fn(Event)>>,
+// }
+
+// impl Listeners {
+//     fn register(&self, et: &web_sys::EventTarget) {
+//         for (event_type, cb) in &self.listeners {
+//             et.add_event_listener_with_callback(&event_type, cb.as_ref().unchecked_ref())
+//                 .unwrap();
+//         }
+//     }
+// }
+
+// impl Drop for Listeners {
+//     fn drop(&mut self) {
+//         // FIXME(anp): we need to xfer ownership to the imported add event listener fn
+//         // so that the callbacks can be correctly destroyed
+//         for (_, callback) in self.listeners.drain() {
+//             callback.forget();
+//         }
+//     }
+// }
