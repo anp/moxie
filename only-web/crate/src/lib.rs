@@ -6,7 +6,7 @@ extern crate only;
 extern crate wasm_bindgen;
 extern crate web_sys;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use maplit::*;
 use wasm_bindgen::prelude::*;
@@ -81,11 +81,7 @@ pub struct StdElem {
     ty: String,
     children: Vec<Element>,
     props: BTreeMap<String, String>,
-    // listeners: Listeners,
 }
-
-use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys::Event;
 
 impl Element {
     fn render(&self, document: &Document, parent_dom: &Node) {
@@ -94,11 +90,10 @@ impl Element {
                 ty,
                 children,
                 props,
-                // listeners,
             }) => {
                 let dom = document.create_element(&ty).unwrap();
 
-                // listeners.register(dom.as_ref());
+                // TODO register event listeners
 
                 for (property, value) in props {
                     dom.set_attribute(property, value).unwrap();
@@ -119,27 +114,3 @@ impl Element {
         }
     }
 }
-
-// #[derive(Default)]
-// pub struct Listeners {
-//     pub listeners: HashMap<String, Closure<Fn(Event)>>,
-// }
-
-// impl Listeners {
-//     fn register(&self, et: &web_sys::EventTarget) {
-//         for (event_type, cb) in &self.listeners {
-//             et.add_event_listener_with_callback(&event_type, cb.as_ref().unchecked_ref())
-//                 .unwrap();
-//         }
-//     }
-// }
-
-// impl Drop for Listeners {
-//     fn drop(&mut self) {
-//         // FIXME(anp): we need to xfer ownership to the imported add event listener fn
-//         // so that the callbacks can be correctly destroyed
-//         for (_, callback) in self.listeners.drain() {
-//             callback.forget();
-//         }
-//     }
-// }
