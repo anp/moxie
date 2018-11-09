@@ -6,7 +6,7 @@ extern crate only;
 extern crate wasm_bindgen;
 extern crate web_sys;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use maplit::*;
 use wasm_bindgen::prelude::*;
@@ -78,6 +78,7 @@ pub trait Element {
 
 mod elements {
     use super::*;
+    use wasm_bindgen::{closure::Closure, JsCast};
     use web_sys::Event;
 
     #[derive(Default)]
@@ -85,25 +86,14 @@ mod elements {
         pub ty: String,
         pub children: Vec<Box<dyn Element>>,
         pub props: BTreeMap<String, String>,
-        pub listeners: BTreeMap<String, Box<dyn Fn(Event)>>,
+        pub listeners: Listeners,
     }
 
     impl Element for Standard {
         fn render(&self, document: &Document, parent_dom: &Node) {
-            // Create DOM element
             let dom = document.create_element(&self.ty).unwrap();
-            // Add event listeners
 
-            // for (event_type, listener) in self.listeners {
-            //     let eventable = EventableDomNode(dom);
-            //     eventable.addEventListener(&event_type, Closure::wrap(listener.clone()));
-            //     dom = eventable.0;
-            // }
-            //   const isListener = name => name.startsWith("on");
-            //   Object.keys(props).filter(isListener).forEach(name => {
-            //     const eventType = name.toLowerCase().substring(2);
-            //     dom.addEventListener(eventType, props[name]);
-            //   });
+            self.listeners.register(dom.as_ref());
 
             for (property, value) in &self.props {
                 dom.set_attribute(&property, &value).unwrap();
@@ -115,6 +105,30 @@ mod elements {
                 .for_each(|child| child.render(document, &dom_node));
 
             parent_dom.append_child(&dom_node).unwrap();
+        }
+    }
+
+    #[derive(Default)]
+    pub struct Listeners {
+        pub listeners: HashMap<String, Closure<Fn(Event)>>,
+    }
+
+    impl Listeners {
+        fn register(&self, et: &web_sys::EventTarget) {
+            for (event_type, cb) in &self.listeners {
+                et.add_event_listener_with_callback(&event_type, cb.as_ref().unchecked_ref())
+                    .unwrap();
+            }
+        }
+    }
+
+    impl Drop for Listeners {
+        fn drop(&mut self) {
+            // FIXME(anp): we need to xfer ownership to the imported add event listener fn
+            // so that the callbacks can be correctly destroyed
+            for (_, callback) in self.listeners.drain() {
+                callback.forget();
+            }
         }
     }
 
