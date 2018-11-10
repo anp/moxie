@@ -3,7 +3,7 @@ name = "moxie"
 version = "0.1.0"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
-license = "Apache 2.0/MIT"
+license = "MIT/Apache-2.0"
 description = "Experimental UI component library."
 
 [workspace]
