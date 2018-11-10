@@ -1,7 +1,7 @@
 [package]
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "Apache-2.0/MIT"
-name = "only-web"
+name = "moxie-web"
 version = "0.1.0"
 edition = "2018"
 
@@ -9,10 +9,10 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-only = { path = "../../" }
 cfg-if = "0.1.5"
 js-sys = "0.3.4"
 maplit = "1"
+moxie = { path = "../../" }
 wasm-bindgen = "0.2.27"
 web-sys = { version = "0.3.4", features = [
     "Document",

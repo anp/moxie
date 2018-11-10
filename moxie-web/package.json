@@ -1,6 +1,6 @@
 {
   "author": "Adam Perry <adam.n.perry@gmail.com>",
-  "name": "only-web",
+  "name": "moxie-web",
   "version": "0.1.5",
   "scripts": {
     "start": "parcel index.html",

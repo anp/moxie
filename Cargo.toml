@@ -1,5 +1,5 @@
 [package]
-name = "only"
+name = "moxie"
 version = "0.1.0"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
@@ -8,5 +8,5 @@ description = "Experimental UI component library."
 
 [workspace]
 members = [
-    "only-web/crate/",
+    "moxie-web/crate/",
 ]
