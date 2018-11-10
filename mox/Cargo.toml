@@ -6,4 +6,11 @@ edition = "2018"
 license = "MIT/Apache-2.0"
 description = "macro for ui components"
 
+[lib]
+proc-macro = true
+
 [dependencies]
+pest = "2"
+pest_derive = "2"
+proc-macro-hack = "0.5"
+quote = "0.6"
