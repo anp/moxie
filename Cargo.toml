@@ -8,5 +8,6 @@ description = "Experimental UI component library."
 
 [workspace]
 members = [
+    "mox",
     "moxie-web/crate/",
 ]
