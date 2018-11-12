@@ -1,5 +1,5 @@
 [package]
-name = "mox"
+name = "mox-macro"
 version = "0.1.0"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
@@ -10,7 +10,8 @@ description = "macro for ui components"
 proc-macro = true
 
 [dependencies]
-pest = "2"
-pest_derive = "2"
+gll = "0.0.2"
+gll-macros = "0.0.2"
+proc-macro2 = "0.4.20"
 proc-macro-hack = "0.5"
 quote = "0.6"

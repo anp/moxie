@@ -6,8 +6,12 @@ authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "MIT/Apache-2.0"
 description = "Experimental UI component library."
 
+[dependencies]
+mox-macro = { path = "mox-macro" }
+proc-macro-hack = "0.5"
+
 [workspace]
 members = [
-    "mox",
+    "mox-macro/",
     "moxie-web/crate/",
 ]

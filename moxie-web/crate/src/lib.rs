@@ -1,17 +1,12 @@
 #[macro_use]
 extern crate cfg_if;
 
-extern crate proc_macro_hack;
-
 use std::collections::BTreeMap;
 
 use maplit::*;
-use proc_macro_hack::proc_macro_hack;
+use moxie::mox;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Node};
-
-#[proc_macro_hack]
-pub use mox::mox;
 
 cfg_if! {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -40,7 +35,7 @@ pub fn run() {
     let body = document.borrow().body().unwrap();
     let body: &web_sys::Node = body.as_ref();
 
-    let element: Element = mox! {
+    let element = mox! {
         <div id="container">
             <input value="foo" type="text"/>
             <a href="/bar"/>
@@ -48,44 +43,9 @@ pub fn run() {
         </div>
     };
 
-    // let element = Element {
-    //     ty: "div".to_string(),
-    //     inner: Inner::Children(vec![
-    //         Element {
-    //             ty: "input".to_string(),
-    //             props: Properties {
-    //                 attrs: btreemap! {
-    //                     "value".to_string() => "foo".to_string(),
-    //                     "type".to_string() => "text".to_string(),
-    //                 },
-    //             },
-    //             ..Default::default()
-    //         },
-    //         Element {
-    //             ty: "a".to_string(),
-    //             props: Properties {
-    //                 attrs: btreemap! {
-    //                     "href".to_string() => "/bar".to_string(),
-    //                 },
-    //             },
-    //             ..Default::default()
-    //         },
-    //         Element {
-    //             ty: "span".to_string(),
-    //             inner: Inner::Text("hello world now".to_string()),
-    //             ..Default::default()
-    //         },
-    //     ]),
-    //     props: Properties {
-    //         attrs: btreemap! {
-    //             "id".to_string() => "container".to_string(),
-    //         },
-    //     },
-    //     ..Default::default()
+    let two = mox! { <div><br />7x invalid-js-identifier</div> };
 
-    // };
-
-    render(element, &body);
+    // render(element, &body);
 }
 
 fn render(element: Element, container: &Node) {
@@ -94,13 +54,13 @@ fn render(element: Element, container: &Node) {
 
     /*
     let rootInstance = null;
-    
+
     function render(element, container) {
       const prevInstance = rootInstance;
       const nextInstance = reconcile(container, prevInstance, element);
       rootInstance = nextInstance;
     }
-    
+
     */
 }
 
