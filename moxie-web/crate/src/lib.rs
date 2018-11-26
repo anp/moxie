@@ -4,7 +4,7 @@ extern crate cfg_if;
 use std::collections::BTreeMap;
 
 use maplit::*;
-use moxie::mox;
+use moxie::{Element, *};
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Node};
 
@@ -35,17 +35,33 @@ pub fn run() {
     let body = document.borrow().body().unwrap();
     let body: &web_sys::Node = body.as_ref();
 
-    let element = mox! {
-        <div id="container">
-            <input value="foo" type="text"/>
-            <a href="/bar"/>
-            <span>hello world now</span>
-        </div>
-    };
+    // let element = mox! {
+    //     <div id="container">
+    //         <input value="foo" type="text"/>
+    //         <a href="/bar"/>
+    //         <span>"hello world now"</span>
+    //     </div>
+    // };
+    let element = View {
+        id: "container".to_owned().into(),
+    }
+    .create(vec![
+        Input {
+            value: "foo".into(),
+            _type: "text".into(),
+        }
+        .create(vec![]),
+        Link {
+            href: "/bar".into(),
+        }
+        .create(vec![]),
+        Text.create(vec![TextNode("hello world now".into()).create(vec![])]),
+    ]);
 
-    let two = mox! { <div><br />7x invalid-js-identifier</div> };
+    // let two = mox! { <div><br />7x invalid-js-identifier</div> };
+    let two = View { id: None }.create(vec![TextNode("7x invalid-js-identifier".into())]);
 
-    // render(element, &body);
+    render(element, &body);
 }
 
 fn render(element: Element, container: &Node) {
@@ -54,17 +70,16 @@ fn render(element: Element, container: &Node) {
 
     /*
     let rootInstance = null;
-
+    
     function render(element, container) {
       const prevInstance = rootInstance;
       const nextInstance = reconcile(container, prevInstance, element);
       rootInstance = nextInstance;
     }
-
+    
     */
 }
 
-#[derive(Default)]
 pub struct Element {
     ty: String,
     props: Properties,

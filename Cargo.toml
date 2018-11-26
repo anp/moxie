@@ -7,11 +7,14 @@ license = "MIT/Apache-2.0"
 description = "Experimental UI component library."
 
 [dependencies]
+generational-arena = "0.1"
 mox-macro = { path = "mox-macro" }
 proc-macro-hack = "0.5"
+salsa = "0.8"
 
 [workspace]
 members = [
+    "mox",
     "mox-macro/",
     "moxie-web/crate/",
 ]

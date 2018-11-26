@@ -2,18 +2,7 @@
 //!
 //! Copied under the MIT license.
 
-use moxie::{create_element, mox};
-
-#[test]
-fn simple() {
-    let element = mox! {
-        <div id="container">
-            <input value="foo" type="text"/>
-            <a href="/bar"/>
-            <span>hello world now</span>
-        </div>
-    };
-}
+use moxie::mox;
 
 #[test]
 fn lex_numlit() {
@@ -77,7 +66,7 @@ fn simple_interpolate() {
 #[test]
 fn comment_interpolate() {
     let _ = mox! { <a>{// this is a comment
-        "hello"}</a> };
+    "hello"}</a> };
 }
 
 #[test]

@@ -10,8 +10,6 @@ description = "macro for ui components"
 proc-macro = true
 
 [dependencies]
-gll = "0.0.2"
-gll-macros = "0.0.2"
+mox = { path = "../mox" }
 proc-macro2 = "0.4.20"
 proc-macro-hack = "0.5"
-quote = "0.6"
