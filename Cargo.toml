@@ -12,9 +12,13 @@ mox-macro = { path = "mox-macro" }
 proc-macro-hack = "0.5"
 salsa = "0.8"
 
+[profile.dev]
+opt-level = 1
+
 [workspace]
 members = [
     "mox",
     "mox-macro/",
-    "moxie-web/crate/",
+    # "moxie-web/crate/",
+    "moxie-wrench",
 ]

@@ -1,0 +1,29 @@
+[package]
+name = "moxie-wrench"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+moxie = { path = "../" }
+webrender = { git = "https://github.com/servo/webrender.git", rev = "57379d1fec269ea70cbab28d4353614fd9c58122", features = ["capture"] }
+
+anymap = "0.12"
+app_units = "0.7"
+chashmap = "2"
+env_logger = "0.5"
+euclid = "0.19"
+froggy = "0.4"
+futures-preview = "0.3.0-alpha.11"
+fxhash = "0.2"
+generational-arena = "0.2"
+gleam = "0.6.8"
+glutin = "0.17"
+lazy_static = "1"
+log = "0.4"
+parking_lot = "0.7"
+rayon = "1"
+salsa = "0.10.0-alpha1"
+time = "0.1"
+timer = "0.2"
+winit = "0.16"

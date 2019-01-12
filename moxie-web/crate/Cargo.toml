@@ -37,4 +37,4 @@ console_error_panic_hook = { version = "0.1.5", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
 
 [features]
-default-features = ["console_error_panic_hook", "wee_alloc"]
+default = ["console_error_panic_hook", "wee_alloc"]
