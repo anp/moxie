@@ -1,23 +1,17 @@
-use {
-    crate::{prelude::*, winit_future::WindowEvents},
-    glutin::GlWindow,
-    webrender::api::{DocumentId, Epoch, LayoutSize, PipelineId, RenderApi},
-    webrender::{Renderer, ShaderPrecacheFlags},
-};
+use crate::{prelude::*, winit_future::WindowEvents};
 
-const PRECACHE_SHADER_FLAGS: ShaderPrecacheFlags = ShaderPrecacheFlags::EMPTY;
+// const PRECACHE_SHADER_FLAGS: ShaderPrecacheFlags = ShaderPrecacheFlags::EMPTY;
 const TITLE: &'static str = "Moxie Wrench Sample App";
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
 // FIXME: fns that take children work with salsa
 #[allow(bad_style)] //wasn't there a whole debate over the naming of this attribute?
-                    // TODO remove props argument -- we can have variadic queries just fine
-pub fn Surface(db: &impl RenderDatabase, key: Moniker, _props: ()) {
+pub fn Surface(compose: &impl RenderDatabase, key: Moniker) {
     // FIXME this should be in state
-    let (events, notifier) = WindowEvents::new();
+    let events = state!(compose, key, || WindowEvents::new());
 
-    let window = state!(db, key, || {
+    let _window = state!(compose, key, || {
         let context_builder =
             glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
                 opengl_version: (3, 2),
@@ -28,7 +22,7 @@ pub fn Surface(db: &impl RenderDatabase, key: Moniker, _props: ()) {
             .with_multitouch()
             .with_dimensions(winit::dpi::LogicalSize::new(WIDTH as f64, HEIGHT as f64));
 
-        glutin::GlWindow::new(window_builder, context_builder, events.raw_loop()).unwrap()
+        glutin::GlWindow::new(window_builder, context_builder, (*events).0.raw_loop()).unwrap()
     });
 
     // unsafe {

@@ -1,5 +1,8 @@
 #![feature(await_macro, futures_api, async_await)]
 
+#[macro_use]
+extern crate rental;
+
 use futures::executor::ThreadPool;
 
 pub mod canny_map;
@@ -34,9 +37,10 @@ fn main() {
     ThreadPool::new().unwrap().run(
         async {
             let db = state::Db::new();
-            let db = db.read();
 
-            db.Surface(Moniker::root(), ());
+            db.with(|compose| {
+                compose.Surface(Moniker::root());
+            });
 
             // let (mut surface, mut events) = surface::Surface::new();
 
