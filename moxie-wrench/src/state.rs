@@ -88,21 +88,19 @@ impl<S> Silo<S> {
     fn get_or_init(&'static self, id: Moniker, init: impl FnOnce() -> S) -> StateGuard<S> {
         // first
         // StateGuard::new(
-        let guard: StateGuard<InnerSilo<S>> =
-            StateGuard::new(self.storage.clone(), |silo| silo.lock());
-        //     |storage| {
-        //         storage.sync_pending();
-        //         for item in storage.iter() {
-        //             if (*item).id == id {
-        //                 return unimplemented!();
-        //             }
-        //         }
+        let storage_subsilo = CellGuard::new(self.storage.clone(), |silo| silo.lock());
+        let guard = StateGuard::new(Box::new(storage_subsilo), |storage| {
+            storage.sync_pending();
+            for item in storage.iter() {
+                if (*item).id == id {
+                    return unimplemented!();
+                }
+            }
 
-        //         let state_ptr = storage.create(StorageCell::new(id, init()));
+            let state_ptr = storage.create(StorageCell::new(id, init()));
 
-        //         storage[&state_ptr].lock()
-        //     },
-        // )
+            storage[&state_ptr].lock()
+        });
 
         guard
     }
@@ -121,7 +119,7 @@ impl<S> std::default::Default for Silo<S> {
     // even though the only child type impls Default regardless of its contained type.
     fn default() -> Silo<S> {
         Silo {
-            storage: Arc::new(Mutex::new(InnerSilo(Storage::new()))),
+            storage: Arc::new(Mutex::new(InnerSilo(Box::new(Storage::new())))),
         }
     }
 }
@@ -134,7 +132,10 @@ impl<S> std::ops::Deref for Silo<S> {
 }
 
 #[derive(Debug, Default)]
-struct InnerSilo<S>(Storage<StorageCell<S>>);
+pub struct InnerSilo<S>(Box<Storage<StorageCell<S>>>);
+
+// FIXME UNSAFE make sure this is correct to implement
+unsafe impl<S> stable_deref_trait::StableDeref for InnerSilo<S> {}
 
 impl<S> std::ops::Deref for InnerSilo<S> {
     type Target = Storage<StorageCell<S>>;
@@ -149,7 +150,7 @@ impl<S> std::ops::DerefMut for InnerSilo<S> {
 }
 
 #[derive(Debug)]
-struct StorageCell<S> {
+pub struct StorageCell<S> {
     id: Moniker,
     state: Mutex<S>,
 }
@@ -176,19 +177,18 @@ rental! {mod state_rental {
     };
 
     #[rental(debug, deref_suffix, deref_mut_suffix)]
-    pub struct StateGuard<S: 'static> {
-        silo: Arc<Mutex<S>>,
-        storage: MutexGuard<'silo, S>,
-        // state: MutexGuard<'storage, S::>,
+    pub struct CellGuard<INNER: 'static> {
+        silo: Arc<Mutex<INNER>>,
+        storage: MutexGuard<'silo, INNER>,
     }
 
-    // #[rental(debug, deref_suffix, deref_mut_suffix)]
-    // pub struct StateGuard<S: 'static> {
-    //     storage: CellGuard<S, InnerSilo<S>>,
-    //     state: MutexGuard<'storage, S>,
-    // }
+    #[rental(debug, deref_suffix, deref_mut_suffix)]
+    pub struct StateGuard<S: 'static> {
+        storage: Box<CellGuard<InnerSilo<S>>>,
+        state: MutexGuard<'storage, S>,
+    }
 }}
-pub use self::state_rental::StateGuard;
+pub use self::state_rental::{CellGuard, StateGuard};
 
 #[salsa::query_group]
 pub trait RenderDatabase<S>: SalsaDb + StateStore {
