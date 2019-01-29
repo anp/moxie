@@ -1,9 +1,13 @@
+//! A `CannyMap` is a "concurrent [anymap](https://crates.io/crates/anymap)" built with
+//! [chashmap](https://crates.io/crates/chashmap).
+
 use {
     chashmap::CHashMap,
     std::any::{Any, TypeId},
 };
 
-/// A concurrent anymap.
+/// A concurrent anymap. It holds 0-1 values of any type, and allows both read & write access to
+/// them concurrently by multiple threads.
 #[derive(Debug, Default)]
 pub struct CannyMap {
     inner: CHashMap<TypeId, Box<Any + 'static>>,
