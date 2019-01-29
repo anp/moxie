@@ -85,22 +85,25 @@ struct Silo<S> {
 unsafe impl<S> stable_deref_trait::StableDeref for Silo<S> {}
 
 impl<S> Silo<S> {
-    fn get_or_init(&'static self, id: Moniker, init: impl FnOnce() -> S) -> StateGuard<S> {
+    fn get_or_init(&self, id: Moniker, init: impl FnOnce() -> S) -> StateGuard<S> {
         // first
         // StateGuard::new(
         let storage_subsilo = CellGuard::new(self.storage.clone(), |silo| silo.lock());
-        let guard = StateGuard::new(Box::new(storage_subsilo), |storage| {
-            storage.sync_pending();
-            for item in storage.iter() {
-                if (*item).id == id {
-                    return unimplemented!();
+        let guard = StateGuard::new(
+            Box::new(storage_subsilo),
+            |storage: &mut CellGuard<InnerSilo<S>>| {
+                storage.sync_pending();
+                for item in storage.iter() {
+                    if (*item).id == id {
+                        return unimplemented!();
+                    }
                 }
-            }
 
-            let state_ptr = storage.create(StorageCell::new(id, init()));
+                let state_ptr = storage.create(StorageCell::new(id, init()));
 
-            storage[&state_ptr].lock()
-        });
+                storage[&state_ptr].lock()
+            },
+        );
 
         guard
     }
@@ -182,7 +185,7 @@ rental! {mod state_rental {
         storage: MutexGuard<'silo, INNER>,
     }
 
-    #[rental(debug, deref_suffix, deref_mut_suffix)]
+    #[rental_mut(debug, deref_suffix, deref_mut_suffix)]
     pub struct StateGuard<S: 'static> {
         storage: Box<CellGuard<InnerSilo<S>>>,
         state: MutexGuard<'storage, S>,
