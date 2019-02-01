@@ -31,6 +31,7 @@ fn main() {
         .default_format_level(true)
         .default_format_module_path(true)
         .filter(Some("webrender"), log::LevelFilter::Warn)
+        .filter(Some("salsa"), log::LevelFilter::Warn)
         .init();
 
     ThreadPool::new().unwrap().run(
