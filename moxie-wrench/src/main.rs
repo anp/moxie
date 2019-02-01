@@ -1,11 +1,7 @@
 #![feature(await_macro, futures_api, async_await)]
 
-#[macro_use]
-extern crate rental;
-
 use futures::executor::ThreadPool;
 
-pub mod canny_map;
 mod display_list;
 #[macro_use]
 pub mod state;
@@ -21,7 +17,7 @@ pub(crate) mod prelude {
 
     pub use crate::{
         display_list::DisplayList,
-        state::{Handle, Moniker, RenderDatabase},
+        state::{CallsiteId, ComposeDb, Composer, Guard, Handle, Moniker, ScopeId},
     };
 }
 
@@ -36,11 +32,9 @@ fn main() {
 
     ThreadPool::new().unwrap().run(
         async {
-            let db = state::Db::new();
+            let compose = state::Composer::new();
 
-            db.with(|compose| {
-                compose.Surface(Moniker::root());
-            });
+            compose.surface(ScopeId::root());
 
             // let (mut surface, mut events) = surface::Surface::new();
 

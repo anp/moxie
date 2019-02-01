@@ -1,4 +1,7 @@
-use crate::{prelude::*, winit_future::WindowEvents};
+use {
+    crate::{prelude::*, winit_future::WindowEvents},
+    glutin::GlContext,
+};
 
 // const PRECACHE_SHADER_FLAGS: ShaderPrecacheFlags = ShaderPrecacheFlags::EMPTY;
 const TITLE: &'static str = "Moxie Wrench Sample App";
@@ -7,27 +10,31 @@ const HEIGHT: u32 = 1080;
 
 // FIXME: fns that take children work with salsa
 #[allow(bad_style)] //wasn't there a whole debate over the naming of this attribute?
-pub fn Surface(compose: &impl RenderDatabase, key: Moniker) {
-    // FIXME this should be in state
-    let events = state!(compose, key, || WindowEvents::new());
+pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
+    // get the state port for the whole scope
+    let port = compose.state(key);
+    // let events = port.get(callsite!(key), || WindowEvents::new());
 
-    let _window = state!(compose, key, || {
-        let context_builder =
-            glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
-                opengl_version: (3, 2),
-                opengles_version: (3, 0),
-            });
-        let window_builder = winit::WindowBuilder::new()
-            .with_title(TITLE)
-            .with_multitouch()
-            .with_dimensions(winit::dpi::LogicalSize::new(WIDTH as f64, HEIGHT as f64));
+    // let _window: Guard<glutin::GlWindow> = port.get(callsite!(key), || {
+    //     let context_builder =
+    //         glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
+    //             opengl_version: (3, 2),
+    //             opengles_version: (3, 0),
+    //         });
+    //     let window_builder = winit::WindowBuilder::new()
+    //         .with_title(TITLE)
+    //         .with_multitouch()
+    //         .with_dimensions(winit::dpi::LogicalSize::new(WIDTH as f64, HEIGHT as f64));
 
-        glutin::GlWindow::new(window_builder, context_builder, (*events).0.raw_loop()).unwrap()
-    });
+    //     let window =
+    //         glutin::GlWindow::new(window_builder, context_builder, (*events).0.raw_loop()).unwrap();
 
-    // unsafe {
-    //     window.make_current().ok();
-    // }
+    //     unsafe {
+    //         window.make_current().ok();
+    //     }
+
+    //     window
+    // });
 
     // let gl = match window.get_api() {
     //     glutin::Api::OpenGl => unsafe {

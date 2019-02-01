@@ -1,249 +1,161 @@
 use {
-    crate::{canny_map::CannyMap, surface::Surface},
-    froggy::{Pointer, Storage},
-    parking_lot::{Mutex, MutexGuard, RwLock},
-    rental::rental,
+    crate::surface::surface,
+    chashmap::CHashMap,
+    parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     salsa::Database as SalsaDb,
     std::{
-        default::Default,
-        sync::{Arc, Weak},
+        any::{Any, TypeId},
+        collections::HashMap,
+        hash::Hash,
+        sync::Arc,
     },
 };
 
-pub struct Db {
-    inner: Arc<RwLock<InnerDb>>,
+/// A `Composer` is the primary entry point to moxie's runtime systems. It contains the salsa
+/// incremental storage, various interners, and is passed to every composable function.
+#[salsa::database(ComposeStorage)]
+#[derive(Default)]
+pub struct Composer {
+    runtime: salsa::Runtime<Composer>,
+    states: CHashMap<ScopeId, ScopeState>,
 }
 
-pub struct InnerDb {
-    runtime: salsa::Runtime<InnerDb>,
-    singletons: CannyMap,
-}
-
-impl Db {
+impl Composer {
     pub fn new() -> Self {
-        // FIXME lol this init order is...smelly
-        // but the immediate "fix" on my mind is to use unsafe which is smellier
-        Self {
-            inner: Arc::new(RwLock::new(InnerDb {
-                runtime: Default::default(),
-                singletons: Default::default(),
-            })),
-        }
-    }
-
-    pub fn with<T>(&self, f: impl FnOnce(&InnerDb) -> T) -> T {
-        let db = self.inner.read();
-        f(&*db)
-    }
-
-    pub fn with_mut<T>(&self, f: impl FnOnce(&mut InnerDb) -> T) -> T {
-        let mut db = self.inner.write();
-        f(&mut *db)
-    }
-
-    pub async fn run(&self, f: impl FnMut()) {
-        unimplemented!()
+        Default::default()
     }
 }
 
-pub trait StateStore {
-    fn get_state<S: 'static>(
-        &self,
-        current: Moniker,
-        parent: Moniker,
-        init: impl FnOnce() -> S,
-    ) -> StateGuard<S>;
+#[salsa::query_group(ComposeStorage)]
+pub trait ComposeDb: SalsaDb + StateDb {
+    fn surface(&self, parent: ScopeId) -> ();
+
+    // TODO find a way to invalidate this query when the state of the corresponding scope changes
+    fn state(&self, scope: ScopeId) -> Port;
 }
 
-impl StateStore for InnerDb {
-    fn get_state<S: 'static>(
-        &self,
-        current: Moniker,
-        _parent: Moniker,
-        init: impl FnOnce() -> S,
-    ) -> StateGuard<S> {
-        let mut guard: Option<StateGuard<S>> = None;
+fn state(compose: &impl ComposeDb, scope: ScopeId) -> Port {
+    let mut port = None;
 
-        self.singletons.alter(|s: Option<Silo<S>>| {
-            let silo = s.unwrap_or_default();
-            guard = Some(silo.get_or_init(current, init));
-            Some(silo)
+    compose.store().alter(scope, |prev: Option<ScopeState>| {
+        let state = prev.unwrap_or_default();
+
+        port = Some(Port {
+            scope,
+            states: state.clone(),
         });
 
-        // FIXME store parent information here to support context later
+        Some(state)
+    });
 
-        guard.unwrap()
+    port.unwrap()
+}
+
+// FIXME this should not be public
+pub trait StateDb {
+    fn store(&self) -> &CHashMap<ScopeId, ScopeState>;
+}
+
+impl StateDb for Composer {
+    fn store(&self) -> &CHashMap<ScopeId, ScopeState> {
+        &self.states
     }
 }
 
-#[derive(Debug)]
-struct Silo<S> {
-    storage: Arc<Mutex<InnerSilo<S>>>,
-}
-
-// UNSAFE: needed for rental to be happy with our wrapper type here
-unsafe impl<S> stable_deref_trait::StableDeref for Silo<S> {}
-
-impl<S> Silo<S> {
-    fn get_or_init(&self, id: Moniker, init: impl FnOnce() -> S) -> StateGuard<S> {
-        // first
-        // StateGuard::new(
-        let storage_subsilo = CellGuard::new(self.storage.clone(), |silo| silo.lock());
-        let guard = StateGuard::new(
-            Box::new(storage_subsilo),
-            |storage: &mut CellGuard<InnerSilo<S>>| {
-                storage.sync_pending();
-                for item in storage.iter() {
-                    if (*item).id == id {
-                        return unimplemented!();
-                    }
-                }
-
-                let state_ptr = storage.create(StorageCell::new(id, init()));
-
-                storage[&state_ptr].lock()
-            },
-        );
-
-        guard
-    }
-}
-
-impl<S> std::clone::Clone for Silo<S> {
-    fn clone(&self) -> Self {
-        Silo {
-            storage: Arc::clone(&self.storage),
-        }
-    }
-}
-
-impl<S> std::default::Default for Silo<S> {
-    // this cant be derived bc apparently rust always wants to put a S: Default bound on this
-    // even though the only child type impls Default regardless of its contained type.
-    fn default() -> Silo<S> {
-        Silo {
-            storage: Arc::new(Mutex::new(InnerSilo(Box::new(Storage::new())))),
-        }
-    }
-}
-
-impl<S> std::ops::Deref for Silo<S> {
-    type Target = Mutex<InnerSilo<S>>;
-    fn deref(&self) -> &Self::Target {
-        &*self.storage
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct InnerSilo<S>(Box<Storage<StorageCell<S>>>);
-
-// FIXME UNSAFE make sure this is correct to implement
-unsafe impl<S> stable_deref_trait::StableDeref for InnerSilo<S> {}
-
-impl<S> std::ops::Deref for InnerSilo<S> {
-    type Target = Storage<StorageCell<S>>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<S> std::ops::DerefMut for InnerSilo<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-#[derive(Debug)]
-pub struct StorageCell<S> {
-    id: Moniker,
-    state: Mutex<S>,
-}
-
-impl<S> StorageCell<S> {
-    fn new(id: Moniker, state: S) -> Self {
-        Self {
-            id,
-            state: Mutex::new(state),
-        }
-    }
-
-    fn lock(&self) -> MutexGuard<S> {
-        self.state.lock()
-    }
-}
-
-rental! {mod state_rental {
-    use {
-        super::{InnerSilo, Silo, StorageCell, Storage},
-        parking_lot::{Mutex, MutexGuard},
-        stable_deref_trait::StableDeref,
-        std::{ops::DerefMut, sync::Arc},
-    };
-
-    #[rental(debug, deref_suffix, deref_mut_suffix)]
-    pub struct CellGuard<INNER: 'static> {
-        silo: Arc<Mutex<INNER>>,
-        storage: MutexGuard<'silo, INNER>,
-    }
-
-    #[rental_mut(debug, deref_suffix, deref_mut_suffix)]
-    pub struct StateGuard<S: 'static> {
-        storage: Box<CellGuard<InnerSilo<S>>>,
-        state: MutexGuard<'storage, S>,
-    }
-}}
-pub use self::state_rental::{CellGuard, StateGuard};
-
-#[salsa::query_group]
-pub trait RenderDatabase<S>: SalsaDb + StateStore {
-    fn Surface(&self, parent: Moniker) -> ();
-}
-
-impl SalsaDb for InnerDb {
-    fn salsa_runtime(&self) -> &salsa::Runtime<InnerDb> {
+impl SalsaDb for Composer {
+    fn salsa_runtime(&self) -> &salsa::Runtime<Composer> {
         &self.runtime
     }
 }
 
-salsa::database_storage! {
-    pub struct DbStorage for InnerDb {
-        impl RenderDatabase {
-            fn Surface() for SurfaceQuery;
+#[derive(Clone, Debug, Default)]
+pub struct ScopeState(Arc<CHashMap<CallsiteId, StateCell>>);
+
+type StateCell = Arc<(TypeId, Mutex<Box<Any + Send + 'static>>)>;
+
+impl ScopeState {
+    fn get<S: 'static + Any + Send>(
+        &self,
+        callsite: CallsiteId,
+        f: impl FnOnce() -> S,
+    ) -> Guard<S> {
+        let id = TypeId::of::<S>();
+
+        let mut cell: Option<Arc<_>> = None;
+
+        self.0.alter(callsite, |prev| {
+            if let Some(p) = prev {
+                cell = Some(p);
+            } else {
+                let initialized = f();
+                cell = Some(Arc::new((id, Mutex::new(Box::new(initialized)))))
+            }
+            cell.clone()
+        });
+
+        let cell = cell.unwrap();
+
+        let mapped = MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap());
+
+        Guard {
+            cell,
+            guard: mapped,
         }
     }
 }
 
-#[macro_export]
-macro_rules! state {
-    ($db:ident, $parent:ident, $init:expr) => {
-        $db.get_state(moniker!(&$parent), $parent, $init)
-    };
+impl PartialEq for ScopeState {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
 }
 
-/// Provides restricted access to a value in the state store. Immutable access via `Handle::with`
-/// does not cause any recomposition to occur. Owned access via `Handle::set` requires that the
-/// closure which receives the state value also returns an owned value of the same type, and after
-/// it returns a recomposition will be triggered.
-#[derive(Clone)]
+impl Eq for ScopeState {}
+
+/// Provides a component with access to the persistent state store.
+///
+/// Because `salsa` does not yet support generic queries, we need a concrete type that can be
+/// passed as an argument and tracked within the incremental computation system.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Port {
+    scope: ScopeId,
+    states: ScopeState,
+}
+
+impl Port {
+    pub fn get<S: 'static + Any + Send>(
+        &self,
+        scope: CallsiteId,
+        f: impl FnOnce() -> S,
+    ) -> Guard<S> {
+        self.states.get(scope, f)
+    }
+}
+
+/// A `Guard` provides an immutable reference to state in the database. It is returned by the
+/// `state!` macro and can also be used to later enqueue mutations for the state database.
+pub struct Guard<'storage, S> {
+    cell: StateCell,
+    guard: MappedMutexGuard<'storage, S>,
+}
+
+impl<'storage, S> std::ops::Deref for Guard<'storage, S> {
+    type Target = S;
+    fn deref(&self) -> &Self::Target {
+        &*self.guard
+    }
+}
+
+/// A `Handle` provides access to a portion of the state database for use outside of composition.
+/// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.
+///
+/// A `Handle` doesn't directly capture any values from the state database, and instead acquires
+/// the appropriate locks when `set` is called.
 pub struct Handle<S> {
-    state_ptr: Pointer<Mutex<Option<S>>>,
-    db: Weak<RwLock<Db>>,
+    __ty_marker: std::marker::PhantomData<S>,
 }
 
-impl<S> Handle<S> {
-    // TODO: decide whether we want to do this?
-    pub fn with<T>(&self, _f: impl FnOnce(&S) -> T) {
-        unimplemented!()
-    }
-
-    pub fn set(&self, _f: impl FnOnce(S) -> S) {
-        if let Some(_db) = self.db.upgrade() {
-            // let state = (*db.write()[&self.state_ptr].lock();
-            unimplemented!()
-        }
-    }
-}
-
-/// A `Moniker` is effectively the coordinates of a code location in the render hierarchy.
+/// A `Moniker` represents the coordinates of a code location in the render hierarchy.
 ///
 /// The struct describes a location in the program specific to:
 ///
@@ -259,9 +171,14 @@ impl<S> Handle<S> {
 /// from a "pure" function back to a state location.
 // TODO: there should probably be an actual Moniker capability that encloses one, right?
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Moniker {
-    this: usize,
-    parent: usize,
+pub struct Moniker(usize);
+
+impl Moniker {
+    #[doc(hidden)]
+    #[inline]
+    pub fn new(scope: ScopeId, callsite: &'static str) -> Self {
+        Moniker(fxhash::hash(&(scope, callsite)))
+    }
 }
 
 macro_rules! moniker {
@@ -270,19 +187,39 @@ macro_rules! moniker {
     };
 }
 
-impl Moniker {
-    #[doc(hidden)]
-    pub fn new(parent: &Moniker, callsite: &'static str) -> Self {
-        Moniker {
-            this: fxhash::hash(&(parent, callsite)),
-            parent: parent.this,
-        }
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScopeId(Moniker);
+
+impl ScopeId {
+    pub fn new(callsite: Moniker) -> Self {
+        Self(callsite)
     }
 
     pub(crate) fn root() -> Self {
-        moniker!(&Moniker {
-            this: fxhash::hash(&0),
-            parent: 0
-        })
+        Self(Moniker(fxhash::hash(&0)))
     }
+}
+
+macro_rules! scope {
+    ($parent:expr) => {
+        $crate::prelude::ScopeId::new(moniker!($parent))
+    };
+}
+
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct CallsiteId {
+    site: Moniker,
+    scope: ScopeId,
+}
+
+impl CallsiteId {
+    pub fn new(scope: ScopeId, site: Moniker) -> Self {
+        Self { scope, site }
+    }
+}
+
+macro_rules! callsite {
+    ($parent:expr) => {
+        $crate::prelude::CallsiteId::new($parent, moniker!($parent))
+    };
 }
