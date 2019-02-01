@@ -60,7 +60,7 @@ impl SalsaDb for Composer {
 }
 
 type ScopedStateCells = Arc<CHashMap<CallsiteId, StateCell>>;
-type StateCell = Arc<(TypeId, Mutex<Box<Any + Send + 'static>>)>;
+type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
 
 /// Provides a component with access to the persistent state store.
 ///
@@ -75,11 +75,7 @@ pub struct Port {
 }
 
 impl Port {
-    pub fn get<S: 'static + Any + Send>(
-        &self,
-        callsite: CallsiteId,
-        f: impl FnOnce() -> S,
-    ) -> Guard<S> {
+    pub fn get<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
         let id = TypeId::of::<S>();
 
         let mut cell = None;
