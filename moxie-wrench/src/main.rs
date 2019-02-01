@@ -38,7 +38,9 @@ fn main() {
         async {
             let compose = state::Composer::new();
 
-            compose.surface(ScopeId::root());
+            loop {
+                compose.surface(ScopeId::root());
+            }
 
             // let (mut surface, mut events) = surface::Surface::new();
 
