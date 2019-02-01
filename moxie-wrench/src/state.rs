@@ -39,10 +39,14 @@ impl StateDb for Composer {
         let mut port = None;
 
         self.states.alter(scope, |prev: Option<Port>| {
-            Some(prev.unwrap_or_else(|| Port {
+            let current = prev.unwrap_or_else(|| Port {
                 scope,
                 states: Arc::new(CHashMap::new()),
-            }))
+            });
+
+            port = Some(current.clone());
+
+            Some(current)
         });
 
         port.unwrap()
