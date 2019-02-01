@@ -27,31 +27,30 @@ pub struct WindowEvents {
 }
 
 impl WindowEvents {
-    pub fn new() -> (Self, Box<RenderNotifier>) {
+    pub fn new() -> Self {
         let waker = Arc::new(Mutex::new(None));
         let remote = waker.clone();
 
         let events_loop = EventsLoop::new();
-        let events_proxy = events_loop.create_proxy();
-        let notifier = WindowNotifier {
-            events_proxy,
-            waker: waker.clone(),
-        };
-
         let _timer = Timer::new();
         let _guard =
             _timer.schedule_repeating(Duration::milliseconds(1), move || try_wake(&remote));
 
-        (
-            WindowEvents {
-                events_loop,
-                events: VecDeque::new(),
-                waker,
-                _timer,
-                _guard,
-            },
-            Box::new(notifier),
-        )
+        WindowEvents {
+            events_loop,
+            events: VecDeque::new(),
+            waker,
+            _timer,
+            _guard,
+        }
+    }
+
+    pub fn notifier(&self) -> Box<RenderNotifier> {
+        let events_proxy = self.events_loop.create_proxy();
+        Box::new(WindowNotifier {
+            events_proxy,
+            waker: self.waker.clone(),
+        })
     }
 
     pub fn raw_loop(&self) -> &EventsLoop {
