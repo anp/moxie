@@ -5,8 +5,6 @@ use {
     salsa::Database as SalsaDb,
     std::{
         any::{Any, TypeId},
-        collections::HashMap,
-        hash::Hash,
         sync::Arc,
     },
 };
@@ -17,7 +15,7 @@ use {
 #[derive(Default)]
 pub struct Composer {
     runtime: salsa::Runtime<Composer>,
-    states: CHashMap<ScopeId, ScopeState>,
+    states: CHashMap<ScopeId, Port>,
 }
 
 impl Composer {
@@ -29,36 +27,25 @@ impl Composer {
 #[salsa::query_group(ComposeStorage)]
 pub trait ComposeDb: SalsaDb + StateDb {
     fn surface(&self, parent: ScopeId) -> ();
-
-    // TODO find a way to invalidate this query when the state of the corresponding scope changes
-    fn state(&self, scope: ScopeId) -> Port;
-}
-
-fn state(compose: &impl ComposeDb, scope: ScopeId) -> Port {
-    let mut port = None;
-
-    compose.store().alter(scope, |prev: Option<ScopeState>| {
-        let state = prev.unwrap_or_default();
-
-        port = Some(Port {
-            scope,
-            states: state.clone(),
-        });
-
-        Some(state)
-    });
-
-    port.unwrap()
 }
 
 // FIXME this should not be public
 pub trait StateDb {
-    fn store(&self) -> &CHashMap<ScopeId, ScopeState>;
+    fn state(&self, scope: ScopeId) -> Port;
 }
 
 impl StateDb for Composer {
-    fn store(&self) -> &CHashMap<ScopeId, ScopeState> {
-        &self.states
+    fn state(&self, scope: ScopeId) -> Port {
+        let mut port = None;
+
+        self.states.alter(scope, |prev: Option<Port>| {
+            Some(prev.unwrap_or_else(|| Port {
+                scope,
+                states: Arc::new(CHashMap::new()),
+            }))
+        });
+
+        port.unwrap()
     }
 }
 
@@ -68,13 +55,23 @@ impl SalsaDb for Composer {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct ScopeState(Arc<CHashMap<CallsiteId, StateCell>>);
-
+type ScopedStateCells = Arc<CHashMap<CallsiteId, StateCell>>;
 type StateCell = Arc<(TypeId, Mutex<Box<Any + Send + 'static>>)>;
 
-impl ScopeState {
-    fn get<S: 'static + Any + Send>(
+/// Provides a component with access to the persistent state store.
+///
+/// Internally
+///
+/// Because `salsa` does not yet support generic queries, we need a concrete type that can be
+/// passed as an argument and tracked within the incremental computation system.
+#[derive(Clone, Debug)]
+pub struct Port {
+    scope: ScopeId,
+    states: ScopedStateCells,
+}
+
+impl Port {
+    pub fn get<S: 'static + Any + Send>(
         &self,
         callsite: CallsiteId,
         f: impl FnOnce() -> S,
@@ -83,7 +80,7 @@ impl ScopeState {
 
         let mut cell = None;
 
-        self.0.alter(callsite, |prev| {
+        self.states.alter(callsite, |prev| {
             if let Some(p) = prev {
                 cell = Some(p);
             } else {
@@ -99,39 +96,20 @@ impl ScopeState {
     }
 }
 
-impl PartialEq for ScopeState {
+// FIXME this needs to include a notion of the hash of all included values
+impl PartialEq for Port {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.0, &other.0)
+        self.scope == other.scope && Arc::ptr_eq(&self.states, &other.states)
     }
 }
 
-impl Eq for ScopeState {}
-
-/// Provides a component with access to the persistent state store.
-///
-/// Because `salsa` does not yet support generic queries, we need a concrete type that can be
-/// passed as an argument and tracked within the incremental computation system.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Port {
-    scope: ScopeId,
-    states: ScopeState,
-}
-
-impl Port {
-    pub fn get<S: 'static + Any + Send>(
-        &self,
-        scope: CallsiteId,
-        f: impl FnOnce() -> S,
-    ) -> Guard<S> {
-        self.states.get(scope, f)
-    }
-}
+impl Eq for Port {}
 
 rental::rental! {
     pub mod rent_state {
         use super::*;
 
-        /// A `Guard` provides an immutable reference to state in the database. It is returned by
+        /// A `Guard` provides a reference to state in the database. It is returned by
         /// the `state!` macro and can also be used to later enqueue mutations for the state
         /// database.
         #[rental(deref_suffix)]
