@@ -81,7 +81,7 @@ impl ScopeState {
     ) -> Guard<S> {
         let id = TypeId::of::<S>();
 
-        let mut cell: Option<Arc<_>> = None;
+        let mut cell = None;
 
         self.0.alter(callsite, |prev| {
             if let Some(p) = prev {
@@ -93,14 +93,9 @@ impl ScopeState {
             cell.clone()
         });
 
-        let cell = cell.unwrap();
-
-        let mapped = MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap());
-
-        Guard {
-            cell,
-            guard: mapped,
-        }
+        Guard::new(cell.unwrap(), |cell| {
+            MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap())
+        })
     }
 }
 
@@ -132,19 +127,21 @@ impl Port {
     }
 }
 
-/// A `Guard` provides an immutable reference to state in the database. It is returned by the
-/// `state!` macro and can also be used to later enqueue mutations for the state database.
-pub struct Guard<'storage, S> {
-    cell: StateCell,
-    guard: MappedMutexGuard<'storage, S>,
-}
+rental::rental! {
+    pub mod rent_state {
+        use super::*;
 
-impl<'storage, S> std::ops::Deref for Guard<'storage, S> {
-    type Target = S;
-    fn deref(&self) -> &Self::Target {
-        &*self.guard
+        /// A `Guard` provides an immutable reference to state in the database. It is returned by
+        /// the `state!` macro and can also be used to later enqueue mutations for the state
+        /// database.
+        #[rental(deref_suffix)]
+        pub struct Guard<S: 'static> {
+            cell: StateCell,
+            guard: MappedMutexGuard<'cell, S>,
+        }
     }
 }
+pub use rent_state::Guard;
 
 /// A `Handle` provides access to a portion of the state database for use outside of composition.
 /// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.

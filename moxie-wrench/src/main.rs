@@ -1,5 +1,8 @@
 #![feature(await_macro, futures_api, async_await)]
 
+#[macro_use]
+extern crate rental;
+
 use futures::executor::ThreadPool;
 
 mod display_list;
