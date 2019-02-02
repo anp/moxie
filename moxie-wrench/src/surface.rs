@@ -64,11 +64,9 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
 
         info!("Loading shaders...");
         let opts = webrender::RendererOptions {
-            resource_override_path: None,
             precache_flags: PRECACHE_SHADER_FLAGS,
             device_pixel_ratio,
             clear_color: Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
-            //scatter_gpu_cache_updates: false,
             debug_flags: webrender::DebugFlags::ECHO_DRIVER_MESSAGES,
             ..webrender::RendererOptions::default()
         };
