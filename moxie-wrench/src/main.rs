@@ -41,15 +41,6 @@ fn main() {
             loop {
                 compose.surface(ScopeId::root());
             }
-
-            // let (mut surface, mut events) = surface::Surface::new();
-
-            // while let Some(event) = await!(events.next()) {
-            //     match surface.update(event) {
-            //         ControlFlow::Continue => continue,
-            //         ControlFlow::Break => break,
-            //     }
-            // }
         },
     );
 }
