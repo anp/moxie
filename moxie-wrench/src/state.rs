@@ -26,6 +26,7 @@ impl Composer {
 
 #[salsa::query_group(ComposeStorage)]
 pub trait ComposeDb: SalsaDb + StateDb {
+    #[salsa::dependencies]
     fn surface(&self, parent: ScopeId) -> ();
 }
 
