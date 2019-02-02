@@ -48,10 +48,18 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
         glutin::Api::WebGl => unimplemented!(),
     });
 
+    let device_pixel_ratio = window.get_hidpi_factor() as f32;
+    let framebuffer_size = {
+        let size = window
+            .get_inner_size()
+            .unwrap()
+            .to_physical(device_pixel_ratio as f64);
+        DeviceIntSize::new(size.width as i32, size.height as i32)
+    };
+
     // TODO split returned state tuples?
-    let renderer = port.get(callsite!(key), || {
+    let mut renderer = port.get(callsite!(key), || {
         info!("OpenGL version {}", gl.get_string(gl::VERSION));
-        let device_pixel_ratio = window.get_hidpi_factor() as f32;
         info!("Device pixel ratio: {}", device_pixel_ratio);
 
         info!("Loading shaders...");
@@ -65,77 +73,38 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
             ..webrender::RendererOptions::default()
         };
 
-        let framebuffer_size = {
-            let size = window
-                .get_inner_size()
-                .unwrap()
-                .to_physical(device_pixel_ratio as f64);
-            DeviceIntSize::new(size.width as i32, size.height as i32)
-        };
-
         webrender::Renderer::new(gl.clone(), events.notifier(), opts, None).unwrap()
     });
 
     let api = port.get(callsite!(key), || renderer.1.create_api());
 
-    // let document_id = api.add_document(framebuffer_size, 0);
+    let document_id = port.get(callsite!(key), || api.add_document(framebuffer_size, 0));
 
-    // let epoch = Epoch(0);
-    // let pipeline_id = PipelineId(0, 0);
-    // let layout_size = framebuffer_size.to_f32() / euclid::TypedScale::new(device_pixel_ratio);
-    // let api = Some(api);
+    let epoch = Epoch(0);
+    let pipeline_id = PipelineId(0, 0);
+    let layout_size = framebuffer_size.to_f32() / euclid::TypedScale::new(device_pixel_ratio);
 
-    // match global_event {
-    //     winit::Event::WindowEvent {
-    //         event: winit::WindowEvent::CloseRequested,
-    //         ..
-    //     } => return ControlFlow::Break,
-    //     Event::WindowEvent {
-    //         event:
-    //             winit::WindowEvent::KeyboardInput {
-    //                 input:
-    //                     winit::KeyboardInput {
-    //                         state: winit::ElementState::Pressed,
-    //                         virtual_keycode: Some(key),
-    //                         ..
-    //                     },
-    //                 ..
-    //             },
-    //         ..
-    //     } => match key {
-    //         winit::VirtualKeyCode::Escape => return ControlFlow::Break,
-    //         k => info!("keycode received: {:?}", k),
-    //     },
-    //     Event::WindowEvent { .. } => {}
-    //     _ => return ControlFlow::Continue,
-    // };
+    // FIXME only do the following on state changes!
+    let builder = DisplayListBuilder::new(pipeline_id, layout_size);
 
-    // // TODO only do this on state changes!
-    // let builder = DisplayListBuilder::new(self.pipeline_id, self.layout_size);
+    let mut txn = Transaction::new();
+    txn.set_root_pipeline(pipeline_id);
+    txn.generate_frame();
 
-    // let mut txn = Transaction::new();
-    // txn.set_root_pipeline(self.pipeline_id);
-    // txn.generate_frame();
+    // FIXME render child functions here
 
-    // self.app.render();
+    txn.set_display_list(
+        epoch,
+        Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
+        layout_size,
+        builder.finalize(),
+        true,
+    );
+    txn.generate_frame();
+    api.send_transaction(*document_id, txn);
 
-    // txn.set_display_list(
-    //     self.epoch,
-    //     Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
-    //     self.layout_size,
-    //     builder.finalize(),
-    //     true,
-    // );
-    // txn.generate_frame();
-    // self.api
-    //     .as_mut()
-    //     .unwrap()
-    //     .send_transaction(self.document_id, txn);
-
-    // self.renderer.update();
-    // self.renderer.render(self.framebuffer_size).unwrap();
-    // let _ = self.renderer.flush_pipeline_info();
-    // self.window.swap_buffers().ok();
-
-    // ControlFlow::Continue
+    renderer.0.update();
+    renderer.0.render(framebuffer_size).unwrap();
+    let _ = renderer.0.flush_pipeline_info();
+    window.swap_buffers().unwrap();
 }
