@@ -112,7 +112,7 @@ rental::rental! {
         /// A `Guard` provides a reference to state in the database. It is returned by
         /// the `state!` macro and can also be used to later enqueue mutations for the state
         /// database.
-        #[rental(deref_suffix)]
+        #[rental(deref_suffix, deref_mut_suffix)]
         pub struct Guard<S: 'static> {
             cell: StateCell,
             guard: MappedMutexGuard<'cell, S>,
