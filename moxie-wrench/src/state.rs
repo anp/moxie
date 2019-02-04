@@ -1,5 +1,8 @@
 use {
-    crate::surface::surface,
+    crate::{
+        runtime::{Event, WindowEvent},
+        surface::surface,
+    },
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     salsa::Database as SalsaDb,
@@ -27,7 +30,7 @@ impl Composer {
 #[salsa::query_group(ComposeStorage)]
 pub trait ComposeDb: SalsaDb + StateDb {
     #[salsa::dependencies]
-    fn surface(&self, parent: ScopeId) -> ();
+    fn surface(&self, parent: ScopeId, events: WindowEventRevision) -> ();
 }
 
 // FIXME this should not be public
@@ -177,6 +180,9 @@ impl ScopeId {
 }
 
 macro_rules! scope {
+    () => {
+        $crate::prelude::ScopeId::root()
+    };
     ($parent:expr) => {
         $crate::prelude::ScopeId::new(moniker!($parent))
     };

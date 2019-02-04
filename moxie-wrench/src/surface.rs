@@ -1,5 +1,8 @@
 use {
-    crate::{prelude::*, winit_future::WindowEvents},
+    crate::{
+        prelude::*,
+        runtime::{Event, WindowEvent},
+    },
     gleam::gl,
     glutin::GlContext,
     webrender::api::*,
@@ -12,10 +15,9 @@ const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
+pub fn surface(compose: &impl ComposeDb, key: ScopeId, next_event: WindowEventRevision) {
     // get the state port for the whole scope
     let port = compose.state(key);
-    let events = port.get(callsite!(key), || WindowEvents::new());
 
     let window: Guard<glutin::GlWindow> = port.get(callsite!(key), || {
         let context_builder =
@@ -29,7 +31,8 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
             .with_dimensions(winit::dpi::LogicalSize::new(WIDTH as f64, HEIGHT as f64));
 
         let window =
-            glutin::GlWindow::new(window_builder, context_builder, events.raw_loop()).unwrap();
+            glutin::GlWindow::new(window_builder, context_builder, compose.raw_event_loop())
+                .unwrap();
 
         unsafe {
             window.make_current().ok();
@@ -71,7 +74,7 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId) {
             ..webrender::RendererOptions::default()
         };
 
-        webrender::Renderer::new(gl.clone(), events.notifier(), opts, None).unwrap()
+        webrender::Renderer::new(gl.clone(), compose.render_notifier(), opts, None).unwrap()
     });
 
     let api = port.get(callsite!(key), || renderer.1.create_api());

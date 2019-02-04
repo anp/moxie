@@ -1,21 +1,23 @@
-#![feature(await_macro, futures_api, async_await)]
+#![feature(await_macro, futures_api, async_await, integer_atomics)]
 
 #[macro_use]
 extern crate rental;
 
-use futures::executor::ThreadPool;
-
 mod display_list;
 #[macro_use]
 pub mod state;
+mod runtime;
 mod surface;
 mod winit_future;
-
-use crate::prelude::*;
 
 pub(crate) mod prelude {
     pub type Size = euclid::TypedSize2D<i32, webrender::api::DevicePixel>;
 
+    pub use futures::{
+        future::{Future, FutureExt},
+        stream::{Stream, StreamExt},
+        task::LocalWaker,
+    };
     pub use log::{debug, error, info, warn};
 
     pub use crate::{
@@ -34,13 +36,7 @@ fn main() {
         .filter(Some("salsa"), log::LevelFilter::Warn)
         .init();
 
-    ThreadPool::new().unwrap().run(
-        async {
-            let compose = state::Composer::new();
-
-            loop {
-                compose.surface(ScopeId::root());
-            }
-        },
-    );
+    futures::executor::ThreadPool::new()
+        .unwrap()
+        .run(runtime::RuntimeyWimey::default().gogo());
 }

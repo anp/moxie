@@ -58,6 +58,12 @@ impl WindowEvents {
     }
 }
 
+impl Default for WindowEvents {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Stream for WindowEvents {
     type Item = winit::Event;
 
