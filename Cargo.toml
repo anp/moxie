@@ -7,10 +7,29 @@ license = "MIT/Apache-2.0"
 description = "Experimental UI component library."
 
 [dependencies]
-generational-arena = "0.1"
+anymap = "0.12"
+app_units = "0.7"
+chashmap = "2"
+env_logger = "0.5"
+euclid = "0.19"
+futures-preview = "0.3.0-alpha.11"
+fxhash = "0.2"
+generational-arena = "0.2"
+gleam = "0.6.8"
+glutin = "0.17"
+lazy_static = "1"
+log = "0.4"
+parking_lot = "0.7"
+rayon = "1"
+rental = "0.5"
+salsa = "0.10.0"
+time = "0.1"
+timer = "0.2"
+webrender = "0.58"
+winit = "0.16"
+
 mox-macro = { path = "mox-macro" }
 proc-macro-hack = "0.5"
-salsa = "0.8"
 
 [profile.dev]
 opt-level = 1
@@ -19,6 +38,4 @@ opt-level = 1
 members = [
     "mox",
     "mox-macro/",
-    # "moxie-web/crate/",
-    "moxie-wrench",
 ]
