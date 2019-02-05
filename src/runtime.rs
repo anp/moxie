@@ -1,6 +1,10 @@
 use {
     crate::{prelude::*, winit_future::WindowEvents},
-    std::sync::atomic::{AtomicU64, Ordering},
+    std::{
+        hash::{Hash, Hasher},
+        sync::atomic::{AtomicU64, Ordering},
+    },
+    winit::WindowId,
 };
 
 #[derive(Default)]
@@ -15,14 +19,21 @@ impl RuntimeyWimey {
         while let Some(ev) = await!(self.events.next()) {
             match ev {
                 winit::Event::WindowEvent { window_id, event } => {
-                    self.compose.surface(scope!(), event.into());
+                    self.compose.surface(
+                        scope!(),
+                        WindowEvent {
+                            window: window_id,
+                            inner: event,
+                            revision: Revision::next(),
+                        },
+                    );
                 }
             }
         }
     }
 }
 
-#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(u64);
 
 static current: AtomicU64 = AtomicU64::new(0);
@@ -37,13 +48,29 @@ impl Revision {
     }
 }
 
+#[derive(Debug)]
 pub struct Event {
     revision: Revision,
     inner: winit::Event,
 }
 
+#[derive(Clone, Debug)]
 pub struct WindowEvent {
     revision: Revision,
     window: WindowId,
     inner: winit::WindowEvent,
 }
+
+impl Hash for WindowEvent {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        unimplemented!()
+    }
+}
+
+impl PartialEq for WindowEvent {
+    fn eq(&self, other: &Self) -> bool {
+        self.revision == other.revision && self.window == other.window
+    }
+}
+
+impl Eq for WindowEvent {}

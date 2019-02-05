@@ -1,8 +1,5 @@
 use {
-    crate::{
-        prelude::*,
-        runtime::{Event, WindowEvent},
-    },
+    crate::{prelude::*, runtime::WindowEvent},
     gleam::gl,
     glutin::GlContext,
     webrender::api::*,
@@ -15,7 +12,7 @@ const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl ComposeDb, key: ScopeId, next_event: WindowEventRevision) {
+pub fn surface(compose: &impl ComposeDb, key: ScopeId, next_event: WindowEvent) {
     // get the state port for the whole scope
     let port = compose.state(key);
 

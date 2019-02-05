@@ -1,8 +1,5 @@
 use {
-    crate::{
-        runtime::{Event, WindowEvent},
-        surface::surface,
-    },
+    crate::{runtime::WindowEvent, surface::surface},
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     salsa::Database as SalsaDb,
@@ -30,7 +27,7 @@ impl Composer {
 #[salsa::query_group(ComposeStorage)]
 pub trait ComposeDb: SalsaDb + StateDb {
     #[salsa::dependencies]
-    fn surface(&self, parent: ScopeId, events: WindowEventRevision) -> ();
+    fn surface(&self, parent: ScopeId, events: WindowEvent) -> ();
 }
 
 // FIXME this should not be public
