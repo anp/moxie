@@ -1,7 +1,5 @@
 #![feature(await_macro, futures_api, async_await, integer_atomics)]
 
-use moxie::prelude::*;
-
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Trace)
@@ -11,7 +9,7 @@ fn main() {
         .filter(Some("webrender"), log::LevelFilter::Warn)
         .filter(Some("salsa"), log::LevelFilter::Warn)
         .init();
-    debug!("logger initialized");
+    log::debug!("logger initialized");
 
-    moxie::run();
+    moxie::Composer::run();
 }

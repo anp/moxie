@@ -1,80 +1,37 @@
 use {
-    crate::{prelude::*, surface::surface},
     chashmap::CHashMap,
+    futures::{future::FutureObj, task::Spawn},
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
-    salsa::Database as SalsaDb,
     std::{
         any::{Any, TypeId},
         sync::Arc,
     },
 };
 
-/// A `Composer` is the primary entry point to moxie's runtime systems. It contains the salsa
-/// incremental storage, various interners, and is passed to every composable function.
-#[salsa::database(ComposeStorage)]
-#[derive(Default)]
-pub struct Composer {
-    runtime: salsa::Runtime<Composer>,
-    states: CHashMap<ScopeId, Scope>,
-}
-
-impl Composer {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-#[salsa::query_group(ComposeStorage)]
-pub trait Surface: SalsaDb + Runtime {
-    #[salsa::dependencies]
-    fn surface(&self, parent: ScopeId) -> ();
-}
-
-pub trait Runtime {
-    fn scope(&self, scope: ScopeId) -> Scope;
-}
-
-impl Runtime for Composer {
-    fn scope(&self, id: ScopeId) -> Scope {
-        let mut port = None;
-
-        self.states.alter(id, |prev: Option<Scope>| {
-            let current = prev.unwrap_or_else(|| Scope {
-                id,
-                states: Arc::new(CHashMap::new()),
-            });
-
-            port = Some(current.clone());
-
-            Some(current)
-        });
-
-        port.unwrap()
-    }
-}
-
-impl SalsaDb for Composer {
-    fn salsa_runtime(&self) -> &salsa::Runtime<Composer> {
-        &self.runtime
-    }
-}
-
 type ScopedStateCells = Arc<CHashMap<CallsiteId, StateCell>>;
 type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
 
-/// Provides a component with access to the persistent state store.
-///
-/// Internally
+/// Provides a component with access to the persistent state store and futures executor.
 ///
 /// Because `salsa` does not yet support generic queries, we need a concrete type that can be
 /// passed as an argument and tracked within the incremental computation system.
 #[derive(Clone, Debug)]
 pub struct Scope {
-    id: ScopeId,
+    pub id: ScopeId,
     states: ScopedStateCells,
+    spawner: Arc<Mutex<crate::Spawner>>,
 }
 
 impl Scope {
+    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner) -> Self {
+        Self {
+            id,
+            spawner: Arc::new(Mutex::new(spawner)),
+            states: Default::default(),
+        }
+    }
+
+    #[inline]
     pub fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
         let id = TypeId::of::<S>();
 
@@ -90,16 +47,14 @@ impl Scope {
             cell.clone()
         });
 
-        Guard::new(cell.unwrap(), |cell| {
+        Guard(RentedGuard::new(cell.unwrap(), |cell| {
             MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap())
-        })
+        }))
     }
 
-    pub fn task<F>(&self, _callsite: CallsiteId, _fut: F)
-    where
-        F: 'static + Future<Output = ()>,
-    {
-        unimplemented!()
+    pub fn task(&self, _callsite: CallsiteId, fut: FutureObj<'static, ()>) {
+        // TODO make this abortable
+        self.spawner.lock().spawn_obj(fut).unwrap();
     }
 }
 
@@ -126,7 +81,22 @@ rental::rental! {
         }
     }
 }
-pub use rent_state::Guard;
+use rent_state::Guard as RentedGuard;
+
+pub struct Guard<S: 'static>(RentedGuard<S>);
+
+impl<S: 'static> std::ops::Deref for Guard<S> {
+    type Target = S;
+    fn deref(&self) -> &Self::Target {
+        &*self.0
+    }
+}
+
+impl<S: 'static> std::ops::DerefMut for Guard<S> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.0
+    }
+}
 
 /// A `Handle` provides access to a portion of the state database for use outside of composition.
 /// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.

@@ -35,6 +35,10 @@ pub(crate) struct WindowEvents {
     _guard: Guard,
 }
 
+// FIXME unclear if this is actually safe?
+unsafe impl Send for WindowEvents {}
+unsafe impl Sync for WindowEvents {}
+
 impl WindowEvents {
     pub(crate) fn new() -> Self {
         let waker = Arc::new(Mutex::new(None));

@@ -1,23 +1,43 @@
 use {
-    crate::{events::WindowEvents, prelude::*},
+    crate::{
+        events::{Event, WindowEvents},
+        prelude::*,
+    },
+    futures::future::{lazy, FutureObj},
     gleam::gl,
     glutin::{GlContext, GlWindow},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
+    winit::WindowId,
 };
 
 // FIXME: fns that take children work with salsa
 pub fn surface(compose: &impl Surface, key: ScopeId) {
     // get the state port for the whole scope
     let compose = compose.scope(key);
+    surface_impl(compose);
+}
 
+fn handle_events(window_id: WindowId, mut events: WindowEvents) -> FutureObj<'static, ()> {
+    Box::new(
+        async move {
+            while let Some(event) = await!(events.next()) {
+                // TODO handle events?
+            }
+        },
+    )
+    .into()
+}
+
+pub fn surface_impl(compose: Scope) {
+    let key = compose.id;
     let window_and_notifier = compose.state(callsite!(key), || {
         let mut events = WindowEvents::new();
 
         info!("initializing window");
         let window = GlWindow::new(
             winit::WindowBuilder::new()
-                .with_title("if you're reading this, i win")
+                .with_title("moxie is alive?")
                 .with_multitouch()
                 .with_dimensions(winit::dpi::LogicalSize::new(1920.0, 1080.0)),
             glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
@@ -28,21 +48,16 @@ pub fn surface(compose: &impl Surface, key: ScopeId) {
         )
         .unwrap();
 
-        info!("making window the current window");
+        let window_id = window.id();
+        info!("making window {:?} the current window", window_id);
         unsafe {
             window.make_current().ok();
         }
 
+        // this notifier needs to be created before events is captured by the move block below
         let notifier = events.notifier();
 
-        compose.task(
-            callsite!(key),
-            async move {
-                while let Some(ev) = await!(events.next()) {
-                    trace!("event received: {:?}", ev);
-                }
-            },
-        );
+        compose.task(callsite!(key), handle_events(window_id, events));
 
         (window, notifier)
     });
@@ -69,18 +84,22 @@ pub fn surface(compose: &impl Surface, key: ScopeId) {
 
     // TODO split returned state tuples?
     let mut renderer = compose.state(callsite!(key), || {
+        debug!("creating webrender renderer");
         info!("OpenGL version {}", gl.get_string(gl::VERSION));
         info!("Device pixel ratio: {}", device_pixel_ratio);
 
-        info!("Loading shaders...");
-        let opts = webrender::RendererOptions {
-            precache_flags: ShaderPrecacheFlags::EMPTY,
-            device_pixel_ratio,
-            clear_color: Some(ColorF::new(0.0, 0.4, 0.3, 1.0)),
-            ..webrender::RendererOptions::default()
-        };
-
-        webrender::Renderer::new(gl.clone(), (*notifier).clone(), opts, None).unwrap()
+        webrender::Renderer::new(
+            gl.clone(),
+            (*notifier).clone(),
+            webrender::RendererOptions {
+                precache_flags: ShaderPrecacheFlags::EMPTY,
+                device_pixel_ratio,
+                clear_color: Some(ColorF::new(0.0, 0.4, 0.3, 1.0)),
+                ..webrender::RendererOptions::default()
+            },
+            None,
+        )
+        .unwrap()
     });
 
     let api = compose.state(callsite!(key), || renderer.1.create_api());
@@ -91,15 +110,16 @@ pub fn surface(compose: &impl Surface, key: ScopeId) {
     let pipeline_id = PipelineId(0, 0);
     let layout_size = framebuffer_size.to_f32() / euclid::TypedScale::new(device_pixel_ratio);
 
-    // FIXME only do the following on state changes!
     let builder = DisplayListBuilder::new(pipeline_id, layout_size);
 
+    trace!("new render xact, generating frame");
     let mut txn = Transaction::new();
     txn.set_root_pipeline(pipeline_id);
     txn.generate_frame();
 
     // FIXME render child functions here
 
+    trace!("setting display list, generating frame, and sending transaction");
     txn.set_display_list(
         epoch,
         Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
@@ -109,9 +129,12 @@ pub fn surface(compose: &impl Surface, key: ScopeId) {
     );
     txn.generate_frame();
     api.send_transaction(*document_id, txn);
-
     renderer.0.update();
+
+    trace!("rendering");
     renderer.0.render(framebuffer_size).unwrap();
     let _ = renderer.0.flush_pipeline_info();
+
+    trace!("swapping buffers");
     window.swap_buffers().unwrap();
 }
