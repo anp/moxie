@@ -1,5 +1,5 @@
 use {
-    crate::{runtime::WindowEvent, surface::surface},
+    crate::{prelude::*, surface::surface},
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     salsa::Database as SalsaDb,
@@ -15,7 +15,7 @@ use {
 #[derive(Default)]
 pub struct Composer {
     runtime: salsa::Runtime<Composer>,
-    states: CHashMap<ScopeId, Port>,
+    states: CHashMap<ScopeId, Scope>,
 }
 
 impl Composer {
@@ -25,23 +25,22 @@ impl Composer {
 }
 
 #[salsa::query_group(ComposeStorage)]
-pub trait ComposeDb: SalsaDb + StateDb {
+pub trait Surface: SalsaDb + Runtime {
     #[salsa::dependencies]
-    fn surface(&self, parent: ScopeId, events: WindowEvent) -> ();
+    fn surface(&self, parent: ScopeId) -> ();
 }
 
-// FIXME this should not be public
-pub trait StateDb {
-    fn state(&self, scope: ScopeId) -> Port;
+pub trait Runtime {
+    fn scope(&self, scope: ScopeId) -> Scope;
 }
 
-impl StateDb for Composer {
-    fn state(&self, scope: ScopeId) -> Port {
+impl Runtime for Composer {
+    fn scope(&self, id: ScopeId) -> Scope {
         let mut port = None;
 
-        self.states.alter(scope, |prev: Option<Port>| {
-            let current = prev.unwrap_or_else(|| Port {
-                scope,
+        self.states.alter(id, |prev: Option<Scope>| {
+            let current = prev.unwrap_or_else(|| Scope {
+                id,
                 states: Arc::new(CHashMap::new()),
             });
 
@@ -70,13 +69,13 @@ type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
 /// Because `salsa` does not yet support generic queries, we need a concrete type that can be
 /// passed as an argument and tracked within the incremental computation system.
 #[derive(Clone, Debug)]
-pub struct Port {
-    scope: ScopeId,
+pub struct Scope {
+    id: ScopeId,
     states: ScopedStateCells,
 }
 
-impl Port {
-    pub fn get<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
+impl Scope {
+    pub fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
         let id = TypeId::of::<S>();
 
         let mut cell = None;
@@ -95,16 +94,23 @@ impl Port {
             MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap())
         })
     }
-}
 
-// FIXME this needs to include a notion of the hash of all included values
-impl PartialEq for Port {
-    fn eq(&self, other: &Self) -> bool {
-        self.scope == other.scope && Arc::ptr_eq(&self.states, &other.states)
+    pub fn task<F>(&self, _callsite: CallsiteId, _fut: F)
+    where
+        F: 'static + Future<Output = ()>,
+    {
+        unimplemented!()
     }
 }
 
-impl Eq for Port {}
+// FIXME this needs to include a notion of the hash of all included values
+impl PartialEq for Scope {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && Arc::ptr_eq(&self.states, &other.states)
+    }
+}
+
+impl Eq for Scope {}
 
 rental::rental! {
     pub mod rent_state {

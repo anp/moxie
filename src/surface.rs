@@ -1,44 +1,54 @@
 use {
-    crate::{prelude::*, runtime::WindowEvent},
+    crate::{events::WindowEvents, prelude::*},
     gleam::gl,
-    glutin::GlContext,
+    glutin::{GlContext, GlWindow},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
 };
 
-const PRECACHE_SHADER_FLAGS: ShaderPrecacheFlags = ShaderPrecacheFlags::EMPTY;
-const TITLE: &'static str = "Moxie Wrench Sample App";
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
-
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl ComposeDb, key: ScopeId, next_event: WindowEvent) {
+pub fn surface(compose: &impl Surface, key: ScopeId) {
     // get the state port for the whole scope
-    let port = compose.state(key);
+    let compose = compose.scope(key);
 
-    let window: Guard<glutin::GlWindow> = port.get(callsite!(key), || {
-        let context_builder =
+    let window_and_notifier = compose.state(callsite!(key), || {
+        let mut events = WindowEvents::new();
+
+        info!("initializing window");
+        let window = GlWindow::new(
+            winit::WindowBuilder::new()
+                .with_title("if you're reading this, i win")
+                .with_multitouch()
+                .with_dimensions(winit::dpi::LogicalSize::new(1920.0, 1080.0)),
             glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
                 opengl_version: (3, 2),
                 opengles_version: (3, 0),
-            });
-        let window_builder = winit::WindowBuilder::new()
-            .with_title(TITLE)
-            .with_multitouch()
-            .with_dimensions(winit::dpi::LogicalSize::new(WIDTH as f64, HEIGHT as f64));
+            }),
+            events.raw_loop(),
+        )
+        .unwrap();
 
-        let window =
-            glutin::GlWindow::new(window_builder, context_builder, compose.raw_event_loop())
-                .unwrap();
-
+        info!("making window the current window");
         unsafe {
             window.make_current().ok();
         }
 
-        window
-    });
+        let notifier = events.notifier();
 
-    let gl = port.get(callsite!(key), || match window.get_api() {
+        compose.task(
+            callsite!(key),
+            async move {
+                while let Some(ev) = await!(events.next()) {
+                    trace!("event received: {:?}", ev);
+                }
+            },
+        );
+
+        (window, notifier)
+    });
+    let (window, notifier) = &*window_and_notifier;
+
+    let gl = compose.state(callsite!(key), || match window.get_api() {
         glutin::Api::OpenGl => unsafe {
             gl::GlFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
         },
@@ -58,25 +68,24 @@ pub fn surface(compose: &impl ComposeDb, key: ScopeId, next_event: WindowEvent) 
     };
 
     // TODO split returned state tuples?
-    let mut renderer = port.get(callsite!(key), || {
+    let mut renderer = compose.state(callsite!(key), || {
         info!("OpenGL version {}", gl.get_string(gl::VERSION));
         info!("Device pixel ratio: {}", device_pixel_ratio);
 
         info!("Loading shaders...");
         let opts = webrender::RendererOptions {
-            precache_flags: PRECACHE_SHADER_FLAGS,
+            precache_flags: ShaderPrecacheFlags::EMPTY,
             device_pixel_ratio,
-            clear_color: Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
-            debug_flags: webrender::DebugFlags::ECHO_DRIVER_MESSAGES,
+            clear_color: Some(ColorF::new(0.0, 0.4, 0.3, 1.0)),
             ..webrender::RendererOptions::default()
         };
 
-        webrender::Renderer::new(gl.clone(), compose.render_notifier(), opts, None).unwrap()
+        webrender::Renderer::new(gl.clone(), (*notifier).clone(), opts, None).unwrap()
     });
 
-    let api = port.get(callsite!(key), || renderer.1.create_api());
+    let api = compose.state(callsite!(key), || renderer.1.create_api());
 
-    let document_id = port.get(callsite!(key), || api.add_document(framebuffer_size, 0));
+    let document_id = compose.state(callsite!(key), || api.add_document(framebuffer_size, 0));
 
     let epoch = Epoch(0);
     let pipeline_id = PipelineId(0, 0);
