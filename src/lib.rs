@@ -3,7 +3,6 @@
 #[macro_use]
 extern crate rental;
 
-mod double_waker;
 #[macro_use]
 pub mod scope;
 mod events;
@@ -61,7 +60,7 @@ impl Composer {
         exec.run(
             async {
                 // make sure we can be woken back up
-                std::future::get_task_waker(|lw| self.set_composition_waker(lw.clone().into()));
+                std::future::get_task_waker(|lw| self.set_waker(lw.clone().into()));
                 loop {
                     trace!("composing surface");
                     self.surface(scope!());
@@ -79,7 +78,7 @@ impl Composer {
 #[salsa::query_group(ComponentStorage)]
 pub trait Components: Runtime {
     #[salsa::input]
-    fn composition_waker(&self) -> Waker;
+    fn waker(&self) -> Waker;
 
     #[salsa::dependencies]
     fn surface(&self, parent: ScopeId) -> ();
@@ -94,8 +93,7 @@ impl Runtime for Composer {
         let mut port = None;
 
         self.states.alter(id, |prev: Option<Scope>| {
-            let current =
-                prev.unwrap_or_else(|| Scope::new(id, self.spawner(), self.composition_waker()));
+            let current = prev.unwrap_or_else(|| Scope::new(id, self.spawner(), self.waker()));
             port = Some(current.clone());
             Some(current)
         });

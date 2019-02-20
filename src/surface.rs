@@ -14,17 +14,28 @@ pub fn surface(compose: &impl Components, key: ScopeId) {
     surface_impl(compose);
 }
 
-async fn handle_events(window_id: WindowId, mut events: WindowEvents) {
-    while let Some(event) = await!(events.next()) {
+async fn handle_events(this_window: WindowId, mut events: WindowEvents, waker: Waker) {
+    'top: while let Some(event) = await!(events.next()) {
+        let event = match event.inner {
+            winit::Event::WindowEvent {
+                window_id,
+                ref event,
+            } if window_id == this_window => event,
+            // we only care about events for this particular window
+            _ => continue 'top,
+        };
+        trace!("handling event {:?}", event);
+
         // TODO handle window close event
         // TODO handle events?
+        waker.wake();
     }
 }
 
 pub fn surface_impl(compose: Scope) {
     let key = compose.id;
     let (window, notifier) = &*compose.state(callsite!(key), || {
-        let mut events = WindowEvents::new();
+        let events = WindowEvents::new();
 
         info!("initializing window");
         let window = GlWindow::new(
@@ -49,7 +60,10 @@ pub fn surface_impl(compose: Scope) {
         // this notifier needs to be created before events is captured by the move block below
         let notifier = events.notifier();
 
-        compose.task(callsite!(key), handle_events(window_id, events));
+        compose.task(
+            callsite!(key),
+            handle_events(window_id, events, compose.waker()),
+        );
 
         (window, notifier)
     });

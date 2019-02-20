@@ -1,5 +1,5 @@
 use {
-    crate::{double_waker::also_wake, prelude::*},
+    crate::prelude::*,
     chashmap::CHashMap,
     futures::task::Spawn,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
@@ -24,14 +24,14 @@ pub struct Scope {
     pub id: ScopeId,
     states: ScopedStateCells,
     spawner: Arc<Mutex<crate::Spawner>>,
-    compose_waker: Waker,
+    waker: Waker,
 }
 
 impl Scope {
-    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner, compose_waker: Waker) -> Self {
+    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner, waker: Waker) -> Self {
         Self {
             id,
-            compose_waker,
+            waker,
             spawner: Arc::new(Mutex::new(spawner)),
             states: Default::default(),
         }
@@ -63,10 +63,11 @@ impl Scope {
         F: Future<Output = ()> + Send + 'static,
     {
         // TODO make this abortable on scope drop
-        use futures::future::FutureObj;
-        let wake_render_task_too: FutureObj<'static, ()> =
-            Box::new(also_wake(self.compose_waker.clone(), fut)).into();
-        self.spawner.lock().spawn_obj(wake_render_task_too).unwrap();
+        self.spawner.lock().spawn_obj(Box::new(fut).into()).unwrap();
+    }
+
+    pub(crate) fn waker(&self) -> Waker {
+        self.waker.clone()
     }
 }
 

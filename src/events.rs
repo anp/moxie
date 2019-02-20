@@ -14,7 +14,7 @@ use {
     time::Duration,
     timer::{Guard, Timer},
     webrender::api::RenderNotifier,
-    winit::{EventsLoop, EventsLoopProxy, WindowId},
+    winit::{EventsLoop, EventsLoopProxy},
 };
 
 /// Wraps a winit event loop to provide a `futures::stream::Stream`.
@@ -180,21 +180,6 @@ impl Revision {
 
 #[derive(Debug)]
 pub struct Event {
-    revision: Revision,
-    inner: winit::Event,
+    pub revision: Revision,
+    pub inner: winit::Event,
 }
-
-#[derive(Clone, Debug)]
-pub struct WindowEvent {
-    revision: Revision,
-    window: WindowId,
-    inner: winit::WindowEvent,
-}
-
-impl PartialEq for WindowEvent {
-    fn eq(&self, other: &Self) -> bool {
-        self.revision == other.revision && self.window == other.window
-    }
-}
-
-impl Eq for WindowEvent {}
