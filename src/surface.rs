@@ -1,9 +1,5 @@
 use {
-    crate::{
-        events::{Event, WindowEvents},
-        prelude::*,
-    },
-    futures::future::{lazy, FutureObj},
+    crate::{events::WindowEvents, prelude::*},
     gleam::gl,
     glutin::{GlContext, GlWindow},
     webrender::api::*,
@@ -12,26 +8,22 @@ use {
 };
 
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl Surface, key: ScopeId) {
+pub fn surface(compose: &impl Components, key: ScopeId) {
     // get the state port for the whole scope
     let compose = compose.scope(key);
     surface_impl(compose);
 }
 
-fn handle_events(window_id: WindowId, mut events: WindowEvents) -> FutureObj<'static, ()> {
-    Box::new(
-        async move {
-            while let Some(event) = await!(events.next()) {
-                // TODO handle events?
-            }
-        },
-    )
-    .into()
+async fn handle_events(window_id: WindowId, mut events: WindowEvents) {
+    while let Some(event) = await!(events.next()) {
+        // TODO handle window close event
+        // TODO handle events?
+    }
 }
 
 pub fn surface_impl(compose: Scope) {
     let key = compose.id;
-    let window_and_notifier = compose.state(callsite!(key), || {
+    let (window, notifier) = &*compose.state(callsite!(key), || {
         let mut events = WindowEvents::new();
 
         info!("initializing window");
@@ -61,7 +53,6 @@ pub fn surface_impl(compose: Scope) {
 
         (window, notifier)
     });
-    let (window, notifier) = &*window_and_notifier;
 
     let gl = compose.state(callsite!(key), || match window.get_api() {
         glutin::Api::OpenGl => unsafe {

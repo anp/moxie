@@ -1,6 +1,7 @@
 use {
+    crate::{double_waker::also_wake, prelude::*},
     chashmap::CHashMap,
-    futures::{future::FutureObj, task::Spawn},
+    futures::task::Spawn,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
         any::{Any, TypeId},
@@ -11,6 +12,9 @@ use {
 type ScopedStateCells = Arc<CHashMap<CallsiteId, StateCell>>;
 type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
 
+// FIXME scope needs to include a revision, and components should be given a handle to the scope,
+// there should only be one canonical one at a time, rather than having a bunch of split up handles
+
 /// Provides a component with access to the persistent state store and futures executor.
 ///
 /// Because `salsa` does not yet support generic queries, we need a concrete type that can be
@@ -20,12 +24,14 @@ pub struct Scope {
     pub id: ScopeId,
     states: ScopedStateCells,
     spawner: Arc<Mutex<crate::Spawner>>,
+    compose_waker: Waker,
 }
 
 impl Scope {
-    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner) -> Self {
+    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner, compose_waker: Waker) -> Self {
         Self {
             id,
+            compose_waker,
             spawner: Arc::new(Mutex::new(spawner)),
             states: Default::default(),
         }
@@ -52,13 +58,18 @@ impl Scope {
         }))
     }
 
-    pub fn task(&self, _callsite: CallsiteId, fut: FutureObj<'static, ()>) {
-        // TODO make this abortable
-        self.spawner.lock().spawn_obj(fut).unwrap();
+    pub fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        // TODO make this abortable on scope drop
+        use futures::future::FutureObj;
+        let wake_render_task_too: FutureObj<'static, ()> =
+            Box::new(also_wake(self.compose_waker.clone(), fut)).into();
+        self.spawner.lock().spawn_obj(wake_render_task_too).unwrap();
     }
 }
 
-// FIXME this needs to include a notion of the hash of all included values
 impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && Arc::ptr_eq(&self.states, &other.states)

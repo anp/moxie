@@ -2,7 +2,7 @@
 
 fn main() {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Trace)
+        .filter_level(log::LevelFilter::Debug)
         .default_format_timestamp(true)
         .default_format_level(true)
         .default_format_module_path(true)
@@ -11,5 +11,5 @@ fn main() {
         .init();
     log::debug!("logger initialized");
 
-    moxie::Composer::run();
+    moxie::run();
 }

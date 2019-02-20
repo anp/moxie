@@ -1,8 +1,9 @@
-#![feature(await_macro, futures_api, async_await, integer_atomics)]
+#![feature(await_macro, futures_api, async_await, integer_atomics, gen_future)]
 
 #[macro_use]
 extern crate rental;
 
+mod double_waker;
 #[macro_use]
 pub mod scope;
 mod events;
@@ -13,14 +14,13 @@ pub mod prelude {
     pub use {
         crate::{
             scope::{CallsiteId, Guard, Handle, Moniker, Scope, ScopeId},
-            {Composer, Surface},
+            surface::surface,
+            {Components, Composer},
         },
-        futures::{
-            prelude::*,
-            stream::{Stream, StreamExt},
-        },
+        futures::stream::{Stream, StreamExt},
         log::{debug, error, info, trace, warn},
-        std::sync::Arc,
+        parking_lot::Mutex,
+        std::{future::Future, sync::Arc, task::Waker},
     };
 }
 
@@ -31,9 +31,14 @@ use {
     salsa::Database as SalsaBowl,
 };
 
+pub fn run() {
+    let compose = Composer::new();
+    compose.start();
+}
+
 /// A `Composer` is the primary entry point to moxie's runtime systems. It contains the salsa
 /// incremental storage, a futures executor, interners, and is passed to every composable function.
-#[salsa::database(ComposeStorage)]
+#[salsa::database(ComponentStorage)]
 pub struct Composer {
     runtime: salsa::Runtime<Composer>,
     states: CHashMap<ScopeId, Scope>,
@@ -49,17 +54,14 @@ impl Composer {
         }
     }
 
-    pub fn run() {
-        let compose = Self::new();
-        compose.start();
-    }
-
-    pub fn start(self) {
+    pub fn start(mut self) {
         let mut exec = self.exec.clone();
 
         info!("starting threadpool");
         exec.run(
             async {
+                // make sure we can be woken back up
+                std::future::get_task_waker(|lw| self.set_composition_waker(lw.clone().into()));
                 loop {
                     trace!("composing surface");
                     self.surface(scope!());
@@ -74,15 +76,16 @@ impl Composer {
     }
 }
 
-use surface::surface;
+#[salsa::query_group(ComponentStorage)]
+pub trait Components: Runtime {
+    #[salsa::input]
+    fn composition_waker(&self) -> Waker;
 
-#[salsa::query_group(ComposeStorage)]
-pub trait Surface: SalsaBowl + Runtime {
     #[salsa::dependencies]
     fn surface(&self, parent: ScopeId) -> ();
 }
 
-pub trait Runtime {
+pub trait Runtime: SalsaBowl {
     fn scope(&self, scope: ScopeId) -> Scope;
 }
 
@@ -91,7 +94,8 @@ impl Runtime for Composer {
         let mut port = None;
 
         self.states.alter(id, |prev: Option<Scope>| {
-            let current = prev.unwrap_or_else(|| Scope::new(id, self.spawner()));
+            let current =
+                prev.unwrap_or_else(|| Scope::new(id, self.spawner(), self.composition_waker()));
             port = Some(current.clone());
             Some(current)
         });
