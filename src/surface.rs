@@ -34,12 +34,69 @@ async fn handle_events(
 
         use winit::WindowEvent::*;
         match event {
-            CloseRequested => {
-                info!("close requested. exiting.");
+            CloseRequested | Destroyed => {
+                info!("close requested or window destroyed. exiting.");
                 top_level_exit.abort();
                 futures::pending!(); // so nothing else in this task fires accidentally
             }
-            _ => {}
+            Resized(_new_size) => {}
+            Moved(_new_position) => {}
+            DroppedFile(_path) => {}
+            HoveredFile(_path) => {}
+            HoveredFileCancelled => {}
+            ReceivedCharacter(_received_char) => {}
+            Focused(_in_focus) => {}
+            KeyboardInput {
+                device_id: _device_id,
+                input: _input,
+            } => {}
+            CursorMoved {
+                device_id: _device_id,
+                position: _position,
+                modifiers: _modifiers,
+            } => {}
+            CursorEntered {
+                device_id: _device_id,
+            } => {}
+            CursorLeft {
+                device_id: _device_id,
+            } => {}
+            MouseWheel {
+                device_id: _device_id,
+                delta: _delta,
+                phase: _phase,
+                modifiers: _modifiers,
+            } => {}
+
+            MouseInput {
+                device_id: _device_id,
+                state: _state,
+                button: _button,
+                modifiers: _modifiers,
+            } => {}
+
+            TouchpadPressure {
+                device_id: _device_id,
+                pressure: _pressure,
+                stage: _stage,
+            } => {}
+
+            AxisMotion {
+                device_id: _device_id,
+                axis: _axis,
+                value: _value,
+            } => {}
+
+            Refresh => {
+                // technically unnecessary? it would be nice to only wake
+                // on state changes
+                waker.wake();
+            }
+
+            Touch(_touch) => {}
+            HiDpiFactorChanged(new_factor) => {
+                info!("DPI factor changed, is now {}", new_factor);
+            }
         }
 
         waker.wake();
@@ -102,7 +159,7 @@ pub fn surface_impl(compose: Scope) {
         let size = window
             .get_inner_size()
             .unwrap()
-            .to_physical(device_pixel_ratio as f64);
+            .to_physical(f64::from(device_pixel_ratio));
         DeviceIntSize::new(size.width as i32, size.height as i32)
     };
 

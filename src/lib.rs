@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+#![allow(clippy::unused_unit)]
 #![feature(await_macro, futures_api, async_await, integer_atomics, gen_future)]
 
 #[macro_use]
@@ -89,6 +91,12 @@ impl Composer {
     }
 }
 
+impl Default for Composer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[salsa::query_group(ComponentStorage)]
 pub trait Components: Runtime {
     #[salsa::input]
@@ -96,6 +104,7 @@ pub trait Components: Runtime {
     #[salsa::input]
     fn top_level_exit(&self) -> AbortHandle;
 
+    // TODO replace this salsa annotation with passing a scope directly
     #[salsa::dependencies]
     fn surface(&self, parent: ScopeId) -> ();
 }
