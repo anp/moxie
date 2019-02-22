@@ -1,5 +1,6 @@
 use {
     crate::{events::WindowEvents, prelude::*},
+    futures::future::AbortHandle,
     gleam::gl,
     glutin::{GlContext, GlWindow},
     webrender::api::*,
@@ -14,7 +15,12 @@ pub fn surface(compose: &impl Components, key: ScopeId) {
     surface_impl(compose);
 }
 
-async fn handle_events(this_window: WindowId, mut events: WindowEvents, waker: Waker) {
+async fn handle_events(
+    this_window: WindowId,
+    mut events: WindowEvents,
+    waker: Waker,
+    top_level_exit: AbortHandle,
+) {
     'top: while let Some(event) = await!(events.next()) {
         let event = match event.inner {
             winit::Event::WindowEvent {
@@ -26,8 +32,16 @@ async fn handle_events(this_window: WindowId, mut events: WindowEvents, waker: W
         };
         trace!("handling event {:?}", event);
 
-        // TODO handle window close event
-        // TODO handle events?
+        use winit::WindowEvent::*;
+        match event {
+            CloseRequested => {
+                info!("close requested. exiting.");
+                top_level_exit.abort();
+                futures::pending!(); // so nothing else in this task fires accidentally
+            }
+            _ => {}
+        }
+
         waker.wake();
     }
 }
@@ -62,7 +76,12 @@ pub fn surface_impl(compose: Scope) {
 
         compose.task(
             callsite!(key),
-            handle_events(window_id, events, compose.waker()),
+            handle_events(
+                window_id,
+                events,
+                compose.waker(),
+                compose.top_level_exit_handle(),
+            ),
         );
 
         (window, notifier)

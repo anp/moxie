@@ -26,7 +26,11 @@ pub mod prelude {
 use {
     crate::{prelude::*, scope::Scope},
     chashmap::CHashMap,
-    futures::{executor::ThreadPool, pending},
+    futures::{
+        executor::ThreadPool,
+        future::{AbortHandle, Abortable},
+        pending,
+    },
     salsa::Database as SalsaBowl,
 };
 
@@ -53,21 +57,31 @@ impl Composer {
         }
     }
 
-    pub fn start(mut self) {
+    pub fn start(self) {
         let mut exec = self.exec.clone();
 
-        info!("starting threadpool");
-        exec.run(
+        let (exit_handle, exit_registration) = AbortHandle::new_pair();
+        let main_loop = Abortable::new(
             async {
+                let mut compose = self;
                 // make sure we can be woken back up
-                std::future::get_task_waker(|lw| self.set_waker(lw.clone().into()));
+                std::future::get_task_waker(|lw| compose.set_waker(lw.clone().into()));
+                // make sure we can be exited
+                compose.set_top_level_exit(exit_handle);
+
                 loop {
                     trace!("composing surface");
-                    self.surface(scope!());
+                    compose.surface(scope!());
+
+                    // unless we stash our own waker above, we'll never get woken again, be careful
                     pending!();
                 }
             },
+            exit_registration,
         );
+
+        info!("running top-level composition loop");
+        exec.run(main_loop).unwrap();
     }
 
     fn spawner(&self) -> Spawner {
@@ -79,6 +93,8 @@ impl Composer {
 pub trait Components: Runtime {
     #[salsa::input]
     fn waker(&self) -> Waker;
+    #[salsa::input]
+    fn top_level_exit(&self) -> AbortHandle;
 
     #[salsa::dependencies]
     fn surface(&self, parent: ScopeId) -> ();
@@ -93,7 +109,9 @@ impl Runtime for Composer {
         let mut port = None;
 
         self.states.alter(id, |prev: Option<Scope>| {
-            let current = prev.unwrap_or_else(|| Scope::new(id, self.spawner(), self.waker()));
+            let current = prev.unwrap_or_else(|| {
+                Scope::new(id, self.spawner(), self.waker(), self.top_level_exit())
+            });
             port = Some(current.clone());
             Some(current)
         });

@@ -1,7 +1,7 @@
 use {
     crate::prelude::*,
     chashmap::CHashMap,
-    futures::task::Spawn,
+    futures::{future::AbortHandle, task::Spawn},
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
         any::{Any, TypeId},
@@ -25,12 +25,19 @@ pub struct Scope {
     states: ScopedStateCells,
     spawner: Arc<Mutex<crate::Spawner>>,
     waker: Waker,
+    exit: AbortHandle,
 }
 
 impl Scope {
-    pub(crate) fn new(id: ScopeId, spawner: crate::Spawner, waker: Waker) -> Self {
+    pub(crate) fn new(
+        id: ScopeId,
+        spawner: crate::Spawner,
+        waker: Waker,
+        exit: AbortHandle,
+    ) -> Self {
         Self {
             id,
+            exit,
             waker,
             spawner: Arc::new(Mutex::new(spawner)),
             states: Default::default(),
@@ -68,6 +75,10 @@ impl Scope {
 
     pub(crate) fn waker(&self) -> Waker {
         self.waker.clone()
+    }
+
+    pub(crate) fn top_level_exit_handle(&self) -> AbortHandle {
+        self.exit.clone()
     }
 }
 
