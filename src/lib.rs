@@ -7,6 +7,7 @@ extern crate rental;
 
 #[macro_use]
 pub mod scope;
+mod drop_guard;
 mod events;
 mod surface;
 
@@ -83,7 +84,7 @@ impl Composer {
         );
 
         info!("running top-level composition loop");
-        exec.run(main_loop).unwrap();
+        let _ = exec.run(main_loop);
     }
 
     fn spawner(&self) -> Spawner {

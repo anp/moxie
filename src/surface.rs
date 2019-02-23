@@ -169,7 +169,7 @@ pub fn surface_impl(compose: Scope) {
         info!("OpenGL version {}", gl.get_string(gl::VERSION));
         info!("Device pixel ratio: {}", device_pixel_ratio);
 
-        webrender::Renderer::new(
+        let (renderer, sender) = webrender::Renderer::new(
             gl.clone(),
             (*notifier).clone(),
             webrender::RendererOptions {
@@ -180,7 +180,12 @@ pub fn surface_impl(compose: Scope) {
             },
             None,
         )
-        .unwrap()
+        .unwrap();
+
+        // webrender is not happy if we fail to deinit the renderer by ownership before its Drop impl runs
+        let renderer = crate::drop_guard::DropGuard::new(renderer, |r| r.deinit());
+
+        (renderer, sender)
     });
 
     let api = compose.state(callsite!(key), || renderer.1.create_api());
