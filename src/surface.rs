@@ -5,14 +5,14 @@ use {
     glutin::{GlContext, GlWindow},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
-    winit::WindowId,
+    winit::{dpi::LogicalSize, WindowId},
 };
 
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl Components, key: ScopeId) {
+pub fn surface(compose: &impl Components, key: ScopeId, width: u32, height: u32) {
     // get the state port for the whole scope
     let compose = compose.scope(key);
-    surface_impl(compose);
+    surface_impl(compose, (width, height).into());
 }
 
 async fn handle_events(
@@ -39,7 +39,9 @@ async fn handle_events(
                 top_level_exit.abort();
                 futures::pending!(); // so nothing else in this task fires accidentally
             }
-            Resized(_new_size) => {}
+            Resized(new_size) => {
+                debug!("resized: {:?}", new_size);
+            }
             Moved(_new_position) => {}
             DroppedFile(_path) => {}
             HoveredFile(_path) => {}
@@ -103,7 +105,7 @@ async fn handle_events(
     }
 }
 
-pub fn surface_impl(compose: Scope) {
+pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     let key = compose.id;
     let (window, notifier) = &*compose.state(callsite!(key), || {
         let events = WindowEvents::new();
@@ -113,7 +115,7 @@ pub fn surface_impl(compose: Scope) {
             winit::WindowBuilder::new()
                 .with_title("moxie is alive?")
                 .with_multitouch()
-                .with_dimensions(winit::dpi::LogicalSize::new(1920.0, 1080.0)),
+                .with_dimensions(initial_size),
             glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
                 opengl_version: (3, 2),
                 opengles_version: (3, 0),

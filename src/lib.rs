@@ -74,7 +74,7 @@ impl Composer {
 
                 loop {
                     trace!("composing surface");
-                    compose.surface(scope!());
+                    compose.surface(scope!(), 1920, 1080);
 
                     // unless we stash our own waker above, we'll never get woken again, be careful
                     pending!();
@@ -107,7 +107,7 @@ pub trait Components: Runtime {
 
     // TODO replace this salsa annotation with passing a scope directly
     #[salsa::dependencies]
-    fn surface(&self, parent: ScopeId) -> ();
+    fn surface(&self, parent: ScopeId, width: u32, height: u32) -> ();
 }
 
 pub trait Runtime: SalsaBowl {
