@@ -1,11 +1,18 @@
 use {
     crate::{events::WindowEvents, prelude::*},
-    futures::future::AbortHandle,
+    futures::{
+        channel::mpsc::{channel, Sender},
+        future::AbortHandle,
+        sink::SinkExt,
+    },
     gleam::gl,
     glutin::{GlContext, GlWindow},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
-    winit::{dpi::LogicalSize, WindowId},
+    winit::{
+        dpi::{LogicalPosition, LogicalSize},
+        WindowId,
+    },
 };
 
 // FIXME: fns that take children work with salsa
@@ -20,6 +27,7 @@ async fn handle_events(
     mut events: WindowEvents,
     waker: Waker,
     top_level_exit: AbortHandle,
+    mut send_mouse_positions: Sender<CursorMoved>,
 ) {
     'top: while let Some(event) = await!(events.next()) {
         let event = match event.inner {
@@ -54,9 +62,13 @@ async fn handle_events(
             } => {}
             CursorMoved {
                 device_id: _device_id,
-                position: _position,
+                position,
                 modifiers: _modifiers,
-            } => {}
+            } => {
+                let _ = await!(send_mouse_positions.send(self::CursorMoved {
+                    position: *position
+                }));
+            }
             CursorEntered {
                 device_id: _device_id,
             } => {}
@@ -105,8 +117,11 @@ async fn handle_events(
     }
 }
 
+// FIXME `compose: Scope` -> `compose: impl Component`
 pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     let key = compose.id;
+
+    let (send_mouse_positions, mut mouse_positions) = channel(100);
     let (window, notifier) = &*compose.state(callsite!(key), || {
         let events = WindowEvents::new();
 
@@ -140,6 +155,7 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
                 events,
                 compose.waker(),
                 compose.top_level_exit_handle(),
+                send_mouse_positions,
             ),
         );
 
@@ -166,7 +182,7 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     };
 
     // TODO split returned state tuples?
-    let mut renderer = compose.state(callsite!(key), || {
+    let renderer = compose.state(callsite!(key), || {
         debug!("creating webrender renderer");
         info!("OpenGL version {}", gl.get_string(gl::VERSION));
         info!("Device pixel ratio: {}", device_pixel_ratio);
@@ -187,10 +203,10 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
         // webrender is not happy if we fail to deinit the renderer by ownership before its Drop impl runs
         let renderer = crate::drop_guard::DropGuard::new(renderer, |r| r.deinit());
 
-        (renderer, sender)
+        (Arc::new(Mutex::new(renderer)), Arc::new(Mutex::new(sender)))
     });
 
-    let api = compose.state(callsite!(key), || renderer.1.create_api());
+    let api = compose.state(callsite!(key), || renderer.1.lock().create_api());
 
     let document_id = compose.state(callsite!(key), || api.add_document(framebuffer_size, 0));
 
@@ -207,22 +223,38 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
 
     // FIXME render child functions here
 
+    // this is just some event system messing around stuff
+    let color = compose.state(callsite!(key), || ColorF::new(0.3, 0.0, 0.0, 1.0));
+    // let color_hdl: Handle<_> = color.handle();
+    // compose.task(
+    //     callsite!(key),
+    //     async move {
+    //         let color = color_hdl;
+    //         while let Some(cursor_moved) = await!(mouse_positions.next()) {
+    //             color.set(|_prev_color| fun_color_from_mouse_position(cursor_moved.position));
+    //         }
+    //     },
+    // );
+
     trace!("setting display list, generating frame, and sending transaction");
-    txn.set_display_list(
-        epoch,
-        Some(ColorF::new(0.3, 0.0, 0.0, 1.0)),
-        layout_size,
-        builder.finalize(),
-        true,
-    );
+    txn.set_display_list(epoch, Some(*color), layout_size, builder.finalize(), true);
     txn.generate_frame();
     api.send_transaction(*document_id, txn);
-    renderer.0.update();
+    let mut renderer = renderer.0.lock();
+    renderer.update();
 
     trace!("rendering");
-    renderer.0.render(framebuffer_size).unwrap();
-    let _ = renderer.0.flush_pipeline_info();
+    renderer.render(framebuffer_size).unwrap();
+    let _ = renderer.flush_pipeline_info();
 
     trace!("swapping buffers");
     window.swap_buffers().unwrap();
+}
+
+struct CursorMoved {
+    position: LogicalPosition,
+}
+
+fn fun_color_from_mouse_position(pos: LogicalPosition) -> ColorF {
+    unimplemented!()
 }

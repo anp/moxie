@@ -6,20 +6,26 @@
 extern crate rental;
 
 #[macro_use]
-pub mod scope;
+pub mod component;
 mod drop_guard;
 mod events;
+pub mod state;
 mod surface;
 
 // TODO split into public/private preludes
 pub mod prelude {
     pub use {
         crate::{
-            scope::{CallsiteId, Guard, Handle, Moniker, Scope, ScopeId},
+            component::{CallsiteId, Compose, Moniker, Scope, ScopeId},
+            state::{Guard, Handle},
             surface::surface,
-            {Components, Composer},
+            {Components, Runtime},
         },
-        futures::stream::{Stream, StreamExt},
+        futures::{
+            future::{Aborted, FutureExt},
+            stream::{Stream, StreamExt},
+            task::Spawn,
+        },
         log::{debug, error, info, trace, warn},
         parking_lot::Mutex,
         std::{future::Future, sync::Arc, task::Waker},
@@ -27,50 +33,41 @@ pub mod prelude {
 }
 
 use {
-    crate::{prelude::*, scope::Scope},
+    crate::{component::Scope, prelude::*},
     chashmap::CHashMap,
     futures::{
-        executor::ThreadPool,
-        future::{AbortHandle, Abortable},
+        future::{AbortHandle, Abortable, FutureObj},
         pending,
     },
     salsa::Database as SalsaBowl,
 };
 
-pub fn run() {
-    let compose = Composer::new();
-    compose.start();
-}
-
 /// A `Composer` is the primary entry point to moxie's runtime systems. It contains the salsa
 /// incremental storage, a futures executor, interners, and is passed to every composable function.
 #[salsa::database(ComponentStorage)]
-pub struct Composer {
-    runtime: salsa::Runtime<Composer>,
+pub struct Runtime {
+    runtime: salsa::Runtime<Self>,
     states: CHashMap<ScopeId, Scope>,
-    exec: ThreadPool,
 }
 
-impl Composer {
+impl Runtime {
     pub fn new() -> Self {
         Self {
             runtime: salsa::Runtime::default(),
             states: CHashMap::default(),
-            exec: ThreadPool::new().unwrap(),
         }
     }
 
-    pub fn start(self) {
-        let mut exec = self.exec.clone();
-
+    pub async fn run(self, task_spawner: impl Spawn + Send + 'static) {
         let (exit_handle, exit_registration) = AbortHandle::new_pair();
-        let main_loop = Abortable::new(
+        let _ = await!(Abortable::new(
             async {
                 let mut compose = self;
                 // make sure we can be woken back up
                 std::future::get_task_waker(|lw| compose.set_waker(lw.clone().into()));
                 // make sure we can be exited
                 compose.set_top_level_exit(exit_handle);
+                compose.set_spawner(Spawner::new(task_spawner));
 
                 loop {
                     trace!("composing surface");
@@ -81,27 +78,23 @@ impl Composer {
                 }
             },
             exit_registration,
-        );
-
-        info!("running top-level composition loop");
-        let _ = exec.run(main_loop);
-    }
-
-    fn spawner(&self) -> Spawner {
-        Spawner(self.exec.clone())
+        ));
+        info!("main runtime loop has ended");
     }
 }
 
-impl Default for Composer {
+impl Default for Runtime {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[salsa::query_group(ComponentStorage)]
-pub trait Components: Runtime {
+pub trait Components: ComponentRuntime {
     #[salsa::input]
     fn waker(&self) -> Waker;
+    #[salsa::input]
+    fn spawner(&self) -> Spawner;
     #[salsa::input]
     fn top_level_exit(&self) -> AbortHandle;
 
@@ -110,11 +103,11 @@ pub trait Components: Runtime {
     fn surface(&self, parent: ScopeId, width: u32, height: u32) -> ();
 }
 
-pub trait Runtime: SalsaBowl {
+pub trait ComponentRuntime: SalsaBowl {
     fn scope(&self, scope: ScopeId) -> Scope;
 }
 
-impl Runtime for Composer {
+impl ComponentRuntime for Runtime {
     fn scope(&self, id: ScopeId) -> Scope {
         let mut port = None;
 
@@ -130,21 +123,29 @@ impl Runtime for Composer {
     }
 }
 
-impl SalsaBowl for Composer {
-    fn salsa_runtime(&self) -> &salsa::Runtime<Composer> {
+impl SalsaBowl for Runtime {
+    fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
         &self.runtime
     }
 }
 
-/// A handle to the main executor to spawn additional futures.
-#[derive(Clone, Debug)]
-struct Spawner(futures::executor::ThreadPool);
+#[derive(Clone)]
+pub struct Spawner(Arc<Mutex<dyn Spawn + Send + 'static>>);
+
+impl Spawner {
+    fn new(s: impl Spawn + Send + 'static) -> Self {
+        Spawner(Arc::new(Mutex::new(s)))
+    }
+}
+
+impl std::fmt::Debug for Spawner {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(fmt, "spawner")
+    }
+}
 
 impl futures::task::Spawn for Spawner {
-    fn spawn_obj(
-        &mut self,
-        future: futures::future::FutureObj<'static, ()>,
-    ) -> Result<(), futures::task::SpawnError> {
-        self.0.spawn_obj(future)
+    fn spawn_obj(&mut self, fut: FutureObj<'static, ()>) -> Result<(), futures::task::SpawnError> {
+        self.0.lock().spawn_obj(fut)
     }
 }

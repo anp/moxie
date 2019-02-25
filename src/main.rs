@@ -11,5 +11,8 @@ fn main() {
         .init();
     log::debug!("logger initialized");
 
-    moxie::run();
+    let runtime = moxie::Runtime::new();
+    let mut executor = futures::executor::ThreadPool::new().unwrap();
+    let spawner = executor.clone();
+    executor.run(runtime.run(spawner));
 }

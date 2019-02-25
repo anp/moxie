@@ -1,16 +1,11 @@
 use {
-    crate::prelude::*,
+    crate::{component::Revision, prelude::*},
     futures::{
         stream::Stream,
         task::{LocalWaker, Poll, Waker},
     },
     parking_lot::Mutex,
-    std::{
-        collections::VecDeque,
-        pin::Pin,
-        sync::atomic::{AtomicU64, Ordering},
-        sync::Arc,
-    },
+    std::{collections::VecDeque, pin::Pin, sync::Arc},
     time::Duration,
     timer::{Guard, Timer},
     webrender::api::RenderNotifier,
@@ -153,28 +148,6 @@ fn try_wake(waker: &Arc<Mutex<Option<Waker>>>) {
     let waker: Option<&Waker> = waker.as_ref();
     if let Some(waker) = waker {
         waker.wake();
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Revision(u64);
-
-static CURRENT_REVISION: AtomicU64 = AtomicU64::new(0);
-
-impl Revision {
-    // /// Get the current revision, or "tick". Every event recieved advances the revision by 1, so
-    // /// not all revisions will cause a recomposition to be executed, and so an even smaller number
-    // /// will cause a new frame to be generated.
-    // pub fn current() -> Self {
-    //     Self(CURRENT_REVISION.load(Ordering::Relaxed))
-    // }
-
-    /// Get the next revision, advancing the global revision counter by 1.
-    ///
-    /// Note: this is private because user-defined code should be able to percieve the passage of
-    /// time, but only the event system should be able to drive it forward.
-    fn next() -> Self {
-        Self(CURRENT_REVISION.fetch_add(1, Ordering::Relaxed))
     }
 }
 

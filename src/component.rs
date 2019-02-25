@@ -1,19 +1,35 @@
 use {
-    crate::prelude::*,
-    chashmap::CHashMap,
-    futures::{future::AbortHandle, task::Spawn},
-    parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
+    crate::{prelude::*, state::*},
+    futures::future::AbortHandle,
+    parking_lot::{Mutex, MutexGuard},
     std::{
-        any::{Any, TypeId},
-        sync::Arc,
+        any::Any,
+        sync::{
+            atomic::{AtomicU64, Ordering},
+            Arc,
+        },
     },
 };
 
-type ScopedStateCells = Arc<CHashMap<CallsiteId, StateCell>>;
-type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
+pub trait Compose {
+    fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
+    fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    where
+        F: Future<Output = ()> + Send + 'static;
+}
 
-// FIXME scope needs to include a revision, and components should be given a handle to the scope,
-// there should only be one canonical one at a time, rather than having a bunch of split up handles
+// pub trait Compose {
+//     // FIXME offer a thread-local state so this can be Send again?
+//     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
+//     fn task<F>(&self, _callsite: CallsiteId, fut: F)
+//     where
+//         F: Future<Output = ()> + Send + 'static;
+//     // TODO define `try_task` method too, for potentially fallible tasks?
+//     // what should the behavior on error be then? emitting some error event?
+//     // could reset the component state, treat it like a redraw of this subtree?
+//     // maybe have some `Fallible` component?
+
+// }
 
 /// Provides a component with access to the persistent state store and futures executor.
 ///
@@ -22,7 +38,8 @@ type StateCell = Arc<(TypeId, Mutex<Box<Any + 'static>>)>;
 #[derive(Clone, Debug)]
 pub struct Scope {
     pub id: ScopeId,
-    states: ScopedStateCells,
+    pub revision: Arc<Revision>,
+    states: States,
     spawner: Arc<Mutex<crate::Spawner>>,
     waker: Waker,
     exit: AbortHandle,
@@ -37,40 +54,12 @@ impl Scope {
     ) -> Self {
         Self {
             id,
+            revision: Arc::new(Revision::current()),
             exit,
             waker,
             spawner: Arc::new(Mutex::new(spawner)),
             states: Default::default(),
         }
-    }
-
-    #[inline]
-    pub fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
-        let id = TypeId::of::<S>();
-
-        let mut cell = None;
-
-        self.states.alter(callsite, |prev| {
-            if let Some(p) = prev {
-                cell = Some(p);
-            } else {
-                let initialized = f();
-                cell = Some(Arc::new((id, Mutex::new(Box::new(initialized)))))
-            }
-            cell.clone()
-        });
-
-        Guard(RentedGuard::new(cell.unwrap(), |cell| {
-            MutexGuard::map(cell.1.lock(), |any| any.downcast_mut().unwrap())
-        }))
-    }
-
-    pub fn task<F>(&self, _callsite: CallsiteId, fut: F)
-    where
-        F: Future<Output = ()> + Send + 'static,
-    {
-        // TODO make this abortable on scope drop
-        self.spawner.lock().spawn_obj(Box::new(fut).into()).unwrap();
     }
 
     pub(crate) fn waker(&self) -> Waker {
@@ -82,6 +71,47 @@ impl Scope {
     }
 }
 
+impl Compose for Scope {
+    #[inline]
+    fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
+        let mut cell = None;
+
+        self.states.alter(callsite, |prev| {
+            if let Some(p) = prev {
+                cell = Some(p);
+            } else {
+                let initialized = f();
+                cell = Some(Arc::new(StateCell::new(
+                    Arc::downgrade(&self.revision),
+                    initialized,
+                )));
+            }
+            cell.clone()
+        });
+
+        let cell = cell.unwrap();
+
+        Guard {
+            cell: cell.downgrade(),
+            rented: crate::state::RentedGuard::new(cell, |cell| {
+                MutexGuard::map((*cell).0.contents.lock(), |any| any.downcast_mut().unwrap())
+            }),
+        }
+    }
+
+    fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        // TODO tie the span of this task's execution to the scope
+        // TODO catch panics and abort runtime?
+        use futures::task::Spawn;
+        (*self.spawner.lock())
+            .spawn_obj(Box::new(fut).into())
+            .unwrap();
+    }
+}
+
 impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && Arc::ptr_eq(&self.states, &other.states)
@@ -89,46 +119,6 @@ impl PartialEq for Scope {
 }
 
 impl Eq for Scope {}
-
-rental::rental! {
-    pub mod rent_state {
-        use super::*;
-
-        /// A `Guard` provides a reference to state in the database. It is returned by
-        /// the `state!` macro and can also be used to later enqueue mutations for the state
-        /// database.
-        #[rental(deref_suffix, deref_mut_suffix)]
-        pub struct Guard<S: 'static> {
-            cell: StateCell,
-            guard: MappedMutexGuard<'cell, S>,
-        }
-    }
-}
-use rent_state::Guard as RentedGuard;
-
-pub struct Guard<S: 'static>(RentedGuard<S>);
-
-impl<S: 'static> std::ops::Deref for Guard<S> {
-    type Target = S;
-    fn deref(&self) -> &Self::Target {
-        &*self.0
-    }
-}
-
-impl<S: 'static> std::ops::DerefMut for Guard<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.0
-    }
-}
-
-/// A `Handle` provides access to a portion of the state database for use outside of composition.
-/// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.
-///
-/// A `Handle` doesn't directly capture any values from the state database, and instead acquires
-/// the appropriate locks when `set` is called.
-pub struct Handle<S> {
-    __ty_marker: std::marker::PhantomData<S>,
-}
 
 /// A `Moniker` represents the coordinates of a code location in the render hierarchy.
 ///
@@ -200,4 +190,26 @@ macro_rules! callsite {
     ($parent:expr) => {
         $crate::prelude::CallsiteId::new($parent, moniker!($parent))
     };
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Revision(u64);
+
+static CURRENT_REVISION: AtomicU64 = AtomicU64::new(0);
+
+impl Revision {
+    // /// Get the current revision, or "tick". Every event recieved advances the revision by 1, so
+    // /// not all revisions will cause a recomposition to be executed, and so an even smaller number
+    // /// will cause a new frame to be generated.
+    pub fn current() -> Self {
+        Self(CURRENT_REVISION.load(Ordering::Relaxed))
+    }
+
+    /// Get the next revision, advancing the global revision counter by 1.
+    ///
+    /// Note: this is private because user-defined code should be able to percieve the passage of
+    /// time, but only the event system should be able to drive it forward.
+    pub(crate) fn next() -> Self {
+        Self(CURRENT_REVISION.fetch_add(1, Ordering::Relaxed))
+    }
 }
