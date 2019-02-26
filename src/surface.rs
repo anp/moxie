@@ -225,16 +225,18 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
 
     // this is just some event system messing around stuff
     let color = compose.state(callsite!(key), || ColorF::new(0.3, 0.0, 0.0, 1.0));
-    // let color_hdl: Handle<_> = color.handle();
-    // compose.task(
-    //     callsite!(key),
-    //     async move {
-    //         let color = color_hdl;
-    //         while let Some(cursor_moved) = await!(mouse_positions.next()) {
-    //             color.set(|_prev_color| fun_color_from_mouse_position(cursor_moved.position));
-    //         }
-    //     },
-    // );
+    let color_hdl: Handle<ColorF> = color.handle();
+    compose.task(
+        callsite!(key),
+        async move {
+            let color = color_hdl;
+            while let Some(cursor_moved) = await!(mouse_positions.next()) {
+                color.set(|_prev_color| {
+                    fun_color_from_mouse_position(initial_size, cursor_moved.position)
+                });
+            }
+        },
+    );
 
     trace!("setting display list, generating frame, and sending transaction");
     txn.set_display_list(epoch, Some(*color), layout_size, builder.finalize(), true);
@@ -255,6 +257,14 @@ struct CursorMoved {
     position: LogicalPosition,
 }
 
-fn fun_color_from_mouse_position(pos: LogicalPosition) -> ColorF {
-    unimplemented!()
+fn fun_color_from_mouse_position(window_size: LogicalSize, pos: LogicalPosition) -> ColorF {
+    let x_factor = (pos.x / window_size.width) as f32;
+    let y_factor = (pos.y / window_size.height) as f32;
+
+    ColorF {
+        r: x_factor,
+        g: x_factor,
+        b: y_factor,
+        a: y_factor,
+    }
 }

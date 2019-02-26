@@ -1,67 +1,115 @@
 use {
-    crate::{component::Revision, prelude::*},
+    crate::prelude::*,
     chashmap::CHashMap,
-    parking_lot::{MappedMutexGuard, Mutex},
+    parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
         any::{Any, TypeId},
-        sync::{Arc, Weak},
+        sync::{
+            atomic::{AtomicU64, Ordering},
+            Arc, Weak,
+        },
     },
 };
 
-pub(crate) type States = Arc<CHashMap<CallsiteId, Arc<StateCell>>>;
-
 #[derive(Clone, Debug)]
-pub(crate) struct StateCell(pub(crate) Arc<StateCellInner>);
-
-impl StateCell {
-    pub(crate) fn new<State: 'static>(scope_revision: Weak<Revision>, state: State) -> Self {
-        let ty = TypeId::of::<State>();
-        let contents = Mutex::new(Box::new(state) as Box<Any>);
-        StateCell(Arc::new(StateCellInner {
-            ty,
-            contents,
-            scope_revision,
-        }))
-    }
-
-    pub(crate) fn downgrade(&self) -> WeakStateCell {
-        WeakStateCell(Arc::downgrade(&self.0))
-    }
+pub(crate) struct States {
+    revision: Arc<AtomicU64>,
+    contents: Arc<CHashMap<CallsiteId, Arc<StateCell>>>,
 }
 
-pub(crate) struct WeakStateCell(Weak<StateCellInner>);
+impl States {
+    pub(crate) fn get_or_init<State: 'static>(
+        &self,
+        callsite: CallsiteId,
+        init: impl FnOnce() -> State,
+    ) -> Guard<State> {
+        let mut cell = None;
 
-impl WeakStateCell {
-    fn upgrade(&self) -> Option<StateCell> {
-        self.0.upgrade().map(StateCell)
-    }
-}
+        self.contents.alter(callsite, |prev| {
+            if let Some(p) = prev {
+                cell = Some(p);
+            } else {
+                // FIXME handle panics in the init fn properly
+                let initialized = init();
+                cell = Some(Arc::new(StateCell::new(
+                    Arc::downgrade(&self.revision),
+                    initialized,
+                )));
+            }
+            cell.clone()
+        });
 
-#[derive(Debug)]
-pub(crate) struct StateCellInner {
-    pub(crate) scope_revision: Weak<Revision>,
-    pub(crate) ty: TypeId,
-    pub(crate) contents: Mutex<Box<Any + 'static>>,
-}
+        let cell = cell.unwrap();
 
-// FIXME scope needs to include a revision, and components should be given a handle to the scope,
-// there should only be one canonical one at a time, rather than having a bunch of split up handles
+        Guard {
+            cell: cell.downgrade(),
+            rented: crate::state::RentedGuard::new(cell, |cell| {
+                MutexGuard::map((*cell).0.contents.lock(), |any| {
+                    let anon: &mut Box<Any> = any.as_mut().unwrap();
 
-rental::rental! {
-    pub mod rent_state {
-        use super::*;
+                    let casted: &mut Option<State> = anon.downcast_mut().unwrap();
 
-        /// A `Guard` provides a reference to state in the database. It is returned by
-        /// the `state!` macro and can also be used to later enqueue mutations for the state
-        /// database.
-        #[rental(deref_suffix, deref_mut_suffix)]
-        pub(crate) struct Guard<S: 'static> {
-            cell: Arc<StateCell>,
-            guard: MappedMutexGuard<'cell, S>,
+                    casted.as_mut().unwrap()
+                })
+            }),
         }
     }
 }
-pub(crate) use rent_state::Guard as RentedGuard;
+
+impl Default for States {
+    fn default() -> Self {
+        States {
+            revision: Arc::new(AtomicU64::new(0)),
+            contents: Arc::new(CHashMap::new()),
+        }
+    }
+}
+
+impl PartialEq for States {
+    fn eq(&self, other: &Self) -> bool {
+        self.revision.load(Ordering::SeqCst) == other.revision.load(Ordering::SeqCst)
+            && Arc::ptr_eq(&self.contents, &other.contents)
+    }
+}
+
+/// A `Handle` provides access to a portion of the state database for use outside of composition.
+/// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.
+///
+/// A `Handle` doesn't directly capture any values from the state database, and instead acquires
+/// the appropriate locks when `set` is called.
+pub struct Handle<S> {
+    cell: WeakStateCell,
+    __ty_marker: std::marker::PhantomData<S>,
+}
+
+// FIXME this is a huge safety/soundness hole!
+unsafe impl<S> Send for Handle<S> {}
+
+impl<State: 'static> Handle<State> {
+    // TODO if the type impls Hash, we should see whether we can skip updating the revision
+    pub fn set(&self, updater: impl FnOnce(State) -> State) {
+        if let Some(cell) = self.cell.upgrade() {
+            // FIXME handle panics in the updater
+
+            let mut inner = cell.0.contents.lock();
+            let inner: &mut Option<Box<Any>> = &mut *inner;
+            let inner: &mut Option<State> = inner
+                .as_mut()
+                .map(|anon| {
+                    anon.downcast_mut()
+                        .expect("failed type cast from state cell")
+                })
+                .unwrap();
+
+            let prev: State = inner.take().unwrap();
+
+            // FIXME should be panic-safe
+            let new = updater(prev);
+            inner.replace(new);
+            cell.tick_revision();
+        }
+    }
+}
 
 pub struct Guard<S: 'static> {
     pub(crate) cell: WeakStateCell,
@@ -71,7 +119,7 @@ pub struct Guard<S: 'static> {
 impl<State: 'static> Guard<State> {
     pub fn handle(&self) -> Handle<State> {
         Handle {
-            cell: self.cell.upgrade().unwrap(),
+            cell: self.cell.clone(),
             __ty_marker: std::marker::PhantomData,
         }
     }
@@ -90,25 +138,67 @@ impl<S: 'static> std::ops::DerefMut for Guard<S> {
     }
 }
 
-/// A `Handle` provides access to a portion of the state database for use outside of composition.
-/// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.
-///
-/// A `Handle` doesn't directly capture any values from the state database, and instead acquires
-/// the appropriate locks when `set` is called.
-pub struct Handle<S> {
-    cell: StateCell,
-    __ty_marker: std::marker::PhantomData<S>,
-}
+#[derive(Clone, Debug)]
+pub(crate) struct StateCell(Arc<StateCellInner>);
 
-impl<State> Handle<State> {
-    pub fn set(&self, updater: impl FnOnce(State) -> State) {
-        unimplemented!()
+impl StateCell {
+    fn new<State: 'static>(scope_revision: Weak<AtomicU64>, state: State) -> Self {
+        let ty = TypeId::of::<State>();
+        let contents: Box<Option<State>> = Box::new(Some(state));
+        let contents = Mutex::new(Some(contents as Box<Any>));
+        StateCell(Arc::new(StateCellInner {
+            ty,
+            contents,
+            scope_revision,
+        }))
+    }
+
+    fn downgrade(&self) -> WeakStateCell {
+        WeakStateCell(Arc::downgrade(&self.0))
+    }
+
+    fn tick_revision(&self) {
+        self.0
+            .scope_revision
+            .upgrade()
+            .map(|inner| inner.fetch_add(1, Ordering::SeqCst));
     }
 }
 
-impl<State> std::ops::Deref for Handle<State> {
-    type Target = State;
-    fn deref(&self) -> &Self::Target {
-        unimplemented!()
+#[derive(Clone, Debug)]
+pub(crate) struct WeakStateCell(Weak<StateCellInner>);
+
+impl WeakStateCell {
+    fn upgrade(&self) -> Option<StateCell> {
+        self.0.upgrade().map(StateCell)
     }
 }
+
+#[derive(Debug)]
+pub(crate) struct StateCellInner {
+    scope_revision: Weak<AtomicU64>,
+    ty: TypeId,
+    contents: AnonymousState,
+}
+
+// TODO make this have a send bound in the default case
+type AnonymousState = Mutex<Option<Box<Any + 'static>>>;
+
+// FIXME scope needs to include a revision, and components should be given a handle to the scope,
+// there should only be one canonical one at a time, rather than having a bunch of split up handles
+
+rental::rental! {
+    mod rent_state {
+        use super::*;
+
+        /// A `Guard` provides a reference to state in the database. It is returned by
+        /// the `state!` macro and can also be used to later enqueue mutations for the state
+        /// database.
+        #[rental(deref_suffix, deref_mut_suffix)]
+        pub(crate) struct Guard<S: 'static> {
+            cell: Arc<StateCell>,
+            guard: MappedMutexGuard<'cell, S>,
+        }
+    }
+}
+use rent_state::Guard as RentedGuard;

@@ -1,35 +1,23 @@
 use {
     crate::{prelude::*, state::*},
     futures::future::AbortHandle,
-    parking_lot::{Mutex, MutexGuard},
     std::{
         any::Any,
-        sync::{
-            atomic::{AtomicU64, Ordering},
-            Arc,
-        },
+        sync::{atomic::AtomicU64, Arc},
     },
 };
 
 pub trait Compose {
+    // FIXME offer a thread-local state so this can be Send again?
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static;
+    // TODO define `try_task` method too, for potentially fallible tasks?
+    // what should the behavior on error be then? emitting some error event?
+    // could reset the component state, treat it like a redraw of this subtree?
+    // maybe have some `Fallible` component?
 }
-
-// pub trait Compose {
-//     // FIXME offer a thread-local state so this can be Send again?
-//     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
-//     fn task<F>(&self, _callsite: CallsiteId, fut: F)
-//     where
-//         F: Future<Output = ()> + Send + 'static;
-//     // TODO define `try_task` method too, for potentially fallible tasks?
-//     // what should the behavior on error be then? emitting some error event?
-//     // could reset the component state, treat it like a redraw of this subtree?
-//     // maybe have some `Fallible` component?
-
-// }
 
 /// Provides a component with access to the persistent state store and futures executor.
 ///
@@ -38,7 +26,7 @@ pub trait Compose {
 #[derive(Clone, Debug)]
 pub struct Scope {
     pub id: ScopeId,
-    pub revision: Arc<Revision>,
+    pub revision: Arc<AtomicU64>,
     states: States,
     spawner: Arc<Mutex<crate::Spawner>>,
     waker: Waker,
@@ -54,7 +42,7 @@ impl Scope {
     ) -> Self {
         Self {
             id,
-            revision: Arc::new(Revision::current()),
+            revision: Arc::new(AtomicU64::new(0)),
             exit,
             waker,
             spawner: Arc::new(Mutex::new(spawner)),
@@ -74,31 +62,10 @@ impl Scope {
 impl Compose for Scope {
     #[inline]
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
-        let mut cell = None;
-
-        self.states.alter(callsite, |prev| {
-            if let Some(p) = prev {
-                cell = Some(p);
-            } else {
-                let initialized = f();
-                cell = Some(Arc::new(StateCell::new(
-                    Arc::downgrade(&self.revision),
-                    initialized,
-                )));
-            }
-            cell.clone()
-        });
-
-        let cell = cell.unwrap();
-
-        Guard {
-            cell: cell.downgrade(),
-            rented: crate::state::RentedGuard::new(cell, |cell| {
-                MutexGuard::map((*cell).0.contents.lock(), |any| any.downcast_mut().unwrap())
-            }),
-        }
+        self.states.get_or_init(callsite, f)
     }
 
+    #[inline]
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static,
@@ -114,7 +81,7 @@ impl Compose for Scope {
 
 impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && Arc::ptr_eq(&self.states, &other.states)
+        self.id == other.id && self.states == other.states
     }
 }
 
@@ -190,26 +157,4 @@ macro_rules! callsite {
     ($parent:expr) => {
         $crate::prelude::CallsiteId::new($parent, moniker!($parent))
     };
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Revision(u64);
-
-static CURRENT_REVISION: AtomicU64 = AtomicU64::new(0);
-
-impl Revision {
-    // /// Get the current revision, or "tick". Every event recieved advances the revision by 1, so
-    // /// not all revisions will cause a recomposition to be executed, and so an even smaller number
-    // /// will cause a new frame to be generated.
-    pub fn current() -> Self {
-        Self(CURRENT_REVISION.load(Ordering::Relaxed))
-    }
-
-    /// Get the next revision, advancing the global revision counter by 1.
-    ///
-    /// Note: this is private because user-defined code should be able to percieve the passage of
-    /// time, but only the event system should be able to drive it forward.
-    pub(crate) fn next() -> Self {
-        Self(CURRENT_REVISION.fetch_add(1, Ordering::Relaxed))
-    }
 }

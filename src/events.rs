@@ -1,5 +1,5 @@
 use {
-    crate::{component::Revision, prelude::*},
+    crate::prelude::*,
     futures::{
         stream::Stream,
         task::{LocalWaker, Poll, Waker},
@@ -24,6 +24,7 @@ pub(crate) struct WindowEvents {
     events_loop: EventsLoop,
     events: VecDeque<Event>,
     waker: Arc<Mutex<Option<Waker>>>,
+    revision: u64,
     /// Responsible for polling the winit event loop.
     _timer: Timer,
     /// A handle to our waker timer.
@@ -48,6 +49,7 @@ impl WindowEvents {
             events_loop,
             events: VecDeque::new(),
             waker,
+            revision: 0,
             _timer,
             _guard,
         }
@@ -91,12 +93,14 @@ impl Stream for WindowEvents {
             Poll::Ready(Some(ev))
         } else {
             let slf: &mut Self = &mut self;
-            let (events_loop, events) = (&mut slf.events_loop, &mut slf.events);
+            let (events_loop, events, revision) =
+                (&mut slf.events_loop, &mut slf.events, &mut slf.revision);
 
-            events_loop.poll_events(|ev| {
+            events_loop.poll_events(|inner| {
+                *revision += 1;
                 let ev = Event {
-                    revision: Revision::next(),
-                    inner: ev,
+                    revision: *revision,
+                    inner,
                 };
                 events.push_back(ev);
             });
@@ -153,6 +157,6 @@ fn try_wake(waker: &Arc<Mutex<Option<Waker>>>) {
 
 #[derive(Debug)]
 pub struct Event {
-    pub revision: Revision,
+    revision: u64,
     pub inner: winit::Event,
 }
