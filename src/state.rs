@@ -1,5 +1,5 @@
 use {
-    crate::prelude::*,
+    crate::CallsiteId,
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
@@ -174,10 +174,13 @@ impl WeakStateCell {
     }
 }
 
+unsafe impl Send for StateCellInner {}
+unsafe impl Sync for StateCellInner {}
+
 #[derive(Debug)]
 pub(crate) struct StateCellInner {
-    scope_revision: Weak<AtomicU64>,
     ty: TypeId,
+    scope_revision: Weak<AtomicU64>,
     contents: AnonymousState,
 }
 

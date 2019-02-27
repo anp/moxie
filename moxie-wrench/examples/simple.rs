@@ -1,5 +1,10 @@
 #![feature(await_macro, futures_api, async_await, integer_atomics)]
 
+fn simple_root(db: &impl moxie_wrench::Components, scope: moxie::ScopeId) {
+    let compose = db.scope(scope);
+    db.surface(moxie::scope!(compose.id), 1920, 1080);
+}
+
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Debug)
@@ -11,8 +16,9 @@ fn main() {
         .init();
     log::debug!("logger initialized");
 
-    let runtime = moxie::Runtime::new();
+    let runtime = moxie_wrench::Toolbox::default();
     let mut executor = futures::executor::ThreadPool::new().unwrap();
     let spawner = executor.clone();
-    executor.run(runtime.run(spawner));
+    let fut = moxie::run(runtime, spawner, simple_root);
+    executor.run(fut);
 }

@@ -1,9 +1,9 @@
 use {
-    crate::prelude::*,
     futures::{
         stream::Stream,
         task::{LocalWaker, Poll, Waker},
     },
+    moxie::*,
     parking_lot::Mutex,
     std::{collections::VecDeque, pin::Pin, sync::Arc},
     time::Duration,
@@ -142,7 +142,6 @@ impl RenderNotifier for WindowNotifier {
         _composite_needed: bool,
         render_time: Option<u64>,
     ) {
-        trace!("New frame is ready. render time: {:?}", render_time);
         self.wake_up();
     }
 }

@@ -1,5 +1,5 @@
 use {
-    crate::{events::WindowEvents, prelude::*},
+    crate::{events::WindowEvents, Components},
     futures::{
         channel::mpsc::{channel, Sender},
         future::AbortHandle,
@@ -7,6 +7,10 @@ use {
     },
     gleam::gl,
     glutin::{GlContext, GlWindow},
+    log::*,
+    moxie::*,
+    parking_lot::Mutex,
+    std::{sync::Arc, task::Waker},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
     winit::{
@@ -117,7 +121,6 @@ async fn handle_events(
     }
 }
 
-// FIXME `compose: Scope` -> `compose: impl Component`
 pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     let key = compose.id;
 
@@ -226,6 +229,7 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     // this is just some event system messing around stuff
     let color = compose.state(callsite!(key), || ColorF::new(0.3, 0.0, 0.0, 1.0));
     let color_hdl: Handle<ColorF> = color.handle();
+
     compose.task(
         callsite!(key),
         async move {

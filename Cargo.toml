@@ -8,25 +8,16 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 
 [dependencies]
 chashmap = "2"
-env_logger = "0.5"
 futures-preview = "0.3.0-alpha.12"
 fxhash = "0.2"
-gleam = "0.6.8"
-glutin = "0.17"
 log = "0.4"
 parking_lot = "0.7"
 rental = "0.5"
 salsa = "0.10.0"
-time = "0.1"
-timer = "0.2"
-webrender = "0.58"
-winit = "0.16"
-
-# mox-macro = { path = "mox-macro" }
-# proc-macro-hack = "0.5"
 
 [workspace]
 members = [
     "mox",
     "mox-macro/",
+    "moxie-wrench",
 ]
