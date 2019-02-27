@@ -36,7 +36,7 @@ use {
     crate::{compose::Scopes, our_prelude::*},
     futures::{
         executor::ThreadPool,
-        future::{AbortHandle, Abortable},
+        future::{AbortHandle, AbortRegistration, Abortable},
         pending,
     },
 };
@@ -50,33 +50,34 @@ pub trait Runtime: TaskBootstrapper + Send + 'static {
 }
 
 // TODO make this a trait method when impl trait in trait methods works
-pub async fn run<'a, ThisRuntime>(
-    runtime: ThisRuntime,
+pub async fn run<ThisRuntime, RootComponent>(
+    mut runtime: ThisRuntime,
     spawner: ThreadPool,
-    root_component: fn(&'a ThisRuntime, ScopeId),
+    root_component: RootComponent,
 ) where
     ThisRuntime: Runtime + Unpin + 'static,
+    for<'r> RootComponent: Fn(&'r ThisRuntime, ScopeId),
 {
-    let mut runtime = Box::new(runtime);
     let (exit_handle, exit_registration) = AbortHandle::new_pair();
 
-    let main_compose_loop = async move {
-        pin_utils::pin_mut!(runtime);
-        // make sure we can be woken back up and exited
-        let mut waker = None;
-        std::future::get_task_waker(|lw| waker = Some(lw.clone()));
-        runtime.set_waker(waker.unwrap().into());
-        runtime.set_top_level_exit(exit_handle);
-        runtime.set_spawner(spawner);
+    // make sure we can be woken back up and exited
+    let mut waker = None;
+    std::future::get_task_waker(|lw| waker = Some(lw.clone()));
+    runtime.set_waker(waker.unwrap().into());
+    runtime.set_top_level_exit(exit_handle);
+    runtime.set_spawner(spawner);
 
-        loop {
-            // root_component(&runtime, ScopeId::root());
-            // unless we stash our own waker above, we'll never get woken again, be careful
-            pending!();
-        }
-    };
-
-    await!(Abortable::new(main_compose_loop, exit_registration).map(|r| r.unwrap_or(())))
+    // this returns an error on abort, which is the only time we expect it to return at all
+    let _main_compose_loop = await!(Abortable::new(
+        async move {
+            loop {
+                root_component(&runtime, ScopeId::root());
+                // unless we stash our own waker above, we'll never get woken again, be careful
+                pending!();
+            }
+        },
+        exit_registration
+    ));
 }
 
 #[salsa::query_group(Moxie)]
