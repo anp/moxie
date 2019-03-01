@@ -18,7 +18,6 @@ use {
 };
 
 pub trait Compose {
-    // FIXME offer a thread-local state so this can be Send again?
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
