@@ -1,13 +1,10 @@
 use {
-    crate::{our_prelude::*, CallsiteId},
+    crate::{caps::CallsiteId, our_prelude::*},
     futures::{
         channel::mpsc::{self, Receiver},
         sink::SinkExt,
     },
-    std::{
-        hash::{Hash, Hasher},
-        sync::Mutex,
-    },
+    std::hash::{Hash, Hasher},
 };
 
 pub fn channel<T>(callsite: CallsiteId) -> (Sender<T>, Receiver<T>) {
@@ -32,7 +29,7 @@ impl<T> Sender<T> {
     pub async fn send(&mut self, t: T) {
         if await!(self.inner.send(t)).is_err() {
             warn!(
-                "Stale event channel id {:?} received an event.",
+                "Stale event channel id {:?} received an event, ignoring.",
                 self.source
             );
         }

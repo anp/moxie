@@ -5,12 +5,15 @@
 #[macro_use]
 extern crate rental;
 
+#[macro_use]
+pub mod caps;
 pub mod channel;
 pub mod compose;
 pub mod state;
 
 pub use {
     crate::{
+        caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
         compose::{Compose, Scope},
         state::{Guard, Handle},
@@ -46,7 +49,7 @@ use {
 pub trait Runtime: TaskBootstrapper + Send + 'static {
     fn scopes(&self) -> &Scopes;
 
-    fn scope(&self, id: ScopeId) -> Scope {
+    fn scope(&self, id: caps::ScopeId) -> Scope {
         self.scopes().get(id, self)
     }
 }
@@ -58,7 +61,7 @@ pub async fn run<ThisRuntime, RootComponent>(
     root_component: RootComponent,
 ) where
     ThisRuntime: Runtime + Unpin + 'static,
-    for<'r> RootComponent: Fn(&'r ThisRuntime, ScopeId),
+    for<'r> RootComponent: Fn(&'r ThisRuntime, Scope),
 {
     let (exit_handle, exit_registration) = AbortHandle::new_pair();
 
@@ -72,8 +75,10 @@ pub async fn run<ThisRuntime, RootComponent>(
     // this returns an error on abort, which is the only time we expect it to return at all
     let _main_compose_loop = await!(Abortable::new(
         async move {
+            let root_scope = runtime.scope(caps::ScopeId::root());
+            let _ensure_waker_is_set = runtime.waker();
             loop {
-                root_component(&runtime, ScopeId::root());
+                root_component(&runtime, root_scope.clone());
                 // unless we stash our own waker above, we'll never get woken again, be careful
                 pending!();
             }
@@ -109,84 +114,4 @@ impl salsa::Database for TestRuntime {
     fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
         &self.runtime
     }
-}
-
-/// A `Moniker` represents the coordinates of a code location in the render hierarchy.
-///
-/// The struct describes a location in the program specific to:
-///
-/// * a line and column of code,
-/// * in a particular element function,
-/// * TODO: on a particular round of iteration (straight line code always has a single round),
-/// * as well as the moniker which resulted in that particular function's invocation
-///
-/// It can be derived at any point within any element as long as the parent/invoking/enclosing
-/// moniker is available. We guarantee that it's always available in render lifecycle in other ways.
-///
-/// `Moniker`s are the tool underlying elements, state, context, etc. because they allow us to map
-/// from a "pure" function back to a state location.
-// TODO: there should probably be an actual Moniker capability that encloses one, right?
-#[doc(hidden)]
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Moniker(usize);
-
-impl Moniker {
-    #[doc(hidden)]
-    #[inline]
-    pub fn new(scope: ScopeId, callsite: &'static str) -> Self {
-        Moniker(fxhash::hash(&(scope, callsite)))
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! moniker {
-    ($parent:expr) => {
-        $crate::Moniker::new($parent, concat!(file!(), "@", line!(), ":", column!()))
-    };
-}
-
-#[doc(hidden)]
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct ScopeId(Moniker);
-
-impl ScopeId {
-    #[doc(hidden)]
-    pub fn new(callsite: Moniker) -> Self {
-        Self(callsite)
-    }
-
-    pub(crate) fn root() -> Self {
-        Self(Moniker(fxhash::hash(&0)))
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! scope {
-    ($parent:expr) => {
-        $crate::ScopeId::new($crate::moniker!($parent))
-    };
-}
-
-#[doc(hidden)]
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct CallsiteId {
-    scope: ScopeId,
-    site: Moniker,
-}
-
-impl CallsiteId {
-    #[doc(hidden)]
-    pub fn new(scope: ScopeId, site: Moniker) -> Self {
-        Self { scope, site }
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! callsite {
-    ($parent:expr) => {
-        $crate::CallsiteId::new($parent, $crate::moniker!($parent))
-    };
 }

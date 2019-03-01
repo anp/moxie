@@ -1,5 +1,5 @@
 use {
-    crate::{color::Color, events::WindowEvents, Components},
+    crate::{color::Color, events::WindowEvents, position::Position, size::Size, Components},
     futures::future::AbortHandle,
     gleam::gl,
     glutin::{GlContext, GlWindow},
@@ -9,23 +9,18 @@ use {
     std::{sync::Arc, task::Waker},
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
-    winit::{
-        dpi::{LogicalPosition, LogicalSize},
-        WindowId,
-    },
+    winit::WindowId,
 };
 
 // FIXME: fns that take children work with salsa
 pub fn surface(
     compose: &impl Components,
-    key: ScopeId,
-    width: u32,
-    height: u32,
+    scope: Scope,
+    initial_size: Size,
     mouse_events: Sender<CursorMoved>,
     color: Color,
 ) {
-    let compose = compose.scope(key);
-    surface_impl(compose, (width, height).into(), color, mouse_events);
+    surface_impl(compose, scope, initial_size, color, mouse_events);
 }
 
 async fn handle_events(
@@ -72,7 +67,7 @@ async fn handle_events(
                 modifiers: _modifiers,
             } => {
                 let _ = await!(send_mouse_positions.send(self::CursorMoved {
-                    position: *position,
+                    position: (*position).into(),
                 }));
             }
             CursorEntered {
@@ -124,62 +119,64 @@ async fn handle_events(
 }
 
 pub fn surface_impl(
-    compose: Scope,
-    initial_size: LogicalSize,
+    compose: &impl Components,
+    scope: Scope,
+    initial_size: Size,
     background_color: Color,
     send_mouse_positions: Sender<CursorMoved>,
 ) {
-    let key = compose.id;
+    let (window, notifier) = &*state!(
+        scope <- {
+            let events = WindowEvents::new();
 
-    let (window, notifier) = &*compose.state(callsite!(key), || {
-        let events = WindowEvents::new();
+            info!("initializing window");
+            let window = GlWindow::new(
+                winit::WindowBuilder::new()
+                    .with_title("moxie is alive?")
+                    .with_multitouch()
+                    .with_dimensions(initial_size.into()),
+                glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
+                    opengl_version: (3, 2),
+                    opengles_version: (3, 0),
+                }),
+                events.raw_loop(),
+            )
+            .unwrap();
 
-        info!("initializing window");
-        let window = GlWindow::new(
-            winit::WindowBuilder::new()
-                .with_title("moxie is alive?")
-                .with_multitouch()
-                .with_dimensions(initial_size),
-            glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
-                opengl_version: (3, 2),
-                opengles_version: (3, 0),
-            }),
-            events.raw_loop(),
-        )
-        .unwrap();
+            let window_id = window.id();
+            info!("making window {:?} the current window", window_id);
+            unsafe {
+                window.make_current().ok();
+            }
 
-        let window_id = window.id();
-        info!("making window {:?} the current window", window_id);
-        unsafe {
-            window.make_current().ok();
+            // this notifier needs to be created before events is captured by the move block below
+            let notifier = events.notifier();
+
+            task!(
+                scope <- handle_events(
+                    window_id,
+                    events,
+                    compose.waker(),
+                    compose.top_level_exit(),
+                    send_mouse_positions,
+                )
+            );
+
+            (window, notifier)
         }
+    );
 
-        // this notifier needs to be created before events is captured by the move block below
-        let notifier = events.notifier();
-
-        compose.task(
-            callsite!(key),
-            handle_events(
-                window_id,
-                events,
-                compose.waker(),
-                compose.top_level_exit_handle(),
-                send_mouse_positions,
-            ),
-        );
-
-        (window, notifier)
-    });
-
-    let gl = compose.state(callsite!(key), || match window.get_api() {
-        glutin::Api::OpenGl => unsafe {
-            gl::GlFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
-        },
-        glutin::Api::OpenGlEs => unsafe {
-            gl::GlesFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
-        },
-        glutin::Api::WebGl => unimplemented!(),
-    });
+    let gl = state!(
+        scope <- match window.get_api() {
+            glutin::Api::OpenGl => unsafe {
+                gl::GlFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
+            },
+            glutin::Api::OpenGlEs => unsafe {
+                gl::GlesFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
+            },
+            glutin::Api::WebGl => unimplemented!(),
+        }
+    );
 
     let device_pixel_ratio = window.get_hidpi_factor() as f32;
     let framebuffer_size = {
@@ -191,33 +188,34 @@ pub fn surface_impl(
     };
 
     // TODO split returned state tuples?
-    let renderer = compose.state(callsite!(key), || {
-        debug!("creating webrender renderer");
-        info!("OpenGL version {}", gl.get_string(gl::VERSION));
-        info!("Device pixel ratio: {}", device_pixel_ratio);
+    let (renderer, render_sender) = &mut *state!(
+        scope <- {
+            debug!("creating webrender renderer");
+            info!("OpenGL version {}", gl.get_string(gl::VERSION));
+            info!("Device pixel ratio: {}", device_pixel_ratio);
 
-        let (renderer, sender) = webrender::Renderer::new(
-            gl.clone(),
-            (*notifier).clone(),
-            webrender::RendererOptions {
-                precache_flags: ShaderPrecacheFlags::EMPTY,
-                device_pixel_ratio,
-                clear_color: Some(ColorF::new(0.0, 0.4, 0.3, 1.0)),
-                ..webrender::RendererOptions::default()
-            },
-            None,
-        )
-        .unwrap();
+            let (renderer, sender) = webrender::Renderer::new(
+                gl.clone(),
+                (*notifier).clone(),
+                webrender::RendererOptions {
+                    precache_flags: ShaderPrecacheFlags::EMPTY,
+                    device_pixel_ratio,
+                    clear_color: Some(ColorF::new(0.0, 0.4, 0.3, 1.0)),
+                    ..webrender::RendererOptions::default()
+                },
+                None,
+            )
+            .unwrap();
 
-        // webrender is not happy if we fail to deinit the renderer by ownership before its Drop impl runs
-        let renderer = crate::drop_guard::DropGuard::new(renderer, |r| r.deinit());
+            // webrender is not happy if we fail to deinit the renderer by ownership before its Drop impl runs
+            let renderer = crate::drop_guard::DropGuard::new(renderer, |r| r.deinit());
 
-        (Arc::new(Mutex::new(renderer)), Arc::new(Mutex::new(sender)))
-    });
+            (Arc::new(Mutex::new(renderer)), Arc::new(Mutex::new(sender)))
+        }
+    );
 
-    let api = compose.state(callsite!(key), || renderer.1.lock().create_api());
-
-    let document_id = compose.state(callsite!(key), || api.add_document(framebuffer_size, 0));
+    let api = state!(scope <- render_sender.lock().create_api());
+    let document_id = state!(scope <- api.add_document(framebuffer_size, 0));
 
     let epoch = Epoch(0);
     let pipeline_id = PipelineId(0, 0);
@@ -235,14 +233,14 @@ pub fn surface_impl(
     trace!("setting display list, generating frame, and sending transaction");
     txn.set_display_list(
         epoch,
-        Some(*background_color),
+        Some(background_color.into()),
         layout_size,
         builder.finalize(),
         true,
     );
     txn.generate_frame();
     api.send_transaction(*document_id, txn);
-    let mut renderer = renderer.0.lock();
+    let mut renderer = renderer.lock();
     renderer.update();
 
     trace!("rendering");
@@ -255,5 +253,5 @@ pub fn surface_impl(
 
 #[derive(Debug, Clone)]
 pub struct CursorMoved {
-    pub position: LogicalPosition,
+    pub position: Position,
 }

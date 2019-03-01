@@ -3,22 +3,21 @@
 pub mod color;
 mod drop_guard;
 mod events;
+pub mod position;
+pub mod size;
 pub mod surface;
 
 use {
-    crate::{color::Color, surface::surface},
-    moxie::{channel::Sender, Moxie, ScopeId},
+    crate::{color::Color, size::Size, surface::surface},
+    moxie::{channel::Sender, Moxie, Scope},
 };
 
 #[salsa::query_group(WrenchDrawer)]
 pub trait Components: moxie::Runtime {
-    // TODO replace this salsa annotation with passing a scope directly
-    #[salsa::dependencies]
     fn surface(
         &self,
-        id: ScopeId,
-        width: u32,
-        height: u32,
+        scope: Scope,
+        initial_size: Size,
         mouse_events: Sender<surface::CursorMoved>,
         color: Color,
     ) -> ();
@@ -40,13 +39,5 @@ impl salsa::Database for Toolbox {
 impl moxie::Runtime for Toolbox {
     fn scopes(&self) -> &moxie::compose::Scopes {
         &self.scopes
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

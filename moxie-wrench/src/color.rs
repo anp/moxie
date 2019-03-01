@@ -1,4 +1,5 @@
 use {
+    noisy_float::prelude::*,
     std::{
         fmt::{Debug, Formatter, Result as FmtResult},
         hash::{Hash, Hasher},
@@ -7,64 +8,43 @@ use {
     webrender::api::ColorF,
 };
 
-#[derive(Clone, Copy)]
-pub struct Color(pub ColorF);
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Color {
+    r: R32,
+    g: R32,
+    b: R32,
+    a: R32,
+}
+
+impl Color {
+    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self {
+            r: r32(r),
+            g: r32(g),
+            b: r32(b),
+            a: r32(a),
+        }
+    }
+}
 
 impl From<ColorF> for Color {
     fn from(c: ColorF) -> Color {
-        Color(c)
-    }
-}
-
-impl Hash for Color {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        macro_rules! h {
-            ($f:ident) => {
-                let scaled = (self.0).$f * 1000.0;
-                (scaled as u64).hash(hasher);
-            };
+        Color {
+            r: r32(c.r),
+            g: r32(c.g),
+            b: r32(c.b),
+            a: r32(c.a),
         }
-
-        h!(r);
-        h!(g);
-        h!(b);
-        h!(a);
     }
 }
 
-impl PartialEq for Color {
-    fn eq(&self, other: &Self) -> bool {
-        macro_rules! c {
-            ($f:ident) => {
-                (self.0).$f == (other.0).$f
-            };
+impl Into<ColorF> for Color {
+    fn into(self) -> ColorF {
+        ColorF {
+            r: *self.r.as_ref(),
+            g: *self.g.as_ref(),
+            b: *self.b.as_ref(),
+            a: *self.a.as_ref(),
         }
-
-        c!(r) && c!(g) && c!(b) && c!(a)
-    }
-}
-impl Eq for Color {}
-
-impl Debug for Color {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("Color")
-            .field("r", &self.0.r)
-            .field("g", &self.0.g)
-            .field("b", &self.0.b)
-            .field("a", &self.0.a)
-            .finish()
-    }
-}
-
-impl Deref for Color {
-    type Target = ColorF;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Color {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }

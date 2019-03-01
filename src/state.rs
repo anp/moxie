@@ -1,5 +1,5 @@
 use {
-    crate::CallsiteId,
+    crate::caps::CallsiteId,
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{

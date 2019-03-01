@@ -1,9 +1,14 @@
 use {
-    crate::{our_prelude::*, state::*, CallsiteId, ScopeId},
+    crate::{
+        caps::{CallsiteId, ScopeId},
+        our_prelude::*,
+        state::*,
+    },
     futures::{executor::ThreadPool, future::AbortHandle, task::Spawn},
     parking_lot::Mutex,
     std::{
         any::Any,
+        hash::{Hash, Hasher},
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc,
@@ -101,6 +106,13 @@ impl Compose for Scope {
         // TODO tie the span of this task's execution to the scope
         // TODO catch panics and abort runtime?
         self.spawner.lock().spawn_obj(Box::new(fut).into()).unwrap();
+    }
+}
+
+impl Hash for Scope {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.id.hash(hasher);
+        self.revision.load(Ordering::SeqCst).hash(hasher);
     }
 }
 
