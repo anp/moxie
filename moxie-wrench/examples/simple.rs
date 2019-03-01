@@ -16,7 +16,7 @@ fn simple_root(compose: &impl Components, scope: Scope) {
 
     let (send_mouse_events, mut mouse_positions): (Sender<CursorMoved>, _) = channel!(scope);
 
-    task!(
+    task! {
         scope <- async move {
             while let Some(cursor_moved) = await!(mouse_positions.next()) {
                 color_hdl.set(|_prev_color| {
@@ -24,14 +24,9 @@ fn simple_root(compose: &impl Components, scope: Scope) {
                 });
             }
         }
-    );
+    };
 
-    compose.surface(
-        compose.scope(scope!(scope.id)),
-        initial_size,
-        send_mouse_events,
-        *color,
-    );
+    mox! { scope <- compose.surface(initial_size, send_mouse_events, *color) }
 }
 
 fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {

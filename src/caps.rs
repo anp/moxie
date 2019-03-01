@@ -1,4 +1,11 @@
 #[macro_export]
+macro_rules! mox {
+    ($scope:ident <- $compose:ident.$component:ident( $( $arg:expr ),* )) => {
+        $compose.$component($compose.scope(scope!($scope.id)), $($arg),*)
+    };
+}
+
+#[macro_export]
 macro_rules! state {
     ($scope:ident <- $init:expr) => {
         $scope.state($crate::callsite!($scope.id), || $init)

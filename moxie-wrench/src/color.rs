@@ -1,12 +1,4 @@
-use {
-    noisy_float::prelude::*,
-    std::{
-        fmt::{Debug, Formatter, Result as FmtResult},
-        hash::{Hash, Hasher},
-        ops::{Deref, DerefMut},
-    },
-    webrender::api::ColorF,
-};
+use {noisy_float::prelude::*, webrender::api::ColorF};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Color {
