@@ -1,14 +1,10 @@
 use {
-    crate::{events::WindowEvents, Components},
-    futures::{
-        channel::mpsc::{channel, Sender},
-        future::AbortHandle,
-        sink::SinkExt,
-    },
+    crate::{color::Color, events::WindowEvents, Components},
+    futures::future::AbortHandle,
     gleam::gl,
     glutin::{GlContext, GlWindow},
     log::*,
-    moxie::*,
+    moxie::{channel::Sender, *},
     parking_lot::Mutex,
     std::{sync::Arc, task::Waker},
     webrender::api::*,
@@ -20,10 +16,16 @@ use {
 };
 
 // FIXME: fns that take children work with salsa
-pub fn surface(compose: &impl Components, key: ScopeId, width: u32, height: u32) {
-    // get the state port for the whole scope
+pub fn surface(
+    compose: &impl Components,
+    key: ScopeId,
+    width: u32,
+    height: u32,
+    mouse_events: Sender<CursorMoved>,
+    color: Color,
+) {
     let compose = compose.scope(key);
-    surface_impl(compose, (width, height).into());
+    surface_impl(compose, (width, height).into(), color, mouse_events);
 }
 
 async fn handle_events(
@@ -70,7 +72,7 @@ async fn handle_events(
                 modifiers: _modifiers,
             } => {
                 let _ = await!(send_mouse_positions.send(self::CursorMoved {
-                    position: *position
+                    position: *position,
                 }));
             }
             CursorEntered {
@@ -121,10 +123,14 @@ async fn handle_events(
     }
 }
 
-pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
+pub fn surface_impl(
+    compose: Scope,
+    initial_size: LogicalSize,
+    background_color: Color,
+    send_mouse_positions: Sender<CursorMoved>,
+) {
     let key = compose.id;
 
-    let (send_mouse_positions, mut mouse_positions) = channel(100);
     let (window, notifier) = &*compose.state(callsite!(key), || {
         let events = WindowEvents::new();
 
@@ -226,24 +232,14 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
 
     // FIXME render child functions here
 
-    // this is just some event system messing around stuff
-    let color = compose.state(callsite!(key), || ColorF::new(0.3, 0.0, 0.0, 1.0));
-    let color_hdl: Handle<ColorF> = color.handle();
-
-    compose.task(
-        callsite!(key),
-        async move {
-            let color = color_hdl;
-            while let Some(cursor_moved) = await!(mouse_positions.next()) {
-                color.set(|_prev_color| {
-                    fun_color_from_mouse_position(initial_size, cursor_moved.position)
-                });
-            }
-        },
-    );
-
     trace!("setting display list, generating frame, and sending transaction");
-    txn.set_display_list(epoch, Some(*color), layout_size, builder.finalize(), true);
+    txn.set_display_list(
+        epoch,
+        Some(*background_color),
+        layout_size,
+        builder.finalize(),
+        true,
+    );
     txn.generate_frame();
     api.send_transaction(*document_id, txn);
     let mut renderer = renderer.0.lock();
@@ -257,18 +253,7 @@ pub fn surface_impl(compose: Scope, initial_size: LogicalSize) {
     window.swap_buffers().unwrap();
 }
 
-struct CursorMoved {
-    position: LogicalPosition,
-}
-
-fn fun_color_from_mouse_position(window_size: LogicalSize, pos: LogicalPosition) -> ColorF {
-    let x_factor = (pos.x / window_size.width) as f32;
-    let y_factor = (pos.y / window_size.height) as f32;
-
-    ColorF {
-        r: x_factor,
-        g: x_factor,
-        b: y_factor,
-        a: y_factor,
-    }
+#[derive(Debug, Clone)]
+pub struct CursorMoved {
+    pub position: LogicalPosition,
 }

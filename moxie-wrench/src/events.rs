@@ -3,7 +3,6 @@ use {
         stream::Stream,
         task::{LocalWaker, Poll, Waker},
     },
-    moxie::*,
     parking_lot::Mutex,
     std::{collections::VecDeque, pin::Pin, sync::Arc},
     time::Duration,
@@ -140,7 +139,7 @@ impl RenderNotifier for WindowNotifier {
         _: webrender::api::DocumentId,
         _scrolled: bool,
         _composite_needed: bool,
-        render_time: Option<u64>,
+        _render_time: Option<u64>,
     ) {
         self.wake_up();
     }

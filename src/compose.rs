@@ -4,7 +4,6 @@ use {
     parking_lot::Mutex,
     std::{
         any::Any,
-        hash::{Hash, Hasher},
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc,

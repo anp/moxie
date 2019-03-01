@@ -1,21 +1,27 @@
 #![feature(await_macro, futures_api, async_await)]
 
+pub mod color;
 mod drop_guard;
 mod events;
 pub mod surface;
 
 use {
-    crate::surface::surface,
-    futures::{executor::ThreadPool, future::AbortHandle},
-    moxie::{Moxie, Scope, ScopeId},
-    std::task::Waker,
+    crate::{color::Color, surface::surface},
+    moxie::{channel::Sender, Moxie, ScopeId},
 };
 
 #[salsa::query_group(WrenchDrawer)]
 pub trait Components: moxie::Runtime {
     // TODO replace this salsa annotation with passing a scope directly
     #[salsa::dependencies]
-    fn surface(&self, id: ScopeId, width: u32, height: u32) -> ();
+    fn surface(
+        &self,
+        id: ScopeId,
+        width: u32,
+        height: u32,
+        mouse_events: Sender<surface::CursorMoved>,
+        color: Color,
+    ) -> ();
 }
 
 #[salsa::database(Moxie, WrenchDrawer)]

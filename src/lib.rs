@@ -5,11 +5,13 @@
 #[macro_use]
 extern crate rental;
 
+pub mod channel;
 pub mod compose;
 pub mod state;
 
 pub use {
     crate::{
+        channel::{channel, Sender},
         compose::{Compose, Scope},
         state::{Guard, Handle},
     },
@@ -36,7 +38,7 @@ use {
     crate::{compose::Scopes, our_prelude::*},
     futures::{
         executor::ThreadPool,
-        future::{AbortHandle, AbortRegistration, Abortable},
+        future::{AbortHandle, Abortable},
         pending,
     },
 };
@@ -167,7 +169,6 @@ macro_rules! scope {
     };
 }
 
-#[macro_export]
 #[doc(hidden)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct CallsiteId {
