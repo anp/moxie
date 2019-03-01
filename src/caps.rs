@@ -40,7 +40,6 @@ macro_rules! channel {
 ///
 /// `Moniker`s are the tool underlying elements, state, context, etc. because they allow us to map
 /// from a "pure" function back to a state location.
-// TODO: there should probably be an actual Moniker capability that encloses one, right?
 #[doc(hidden)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Moniker(usize);
