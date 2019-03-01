@@ -5,9 +5,6 @@ use {
     moxie_wrench::{
         color::Color, position::Position, size::Size, surface::CursorMoved, Components,
     },
-    noisy_float::prelude::*,
-    webrender::api::ColorF,
-    winit::dpi::{LogicalPosition, LogicalSize},
 };
 
 // #[moxie::component]
@@ -29,15 +26,12 @@ fn simple_root(compose: &impl Components, scope: Scope) {
         }
     );
 
-    compose.surface(scope, initial_size, send_mouse_events, *color);
-    // mox! {
-    //     compose:
-    //     <surface
-    //         size=initial_size
-    //         cursor=send_mouse_events
-    //         color
-    //     />
-    // }
+    compose.surface(
+        compose.scope(scope!(scope.id)),
+        initial_size,
+        send_mouse_events,
+        *color,
+    );
 }
 
 fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
