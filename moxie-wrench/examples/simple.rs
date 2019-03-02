@@ -11,7 +11,7 @@ use {
 fn simple_root(compose: &impl Components, scope: Scope) {
     let initial_size = Size::new(1920.0, 1080.0);
 
-    let color = state! { scope <- Color::new(0.3, 0.0, 0.0, 1.0) };
+    let color = state! { scope <- Color::new(0.0, 0.0, 0.3, 1.0) };
     let color_hdl: Handle<Color> = color.handle();
 
     let (send_mouse_events, mut mouse_positions): (Sender<CursorMoved>, _) = channel!(scope);
