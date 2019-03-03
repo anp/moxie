@@ -5,7 +5,7 @@ use {
 };
 
 pub fn component_impl(
-    _attrs: proc_macro::TokenStream,
+    _attrs: proc_macro::TokenStream, // TODO customize Components trait, other potential arguments?
     input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let mut comp_fn: ItemFn = parse_macro_input!(input);
