@@ -11,6 +11,7 @@ chashmap = "2"
 futures-preview = "0.3.0-alpha.12"
 fxhash = "0.2"
 log = "0.4"
+mox = { path = "mox" }
 parking_lot = "0.7"
 rental = "0.5"
 salsa = "0.10.0"
@@ -18,6 +19,5 @@ salsa = "0.10.0"
 [workspace]
 members = [
     "mox",
-    "mox-macro/",
     "moxie-wrench",
 ]

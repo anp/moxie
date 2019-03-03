@@ -1,7 +1,11 @@
+// TODO delete in favor of proc macro
 #[macro_export]
 macro_rules! mox {
-    ($scope:ident <- $compose:ident.$component:ident( $( $arg:expr ),* )) => {
-        $compose.$component($compose.scope(scope!($scope.id)), $($arg),*)
+    ($compose:ident $scope:ident <- $component:ident( $( $arg:expr ),* )) => {
+        {
+            let child_scope = $compose.scope($crate::scope!($scope.id));
+            $compose.$component(child_scope, $($arg),*)
+        }
     };
 }
 
@@ -14,6 +18,13 @@ macro_rules! state {
 
 #[macro_export]
 macro_rules! task {
+    ($scope:ident <- $body:expr) => {
+        $crate::task_fut!($scope <- async move { $body })
+    };
+}
+
+#[macro_export]
+macro_rules! task_fut {
     ($scope:ident <- $body:expr) => {
         $scope.task($crate::callsite!($scope.id), $body)
     };

@@ -152,7 +152,7 @@ pub fn surface_impl(
             // this notifier needs to be created before events is captured by the move block below
             let notifier = events.notifier();
 
-            task!(
+            task_fut!(
                 scope <- handle_events(
                     window_id,
                     events,

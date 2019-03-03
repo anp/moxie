@@ -22,6 +22,7 @@ pub use {
         future::FutureExt,
         stream::{Stream, StreamExt},
     },
+    mox::component,
     std::future::Future,
 };
 
