@@ -103,8 +103,6 @@ async fn handle_events(
             } => {}
 
             Refresh => {
-                // technically unnecessary? it would be nice to only wake
-                // on state changes
                 waker.wake();
             }
 
