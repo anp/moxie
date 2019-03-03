@@ -1,3 +1,4 @@
+#![deny(clippy::all)]
 #![feature(await_macro, futures_api, async_await)]
 
 pub mod color;
