@@ -6,16 +6,16 @@
 extern crate rental;
 
 #[macro_use]
-pub mod caps;
-pub mod channel;
-pub mod compose;
-pub mod state;
+mod caps;
+mod channel;
+mod compose;
+mod state;
 
 pub use {
     crate::{
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
-        compose::{Compose, Scope},
+        compose::{Compose, Scope, Scopes},
         state::{Guard, Handle},
     },
     futures::{
@@ -39,13 +39,37 @@ pub(crate) mod our_prelude {
 }
 
 use {
-    crate::{compose::Scopes, our_prelude::*},
+    crate::our_prelude::*,
     futures::{
         executor::ThreadPool,
         future::{AbortHandle, Abortable},
         pending,
     },
 };
+
+#[macro_export]
+macro_rules! runtime {
+    ($struct_name:ident: $($db_trait:path),* ) => {
+        #[salsa::database( $( $db_trait ),* )]
+        #[derive(Default)]
+        pub struct $struct_name {
+            runtime: salsa::Runtime<$struct_name>,
+            scopes: $crate::Scopes,
+        }
+
+        impl salsa::Database for Toolbox {
+            fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
+                &self.runtime
+            }
+        }
+
+        impl moxie::Runtime for Toolbox {
+            fn scopes(&self) -> &Scopes {
+                &self.scopes
+            }
+        }
+    };
+}
 
 pub trait Runtime: TaskBootstrapper + Send + 'static {
     fn scopes(&self) -> &Scopes;
@@ -88,7 +112,8 @@ pub async fn run<ThisRuntime, RootComponent>(
     ));
 }
 
-#[salsa::query_group(Moxie)]
+#[doc(hidden)]
+#[salsa::query_group(TaskQueries)]
 pub trait TaskBootstrapper: salsa::Database {
     #[salsa::input]
     fn waker(&self) -> Waker;
@@ -98,20 +123,15 @@ pub trait TaskBootstrapper: salsa::Database {
     fn top_level_exit(&self) -> AbortHandle;
 }
 
-#[salsa::database(Moxie)]
+#[doc(hidden)]
+#[salsa::database(TaskQueries)]
 #[derive(Default)]
-struct TestRuntime {
+struct TestTaskRuntime {
     runtime: salsa::Runtime<Self>,
-    scopes: Scopes,
 }
 
-impl Runtime for TestRuntime {
-    fn scopes(&self) -> &Scopes {
-        &self.scopes
-    }
-}
-
-impl salsa::Database for TestRuntime {
+#[doc(hidden)]
+impl salsa::Database for TestTaskRuntime {
     fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
         &self.runtime
     }

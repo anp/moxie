@@ -4,7 +4,7 @@ use {
     gleam::gl,
     glutin::{GlContext, GlWindow},
     log::*,
-    moxie::{channel::Sender, *},
+    moxie::{Sender, *},
     parking_lot::Mutex,
     std::{sync::Arc, task::Waker},
     webrender::api::*,

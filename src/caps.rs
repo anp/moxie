@@ -33,7 +33,7 @@ macro_rules! task_fut {
 #[macro_export]
 macro_rules! channel {
     ($scope:ident) => {
-        $crate::channel::channel($crate::callsite!($scope.id))
+        $crate::channel($crate::callsite!($scope.id))
     };
 }
 
