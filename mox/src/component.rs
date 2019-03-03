@@ -37,7 +37,6 @@ struct ComponentVisitor {
 
 impl ComponentVisitor {
     fn new(components_trait: Option<Ident>) -> Self {
-        // let scope_name = format!("__{}_scope", component_name);
         let scope = Ident::new("scope", Span::call_site());
         let compose = Ident::new("compose", Span::call_site());
 
@@ -75,9 +74,15 @@ impl VisitMut for ComponentVisitor {
             .value()
             .ident
             .to_string();
+        let contents = invocation.tts.clone();
+
+        let compose = if last_path_segment == "mox" {
+            Some(&self.compose)
+        } else {
+            None
+        };
 
         let threadables = ["state", "task", "task_fut", "mox", "channel"];
-
         let (scope, arrow) = if threadables.contains(&last_path_segment.as_str()) {
             let arrow = if last_path_segment == "channel" {
                 None
@@ -90,13 +95,6 @@ impl VisitMut for ComponentVisitor {
             (None, None)
         };
 
-        let compose = if last_path_segment == "mox" {
-            Some(&self.compose)
-        } else {
-            None
-        };
-
-        let contents = invocation.tts.clone();
         invocation.tts = parse_quote!(#compose #scope #arrow #contents);
     }
 }
