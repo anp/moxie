@@ -24,11 +24,11 @@ macro_rules! task {
 }
 
 #[macro_export]
-macro_rules! task_fut {
+macro_rules! task_fut (
     ($scope:ident <- $body:expr) => {
-        $scope.task($crate::callsite!($scope.id), $body)
+        $scope.task($crate::callsite!($scope.id), ($body))
     };
-}
+);
 
 #[macro_export]
 macro_rules! channel {

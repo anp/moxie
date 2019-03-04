@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 moxie = { path = "../" }
-futures-preview = "0.3.0-alpha.12"
+futures-preview = "0.3.0-alpha.13"
 gleam = "0.6.8"
 glutin = "0.17"
 log = "0.4"

@@ -2,13 +2,11 @@
 
 use {
     moxie::*,
-    moxie_wrench::{
-        color::Color, position::Position, size::Size, surface::CursorMoved, Components,
-    },
+    moxie_wrench::{color::Color, position::Position, size::Size, surface::CursorMoved},
 };
 
 #[moxie::component]
-fn simple_root() {
+fn SimpleApp() {
     let initial_size = Size::new(1920.0, 1080.0);
 
     let color = state! { Color::new(0.0, 0.0, 0.3, 1.0) };
@@ -24,7 +22,7 @@ fn simple_root() {
         }
     };
 
-    mox! { surface(initial_size, send_mouse_events, *color) };
+    mox! { Surface(initial_size, send_mouse_events, *color) };
 }
 
 fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
@@ -48,6 +46,6 @@ fn main() {
     let runtime = moxie_wrench::Toolbox::default();
     let mut executor = futures::executor::ThreadPool::new().unwrap();
     let spawner = executor.clone();
-    let fut = moxie::run(runtime, spawner, simple_root);
+    let fut = moxie::run(runtime, spawner, SimpleApp);
     executor.run(fut);
 }

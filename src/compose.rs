@@ -34,7 +34,8 @@ pub struct Scopes {
 }
 
 impl Scopes {
-    pub(crate) fn get(&self, id: ScopeId, tasker: &impl crate::Runtime) -> Scope {
+    #[doc(hidden)]
+    pub fn get(&self, id: ScopeId, tasker: &impl crate::Runtime) -> Scope {
         let mut port = None;
 
         self.inner.alter(id, |prev: Option<Scope>| {
@@ -62,6 +63,7 @@ impl Scopes {
 pub struct Scope {
     pub id: ScopeId,
     pub revision: Arc<AtomicU64>,
+    // parent_revision: Weak<AtomicU64>,
     states: States,
 
     spawner: Arc<Mutex<ThreadPool>>,

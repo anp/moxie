@@ -22,7 +22,7 @@ pub use {
         future::FutureExt,
         stream::{Stream, StreamExt},
     },
-    mox::component,
+    mox::{component, runtime},
     std::future::Future,
 };
 
@@ -47,36 +47,8 @@ use {
     },
 };
 
-#[macro_export]
-macro_rules! runtime {
-    ($struct_name:ident: $($db_trait:path),* ) => {
-        #[salsa::database( $( $db_trait ),* )]
-        #[derive(Default)]
-        pub struct $struct_name {
-            runtime: salsa::Runtime<$struct_name>,
-            scopes: $crate::Scopes,
-        }
-
-        impl salsa::Database for Toolbox {
-            fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
-                &self.runtime
-            }
-        }
-
-        impl moxie::Runtime for Toolbox {
-            fn scopes(&self) -> &Scopes {
-                &self.scopes
-            }
-        }
-    };
-}
-
 pub trait Runtime: TaskBootstrapper + Send + 'static {
-    fn scopes(&self) -> &Scopes;
-
-    fn scope(&self, id: caps::ScopeId) -> Scope {
-        self.scopes().get(id, self)
-    }
+    fn scope(&self, id: caps::ScopeId) -> Scope;
 }
 
 // TODO make this a trait method when impl trait in trait methods works
@@ -93,7 +65,7 @@ pub async fn run<ThisRuntime, RootComponent>(
     // make sure we can be woken back up and exited
     let mut waker = None;
     std::future::get_task_waker(|lw| waker = Some(lw.clone()));
-    runtime.set_waker(waker.unwrap().into());
+    runtime.set_waker(waker.unwrap());
     runtime.set_top_level_exit(exit_handle);
     runtime.set_spawner(spawner);
 
@@ -113,7 +85,7 @@ pub async fn run<ThisRuntime, RootComponent>(
 }
 
 #[doc(hidden)]
-#[salsa::query_group(TaskQueries)]
+#[salsa::query_group(TaskStorage)]
 pub trait TaskBootstrapper: salsa::Database {
     #[salsa::input]
     fn waker(&self) -> Waker;
@@ -124,7 +96,7 @@ pub trait TaskBootstrapper: salsa::Database {
 }
 
 #[doc(hidden)]
-#[salsa::database(TaskQueries)]
+#[salsa::database(TaskStorage)]
 #[derive(Default)]
 struct TestTaskRuntime {
     runtime: salsa::Runtime<Self>,

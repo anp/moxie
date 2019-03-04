@@ -1,7 +1,7 @@
 use {
     futures::{
         stream::Stream,
-        task::{LocalWaker, Poll, Waker},
+        task::{Poll, Waker},
     },
     parking_lot::Mutex,
     std::{collections::VecDeque, pin::Pin, sync::Arc},
@@ -76,17 +76,17 @@ impl Default for WindowEvents {
 impl Stream for WindowEvents {
     type Item = Event;
 
-    fn poll_next(mut self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, wk: &Waker) -> Poll<Option<Self::Item>> {
         // refresh the waker we cache locally
         {
-            let mut waker2 = Some(lw.clone().into_waker());
+            let mut waker2 = Some(wk.clone());
             std::mem::swap(&mut *self.waker.lock(), &mut waker2);
         }
 
         if let Some(ev) = self.events.pop_front() {
             // if there are more events buffered, we'd like to deliver those immediately please
             if !self.events.is_empty() {
-                lw.wake();
+                wk.wake();
             }
 
             Poll::Ready(Some(ev))
@@ -106,7 +106,7 @@ impl Stream for WindowEvents {
 
             if let Some(ev) = self.events.pop_front() {
                 if !self.events.is_empty() {
-                    lw.wake();
+                    wk.wake();
                 }
                 Poll::Ready(Some(ev))
             } else {
