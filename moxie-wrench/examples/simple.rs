@@ -51,6 +51,6 @@ fn main() {
     let runtime = moxie_wrench::Toolbox::default();
     let mut executor = futures::executor::ThreadPool::new().unwrap();
     let spawner = executor.clone();
-    let fut = moxie::run(runtime, spawner, SimpleApp::simpleapp); // FIXME infer this path automatically from trait name
+    let fut = moxie::run(runtime, spawner, SimpleApp); // FIXME infer this path automatically from trait name
     executor.run(fut);
 }

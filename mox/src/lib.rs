@@ -26,14 +26,9 @@ pub fn runtime(attrs: TokenStream, input: TokenStream) -> TokenStream {
 pub fn component(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let attrs2: proc_macro2::TokenStream = attrs.clone().into();
     let attrs_span = attrs2.span();
-    let items = component::ComponentMacro::new(
-        // parse_macro_input!(attrs),
-        None,
-        attrs_span,
-        parse_macro_input!(input),
-    )
-    .unwrap()
-    .expand();
-
-    quote::quote!(#(#items)*).into()
+    let comp_fn: syn::ItemFn = parse_macro_input!(input);
+    let makro = component::ComponentMacro::new(attrs_span, comp_fn).unwrap();
+    let items = makro.expand();
+    let tokens = quote::quote!(#(#items)*);
+    tokens.into()
 }

@@ -3,15 +3,13 @@ use {
     proc_macro2::{Ident, Span},
     quote::quote_spanned,
     syn::{
-        parse2 as parse, punctuated::Punctuated, spanned::Spanned, visit_mut::VisitMut, Block,
-        Field, FieldsNamed, FnArg, FnDecl, Item, ItemFn, ItemStruct, Macro, Stmt, Token,
-        TypeParamBound,
+        parse2 as parse, punctuated::Punctuated, spanned::Spanned, visit_mut::VisitMut, Field,
+        FieldsNamed, FnArg, FnDecl, Item, ItemFn, ItemStruct, Macro, Stmt, Token, TypeParamBound,
     },
 };
 
 pub struct ComponentMacro {
     comp_fn: ItemFn,
-    comp_decl: Option<ComponentDecl>,
     name: Name,
     fields: Punctuated<Field, Token![,]>,
     field_names: Punctuated<Ident, Token![,]>,
@@ -19,11 +17,7 @@ pub struct ComponentMacro {
 }
 
 impl ComponentMacro {
-    pub fn new(
-        comp_decl: Option<ComponentDecl>,
-        comp_decl_span: Span,
-        input_fn: ItemFn,
-    ) -> Result<Self, Error> {
+    pub fn new(comp_decl_span: Span, input_fn: ItemFn) -> Result<Self, Error> {
         let name = Name::new(input_fn.ident.clone());
         ensure!(
             input_fn.unsafety.is_none(),
@@ -53,16 +47,13 @@ impl ComponentMacro {
         let mut comp_macro = ComponentMacro {
             name,
             comp_fn: input_fn.clone(),
-            comp_decl,
             fields,
             field_names,
             annotation_span: comp_decl_span,
         };
 
-        // uh this is silly and also appears to not work?
-        let mut new_comp_fn = input_fn.clone();
-        comp_macro.visit_item_fn_mut(&mut new_comp_fn);
-        comp_macro.comp_fn = new_comp_fn;
+        let mut threader = comp_macro.threader();
+        threader.visit_item_fn_mut(&mut comp_macro.comp_fn);
 
         Ok(comp_macro)
     }
@@ -138,28 +129,62 @@ impl ComponentMacro {
             parse(test_runtime_decl).unwrap(),
         ]
     }
+
+    fn threader(&self) -> BlockThreader {
+        BlockThreader {
+            component_name: self.name.clone(),
+            compose: self.compose_ident(),
+            scope: self.scope_ident(),
+            props: self.props_ident(),
+            args_span: self.args_span(),
+            props_destructure: self.props_destructure(),
+        }
+    }
 }
 
-impl VisitMut for ComponentMacro {
+struct BlockThreader {
+    component_name: Name,
+    compose: Ident,
+    scope: Ident,
+    props: Ident,
+    args_span: Span,
+    props_destructure: Stmt,
+}
+
+impl VisitMut for BlockThreader {
+    fn visit_item_fn_mut(&mut self, comp_fn: &mut ItemFn) {
+        comp_fn
+            .block
+            .stmts
+            .insert(0, self.props_destructure.clone());
+        syn::visit_mut::visit_item_fn_mut(self, comp_fn);
+    }
+
     /// Replace the existing function's arguments with the concrete component signature of
     /// `(compose, scope, props)`.
     fn visit_fn_decl_mut(&mut self, decl: &mut FnDecl) {
-        let component_name = self.name.fn_name();
-        let props_type = self.name.props_ty();
-        let compose = self.compose_ident();
-        let scope = self.scope_ident();
-        let props = self.props_ident();
+        let Self {
+            component_name,
+            compose,
+            scope,
+            props,
+            args_span,
+            ..
+        } = self;
+
+        let composer_trait = component_name.query_trait();
+        let props_type = component_name.props_ty();
 
         let compose_field: FnArg =
-            parse(quote_spanned! {component_name.span()=> #compose: &impl #component_name })
-                .unwrap();
+            parse(quote_spanned! {*args_span=> #compose: &impl #composer_trait }).unwrap();
         let scope_field: FnArg =
-            parse(quote_spanned! {component_name.span()=> #scope: moxie::Scope }).unwrap();
-        let props_field: FnArg =
-            parse(quote_spanned! {self.args_span()=> #props: #props_type }).unwrap();
+            parse(quote_spanned! {*args_span=> #scope: moxie::Scope }).unwrap();
+        let props_field: FnArg = parse(quote_spanned! {*args_span=> #props: #props_type }).unwrap();
 
         use std::iter::FromIterator;
         decl.inputs = Punctuated::from_iter(vec![compose_field, scope_field, props_field]);
+
+        syn::visit_mut::visit_fn_decl_mut(self, decl);
     }
 
     /// "Threads" the `compose` and `scope` identifiers through the various macro invocations where
@@ -178,7 +203,7 @@ impl VisitMut for ComponentMacro {
         let contents = invocation.tts.clone();
 
         let compose = if last_path_segment == "mox" {
-            Some(self.compose_ident())
+            Some(&self.compose)
         } else {
             None
         };
@@ -191,20 +216,16 @@ impl VisitMut for ComponentMacro {
                 Some(quote_spanned!(last_path_segment.span()=> <-))
             };
 
-            (Some(self.scope_ident()), arrow)
+            (Some(&self.scope), arrow)
         } else {
             (None, None)
         };
 
+        // FIXME handle nested macro invocations
         invocation.tts =
             parse(quote_spanned!(invocation.tts.span()=> #compose #scope #arrow #contents))
                 .unwrap();
-    }
-
-    /// We visit the block of the component function to insert a destructuring of props that we
-    /// had previously bundled into a single argument type.
-    fn visit_block_mut(&mut self, block: &mut Block) {
-        block.stmts.insert(0, self.props_destructure());
+        syn::visit_mut::visit_macro_mut(self, invocation);
     }
 }
 
@@ -228,6 +249,7 @@ impl syn::parse::Parse for ComponentDecl {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Name(Ident);
 
 impl Name {
