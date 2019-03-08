@@ -7,18 +7,10 @@ mod component;
 mod mox;
 mod runtime;
 
-use {proc_macro::TokenStream, syn::Ident};
-
-fn component_storage_ty_name(component_name: &Ident) -> Ident {
-    let mut comp_name_str = component_name.to_string();
-    comp_name_str.push_str("Storage");
-    Ident::new(&comp_name_str, component_name.span())
-}
-
-fn component_function_name(component_name: &Ident) -> Ident {
-    let comp_name_str = component_name.to_string().to_lowercase();
-    Ident::new(&comp_name_str, component_name.span())
-}
+use {
+    proc_macro::TokenStream,
+    syn::{parse_macro_input, spanned::Spanned},
+};
 
 #[proc_macro]
 pub fn mox(input: TokenStream) -> TokenStream {
@@ -32,5 +24,16 @@ pub fn runtime(attrs: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn component(attrs: TokenStream, input: TokenStream) -> TokenStream {
-    component::component_impl(attrs, input)
+    let attrs2: proc_macro2::TokenStream = attrs.clone().into();
+    let attrs_span = attrs2.span();
+    let items = component::ComponentMacro::new(
+        // parse_macro_input!(attrs),
+        None,
+        attrs_span,
+        parse_macro_input!(input),
+    )
+    .unwrap()
+    .expand();
+
+    quote::quote!(#(#items)*).into()
 }

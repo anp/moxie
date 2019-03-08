@@ -8,6 +8,7 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
+failure = "0.1"
 gll = "0.0.2"
 gll-macros = "0.0.2"
 proc-macro2 = "0.4.20"

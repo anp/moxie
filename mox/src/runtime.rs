@@ -43,13 +43,15 @@ pub(crate) fn runtime_impl(
             syn::TypeParamBound::Lifetime(_) => dep
                 .span()
                 .unwrap()
-                .error("no lifetime bounds in the databsae")
+                .error("database constraints must be 'static anyways, no lifetimes allowed here.")
                 .emit(),
             syn::TypeParamBound::Trait(trait_bound) => {
                 let last_segment = &mut trait_bound.path.segments.last_mut().unwrap();
                 let trait_name = &mut last_segment.value_mut().ident;
 
-                *trait_name = crate::component_storage_ty_name(&trait_name);
+                let component_dependency = crate::component::Name::new(trait_name.clone());
+
+                *trait_name = component_dependency.storage_ty();
             }
         }
     }
@@ -82,10 +84,13 @@ struct RuntimeDecl {
 impl syn::parse::Parse for RuntimeDecl {
     fn parse(input: syn::parse::ParseStream) -> syn::parse::Result<Self> {
         let trait_name = input.parse()?;
-        input.parse::<Token![:]>()?;
-        let dependencies: Punctuated<TypeParamBound, Token![,]> =
-            input.parse_terminated(TypeParamBound::parse)?;
 
+        let dependencies: Punctuated<TypeParamBound, Token![,]> =
+            if input.parse::<Token![:]>().is_ok() {
+                input.parse_terminated(TypeParamBound::parse)?
+            } else {
+                Punctuated::new()
+            };
         Ok(RuntimeDecl {
             trait_name,
             dependencies,
