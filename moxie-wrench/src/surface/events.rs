@@ -55,7 +55,7 @@ pub(crate) async fn dispatch(
                 position,
                 modifiers: _modifiers,
             } => {
-                let _ = await!(send_mouse_positions.send(self::CursorMoved {
+                await!(send_mouse_positions.send(self::CursorMoved {
                     position: (*position).into(),
                 }));
             }
