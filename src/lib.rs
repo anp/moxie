@@ -52,13 +52,14 @@ pub trait Runtime: TaskBootstrapper + Send + 'static {
 }
 
 // TODO make this a trait method when impl trait in trait methods works
-pub async fn run<ThisRuntime, RootComponent>(
+pub async fn run<ThisRuntime, RootComponent, RootProps>(
     mut runtime: ThisRuntime,
     spawner: ThreadPool,
     root_component: RootComponent,
 ) where
+    RootProps: Default,
     ThisRuntime: Runtime + Unpin + 'static,
-    for<'r> RootComponent: Fn(&'r ThisRuntime, Scope),
+    for<'r> RootComponent: Fn(&'r ThisRuntime, Scope, RootProps),
 {
     let (exit_handle, exit_registration) = AbortHandle::new_pair();
 
@@ -75,7 +76,7 @@ pub async fn run<ThisRuntime, RootComponent>(
             let root_scope = runtime.scope(caps::ScopeId::root());
             let _ensure_waker_is_set = runtime.waker();
             loop {
-                root_component(&runtime, root_scope.clone());
+                root_component(&runtime, root_scope.clone(), Default::default());
                 // unless we stash our own waker above, we'll never get woken again, be careful
                 pending!();
             }
@@ -85,7 +86,7 @@ pub async fn run<ThisRuntime, RootComponent>(
 }
 
 #[doc(hidden)]
-#[salsa::query_group(TaskStorage)]
+#[salsa::query_group(RuntimeStorage)]
 pub trait TaskBootstrapper: salsa::Database {
     #[salsa::input]
     fn waker(&self) -> Waker;
@@ -96,7 +97,7 @@ pub trait TaskBootstrapper: salsa::Database {
 }
 
 #[doc(hidden)]
-#[salsa::database(TaskStorage)]
+#[salsa::database(RuntimeStorage)]
 #[derive(Default)]
 struct TestTaskRuntime {
     runtime: salsa::Runtime<Self>,

@@ -2,16 +2,14 @@
 
 use {
     moxie::*,
-    moxie_wrench::{
-        color::Color,
-        position::Position,
-        size::Size,
-        surface::{CursorMoved, Surface},
-    },
+    moxie_wrench::{color::Color, position::Position, size::Size, surface::*},
 };
 
-#[moxie::component()]
-fn SimpleApp() {
+#[moxie::component]
+fn SimpleApp()
+where
+    Self: Surface,
+{
     let initial_size = Size::new(1920.0, 1080.0);
 
     let color = state! { Color::new(0.0, 0.0, 0.3, 1.0) };
@@ -51,6 +49,5 @@ fn main() {
     let runtime = moxie_wrench::Toolbox::default();
     let mut executor = futures::executor::ThreadPool::new().unwrap();
     let spawner = executor.clone();
-    let fut = moxie::run(runtime, spawner, SimpleApp); // FIXME infer this path automatically from trait name
-    executor.run(fut);
+    executor.run(moxie::run(runtime, spawner, simple_app)); // FIXME use the camelcase name!
 }

@@ -4,7 +4,7 @@ macro_rules! mox {
     ($compose:ident $scope:ident <- $component:ident( $( $arg:expr ),* )) => {
         {
             let child_scope = $compose.scope($crate::scope!($scope.id));
-            $compose.$component(child_scope, $($arg),*)
+            $component($compose, child_scope, ($($arg),*).into())
         }
     };
 }

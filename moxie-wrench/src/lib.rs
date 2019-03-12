@@ -8,6 +8,6 @@ pub mod position;
 pub mod size;
 pub mod surface;
 
-#[moxie::runtime(Components: surface::Surface)]
+#[moxie::runtime(surface::Surface)]
 #[derive(Default)]
 pub struct Toolbox;
