@@ -8,7 +8,7 @@ use {
 };
 
 pub fn channel<T>(callsite: CallsiteId) -> (Sender<T>, Receiver<T>) {
-    let (sender, receiver) = mpsc::channel(10000); // FIXME pick a better default?
+    let (sender, receiver) = mpsc::channel(100);
     (
         Sender {
             source: callsite,

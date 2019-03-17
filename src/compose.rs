@@ -22,10 +22,6 @@ pub trait Compose {
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static;
-    // TODO define `try_task` method too, for potentially fallible tasks?
-    // what should the behavior on error be then? emitting some error event?
-    // could reset the component state, treat it like a redraw of this subtree?
-    // maybe have some `Fallible` component?
 }
 
 #[derive(Default)]
@@ -103,9 +99,6 @@ impl Compose for Scope {
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        // TODO make sure we only have a single task for this callsite at a time
-        // TODO tie the span of this task's execution to the scope
-        // TODO catch panics and abort runtime?
         self.spawner.lock().spawn_obj(Box::new(fut).into()).unwrap();
     }
 }
@@ -127,5 +120,4 @@ impl PartialEq for Scope {
 
 impl Eq for Scope {}
 
-// FIXME this is rly bad yall
 unsafe impl Send for Scope {}

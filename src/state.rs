@@ -29,7 +29,6 @@ impl States {
             if let Some(p) = prev {
                 cell = Some(p);
             } else {
-                // FIXME handle panics in the init fn properly
                 let initialized = init();
                 cell = Some(Arc::new(StateCell::new(
                     Arc::downgrade(&self.revision),
@@ -82,15 +81,11 @@ pub struct Handle<S> {
     __ty_marker: std::marker::PhantomData<S>,
 }
 
-// FIXME this is a huge safety/soundness hole!
 unsafe impl<S> Send for Handle<S> {}
 
 impl<State: 'static> Handle<State> {
-    // TODO if the type impls Hash, we should see whether we can skip updating the revision
     pub fn set(&self, updater: impl FnOnce(State) -> State) {
         if let Some(cell) = self.cell.upgrade() {
-            // FIXME handle panics in the updater
-
             let mut inner = cell.0.contents.lock();
             let inner: &mut Option<Box<Any>> = &mut *inner;
             let inner: &mut Option<State> = inner
@@ -103,7 +98,6 @@ impl<State: 'static> Handle<State> {
 
             let prev: State = inner.take().unwrap();
 
-            // FIXME should be panic-safe
             let new = updater(prev);
             inner.replace(new);
             cell.tick_revision();
@@ -184,11 +178,7 @@ pub(crate) struct StateCellInner {
     contents: AnonymousState,
 }
 
-// TODO make this have a send bound in the default case
 type AnonymousState = Mutex<Option<Box<Any + 'static>>>;
-
-// FIXME scope needs to include a revision, and components should be given a handle to the scope,
-// there should only be one canonical one at a time, rather than having a bunch of split up handles
 
 rental::rental! {
     mod rent_state {

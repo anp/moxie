@@ -1,4 +1,3 @@
-// TODO delete in favor of proc macro
 #[macro_export]
 macro_rules! mox {
     ($compose:ident $scope:ident <- $component:ident( $( $arg:expr ),* )) => {
@@ -43,7 +42,6 @@ macro_rules! channel {
 ///
 /// * a line and column of code,
 /// * in a particular element function,
-/// * TODO: on a particular round of iteration (straight line code always has a single round),
 /// * as well as the moniker which resulted in that particular function's invocation
 ///
 /// It can be derived at any point within any element as long as the parent/invoking/enclosing

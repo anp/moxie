@@ -177,8 +177,6 @@ impl VisitMut for BlockThreader {
 
     /// "Threads" the `compose` and `scope` identifiers through the various macro invocations where
     /// they are required arguments.
-    ///
-    /// TODO: expand macros recursively
     fn visit_macro_mut(&mut self, invocation: &mut Macro) {
         let last_path_segment = &invocation
             .path
