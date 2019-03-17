@@ -1,11 +1,9 @@
 #[macro_export]
 macro_rules! mox {
-    ($compose:ident $scope:ident <- $component:ident( $( $arg:expr ),* )) => {
-        {
-            let child_scope = $compose.scope($crate::scope!($scope.id));
-            $component($compose, child_scope, ($($arg),*).into())
-        }
-    };
+    ($scope:ident <- $props:expr) => {{
+        let child_scope = $scope.child($crate::scope!($scope.id));
+        child_scope.compose($props);
+    }};
 }
 
 #[macro_export]

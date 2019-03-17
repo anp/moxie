@@ -17,7 +17,13 @@ use {
     },
 };
 
+pub trait Component: Clone + std::fmt::Debug + Eq + Hash + PartialEq {
+    fn compose(scp: Scope, props: Self);
+}
+
 pub trait Compose {
+    fn compose<C: Component>(&self, props: C);
+    fn child(&self, id: ScopeId) -> Scope;
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
@@ -31,16 +37,16 @@ pub struct Scopes {
 
 impl Scopes {
     #[doc(hidden)]
-    pub fn get(&self, id: ScopeId, tasker: &impl crate::Runtime) -> Scope {
+    pub fn get(&self, id: ScopeId, tasker: &crate::Runtime) -> Scope {
         let mut port = None;
 
         self.inner.alter(id, |prev: Option<Scope>| {
             let current = prev.unwrap_or_else(|| {
                 Scope::new(
                     id,
-                    tasker.spawner(),
-                    tasker.waker(),
-                    tasker.top_level_exit(),
+                    tasker.spawner.clone(),
+                    tasker.waker.clone(),
+                    tasker.top_level_exit.clone(),
                 )
             });
             port = Some(current.clone());
@@ -89,6 +95,16 @@ impl Scope {
 }
 
 impl Compose for Scope {
+    #[inline]
+    fn child(&self, _id: ScopeId) -> Scope {
+        unimplemented!()
+    }
+
+    #[inline]
+    fn compose<C: Component>(&self, _props: C) {
+        unimplemented!()
+    }
+
     #[inline]
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
         self.states.get_or_init(callsite, f)

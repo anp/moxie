@@ -2,30 +2,36 @@
 
 use {
     moxie::*,
-    moxie_wrench::{color::Color, position::Position, size::Size, surface::*},
+    moxie_wrench::{
+        color::Color,
+        position::Position,
+        size::Size,
+        surface::{CursorMoved, Surface},
+    },
 };
 
-#[moxie::component]
-fn SimpleApp()
-where
-    Self: Surface,
-{
-    let initial_size = Size::new(1920.0, 1080.0);
+#[props]
+struct SimpleApp;
 
-    let color = state! { Color::new(0.0, 0.0, 0.3, 1.0) };
-    let color_hdl: Handle<Color> = color.handle();
+impl Component for SimpleApp {
+    fn compose(scp: Scope, props: Self) {
+        let initial_size = Size::new(1920.0, 1080.0);
 
-    let (send_mouse_events, mut mouse_positions): (Sender<CursorMoved>, _) = channel!();
+        let color = state! { scp <- Color::new(0.0, 0.0, 0.3, 1.0) };
+        let color_hdl: Handle<Color> = color.handle();
 
-    task! {
-        while let Some(cursor_moved) = await!(mouse_positions.next()) {
-            color_hdl.set(|_prev_color| {
-                fun_color_from_mouse_position(initial_size, cursor_moved.position)
-            });
-        }
-    };
+        let (send_mouse_positions, mut mouse_positions): (Sender<CursorMoved>, _) = channel!(scp);
 
-    mox! { Surface(initial_size, send_mouse_events, *color) };
+        task! { scp <-
+            while let Some(cursor_moved) = await!(mouse_positions.next()) {
+                color_hdl.set(|_prev_color| {
+                    fun_color_from_mouse_position(initial_size, cursor_moved.position)
+                });
+            }
+        };
+
+        mox! { scp <- Surface { initial_size, send_mouse_positions, background_color: *color } };
+    }
 }
 
 fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
@@ -46,8 +52,6 @@ fn main() {
         .init();
     log::debug!("logger initialized");
 
-    let runtime = moxie_wrench::Toolbox::default();
     let mut executor = futures::executor::ThreadPool::new().unwrap();
-    let spawner = executor.clone();
-    executor.run(moxie::run(runtime, spawner, simple_app)); // FIXME use the camelcase name!
+    executor.run(Runtime::go(executor.clone(), SimpleApp));
 }

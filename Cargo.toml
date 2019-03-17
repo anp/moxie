@@ -14,7 +14,6 @@ log = "0.4"
 mox = { path = "mox" }
 parking_lot = "0.7"
 rental = "0.5"
-salsa = "0.10.0"
 
 [workspace]
 members = [

@@ -15,14 +15,14 @@ pub use {
     crate::{
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
-        compose::{Compose, Scope, Scopes},
+        compose::{Component, Compose, Scope, Scopes},
         state::{Guard, Handle},
     },
     futures::{
         future::FutureExt,
         stream::{Stream, StreamExt},
     },
-    mox::{component, runtime},
+    mox::props,
     std::future::Future,
 };
 
@@ -47,65 +47,44 @@ use {
     },
 };
 
-pub trait Runtime: TaskBootstrapper + Send + 'static {
-    fn scope(&self, id: caps::ScopeId) -> Scope;
-}
-
-// TODO make this a trait method when impl trait in trait methods works
-pub async fn run<ThisRuntime, RootComponent, RootProps>(
-    mut runtime: ThisRuntime,
+pub struct Runtime {
+    scopes: Scopes,
+    waker: Waker,
     spawner: ThreadPool,
-    root_component: RootComponent,
-) where
-    RootProps: Default,
-    ThisRuntime: Runtime + Unpin + 'static,
-    for<'r> RootComponent: Fn(&'r ThisRuntime, Scope, RootProps),
-{
-    let (exit_handle, exit_registration) = AbortHandle::new_pair();
-
-    // make sure we can be woken back up and exited
-    let mut waker = None;
-    std::future::get_task_waker(|lw| waker = Some(lw.clone()));
-    runtime.set_waker(waker.unwrap());
-    runtime.set_top_level_exit(exit_handle);
-    runtime.set_spawner(spawner);
-
-    // this returns an error on abort, which is the only time we expect it to return at all
-    let _main_compose_loop = await!(Abortable::new(
-        async move {
-            let root_scope = runtime.scope(caps::ScopeId::root());
-            let _ensure_waker_is_set = runtime.waker();
-            loop {
-                root_component(&runtime, root_scope.clone(), Default::default());
-                // unless we stash our own waker above, we'll never get woken again, be careful
-                pending!();
-            }
-        },
-        exit_registration
-    ));
+    top_level_exit: AbortHandle,
 }
 
-#[doc(hidden)]
-#[salsa::query_group(RuntimeStorage)]
-pub trait TaskBootstrapper: salsa::Database {
-    #[salsa::input]
-    fn waker(&self) -> Waker;
-    #[salsa::input]
-    fn spawner(&self) -> ThreadPool;
-    #[salsa::input]
-    fn top_level_exit(&self) -> AbortHandle;
-}
+impl Runtime {
+    pub async fn go(spawner: ThreadPool, root: impl Component) {
+        let (top_level_exit, exit_registration) = AbortHandle::new_pair();
 
-#[doc(hidden)]
-#[salsa::database(RuntimeStorage)]
-#[derive(Default)]
-struct TestTaskRuntime {
-    runtime: salsa::Runtime<Self>,
-}
+        // make sure we can be woken back up and exited
+        let mut waker = None;
+        std::future::get_task_waker(|lw| waker = Some(lw.clone()));
 
-#[doc(hidden)]
-impl salsa::Database for TestTaskRuntime {
-    fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
-        &self.runtime
+        let runtime = Self {
+            scopes: Default::default(),
+            waker: waker.unwrap(),
+            top_level_exit,
+            spawner,
+        };
+
+        // this returns an error on abort, which is the only time we expect it to return at all
+        let _main_compose_loop = await!(Abortable::new(
+            async move {
+                let root_scope = runtime.scope(caps::ScopeId::root());
+                let _ensure_waker_is_set = runtime.waker.clone();
+                loop {
+                    root_scope.compose(root.clone());
+                    // unless we stash our own waker above, we'll never get woken again, be careful
+                    pending!();
+                }
+            },
+            exit_registration
+        ));
+    }
+
+    fn scope(&self, id: caps::ScopeId) -> Scope {
+        self.scopes.get(id, self)
     }
 }
