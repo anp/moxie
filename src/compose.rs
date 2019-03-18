@@ -8,10 +8,12 @@ use {
     parking_lot::Mutex,
     std::{
         any::Any,
+        collections::HashMap,
         hash::{Hash, Hasher},
+        panic::AssertUnwindSafe,
         sync::{
             atomic::{AtomicU64, Ordering},
-            Arc,
+            Arc, Weak,
         },
         task::Waker,
     },
@@ -22,92 +24,99 @@ pub trait Component: Clone + std::fmt::Debug + Eq + Hash + PartialEq {
 }
 
 pub trait Compose {
-    fn compose<C: Component>(&self, props: C);
-    fn child(&self, id: ScopeId) -> Scope;
+    fn compose_child<C: Component>(&self, id: ScopeId, props: C);
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static;
 }
 
-#[derive(Default)]
-pub struct Scopes {
-    inner: chashmap::CHashMap<ScopeId, Scope>,
-}
-
-impl Scopes {
-    #[doc(hidden)]
-    pub fn get(&self, id: ScopeId, tasker: &crate::Runtime) -> Scope {
-        let mut port = None;
-
-        self.inner.alter(id, |prev: Option<Scope>| {
-            let current = prev.unwrap_or_else(|| {
-                Scope::new(
-                    id,
-                    tasker.spawner.clone(),
-                    tasker.waker.clone(),
-                    tasker.top_level_exit.clone(),
-                )
-            });
-            port = Some(current.clone());
-            Some(current)
-        });
-
-        port.unwrap()
-    }
-}
-
 /// Provides a component with access to the persistent state store and futures executor.
-///
-/// Because `salsa` does not yet support generic queries, we need a concrete type that can be
-/// passed as an argument and tracked within the incremental computation system.
 #[derive(Clone, Debug)]
 pub struct Scope {
-    pub id: ScopeId,
-    pub revision: Arc<AtomicU64>,
-    // parent_revision: Weak<AtomicU64>,
-    states: States,
+    inner: Arc<InnerScope>,
+}
 
-    spawner: Arc<Mutex<ThreadPool>>,
-    waker: Waker,
-    exit: AbortHandle,
+#[derive(Clone, Debug)]
+struct WeakScope {
+    inner: Weak<InnerScope>,
 }
 
 impl Scope {
-    pub(crate) fn new(id: ScopeId, spawner: ThreadPool, waker: Waker, exit: AbortHandle) -> Self {
-        Self {
-            id,
-            revision: Arc::new(AtomicU64::new(0)),
-            exit,
-            waker,
-            spawner: Arc::new(Mutex::new(spawner)),
-            states: Default::default(),
+    pub fn id(&self) -> ScopeId {
+        self.inner.id
+    }
+
+    pub(crate) fn root(spawner: ThreadPool, waker: Waker, exit: AbortHandle) -> Self {
+        let new = Self {
+            inner: Arc::new(InnerScope {
+                id: ScopeId::root(),
+                revision: Arc::new(AtomicU64::new(0)),
+                exit,
+                waker,
+                spawner: Mutex::new(spawner),
+                states: Default::default(),
+                parent: None,
+                children: Default::default(),
+            }),
+        };
+
+        debug!("created root scope with id {:?}", new.id());
+
+        new
+    }
+
+    fn child(&self, id: ScopeId) -> Self {
+        let inner = &self.inner;
+
+        // FIXME garbage collect?
+        inner
+            .children
+            .lock()
+            .entry(id)
+            .or_insert_with(|| {
+                let parent = Some(self.weak());
+
+                Self {
+                    inner: Arc::new(InnerScope {
+                        id,
+                        revision: Arc::new(AtomicU64::new(0)),
+                        exit: inner.exit.clone(),
+                        waker: inner.waker.clone(),
+                        spawner: Mutex::new(inner.spawner.lock().clone()),
+                        states: Default::default(),
+                        parent,
+                        children: Mutex::new(Default::default()),
+                    }),
+                }
+            })
+            .clone()
+    }
+
+    fn weak(&self) -> WeakScope {
+        WeakScope {
+            inner: Arc::downgrade(&self.inner),
         }
     }
 
     pub fn waker(&self) -> Waker {
-        self.waker.clone()
+        self.inner.waker.clone()
     }
 
     pub fn top_level_exit_handle(&self) -> AbortHandle {
-        self.exit.clone()
+        self.inner.exit.clone()
     }
 }
 
 impl Compose for Scope {
     #[inline]
-    fn child(&self, _id: ScopeId) -> Scope {
-        unimplemented!()
-    }
-
-    #[inline]
-    fn compose<C: Component>(&self, _props: C) {
-        unimplemented!()
+    fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
+        C::compose(self.child(id), props)
     }
 
     #[inline]
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
-        self.states.get_or_init(callsite, f)
+        self.inner.states.get_or_init(callsite, f)
     }
 
     #[inline]
@@ -115,18 +124,49 @@ impl Compose for Scope {
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        self.spawner.lock().spawn_obj(Box::new(fut).into()).unwrap();
+        debug!("acquiring lock");
+        self.inner
+            .spawner
+            .lock()
+            .spawn_obj(
+                Box::new(AssertUnwindSafe(fut).catch_unwind().map(|r| {
+                    if let Err(e) = r {
+                        error!("user code panicked: {:?}", e);
+                    }
+                }))
+                .into(),
+            )
+            .unwrap();
     }
 }
 
-impl Hash for Scope {
+#[derive(Debug)]
+struct InnerScope {
+    pub id: ScopeId,
+    pub revision: Arc<AtomicU64>,
+    parent: Option<WeakScope>,
+    states: States,
+    children: Mutex<HashMap<ScopeId, Scope>>,
+
+    spawner: Mutex<ThreadPool>,
+    waker: Waker,
+    exit: AbortHandle,
+}
+
+impl Drop for InnerScope {
+    fn drop(&mut self) {
+        trace!("inner scope dropping: {:?}", self);
+    }
+}
+
+impl Hash for InnerScope {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.id.hash(hasher);
         self.revision.load(Ordering::SeqCst).hash(hasher);
     }
 }
 
-impl PartialEq for Scope {
+impl PartialEq for InnerScope {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
             && self.revision.load(Ordering::SeqCst) == other.revision.load(Ordering::SeqCst)
@@ -134,6 +174,6 @@ impl PartialEq for Scope {
     }
 }
 
-impl Eq for Scope {}
+impl Eq for InnerScope {}
 
-unsafe impl Send for Scope {}
+unsafe impl Send for InnerScope {}

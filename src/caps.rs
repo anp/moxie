@@ -1,15 +1,14 @@
 #[macro_export]
 macro_rules! mox {
     ($scope:ident <- $props:expr) => {{
-        let child_scope = $scope.child($crate::scope!($scope.id));
-        child_scope.compose($props);
+        $scope.compose_child($crate::scope!($scope.id()), $props);
     }};
 }
 
 #[macro_export]
 macro_rules! state {
     ($scope:ident <- $init:expr) => {
-        $scope.state($crate::callsite!($scope.id), || $init)
+        $scope.state($crate::callsite!($scope.id()), || $init)
     };
 }
 
@@ -23,14 +22,14 @@ macro_rules! task {
 #[macro_export]
 macro_rules! task_fut (
     ($scope:ident <- $body:expr) => {
-        $scope.task($crate::callsite!($scope.id), ($body))
+        $scope.task($crate::callsite!($scope.id()), ($body))
     };
 );
 
 #[macro_export]
 macro_rules! channel {
     ($scope:ident) => {
-        $crate::channel($crate::callsite!($scope.id))
+        $crate::channel($crate::callsite!($scope.id()))
     };
 }
 

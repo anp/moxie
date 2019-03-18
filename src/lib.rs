@@ -15,7 +15,7 @@ pub use {
     crate::{
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
-        compose::{Component, Compose, Scope, Scopes},
+        compose::{Component, Compose, Scope},
         state::{Guard, Handle},
     },
     futures::{
@@ -47,12 +47,7 @@ use {
     },
 };
 
-pub struct Runtime {
-    scopes: Scopes,
-    waker: Waker,
-    spawner: ThreadPool,
-    top_level_exit: AbortHandle,
-}
+pub struct Runtime;
 
 impl Runtime {
     pub async fn go(spawner: ThreadPool, root: impl Component) {
@@ -61,30 +56,20 @@ impl Runtime {
         // make sure we can be woken back up and exited
         let mut waker = None;
         std::future::get_task_waker(|lw| waker = Some(lw.clone()));
+        let waker = waker.unwrap();
 
-        let runtime = Self {
-            scopes: Default::default(),
-            waker: waker.unwrap(),
-            top_level_exit,
-            spawner,
-        };
+        let root_scope = Scope::root(spawner, waker, top_level_exit);
 
         // this returns an error on abort, which is the only time we expect it to return at all
+        // so we'll just ignore the return value
         let _main_compose_loop = await!(Abortable::new(
             async move {
-                let root_scope = runtime.scope(caps::ScopeId::root());
-                let _ensure_waker_is_set = runtime.waker.clone();
                 loop {
-                    root_scope.compose(root.clone());
-                    // unless we stash our own waker above, we'll never get woken again, be careful
+                    Component::compose(root_scope.clone(), root.clone());
                     pending!();
                 }
             },
             exit_registration
         ));
-    }
-
-    fn scope(&self, id: caps::ScopeId) -> Scope {
-        self.scopes.get(id, self)
     }
 }
