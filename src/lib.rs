@@ -45,6 +45,7 @@ use {
         future::{AbortHandle, Abortable},
         pending,
     },
+    std::panic::{catch_unwind, AssertUnwindSafe},
 };
 
 pub struct Runtime;
@@ -65,7 +66,16 @@ impl Runtime {
         let _main_compose_loop = await!(Abortable::new(
             async move {
                 loop {
-                    Component::compose(root_scope.clone(), root.clone());
+                    let root_scope = AssertUnwindSafe(&root_scope);
+                    let root = AssertUnwindSafe(&root);
+                    if let Err(e) = catch_unwind(move || {
+                        let root_scope = root_scope.clone();
+                        let root = root.clone();
+                        trace!("composing");
+                        Component::compose(root_scope, root);
+                    }) {
+                        error!("error composing: {:?}", e);
+                    }
                     pending!();
                 }
             },
