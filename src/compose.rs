@@ -3,6 +3,7 @@ use {
         caps::{CallsiteId, ScopeId},
         our_prelude::*,
         state::*,
+        witness::*,
     },
     futures::{executor::ThreadPool, future::AbortHandle, task::Spawn},
     parking_lot::Mutex,
@@ -25,10 +26,26 @@ pub trait Component: Clone + std::fmt::Debug + Eq + Hash + PartialEq {
 
 pub trait Compose {
     fn compose_child<C: Component>(&self, id: ScopeId, props: C);
+
     fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
+
     fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static;
+
+    fn record<Node>(&self, node: Node)
+    where
+        Node: Recorded;
+
+    /// Install a `Witness` into this scope. Each witness is responsible for consuming recorded
+    /// nodes of a single type.
+    fn install_witness<W>(&self, witness: W)
+    where
+        W: Witness + Clone + 'static;
+
+    fn remove_witness<W>(&self) -> Option<W>
+    where
+        W: Witness + Clone + 'static;
 }
 
 /// Provides a component with access to the persistent state store and futures executor.
@@ -56,8 +73,10 @@ impl Scope {
                 waker,
                 spawner: Mutex::new(spawner),
                 states: Default::default(),
+                recorder: Default::default(),
                 parent: None,
                 children: Default::default(),
+                bind_order: Default::default(),
             }),
         };
 
@@ -76,6 +95,7 @@ impl Scope {
             .entry(id)
             .or_insert_with(|| {
                 let parent = Some(self.weak());
+                self.inner.bind_order.lock().push(id);
 
                 Self {
                     inner: Arc::new(InnerScope {
@@ -85,8 +105,10 @@ impl Scope {
                         waker: inner.waker.clone(),
                         spawner: Mutex::new(inner.spawner.lock().clone()),
                         states: Default::default(),
+                        recorder: Default::default(),
                         parent,
-                        children: Mutex::new(Default::default()),
+                        children: Default::default(),
+                        bind_order: Default::default(),
                     }),
                 }
             })
@@ -106,12 +128,31 @@ impl Scope {
     pub fn top_level_exit_handle(&self) -> AbortHandle {
         self.inner.exit.clone()
     }
+
+    fn prepare_to_compose(&self) {
+        self.inner.bind_order.lock().clear();
+        self.inner.recorder.flush_before_composition();
+    }
+
+    fn finish_composition(&self) {
+        // TODO garbage collect state, children, and tasks
+        self.inner.recorder.show_witnesses_after_composition();
+    }
 }
 
 impl Compose for Scope {
     #[inline]
     fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
-        C::compose(self.child(id), props)
+        let child = self.child(id);
+
+        // TODO only run if things have changed
+        {
+            let child = child.clone();
+            child.prepare_to_compose();
+            C::compose(child, props);
+        }
+
+        child.finish_composition();
     }
 
     #[inline]
@@ -124,7 +165,7 @@ impl Compose for Scope {
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        debug!("acquiring lock");
+        trace!("acquiring lock");
         self.inner
             .spawner
             .lock()
@@ -138,6 +179,28 @@ impl Compose for Scope {
             )
             .unwrap();
     }
+
+    #[inline]
+    fn record<N>(&self, node: N)
+    where
+        N: Recorded,
+    {
+        self.inner.recorder.record(node);
+    }
+
+    fn install_witness<W>(&self, witness: W)
+    where
+        W: Witness,
+    {
+        self.inner.recorder.install(witness);
+    }
+
+    fn remove_witness<W>(&self) -> Option<W>
+    where
+        W: Clone + Witness + 'static,
+    {
+        self.inner.recorder.remove()
+    }
 }
 
 #[derive(Debug)]
@@ -147,6 +210,8 @@ struct InnerScope {
     parent: Option<WeakScope>,
     states: States,
     children: Mutex<HashMap<ScopeId, Scope>>,
+    bind_order: Mutex<Vec<ScopeId>>,
+    recorder: Recorder,
 
     spawner: Mutex<ThreadPool>,
     waker: Waker,

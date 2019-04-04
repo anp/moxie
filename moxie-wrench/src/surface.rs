@@ -3,7 +3,7 @@ use {
     gleam::gl,
     glutin::{GlContext, GlWindow},
     log::*,
-    moxie::{Sender, *},
+    moxie::{witness::Witness, Sender, *},
     parking_lot::Mutex,
     std::sync::Arc,
     webrender::api::*,
@@ -15,18 +15,23 @@ mod events;
 pub use events::CursorMoved;
 
 #[props]
-pub struct Surface {
+pub struct Surface<Root: Component> {
     pub background_color: Color,
     pub initial_size: Size,
     pub send_mouse_positions: Sender<CursorMoved>,
+    pub child: Root,
 }
 
-impl Component for Surface {
+impl<Root> Component for Surface<Root>
+where
+    Root: Component,
+{
     fn compose(scp: Scope, props: Self) {
         let Self {
             background_color,
             initial_size,
             send_mouse_positions,
+            child,
         } = props;
 
         let (window, notifier) = &*state!(
@@ -126,6 +131,12 @@ impl Component for Surface {
         let layout_size = framebuffer_size.to_f32() / euclid::TypedScale::new(device_pixel_ratio);
 
         let builder = DisplayListBuilder::new(pipeline_id, layout_size);
+        scp.install_witness(DisplayList(builder));
+
+        mox! { scp <- child };
+
+        let builder: DisplayList = scp.remove_witness().unwrap();
+        let builder = builder.0;
 
         trace!("new render xact, generating frame");
         let mut txn = Transaction::new();
@@ -151,5 +162,33 @@ impl Component for Surface {
 
         trace!("swapping buffers");
         window.swap_buffers().unwrap();
+    }
+}
+
+#[derive(Clone)]
+struct DisplayList(DisplayListBuilder);
+
+impl Witness for DisplayList {
+    type Node = ();
+
+    fn see_component(&mut self, _id: ScopeId, _parent: ScopeId, _nodes: &[Self::Node]) {}
+}
+
+impl std::fmt::Debug for DisplayList {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("DisplayList").finish()
+    }
+}
+
+impl std::ops::Deref for DisplayList {
+    type Target = DisplayListBuilder;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for DisplayList {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

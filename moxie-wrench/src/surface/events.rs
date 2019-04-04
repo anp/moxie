@@ -1,8 +1,8 @@
 use {
     crate::{events::WindowEvents, position::Position},
-    futures::future::AbortHandle,
+    futures::{future::AbortHandle, stream::StreamExt},
     log::*,
-    moxie::{Sender, *},
+    moxie::Sender,
     std::task::Waker,
     winit::WindowId,
 };

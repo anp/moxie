@@ -1,20 +1,23 @@
 #![feature(await_macro, futures_api, async_await, integer_atomics)]
 
 use {
+    futures::stream::StreamExt,
     moxie::*,
     moxie_wrench::{
         color::Color,
         position::Position,
+        rect::Rect,
         size::Size,
         surface::{CursorMoved, Surface},
     },
+    noisy_float::prelude::*,
 };
 
 #[props]
 struct SimpleApp;
 
 impl Component for SimpleApp {
-    fn compose(scp: Scope, props: Self) {
+    fn compose(scp: Scope, SimpleApp: Self) {
         let initial_size = Size::new(1920.0, 1080.0);
 
         let color = state! { scp <- Color::new(0.0, 0.0, 0.3, 1.0) };
@@ -30,7 +33,19 @@ impl Component for SimpleApp {
             }
         };
 
-        mox! { scp <- Surface { initial_size, send_mouse_positions, background_color: *color } };
+        mox! { scp <- Surface {
+            initial_size,
+            send_mouse_positions,
+            background_color: *color,
+            child: Rect {
+                // TODO vary these based on inputs
+                color: Color::new(0.0, 0.0, 0.3, 1.0),
+                x: r32(600.0),
+                y: r32(450.0),
+                width: r32(200.0),
+                height: r32(100.0),
+            },
+        }};
     }
 }
 
@@ -43,7 +58,7 @@ fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
 
 fn main() {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Trace)
+        .filter_level(log::LevelFilter::Debug)
         .default_format_timestamp(true)
         .default_format_level(true)
         .default_format_module_path(true)

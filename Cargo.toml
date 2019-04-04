@@ -8,6 +8,7 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 
 [dependencies]
 chashmap = "2"
+downcast-rs = "1"
 futures-preview = "0.3.0-alpha.13"
 fxhash = "0.2"
 log = "0.4"

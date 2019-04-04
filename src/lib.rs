@@ -1,6 +1,13 @@
 #![deny(clippy::all)]
 #![allow(clippy::unused_unit)]
-#![feature(await_macro, futures_api, async_await, integer_atomics, gen_future)]
+#![feature(
+    await_macro,
+    futures_api,
+    async_await,
+    integer_atomics,
+    gen_future,
+    trait_alias
+)]
 
 #[macro_use]
 extern crate rental;
@@ -10,6 +17,7 @@ mod caps;
 mod channel;
 mod compose;
 mod state;
+pub mod witness;
 
 pub use {
     crate::{
@@ -18,18 +26,14 @@ pub use {
         compose::{Component, Compose, Scope},
         state::{Guard, Handle},
     },
-    futures::{
-        future::FutureExt,
-        stream::{Stream, StreamExt},
-    },
     mox::props,
-    std::future::Future,
 };
 
 pub(crate) mod our_prelude {
     pub use {
         futures::{
             future::{Aborted, FutureExt, FutureObj},
+            stream::{Stream, StreamExt},
             task::Spawn,
         },
         log::{debug, error, info, trace, warn},
@@ -72,9 +76,10 @@ impl Runtime {
                         let root_scope = root_scope.clone();
                         let root = root.clone();
                         trace!("composing");
-                        Component::compose(root_scope, root);
+                        mox! { root_scope <- root };
                     }) {
                         error!("error composing: {:?}", e);
+                        // TODO soft restart (reset state, recordings, etc)
                     }
                     pending!();
                 }
