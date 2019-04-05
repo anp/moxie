@@ -17,13 +17,12 @@ mod caps;
 mod channel;
 mod compose;
 mod state;
-pub mod witness;
 
 pub use {
     crate::{
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
-        compose::{Component, Compose, Scope},
+        compose::{Component, Compose, Scope, Witness},
         state::{Guard, Handle},
     },
     mox::props,

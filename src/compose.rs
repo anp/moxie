@@ -3,13 +3,14 @@ use {
         caps::{CallsiteId, ScopeId},
         our_prelude::*,
         state::*,
-        witness::*,
     },
+    downcast_rs::*,
     futures::{executor::ThreadPool, future::AbortHandle, task::Spawn},
     parking_lot::Mutex,
     std::{
-        any::Any,
+        any::{Any, TypeId},
         collections::HashMap,
+        fmt::Debug,
         hash::{Hash, Hasher},
         panic::AssertUnwindSafe,
         sync::{
@@ -73,10 +74,10 @@ impl Scope {
                 waker,
                 spawner: Mutex::new(spawner),
                 states: Default::default(),
-                recorder: Default::default(),
                 parent: None,
                 children: Default::default(),
                 bind_order: Default::default(),
+                records: Default::default(),
             }),
         };
 
@@ -105,10 +106,10 @@ impl Scope {
                         waker: inner.waker.clone(),
                         spawner: Mutex::new(inner.spawner.lock().clone()),
                         states: Default::default(),
-                        recorder: Default::default(),
                         parent,
                         children: Default::default(),
                         bind_order: Default::default(),
+                        records: Default::default(),
                     }),
                 }
             })
@@ -131,12 +132,14 @@ impl Scope {
 
     fn prepare_to_compose(&self) {
         self.inner.bind_order.lock().clear();
-        self.inner.recorder.flush_before_composition();
+        self.for_each_record_storage(Records::flush_before_composition);
     }
 
     fn finish_composition(&self) {
         // TODO garbage collect state, children, and tasks
-        self.inner.recorder.show_witnesses_after_composition();
+        self.for_each_record_storage(|records| {
+            records.show_witnesses_after_composition(self.clone())
+        })
     }
 }
 
@@ -185,21 +188,32 @@ impl Compose for Scope {
     where
         N: Recorded,
     {
-        self.inner.recorder.record(node);
+        self.with_record_storage(|storage| {
+            storage.records.push(node);
+        });
     }
 
     fn install_witness<W>(&self, witness: W)
     where
         W: Witness,
     {
-        self.inner.recorder.install(witness);
+        self.with_record_storage(|storage: &mut RecordStorage<W::Node>| {
+            storage
+                .witnesses
+                .insert(TypeId::of::<W>(), Box::new(witness))
+        });
     }
 
     fn remove_witness<W>(&self) -> Option<W>
     where
         W: Clone + Witness + 'static,
     {
-        self.inner.recorder.remove()
+        self.with_record_storage(|storage: &mut RecordStorage<W::Node>| {
+            storage.witnesses.remove(&TypeId::of::<W>())
+        })
+        .map(Downcast::into_any)
+        .map(|any: Box<std::any::Any>| any.downcast().unwrap())
+        .map(|boxed: Box<W>| *boxed)
     }
 }
 
@@ -211,7 +225,7 @@ struct InnerScope {
     states: States,
     children: Mutex<HashMap<ScopeId, Scope>>,
     bind_order: Mutex<Vec<ScopeId>>,
-    recorder: Recorder,
+    records: Mutex<HashMap<TypeId, Box<dyn Records>>>,
 
     spawner: Mutex<ThreadPool>,
     waker: Waker,
@@ -242,3 +256,117 @@ impl PartialEq for InnerScope {
 impl Eq for InnerScope {}
 
 unsafe impl Send for InnerScope {}
+
+/// A `Witness` is a generic implementor of a close analogy to React's reconciliation/commit phase.
+/// (TODO better explanation!)
+///
+/// After a composition, each component has recorded a set of nodes into its scope, and those nodes
+/// must be operated on in some backend-specific way to fully realize them within the UI. For
+/// example, on the web a `Witness<DomElement>` might be responsible for attaching DOM nodes to
+/// their parents appropriately. On a GPU-oriented backend like Webrender, a `Witness<DisplayItem>`
+/// might be responsible for creating a single display list from the memoized node fragments of
+/// a given composition's components.
+pub trait Witness: Debug + Downcast + Send + 'static {
+    type Node: Recorded;
+    fn see_component(&mut self, id: ScopeId, parent: ScopeId, nodes: &[Self::Node]);
+}
+
+impl_downcast!(Witness assoc Node where Node: Recorded);
+
+pub trait Recorded = Debug + Send + Sized + 'static;
+
+impl Scope {
+    fn with_record_storage<Node, Ret>(
+        &self,
+        op: impl FnOnce(&mut RecordStorage<Node>) -> Ret,
+    ) -> Ret
+    where
+        Node: Recorded,
+    {
+        let mut storage_by_node = self.inner.records.lock();
+        #[allow(clippy::borrowed_box)]
+        let storage: &mut Box<dyn Records> = storage_by_node
+            .entry(TypeId::of::<Node>())
+            .or_insert_with(|| {
+                let storage: RecordStorage<Node> = RecordStorage::default();
+                Box::new(storage)
+            });
+        let storage: &mut dyn Records = &mut **storage;
+        let storage: &mut std::any::Any = storage.as_any_mut();
+        let storage: &mut RecordStorage<Node> = storage.downcast_mut().unwrap();
+
+        // not panic-safe, maybe fix?
+        op(storage)
+    }
+
+    fn for_each_record_storage(&self, op: impl Fn(&mut dyn Records)) {
+        self.inner
+            .records
+            .lock()
+            .values_mut()
+            .map(|b| &mut **b)
+            .for_each(op)
+    }
+}
+
+#[derive(Debug)]
+struct RecordStorage<Node>
+where
+    Node: Recorded,
+{
+    records: Vec<Node>,
+    witnesses: HashMap<TypeId, Box<dyn Witness<Node = Node>>>,
+}
+
+trait Records: Debug + Downcast + Send + 'static {
+    /// Clear recorded nodes from storage. Should be called immediately before composing in this
+    /// scope.
+    fn flush_before_composition(&mut self);
+
+    /// Show the current component hierarchy and associated recordings to all installed witnesses.
+    ///
+    /// Probably needs a better name. Takes the current scope as an argument so that it can
+    /// traverse to children. Vague name, poor API. We'll refactor this another time.
+    fn show_witnesses_after_composition(&mut self, scope: Scope);
+}
+impl_downcast!(Records);
+
+impl<Node> Records for RecordStorage<Node>
+where
+    Node: Recorded,
+{
+    fn flush_before_composition(&mut self) {
+        self.records.clear();
+    }
+
+    fn show_witnesses_after_composition(&mut self, scope: Scope) {
+        for witness in self.witnesses.values_mut() {
+            let parent = scope
+                .inner
+                .parent
+                .as_ref()
+                .and_then(|p| p.inner.upgrade().map(|p| p.id))
+                // only the root has a null parent, and we never "see" the root bc it never gets
+                // any witnesses installed
+                .unwrap();
+            witness.see_component(scope.id(), parent, &self.records);
+
+            let children = scope.inner.children.lock();
+            for child_scope in children.values() {
+                // TODO recurse and show this witness the child nodes
+            }
+        }
+    }
+}
+
+impl<Node> Default for RecordStorage<Node>
+where
+    Node: Recorded,
+{
+    fn default() -> Self {
+        Self {
+            records: Default::default(),
+            witnesses: Default::default(),
+        }
+    }
+}

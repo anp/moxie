@@ -3,7 +3,7 @@ use {
     gleam::gl,
     glutin::{GlContext, GlWindow},
     log::*,
-    moxie::{witness::Witness, Sender, *},
+    moxie::*,
     parking_lot::Mutex,
     std::sync::Arc,
     webrender::api::*,
