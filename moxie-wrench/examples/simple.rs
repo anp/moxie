@@ -22,14 +22,19 @@ impl Component for SimpleApp {
         let initial_size = Size::new(1920.0, 1080.0);
 
         let color = state! { scp <- Color::new(0.0, 0.0, 0.3, 1.0) };
-        let color_hdl: Handle<Color> = color.handle();
+        let rect_pos = state! { scp <- (r32(600.0), r32(450.0)) };
 
         let (send_mouse_positions, mut mouse_positions): (Sender<CursorMoved>, _) = channel!(scp);
 
+        let color_hdl: Handle<Color> = color.handle();
+        let rect_pos_hdl = rect_pos.handle();
         task! { scp <-
             while let Some(cursor_moved) = await!(mouse_positions.next()) {
                 color_hdl.set(|_prev_color| {
                     fun_color_from_mouse_position(initial_size, cursor_moved.position)
+                });
+                rect_pos_hdl.set(|_prev_position| {
+                    (r32(cursor_moved.position.x.raw() as f32), r32(cursor_moved.position.y.raw() as f32))
                 });
             }
         };
@@ -39,10 +44,9 @@ impl Component for SimpleApp {
             send_mouse_positions,
             background_color: *color,
             child: Rect {
-                // TODO vary these based on inputs
                 color: Color::new(0.0, 0.0, 0.3, 1.0),
-                x: r32(600.0),
-                y: r32(450.0),
+                x: rect_pos.0,
+                y: rect_pos.1,
                 width: r32(200.0),
                 height: r32(100.0),
             },
