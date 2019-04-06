@@ -1,9 +1,9 @@
 use {
     crate::{events::WindowEvents, position::Position},
     futures::{future::AbortHandle, stream::StreamExt},
-    log::*,
     moxie::Sender,
     std::task::Waker,
+    tokio_trace::*,
     winit::WindowId,
 };
 

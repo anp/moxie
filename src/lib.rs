@@ -28,6 +28,9 @@ pub use {
     mox::props,
 };
 
+#[doc(hidden)]
+pub use typename;
+
 pub(crate) mod our_prelude {
     pub use {
         futures::{
@@ -35,9 +38,9 @@ pub(crate) mod our_prelude {
             stream::{Stream, StreamExt},
             task::Spawn,
         },
-        log::{debug, error, info, trace, warn},
         parking_lot::Mutex,
         std::{future::Future, sync::Arc, task::Waker},
+        tokio_trace::{debug, error, field, info, span, trace, warn, Level},
     };
 }
 

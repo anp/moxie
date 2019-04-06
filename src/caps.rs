@@ -47,7 +47,7 @@ macro_rules! channel {
 /// `Moniker`s are the tool underlying elements, state, context, etc. because they allow us to map
 /// from a "pure" function back to a state location.
 #[doc(hidden)]
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq)]
 pub struct Moniker(usize);
 
 impl Moniker {
@@ -55,6 +55,12 @@ impl Moniker {
     #[inline]
     pub fn new(scope: ScopeId, callsite: &'static str) -> Self {
         Moniker(fxhash::hash(&(scope, callsite)))
+    }
+}
+
+impl std::fmt::Debug for Moniker {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("m{:#x}", self.0))
     }
 }
 
@@ -90,7 +96,7 @@ macro_rules! scope {
 }
 
 #[doc(hidden)]
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq)]
 pub struct CallsiteId {
     scope: ScopeId,
     site: Moniker,
@@ -100,6 +106,12 @@ impl CallsiteId {
     #[doc(hidden)]
     pub fn new(scope: ScopeId, site: Moniker) -> Self {
         Self { scope, site }
+    }
+}
+
+impl std::fmt::Debug for CallsiteId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_tuple("CallsiteId").field(&self.site).finish()
     }
 }
 

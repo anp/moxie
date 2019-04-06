@@ -11,10 +11,11 @@ chashmap = "2"
 downcast-rs = "1"
 futures-preview = "0.3.0-alpha.13"
 fxhash = "0.2"
-log = "0.4"
 mox = { path = "mox" }
 parking_lot = "0.7"
 rental = "0.5"
+tokio-trace = { git = "https://github.com/tokio-rs/tokio" }
+typename = "0.1"
 
 [workspace]
 members = [

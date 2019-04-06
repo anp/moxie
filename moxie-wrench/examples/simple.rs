@@ -11,6 +11,7 @@ use {
         surface::{CursorMoved, Surface},
     },
     noisy_float::prelude::*,
+    tokio_trace::*,
 };
 
 #[props]
@@ -57,15 +58,15 @@ fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
 }
 
 fn main() {
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Debug)
-        .default_format_timestamp(true)
-        .default_format_level(true)
-        .default_format_module_path(true)
-        .filter(Some("webrender"), log::LevelFilter::Info)
-        .init();
-    log::debug!("logger initialized");
+    std::env::set_var(
+        "RUST_LOG",
+        "debug,webrender=info,moxie::compose=trace,moxie_wrench::surface=trace",
+    );
+    let subscriber = tokio_trace_fmt::FmtSubscriber::builder().full().finish();
 
-    let mut executor = futures::executor::ThreadPool::new().unwrap();
-    executor.run(Runtime::go(executor.clone(), SimpleApp));
+    tokio_trace::subscriber::with_default(subscriber, || {
+        info!("spawning executor");
+        let mut executor = futures::executor::ThreadPool::new().unwrap();
+        executor.run(Runtime::go(executor.clone(), SimpleApp));
+    });
 }

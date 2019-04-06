@@ -2,10 +2,10 @@ use {
     crate::{color::Color, events::WindowEvents, size::Size},
     gleam::gl,
     glutin::{GlContext, GlWindow},
-    log::*,
     moxie::*,
     parking_lot::Mutex,
     std::sync::Arc,
+    tokio_trace::*,
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
 };
@@ -130,12 +130,16 @@ where
         let pipeline_id = PipelineId(0, 0);
         let layout_size = framebuffer_size.to_f32() / euclid::TypedScale::new(device_pixel_ratio);
 
-        let builder = DisplayListBuilder::new(pipeline_id, layout_size);
-        scp.install_witness(DisplayList(builder));
+        let child_id = scope!(scp.id());
+        let child_scope = scp.child(child_id);
+        child_scope.install_witness(DisplayList(DisplayListBuilder::new(
+            pipeline_id,
+            layout_size,
+        )));
 
-        mox! { scp <- child };
+        scp.compose_child(child_id, child);
 
-        let builder: DisplayList = scp.remove_witness().unwrap();
+        let builder: DisplayList = child_scope.remove_witness().unwrap();
         let builder = builder.0;
 
         trace!("new render xact, generating frame");
@@ -169,9 +173,15 @@ where
 struct DisplayList(DisplayListBuilder);
 
 impl Witness for DisplayList {
-    type Node = ();
+    type Node = (SpecificDisplayItem, LayoutPrimitiveInfo);
 
-    fn see_component(&mut self, _id: ScopeId, _parent: ScopeId, _nodes: &[Self::Node]) {}
+    fn see_component(&mut self, id: ScopeId, _parent: ScopeId, nodes: &[Self::Node]) {
+        trace!({ scope = field::debug(&id), nodes_len = nodes.len() }, "pushing onto displaylist");
+
+        for item in nodes {
+            self.push_item(&item.0, &item.1);
+        }
+    }
 }
 
 impl std::fmt::Debug for DisplayList {
