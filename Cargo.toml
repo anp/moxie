@@ -20,5 +20,7 @@ typename = "0.1"
 [workspace]
 members = [
     "mox",
+    "moxie-dom",
+    "moxie-dom/examples/hacking/crate",
     "moxie-wrench",
 ]
