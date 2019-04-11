@@ -4,20 +4,31 @@ use {
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
         any::{Any, TypeId},
+        hash::{Hash, Hasher},
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc, Weak,
         },
+        task::Waker,
     },
 };
 
 #[derive(Clone, Debug)]
 pub(crate) struct States {
     revision: Arc<AtomicU64>,
+    compose_waker: Waker,
     contents: Arc<CHashMap<CallsiteId, Arc<StateCell>>>,
 }
 
 impl States {
+    pub(crate) fn new(compose_waker: Waker) -> Self {
+        Self {
+            revision: Arc::new(AtomicU64::new(0)),
+            contents: Arc::new(CHashMap::default()),
+            compose_waker,
+        }
+    }
+
     pub(crate) fn get_or_init<State: 'static>(
         &self,
         callsite: CallsiteId,
@@ -32,6 +43,7 @@ impl States {
                 let initialized = init();
                 cell = Some(Arc::new(StateCell::new(
                     Arc::downgrade(&self.revision),
+                    self.compose_waker.clone(),
                     initialized,
                 )));
             }
@@ -55,15 +67,6 @@ impl States {
     }
 }
 
-impl Default for States {
-    fn default() -> Self {
-        States {
-            revision: Arc::new(AtomicU64::new(0)),
-            contents: Arc::new(CHashMap::new()),
-        }
-    }
-}
-
 impl PartialEq for States {
     fn eq(&self, other: &Self) -> bool {
         self.revision.load(Ordering::SeqCst) == other.revision.load(Ordering::SeqCst)
@@ -76,11 +79,28 @@ impl PartialEq for States {
 ///
 /// A `Handle` doesn't directly capture any values from the state database, and instead acquires
 /// the appropriate locks when `set` is called.
+#[derive(Clone, Debug)]
 pub struct Handle<S> {
     cell: WeakStateCell,
     __ty_marker: std::marker::PhantomData<S>,
 }
 
+impl<S> Hash for Handle<S> {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        // lol we require hash eagerly in case it can be used as an optimization for future
+        // versions, so this never gets called right now i guess?
+        unimplemented!()
+    }
+}
+
+impl<S> PartialEq for Handle<S> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cell.eq(&other.cell)
+    }
+}
+impl<S> Eq for Handle<S> {}
+
+// FIXME this should be a smallish refactor to remove, it's incorrect i think
 unsafe impl<S> Send for Handle<S> {}
 
 impl<State: 'static> Handle<State> {
@@ -136,13 +156,18 @@ impl<S: 'static> std::ops::DerefMut for Guard<S> {
 pub(crate) struct StateCell(Arc<StateCellInner>);
 
 impl StateCell {
-    fn new<State: 'static>(scope_revision: Weak<AtomicU64>, state: State) -> Self {
+    fn new<State: 'static>(
+        scope_revision: Weak<AtomicU64>,
+        compose_waker: Waker,
+        state: State,
+    ) -> Self {
         let ty = TypeId::of::<State>();
         let contents: Box<Option<State>> = Box::new(Some(state));
         let contents = Mutex::new(Some(contents as Box<Any>));
         StateCell(Arc::new(StateCellInner {
             ty,
             contents,
+            compose_waker,
             scope_revision,
         }))
     }
@@ -156,6 +181,7 @@ impl StateCell {
             .scope_revision
             .upgrade()
             .map(|inner| inner.fetch_add(1, Ordering::SeqCst));
+        self.0.compose_waker.wake();
     }
 }
 
@@ -168,13 +194,24 @@ impl WeakStateCell {
     }
 }
 
-unsafe impl Send for StateCellInner {}
-unsafe impl Sync for StateCellInner {}
+impl Hash for WeakStateCell {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        unimplemented!()
+    }
+}
+
+impl PartialEq for WeakStateCell {
+    fn eq(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.0, &other.0)
+    }
+}
+impl Eq for WeakStateCell {}
 
 #[derive(Debug)]
 pub(crate) struct StateCellInner {
     ty: TypeId,
     scope_revision: Weak<AtomicU64>,
+    compose_waker: Waker,
     contents: AnonymousState,
 }
 

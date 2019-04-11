@@ -30,8 +30,8 @@ impl Component for Rect {
         scp.record((
             SpecificDisplayItem::Rectangle(RectangleDisplayItem { color }),
             LayoutPrimitiveInfo::new(TypedRect::new(
-                TypedPoint2D::new(x.raw(), y.raw()),
-                TypedSize2D::new(width.raw(), height.raw()),
+                TypedPoint2D::new(x.raw() as f32, y.raw() as f32),
+                TypedSize2D::new(width.raw() as f32, height.raw() as f32),
             )),
         ));
     }

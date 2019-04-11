@@ -3,7 +3,6 @@
 
 pub mod color;
 mod drop_guard;
-mod events;
 pub mod position;
 pub mod rect;
 pub mod size;

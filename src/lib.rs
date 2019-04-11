@@ -6,7 +6,8 @@
     async_await,
     integer_atomics,
     gen_future,
-    trait_alias
+    trait_alias,
+    weak_ptr_eq
 )]
 
 #[macro_use]

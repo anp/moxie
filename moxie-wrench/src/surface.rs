@@ -1,5 +1,5 @@
 use {
-    crate::{color::Color, events::WindowEvents, size::Size},
+    crate::{color::Color, position::Position, size::Size},
     gleam::gl,
     glutin::{GlContext, GlWindow},
     moxie::*,
@@ -8,17 +8,14 @@ use {
     tokio_trace::*,
     webrender::api::*,
     webrender::ShaderPrecacheFlags,
+    winit::EventsLoopProxy,
 };
-
-mod events;
-
-pub use events::CursorMoved;
 
 #[props]
 pub struct Surface<Root: Component> {
     pub background_color: Color,
     pub initial_size: Size,
-    pub send_mouse_positions: Sender<CursorMoved>,
+    pub mouse_position: Handle<Position>,
     pub child: Root,
 }
 
@@ -30,27 +27,63 @@ where
         let Self {
             background_color,
             initial_size,
-            send_mouse_positions,
+            mouse_position,
             child,
         } = props;
 
-        let (window, notifier) = &*state!(
+        let (window, events_proxy) = &*state!(
             scp <- {
-                let events = WindowEvents::new();
+                let (window_sender, window_recv) = std::sync::mpsc::sync_channel(1);
 
-                info!("initializing window");
-                let window = GlWindow::new(
-                    winit::WindowBuilder::new()
-                        .with_title("moxie is alive?")
-                        .with_multitouch()
-                        .with_dimensions(initial_size.into()),
-                    glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
-                        opengl_version: (3, 2),
-                        opengles_version: (3, 0),
-                    }),
-                    events.raw_loop(),
-                )
-                .unwrap();
+                let event_loop_span = tokio_trace::span!(Level::INFO, "event loop");
+                std::thread::spawn(move || {
+                    event_loop_span.enter(move || {
+                        let mut events = winit::EventsLoop::new();
+
+                        info!("initializing window");
+                        let window = GlWindow::new(
+                            winit::WindowBuilder::new()
+                                .with_title("moxie is alive?")
+                                .with_multitouch()
+                                .with_dimensions(initial_size.into()),
+                            glutin::ContextBuilder::new().with_gl(glutin::GlRequest::GlThenGles {
+                                opengl_version: (3, 2),
+                                opengles_version: (3, 0),
+                            }),
+                            &events,
+                        )
+                        .unwrap();
+
+                        window_sender.send((window, events.create_proxy())).unwrap();
+                        info!("entering event loop");
+                        events.run_forever(|event| -> winit::ControlFlow {
+                            use winit::{Event, WindowEvent::*};
+                            trace!(
+                                { event = field::debug(&event) },
+                                "event received on event thread"
+                            );
+
+                            if let Event::WindowEvent { event, .. } = event {
+                                match event {
+                                    CursorMoved { position, .. } => {
+                                        mouse_position.set(|_| {
+                                            position.into()
+                                        });
+                                    }
+                                    _ => {
+                                        trace!(
+                                            { event = field::debug(&event) },
+                                            "unhandled window event"
+                                        );
+                                    }
+                                }
+                            }
+
+                            winit::ControlFlow::Continue
+                        });
+                    })
+                });
+                let (window, events_proxy) = window_recv.recv().unwrap();
 
                 let window_id = window.id();
                 info!("making window {:?} the current window", window_id);
@@ -58,20 +91,7 @@ where
                     window.make_current().ok();
                 }
 
-                // this notifier needs to be created before events is captured by the move block below
-                let notifier = events.notifier();
-
-                task_fut! {
-                    scp <- events::dispatch(
-                        window_id,
-                        events,
-                        scp.waker(),
-                        scp.top_level_exit_handle(),
-                        send_mouse_positions,
-                    )
-                };
-
-                (window, notifier)
+                (window, events_proxy)
             }
         );
 
@@ -104,7 +124,7 @@ where
 
                 let (renderer, sender) = webrender::Renderer::new(
                     gl.clone(),
-                    (*notifier).clone(),
+                    Box::new(WrenchBanger::new(events_proxy.clone())),
                     webrender::RendererOptions {
                         precache_flags: ShaderPrecacheFlags::EMPTY,
                         device_pixel_ratio,
@@ -200,5 +220,45 @@ impl std::ops::Deref for DisplayList {
 impl std::ops::DerefMut for DisplayList {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+#[derive(Clone)]
+struct WrenchBanger {
+    proxy: EventsLoopProxy,
+}
+
+impl WrenchBanger {
+    fn new(proxy: EventsLoopProxy) -> Self {
+        Self { proxy }
+    }
+}
+
+impl RenderNotifier for WrenchBanger {
+    fn clone(&self) -> Box<dyn RenderNotifier> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn wake_up(&self) {
+        let _ = self.proxy.wakeup();
+    }
+
+    fn new_frame_ready(
+        &self,
+        id: webrender::api::DocumentId,
+        scrolled: bool,
+        composite_needed: bool,
+        render_time: Option<u64>,
+    ) {
+        trace!(
+            {
+                document = field::debug(&id),
+                render_time = field::debug(&render_time),
+                scrolled = scrolled,
+                composite_needed = composite_needed
+            },
+            "new frame ready",
+        );
+        self.wake_up();
     }
 }

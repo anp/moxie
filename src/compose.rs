@@ -70,14 +70,14 @@ impl Scope {
             inner: Arc::new(InnerScope {
                 id: ScopeId::root(),
                 revision: Arc::new(AtomicU64::new(0)),
-                exit,
-                waker,
+                states: States::new(waker.clone()),
                 spawner: Mutex::new(spawner),
-                states: Default::default(),
                 parent: None,
                 children: Default::default(),
                 bind_order: Default::default(),
                 records: Default::default(),
+                exit,
+                waker,
             }),
         }
     }
@@ -101,7 +101,7 @@ impl Scope {
                         exit: inner.exit.clone(),
                         waker: inner.waker.clone(),
                         spawner: Mutex::new(inner.spawner.lock().clone()),
-                        states: Default::default(),
+                        states: States::new(inner.waker.clone()),
                         parent,
                         children: Default::default(),
                         bind_order: Default::default(),
@@ -116,10 +116,6 @@ impl Scope {
         WeakScope {
             inner: Arc::downgrade(&self.inner),
         }
-    }
-
-    pub fn waker(&self) -> Waker {
-        self.inner.waker.clone()
     }
 
     pub fn top_level_exit_handle(&self) -> AbortHandle {
