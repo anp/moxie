@@ -66,9 +66,7 @@ where
                             if let Event::WindowEvent { event, .. } = event {
                                 match event {
                                     CursorMoved { position, .. } => {
-                                        mouse_position.set(|_| {
-                                            position.into()
-                                        });
+                                        mouse_position.set(|_| position.into());
                                     }
                                     _ => {
                                         trace!(

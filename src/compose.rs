@@ -146,7 +146,7 @@ impl Compose for Scope {
     #[inline]
     fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
         span!(
-            tokio_trace::Level::DEBUG,
+            tokio_trace::Level::TRACE,
             "compose_child",
             id = field::debug(&id),
             name = field::display(&C::type_name()),
@@ -210,7 +210,7 @@ impl Compose for Scope {
         W: Witness,
     {
         self.with_record_storage(|storage: &mut RecordStorage<W::Node>| {
-            debug!("installing witness");
+            trace!("installing witness");
             storage
                 .witnesses
                 .insert(TypeId::of::<W>(), Box::new(witness))

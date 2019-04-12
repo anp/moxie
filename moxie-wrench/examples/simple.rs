@@ -50,7 +50,7 @@ fn fun_color_from_mouse_position(window_size: Size, pos: Position) -> Color {
 fn main() {
     std::env::set_var(
         "RUST_LOG",
-        "debug,webrender=info,moxie::compose=trace,moxie_wrench::surface=trace",
+        "debug,webrender=info,moxie::compose=debug,moxie_wrench::surface=debug",
     );
     let subscriber = tokio_trace_fmt::FmtSubscriber::builder().full().finish();
 
