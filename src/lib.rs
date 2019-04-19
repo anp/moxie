@@ -17,6 +17,7 @@ extern crate rental;
 mod caps;
 mod channel;
 mod compose;
+mod spawn;
 mod state;
 
 pub use {
@@ -24,6 +25,7 @@ pub use {
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
         compose::{Component, Compose, Scope, Witness},
+        spawn::PrioritySpawn,
         state::{Guard, Handle},
     },
     mox::props,
@@ -48,7 +50,6 @@ pub(crate) mod our_prelude {
 use {
     crate::our_prelude::*,
     futures::{
-        executor::ThreadPool,
         future::{AbortHandle, Abortable},
         pending,
     },
@@ -58,7 +59,7 @@ use {
 pub struct Runtime;
 
 impl Runtime {
-    pub async fn go(spawner: ThreadPool, root: impl Component) {
+    pub async fn go(spawner: impl PrioritySpawn + Send + 'static, root: impl Component) {
         let (top_level_exit, exit_registration) = AbortHandle::new_pair();
 
         // make sure we can be woken back up and exited
