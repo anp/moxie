@@ -2,15 +2,16 @@ use {
     crate::{
         caps::{CallsiteId, ScopeId},
         our_prelude::*,
+        spawn::*,
         state::*,
     },
     downcast_rs::*,
-    futures::{executor::ThreadPool, future::AbortHandle, task::Spawn},
+    futures::{future::AbortHandle, task::Spawn},
     parking_lot::Mutex,
     std::{
         any::{Any, TypeId},
         collections::HashMap,
-        fmt::Debug,
+        fmt::{Debug, Formatter, Result as FmtResult},
         hash::{Hash, Hasher},
         panic::AssertUnwindSafe,
         sync::{
@@ -65,14 +66,17 @@ impl Scope {
         self.inner.id
     }
 
-    pub(crate) fn root(spawner: ThreadPool, waker: Waker, exit: AbortHandle) -> Self {
+    pub(crate) fn root<Spawner>(spawner: Spawner, waker: Waker, exit: AbortHandle) -> Self
+    where
+        Spawner: PrioritySpawn + Send + 'static,
+    {
         Self {
             inner: Arc::new(InnerScope {
                 id: ScopeId::root(),
                 revision: Arc::new(AtomicU64::new(0)),
                 exit,
                 waker,
-                spawner: Mutex::new(spawner),
+                spawner: Mutex::new(Box::new(spawner)),
                 states: Default::default(),
                 parent: None,
                 children: Default::default(),
@@ -100,7 +104,7 @@ impl Scope {
                         revision: Arc::new(AtomicU64::new(0)),
                         exit: inner.exit.clone(),
                         waker: inner.waker.clone(),
-                        spawner: Mutex::new(inner.spawner.lock().clone()),
+                        spawner: Mutex::new(inner.spawner.lock().child()),
                         states: Default::default(),
                         parent,
                         children: Default::default(),
@@ -235,7 +239,6 @@ impl Compose for Scope {
     }
 }
 
-#[derive(Debug)]
 struct InnerScope {
     pub id: ScopeId,
     pub revision: Arc<AtomicU64>,
@@ -245,9 +248,15 @@ struct InnerScope {
     bind_order: Mutex<Vec<ScopeId>>,
     records: Mutex<HashMap<TypeId, Mutex<Box<dyn Records>>>>,
 
-    spawner: Mutex<ThreadPool>,
+    spawner: Mutex<Box<dyn PrioritySpawn>>,
     waker: Waker,
     exit: AbortHandle,
+}
+
+impl Debug for InnerScope {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        unimplemented!()
+    }
 }
 
 impl Drop for InnerScope {
@@ -361,7 +370,7 @@ where
     witnesses: HashMap<TypeId, Box<dyn Witness<Node = Node>>>,
 }
 
-trait Records: Debug + Downcast + Send + 'static {
+trait Records: Debug + Downcast + 'static {
     /// Clear recorded nodes from storage. Should be called immediately before composing in this
     /// scope.
     fn flush_before_composition(&mut self);
