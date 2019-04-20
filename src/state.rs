@@ -85,24 +85,6 @@ pub struct Handle<S> {
     __ty_marker: std::marker::PhantomData<S>,
 }
 
-impl<S> Hash for Handle<S> {
-    fn hash<H: Hasher>(&self, h: &mut H) {
-        // lol we require hash eagerly in case it can be used as an optimization for future
-        // versions, so this never gets called right now i guess?
-        unimplemented!()
-    }
-}
-
-impl<S> PartialEq for Handle<S> {
-    fn eq(&self, other: &Self) -> bool {
-        self.cell.eq(&other.cell)
-    }
-}
-impl<S> Eq for Handle<S> {}
-
-// FIXME this should be a smallish refactor to remove, it's incorrect i think
-unsafe impl<S> Send for Handle<S> {}
-
 impl<State: 'static> Handle<State> {
     pub fn set(&self, updater: impl FnOnce(State) -> State) {
         if let Some(cell) = self.cell.upgrade() {

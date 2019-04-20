@@ -59,7 +59,7 @@ use {
 pub struct Runtime;
 
 impl Runtime {
-    pub async fn go(spawner: impl PrioritySpawn + Send + 'static, root: impl Component) {
+    pub async fn go(spawner: impl PrioritySpawn + 'static, root: impl Component) {
         let (top_level_exit, exit_registration) = AbortHandle::new_pair();
 
         // make sure we can be woken back up and exited

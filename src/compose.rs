@@ -68,7 +68,7 @@ impl Scope {
 
     pub(crate) fn root<Spawner>(spawner: Spawner, waker: Waker, exit: AbortHandle) -> Self
     where
-        Spawner: PrioritySpawn + Send + 'static,
+        Spawner: PrioritySpawn + 'static,
     {
         Self {
             inner: Arc::new(InnerScope {
@@ -291,14 +291,14 @@ unsafe impl Send for InnerScope {}
 /// their parents appropriately. On a GPU-oriented backend like Webrender, a `Witness<DisplayItem>`
 /// might be responsible for creating a single display list from the memoized node fragments of
 /// a given composition's components.
-pub trait Witness: Debug + Downcast + Send + 'static {
+pub trait Witness: Debug + Downcast + 'static {
     type Node: Recorded;
     fn see_component(&mut self, id: ScopeId, parent: ScopeId, nodes: &[Self::Node]);
 }
 
 impl_downcast!(Witness assoc Node where Node: Recorded);
 
-pub trait Recorded = Debug + Send + Sized + 'static;
+pub trait Recorded = Debug + Sized + 'static;
 
 impl Scope {
     fn with_record_storage<Node, Ret>(
