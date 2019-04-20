@@ -81,8 +81,6 @@ pub struct Handle<S> {
     __ty_marker: std::marker::PhantomData<S>,
 }
 
-unsafe impl<S> Send for Handle<S> {}
-
 impl<State: 'static> Handle<State> {
     pub fn set(&self, updater: impl FnOnce(State) -> State) {
         if let Some(cell) = self.cell.upgrade() {
