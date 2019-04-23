@@ -6,7 +6,7 @@ use {
         state::*,
     },
     downcast_rs::*,
-    futures::{future::AbortHandle, task::Spawn},
+    futures::future::AbortHandle,
     parking_lot::Mutex,
     std::{
         any::{Any, TypeId},
@@ -191,7 +191,7 @@ impl Compose for Scope {
         self.inner
             .spawner
             .lock()
-            .spawn_obj(
+            .spawn_local(
                 Box::new(AssertUnwindSafe(fut).catch_unwind().map(|r| {
                     if let Err(e) = r {
                         error!({ error = field::debug(&e) }, "user code panicked");
