@@ -22,7 +22,7 @@ use {
     },
 };
 
-pub trait Component: Clone + std::fmt::Debug + Eq + Hash + PartialEq + typename::TypeName {
+pub trait Component: Clone + std::fmt::Debug + Eq + PartialEq + typename::TypeName {
     fn compose(scp: Scope, props: Self);
 }
 

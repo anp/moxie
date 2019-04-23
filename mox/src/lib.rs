@@ -15,15 +15,15 @@ pub fn props(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let ty_params = ast.generics.type_params().map(|p| &p.ident);
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let mut expanded = quote::quote!(#[derive(Clone, Debug, Eq, Hash, PartialEq)]);
+    let mut expanded = quote::quote!(#[derive(Clone, Debug, Eq, PartialEq)]);
 
     expanded.extend(input);
 
     expanded.extend(quote::quote! (
-        impl #impl_generics ::moxie::typename::TypeName for #name #ty_generics #where_clause {
+        impl #impl_generics typename::TypeName for #name #ty_generics #where_clause {
             fn fmt(f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 let _ty_name = concat!(module_path!(), "::", stringify!(#name));
-                ::moxie::typename::fmt::TypeFormatter::new(f, _ty_name)
+                typename::fmt::TypeFormatter::new(f, _ty_name)
                     #(
                         .type_param::< #ty_params >()
                     )*
