@@ -254,7 +254,7 @@ struct InnerScope {
 }
 
 impl Debug for InnerScope {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, _f: &mut Formatter) -> FmtResult {
         unimplemented!()
     }
 }
