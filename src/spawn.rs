@@ -1,19 +1,21 @@
 use futures::{
-    future::FutureObj,
-    task::{Spawn, SpawnError},
+    future::LocalFutureObj,
+    task::{LocalSpawn, SpawnError},
 };
 
+// FIXME this is inefficient boooooo
+
 pub trait PrioritySpawn {
-    fn spawn_obj(&mut self, future: FutureObj<'static, ()>) -> Result<(), SpawnError>;
+    fn spawn_local(&mut self, fut: LocalFutureObj<'static, ()>) -> Result<(), SpawnError>;
     fn child(&self) -> Box<dyn PrioritySpawn>;
 }
 
 impl<Exec> PrioritySpawn for Exec
 where
-    Exec: Clone + Spawn + 'static,
+    Exec: Clone + LocalSpawn + 'static,
 {
-    fn spawn_obj(&mut self, future: FutureObj<'static, ()>) -> Result<(), SpawnError> {
-        Spawn::spawn_obj(self, future)
+    fn spawn_local(&mut self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
+        LocalSpawn::spawn_local_obj(self, future)
     }
 
     fn child(&self) -> Box<dyn PrioritySpawn> {
