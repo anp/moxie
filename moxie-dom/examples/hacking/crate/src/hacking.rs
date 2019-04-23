@@ -1,29 +1,36 @@
-use moxie_dom::greet;
+// use moxie_dom::prelude::*;
+use stdweb::{web::INode, *};
 use wasm_bindgen::prelude::*;
 
-// Called by our JS entry point to run the example.
-#[wasm_bindgen]
-pub fn run() -> Result<(), JsValue> {
-    set_panic_hook();
+// #[props]
+// struct HackedApp;
 
-    let window = web_sys::window().expect("should have a Window");
-    let document = window.document().expect("should have a Document");
+// impl Component for HackedApp {
+//     fn compose(scp: Scope, HackedApp: Self) {
+//         // todo
+//     }
+// }
 
-    let p: web_sys::Node = document.create_element("p")?.into();
-    p.set_text_content(Some("Hello from Rust, WebAssembly, and Webpack!"));
+#[wasm_bindgen(start)]
+pub fn main() -> Result<(), JsValue> {
+    stdweb::initialize();
 
-    let body = document.body().expect("should have a body");
-    let body: &web_sys::Node = body.as_ref();
-    body.append_child(&p)?;
+    js! {
+        console.log("exec'ing main");
+    }
+    // println!("execing main, printed with std");
+    // let document = web::document();
+    // let body = document.body().unwrap();
 
-    greet();
+    // Runtime::go(
+    //     moxie_dom::WebSpawner,
+    //     DomBinding {
+    //         root: HackedApp,
+    //         node: body.as_node().to_owned(),
+    //     },
+    // );
+
+    stdweb::event_loop();
 
     Ok(())
-}
-
-fn set_panic_hook() {
-    // When the `console_error_panic_hook` feature is enabled, we can call the
-    // `set_panic_hook` function to get better error messages if we ever panic.
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
 }

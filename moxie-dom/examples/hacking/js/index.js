@@ -1,3 +1,4 @@
+console.log("loading wasm...");
 import("../crate/pkg").then(module => {
-  module.run();
+  console.log("module start ended");
 });
