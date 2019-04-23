@@ -1,73 +1,48 @@
-use {
-    moxie::*,
-    std::hash::{Hash, Hasher},
-    wasm_bindgen::prelude::*,
-};
-
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
+pub mod prelude {
+    pub use moxie::{self, *};
 }
 
-pub fn greet() {
-    alert("Hello, moxie-dom!");
-}
+use crate::prelude::*;
 
-#[derive(Clone, Debug)]
-pub struct Node(web_sys::Node);
+// pub struct WebSpawner;
 
-impl PartialEq for Node {
-    fn eq(&self, other: &Self) -> bool {
-        unimplemented!()
-    }
-}
-impl Eq for Node {}
+// impl PrioritySpawn for WebSpawner {
+//     fn spawn_local(&mut self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
+//         wasm_bindgen_futures::spawn_local(future.unit_error().compat());
+//         Ok(())
+//     }
 
-impl From<web_sys::Node> for Node {
-    fn from(inner: web_sys::Node) -> Self {
-        Node(inner)
-    }
-}
+//     fn child(&self) -> Box<dyn PrioritySpawn> {
+//         Box::new(WebSpawner)
+//     }
+// }
 
-impl Hash for Node {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        unimplemented!()
-    }
-}
+// #[props]
+// pub struct DomBinding<Root: Component> {
+//     pub node: web::Node,
+//     pub root: Root,
+// }
 
-// TODO(anp): better name for this struct
-#[props]
-pub struct DomBinding<Root: Component> {
-    node: Node,
-    root: Root,
-}
+// impl<Root> Component for DomBinding<Root>
+// where
+//     Root: Component,
+// {
+//     fn compose(scp: Scope, Self { node, root }: Self) {
+//         let child_id = scope!(scp.id());
+//         let child_scope = scp.child(child_id);
+//         // child_scope.install_witness(Weaver::attached_to(node));
 
-impl<Root> Component for DomBinding<Root>
-where
-    Root: Component,
-{
-    fn compose(scp: Scope, Self { node, root }: Self) {
-        let child_id = scope!(scp.id());
-        let child_scope = scp.child(child_id);
-        // child_scope.install_witness(Weaver::attached_to(node));
+//         scp.compose_child(child_id, root);
 
-        scp.compose_child(child_id, root);
+//         // let weaver: Weaver = child_scope.remove_witness().unwrap();
 
-        // let weaver: Weaver = child_scope.remove_witness().unwrap();
+//         // TODO make all the nodes go together?
+//     }
+// }
 
-        // TODO make all the nodes go together?
-    }
-}
+// #[props]
+// pub struct Span {}
 
-#[props]
-pub struct Span {}
-
-impl Component for Span {
-    fn compose(scp: Scope, props: Self) {}
-}
+// impl Component for Span {
+//     fn compose(scp: Scope, props: Self) {}
+// }
