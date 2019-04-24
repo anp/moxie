@@ -12,6 +12,7 @@ pub struct CursorMoved {
     pub position: Position,
 }
 
+#[allow(clippy::cyclomatic_complexity)]
 pub(crate) async fn dispatch(
     this_window: WindowId,
     mut events: WindowEvents,
