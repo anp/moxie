@@ -43,7 +43,7 @@ pub(crate) mod our_prelude {
         },
         parking_lot::Mutex,
         std::{future::Future, sync::Arc, task::Waker},
-        tokio_trace::{debug, error, field, info, span, trace, warn, Level},
+        tokio_trace::*,
     };
 }
 

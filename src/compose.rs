@@ -259,7 +259,7 @@ impl Debug for InnerScope {
 
 impl Drop for InnerScope {
     fn drop(&mut self) {
-        trace!({ scope = field::debug(self) }, "inner scope dropping");
+        trace!({ scope = field::debug(&self) }, "inner scope dropping");
     }
 }
 
