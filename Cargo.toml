@@ -14,8 +14,12 @@ fxhash = "0.2"
 mox = { path = "mox" }
 parking_lot = "0.7"
 rental = "0.5"
-tokio-trace = { git = "https://github.com/tokio-rs/tokio" }
+tokio-trace = { version = "0.1", features = ["log"], optional = true }
 typename = "0.1"
+
+[features]
+default = [ "instrument" ]
+instrument = [ "tokio-trace" ]
 
 [workspace]
 members = [

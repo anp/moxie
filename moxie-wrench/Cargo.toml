@@ -13,7 +13,7 @@ noisy_float = "0.1"
 parking_lot = "0.7"
 time = "0.1"
 timer = "0.2"
-tokio-trace = { git = "https://github.com/tokio-rs/tokio" }
+tokio-trace = { version = "0.1", features = ["log"] }
 webrender = "0.58"
 winit = "0.16"
 
