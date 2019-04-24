@@ -57,6 +57,8 @@ fn main() {
     tokio_trace::subscriber::with_default(subscriber, || {
         info!("spawning executor");
         let mut executor = futures::executor::ThreadPool::new().unwrap();
+        // FIXME migrate to new spawn-ish api and allow observing a shutdown channel as a blocking
+        // future
         executor.run(Runtime::go(executor.clone(), SimpleApp));
     });
 }
