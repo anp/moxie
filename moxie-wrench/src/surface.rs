@@ -22,6 +22,7 @@ impl<Root> Component for Surface<Root>
 where
     Root: Component,
 {
+    #[allow(clippy::cyclomatic_complexity)]
     fn compose(scp: Scope, props: Self) {
         let Self {
             background_color,
