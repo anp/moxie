@@ -1,6 +1,9 @@
 // use moxie_dom::prelude::*;
-use stdweb::{web::INode, *};
-use wasm_bindgen::prelude::*;
+use {
+    log::*,
+    stdweb::{web::INode, *},
+    wasm_bindgen::prelude::*,
+};
 
 // #[props]
 // struct HackedApp;
@@ -13,14 +16,12 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
+    console_log::init_with_level(log::Level::Debug).unwrap();
     stdweb::initialize();
 
-    js! {
-        console.log("exec'ing main");
-    }
-    // println!("execing main, printed with std");
-    // let document = web::document();
-    // let body = document.body().unwrap();
+    debug!("document.body");
+    let document = web::document();
+    let body = document.body().unwrap();
 
     // Runtime::go(
     //     moxie_dom::WebSpawner,
@@ -29,8 +30,6 @@ pub fn main() -> Result<(), JsValue> {
     //         node: body.as_node().to_owned(),
     //     },
     // );
-
-    stdweb::event_loop();
 
     Ok(())
 }
