@@ -8,11 +8,8 @@ license = "Apache-2.0/MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
+console_log = "0.1"
+log = "0.4"
 # moxie-dom = { path = "../../../" }
 stdweb = "0.4.16"
-tokio-trace = "0.1"
 wasm-bindgen = "0.2"
-# wee_alloc = { version = "0.4.2", optional = true }
-
-[profile.release]
-opt-level = "s"
