@@ -1,35 +1,34 @@
-// use moxie_dom::prelude::*;
 use {
     log::*,
+    moxie_dom::prelude::*,
     stdweb::{web::INode, *},
     wasm_bindgen::prelude::*,
 };
 
-// #[props]
-// struct HackedApp;
+#[props]
+struct HackedApp;
 
-// impl Component for HackedApp {
-//     fn compose(scp: Scope, HackedApp: Self) {
-//         // todo
-//     }
-// }
+impl Component for HackedApp {
+    fn compose(scp: Scope, HackedApp: Self) {
+        // todo
+    }
+}
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    console_log::init_with_level(log::Level::Debug).unwrap();
+    console_log::init().unwrap();
     stdweb::initialize();
 
-    debug!("document.body");
     let document = web::document();
     let body = document.body().unwrap();
 
-    // Runtime::go(
-    //     moxie_dom::WebSpawner,
-    //     DomBinding {
-    //         root: HackedApp,
-    //         node: body.as_node().to_owned(),
-    //     },
-    // );
+    Runtime::go(
+        moxie_dom::WebSpawner,
+        DomBinding {
+            root: HackedApp,
+            node: body.as_node().to_owned(),
+        },
+    );
 
     Ok(())
 }
