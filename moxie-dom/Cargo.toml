@@ -14,6 +14,7 @@ futures01 = { package = "futures", version = "0.1", optional = true }
 futures-preview = { version = "0.3.0-alpha.13", features = ["compat"] }
 moxie = { path = "../", version = "0.1" }
 stdweb = "0.4.16"
+tokio-trace = { version = "0.1", features = ["log"] }
 wasm-bindgen-futures= "0.3"
 wasm-bindgen = "0.2"
 
