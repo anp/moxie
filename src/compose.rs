@@ -43,11 +43,11 @@ pub trait Compose {
     /// nodes of a single type.
     fn install_witness<W>(&self, witness: W)
     where
-        W: Witness + Clone + 'static;
+        W: Witness + 'static;
 
     fn remove_witness<W>(&self) -> Option<W>
     where
-        W: Witness + Clone + 'static;
+        W: Witness + 'static;
 }
 
 /// Provides a component with access to the persistent state store and futures executor.
@@ -64,6 +64,18 @@ struct WeakScope {
 impl Scope {
     pub fn id(&self) -> ScopeId {
         self.inner.id
+    }
+
+    pub fn compose_child_with_witness<C, W>(&self, child_id: ScopeId, props: C, witness: W) -> W
+    where
+        C: Component,
+        W: Witness,
+    {
+        info!("composing child with witness");
+        let child_scope = self.child(child_id);
+        child_scope.install_witness(witness);
+        self.compose_child(child_id, props);
+        child_scope.remove_witness().unwrap()
     }
 
     pub(crate) fn root<Spawner>(spawner: Spawner, waker: Waker, exit: AbortHandle) -> Self
@@ -227,7 +239,7 @@ impl Compose for Scope {
 
     fn remove_witness<W>(&self) -> Option<W>
     where
-        W: Clone + Witness + 'static,
+        W: Witness,
     {
         self.with_record_storage(|storage: &mut RecordStorage<W::Node>| {
             trace!("removing witness");
