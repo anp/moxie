@@ -1,18 +1,20 @@
 pub mod prelude {
     pub use {
-        crate::{DomBinding, WebSpawner},
+        crate::{DomBinding, Span, WebSpawner},
         moxie::{self, *},
     };
 }
 
 use {
-    crate::prelude::*,
+    crate::{prelude::*, weaver::Weaver},
     futures::{
         future::{FutureExt, LocalFutureObj, TryFutureExt},
         task::SpawnError,
     },
     stdweb::*,
 };
+
+mod weaver;
 
 pub struct WebSpawner;
 
@@ -38,21 +40,26 @@ where
     Root: Component,
 {
     fn compose(scp: Scope, Self { node, root }: Self) {
-        let child_id = scope!(scp.id());
-        let child_scope = scp.child(child_id);
-        // child_scope.install_witness(Weaver::attached_to(node));
-
-        scp.compose_child(child_id, root);
-
-        // let weaver: Weaver = child_scope.remove_witness().unwrap();
-
-        // TODO make all the nodes go together?
+        scp.compose_child_with_witness(scope!(scp.id()), root, Weaver::attached_to(scp.id(), node))
+            .weave();
     }
 }
 
-// #[props]
-// pub struct Span {}
+#[props]
+pub struct Span {
+    pub text: Option<String>,
+}
 
-// impl Component for Span {
-//     fn compose(scp: Scope, props: Self) {}
-// }
+impl Component for Span {
+    fn compose(scp: Scope, props: Self) {
+        use stdweb::web::{INode, Node};
+        let node = state!(scp <- web::document().create_element("p").unwrap());
+
+        if let Some(text) = &props.text {
+            node.set_text_content(text);
+        }
+
+        let raw: Node = node.clone().into();
+        scp.record(raw);
+    }
+}
