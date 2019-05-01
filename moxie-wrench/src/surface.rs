@@ -7,8 +7,7 @@ use {
     std::sync::Arc,
     tokio_trace::*,
     webrender::api::*,
-    webrender::ShaderPrecacheFlags,
-    winit::EventsLoopProxy,
+    webrender::{Renderer, ShaderPrecacheFlags},
 };
 
 #[props]
@@ -23,6 +22,7 @@ impl<Root> Component for Surface<Root>
 where
     Root: Component,
 {
+    #[allow(clippy::cyclomatic_complexity)]
     fn compose(scp: Scope, props: Self) {
         let Self {
             background_color,
@@ -135,7 +135,7 @@ where
 
                 // webrender is not happy if we fail to deinit the renderer by ownership
                 // before its Drop impl runs
-                let renderer = crate::drop_guard::DropGuard::new(renderer, |r| r.deinit());
+                let renderer = crate::drop_guard::DropGuard::new(renderer, Renderer::deinit);
 
                 (Arc::new(Mutex::new(renderer)), Arc::new(Mutex::new(sender)))
             }

@@ -17,6 +17,7 @@ extern crate rental;
 mod caps;
 mod channel;
 mod compose;
+mod spawn;
 mod state;
 
 pub use {
@@ -24,6 +25,7 @@ pub use {
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
         compose::{Component, Compose, Scope, Witness},
+        spawn::PrioritySpawn,
         state::{Guard, Handle},
     },
     mox::props,
@@ -41,14 +43,13 @@ pub(crate) mod our_prelude {
         },
         parking_lot::Mutex,
         std::{future::Future, sync::Arc, task::Waker},
-        tokio_trace::{debug, error, field, info, span, trace, warn, Level},
+        tokio_trace::*,
     };
 }
 
 use {
     crate::our_prelude::*,
     futures::{
-        executor::ThreadPool,
         future::{AbortHandle, Abortable},
         pending,
     },
@@ -58,36 +59,45 @@ use {
 pub struct Runtime;
 
 impl Runtime {
-    pub async fn go(spawner: ThreadPool, root: impl Component) {
-        let (top_level_exit, exit_registration) = AbortHandle::new_pair();
+    pub fn go(spawner: impl PrioritySpawn + 'static, root: impl Component + 'static) {
+        let mut root_spawner = spawner.child();
+        root_spawner
+            .spawn_local(
+                async {
+                    let (top_level_exit, exit_registration) = AbortHandle::new_pair();
 
-        // make sure we can be woken back up and exited
-        let mut waker = None;
-        std::future::get_task_waker(|lw| waker = Some(lw.clone()));
-        let waker = waker.unwrap();
+                    // make sure we can be woken back up and exited
+                    let mut waker = None;
+                    std::future::get_task_waker(|lw| waker = Some(lw.clone()));
+                    let waker = waker.unwrap();
 
-        let root_scope = Scope::root(spawner, waker, top_level_exit);
+                    let root_scope = Scope::root(spawner, waker, top_level_exit);
 
-        // this returns an error on abort, which is the only time we expect it to return at all
-        // so we'll just ignore the return value
-        let _main_compose_loop = await!(Abortable::new(
-            async move {
-                loop {
-                    let root_scope = AssertUnwindSafe(&root_scope);
-                    let root = AssertUnwindSafe(&root);
-                    if let Err(e) = catch_unwind(move || {
-                        let root_scope = root_scope.clone();
-                        let root = root.clone();
-                        trace!("composing");
-                        mox! { root_scope <- root };
-                    }) {
-                        error!("error composing: {:?}", e);
-                        // TODO soft restart (reset state, recordings, etc)
-                    }
-                    pending!();
+                    // this returns an error on abort, which is the only time we expect it to return at all
+                    // so we'll just ignore the return value
+                    let _main_compose_loop = await!(Abortable::new(
+                        async move {
+                            loop {
+                                let root_scope = AssertUnwindSafe(&root_scope);
+                                let root = AssertUnwindSafe(&root);
+                                if let Err(e) = catch_unwind(move || {
+                                    let root_scope = root_scope.clone();
+                                    let root = root.clone();
+                                    trace!("composing");
+                                    mox! { root_scope <- root };
+                                }) {
+                                    error!("error composing: {:?}", e);
+                                    // TODO soft restart (reset state, recordings, etc)
+                                }
+                                pending!();
+                            }
+                        },
+                        exit_registration
+                    ));
                 }
-            },
-            exit_registration
-        ));
+                    .boxed()
+                    .into(),
+            )
+            .unwrap();
     }
 }
