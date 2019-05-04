@@ -1,14 +1,5 @@
 #![deny(clippy::all)]
-#![allow(clippy::unused_unit)]
-#![feature(
-    await_macro,
-    futures_api,
-    async_await,
-    integer_atomics,
-    gen_future,
-    trait_alias,
-    weak_ptr_eq
-)]
+#![feature(await_macro, async_await, gen_future, weak_ptr_eq)]
 
 #[macro_use]
 extern crate rental;
@@ -24,7 +15,7 @@ pub use {
     crate::{
         caps::{CallsiteId, Moniker, ScopeId},
         channel::{channel, Sender},
-        compose::{Component, Compose, Scope, Witness},
+        compose::{Component, Scope, Witness},
         spawn::PrioritySpawn,
         state::{Guard, Handle},
     },
@@ -49,10 +40,7 @@ pub(crate) mod our_prelude {
 
 use {
     crate::our_prelude::*,
-    futures::{
-        future::{AbortHandle, Abortable},
-        pending,
-    },
+    futures::future::{AbortHandle, Abortable},
     std::panic::{catch_unwind, AssertUnwindSafe},
 };
 
@@ -60,26 +48,27 @@ pub struct Runtime;
 
 impl Runtime {
     pub fn go(spawner: impl PrioritySpawn + 'static, root: impl Component + 'static) {
+        let (top_level_exit, exit_registration) = AbortHandle::new_pair();
         let mut root_spawner = spawner.child();
         root_spawner
             .spawn_local(
-                async {
-                    let (top_level_exit, exit_registration) = AbortHandle::new_pair();
-
-                    // make sure we can be woken back up and exited
-                    let mut waker = None;
-                    std::future::get_task_waker(|lw| waker = Some(lw.clone()));
-                    let waker = waker.unwrap();
-
-                    let root_scope = Scope::root(spawner, waker, top_level_exit);
-
-                    // this returns an error on abort, which is the only time we expect it to return at all
-                    // so we'll just ignore the return value
-                    let _main_compose_loop = await!(Abortable::new(
+                Box::new(
+                    Abortable::new(
                         async move {
+                            // make sure we can be woken back up and exited
+                            let waker = {
+                                let mut waker = None;
+                                std::future::get_task_context(|cx| {
+                                    waker = Some(cx.waker().clone())
+                                });
+                                waker.unwrap()
+                            };
+
+                            let root_scope = Scope::root(spawner, waker, top_level_exit);
+
                             loop {
                                 let root_scope = AssertUnwindSafe(&root_scope);
-                                let root = AssertUnwindSafe(&root);
+                                let root = root.clone();
                                 if let Err(e) = catch_unwind(move || {
                                     let root_scope = root_scope.clone();
                                     let root = root.clone();
@@ -89,14 +78,14 @@ impl Runtime {
                                     error!("error composing: {:?}", e);
                                     // TODO soft restart (reset state, recordings, etc)
                                 }
-                                pending!();
+                                futures::pending!();
                             }
                         },
-                        exit_registration
-                    ));
-                }
-                    .boxed()
-                    .into(),
+                        exit_registration,
+                    )
+                    .map(|_| ()),
+                )
+                .into(),
             )
             .unwrap();
     }

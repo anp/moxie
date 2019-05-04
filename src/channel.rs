@@ -1,3 +1,6 @@
+// FIXME(anp) this is definitely a clippy bug?
+#![allow(clippy::needless_lifetimes)]
+
 use {
     crate::{caps::CallsiteId, our_prelude::*},
     futures::{

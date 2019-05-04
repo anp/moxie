@@ -8,6 +8,7 @@ use {
     tokio_trace::*,
     webrender::api::*,
     webrender::{Renderer, ShaderPrecacheFlags},
+    winit::EventsLoopProxy,
 };
 
 #[props]
@@ -22,7 +23,7 @@ impl<Root> Component for Surface<Root>
 where
     Root: Component,
 {
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     fn compose(scp: Scope, props: Self) {
         let Self {
             background_color,

@@ -5,6 +5,7 @@ use {
     std::{
         any::{Any, TypeId},
         hash::{Hash, Hasher},
+        panic::UnwindSafe,
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc, Weak,
@@ -29,7 +30,7 @@ impl States {
         }
     }
 
-    pub(crate) fn get_or_init<State: 'static>(
+    pub(crate) fn get_or_init<State: UnwindSafe + 'static>(
         &self,
         callsite: CallsiteId,
         init: impl FnOnce() -> State,
@@ -50,20 +51,7 @@ impl States {
             cell.clone()
         });
 
-        let cell = cell.unwrap();
-
-        Guard {
-            cell: cell.downgrade(),
-            rented: crate::state::RentedGuard::new(cell, |cell| {
-                MutexGuard::map((*cell).0.contents.lock(), |any| {
-                    let anon: &mut Box<Any> = any.as_mut().unwrap();
-
-                    let casted: &mut Option<State> = anon.downcast_mut().unwrap();
-
-                    casted.as_mut().unwrap()
-                })
-            }),
-        }
+        cell.unwrap().guard()
     }
 }
 
@@ -85,27 +73,18 @@ pub struct Handle<S> {
     __ty_marker: std::marker::PhantomData<S>,
 }
 
-impl<State: 'static> Handle<State> {
+impl<State: UnwindSafe + 'static> Handle<State> {
     pub fn set(&self, updater: impl FnOnce(State) -> State) {
         if let Some(cell) = self.cell.upgrade() {
-            let mut inner = cell.0.contents.lock();
-            let inner: &mut Option<Box<Any>> = &mut *inner;
-            let inner: &mut Option<State> = inner
-                .as_mut()
-                .map(|anon| {
-                    anon.downcast_mut()
-                        .expect("failed type cast from state cell")
-                })
-                .unwrap();
-
+            let mut inner = cell.0.lock();
             let prev: State = inner.take().unwrap();
-
             let new = updater(prev);
             inner.replace(new);
-            cell.tick_revision();
         }
     }
 }
+
+impl<State> UnwindSafe for Handle<State> where State: UnwindSafe {}
 
 pub struct Guard<S: 'static> {
     pub(crate) cell: WeakStateCell,
@@ -138,14 +117,14 @@ impl<S: 'static> std::ops::DerefMut for Guard<S> {
 pub(crate) struct StateCell(Arc<StateCellInner>);
 
 impl StateCell {
-    fn new<State: 'static>(
+    fn new<State: UnwindSafe + 'static>(
         scope_revision: Weak<AtomicU64>,
         compose_waker: Waker,
         state: State,
     ) -> Self {
         let ty = TypeId::of::<State>();
         let contents: Box<Option<State>> = Box::new(Some(state));
-        let contents = Mutex::new(Some(contents as Box<Any>));
+        let contents = Mutex::new(Some(contents as Box<Any + UnwindSafe>));
         StateCell(Arc::new(StateCellInner {
             ty,
             contents,
@@ -154,16 +133,17 @@ impl StateCell {
         }))
     }
 
-    fn downgrade(&self) -> WeakStateCell {
-        WeakStateCell(Arc::downgrade(&self.0))
+    fn guard<State: UnwindSafe + 'static>(&self) -> Guard<State> {
+        Guard {
+            cell: self.downgrade(),
+            rented: crate::state::RentedGuard::new(Arc::new(self.clone()), |cell| {
+                MappedMutexGuard::map(cell.0.lock(), |opt| opt.as_mut().unwrap())
+            }),
+        }
     }
 
-    fn tick_revision(&self) {
-        self.0
-            .scope_revision
-            .upgrade()
-            .map(|inner| inner.fetch_add(1, Ordering::SeqCst));
-        self.0.compose_waker.wake();
+    fn downgrade(&self) -> WeakStateCell {
+        WeakStateCell(Arc::downgrade(&self.0))
     }
 }
 
@@ -177,7 +157,7 @@ impl WeakStateCell {
 }
 
 impl Hash for WeakStateCell {
-    fn hash<H: Hasher>(&self, h: &mut H) {
+    fn hash<H: Hasher>(&self, _h: &mut H) {
         unimplemented!()
     }
 }
@@ -189,15 +169,45 @@ impl PartialEq for WeakStateCell {
 }
 impl Eq for WeakStateCell {}
 
-#[derive(Debug)]
 pub(crate) struct StateCellInner {
     ty: TypeId,
     scope_revision: Weak<AtomicU64>,
     compose_waker: Waker,
-    contents: AnonymousState,
+    contents: Mutex<Option<Box<Any + UnwindSafe + 'static>>>,
 }
 
-type AnonymousState = Mutex<Option<Box<Any + 'static>>>;
+impl StateCellInner {
+    fn lock<State: UnwindSafe + 'static>(&self) -> MappedMutexGuard<Option<State>> {
+        assert_eq!(TypeId::of::<State>(), self.ty);
+
+        MutexGuard::map(
+            self.contents.lock(),
+            |any: &mut Option<Box<_>>| -> &mut Option<State> {
+                let anon: &mut Box<Any + UnwindSafe> = any.as_mut().unwrap();
+                // UNSAFE(anp): we need to strip the `UnwindSafe` bound from this box to downcast.
+                //              luckily for us, the value we're attempting to deref to impls it too.
+                let anon: &mut Box<Any> =
+                    unsafe { &mut *(anon as *mut Box<Any + UnwindSafe> as *mut Box<Any>) };
+                let casted: &mut Option<State> = anon.downcast_mut().unwrap();
+                casted
+            },
+        )
+    }
+
+    // FIXME(anp): add a dropguard here probably?
+    fn tick_revision(&self) {
+        self.scope_revision
+            .upgrade()
+            .map(|inner| inner.fetch_add(1, Ordering::SeqCst));
+        self.compose_waker.clone().wake();
+    }
+}
+
+impl std::fmt::Debug for StateCellInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        unimplemented!()
+    }
+}
 
 rental::rental! {
     mod rent_state {

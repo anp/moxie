@@ -13,7 +13,7 @@ use {
         collections::HashMap,
         fmt::{Debug, Formatter, Result as FmtResult},
         hash::{Hash, Hasher},
-        panic::AssertUnwindSafe,
+        panic::{AssertUnwindSafe, UnwindSafe},
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc, Weak,
@@ -22,32 +22,10 @@ use {
     },
 };
 
-pub trait Component: Clone + std::fmt::Debug + Eq + PartialEq + typename::TypeName {
+pub trait Component:
+    Clone + std::fmt::Debug + Eq + PartialEq + typename::TypeName + UnwindSafe
+{
     fn compose(scp: Scope, props: Self);
-}
-
-pub trait Compose {
-    fn compose_child<C: Component>(&self, id: ScopeId, props: C);
-
-    fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S>;
-
-    fn task<F>(&self, _callsite: CallsiteId, fut: F)
-    where
-        F: Future<Output = ()> + Send + 'static;
-
-    fn record<Node>(&self, node: Node)
-    where
-        Node: Recorded;
-
-    /// Install a `Witness` into this scope. Each witness is responsible for consuming recorded
-    /// nodes of a single type.
-    fn install_witness<W>(&self, witness: W)
-    where
-        W: Witness + 'static;
-
-    fn remove_witness<W>(&self) -> Option<W>
-    where
-        W: Witness + 'static;
 }
 
 /// Provides a component with access to the persistent state store and futures executor.
@@ -86,10 +64,8 @@ impl Scope {
             inner: Arc::new(InnerScope {
                 id: ScopeId::root(),
                 revision: Arc::new(AtomicU64::new(0)),
-                exit,
-                waker,
                 spawner: Mutex::new(Box::new(spawner)),
-                states: Default::default(),
+                states: States::new(waker.clone()),
                 parent: None,
                 children: Default::default(),
                 bind_order: Default::default(),
@@ -119,7 +95,7 @@ impl Scope {
                         exit: inner.exit.clone(),
                         waker: inner.waker.clone(),
                         spawner: Mutex::new(inner.spawner.lock().child()),
-                        states: Default::default(),
+                        states: States::new(inner.waker.clone()),
                         parent,
                         children: Default::default(),
                         bind_order: Default::default(),
@@ -160,9 +136,10 @@ impl Scope {
     }
 }
 
-impl Compose for Scope {
+impl Scope {
     #[inline]
-    fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
+    #[doc(hidden)]
+    pub fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
         span!(
             tokio_trace::Level::TRACE,
             "compose_child",
@@ -189,12 +166,18 @@ impl Compose for Scope {
     }
 
     #[inline]
-    fn state<S: 'static + Any>(&self, callsite: CallsiteId, f: impl FnOnce() -> S) -> Guard<S> {
+    #[doc(hidden)]
+    pub fn state<S: 'static + Any + UnwindSafe>(
+        &self,
+        callsite: CallsiteId,
+        f: impl FnOnce() -> S,
+    ) -> Guard<S> {
         self.inner.states.get_or_init(callsite, f)
     }
 
     #[inline]
-    fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    #[doc(hidden)]
+    pub fn task<F>(&self, _callsite: CallsiteId, fut: F)
     where
         F: Future<Output = ()> + Send + 'static,
     {
@@ -213,9 +196,10 @@ impl Compose for Scope {
     }
 
     #[inline]
-    fn record<N>(&self, node: N)
+    #[doc(hidden)]
+    pub fn record<N>(&self, node: N)
     where
-        N: Recorded,
+        N: Debug + 'static,
     {
         self.with_record_storage(|storage| {
             trace!({ node = field::debug(&node) }, "recording a node");
@@ -223,7 +207,9 @@ impl Compose for Scope {
         });
     }
 
-    fn install_witness<W>(&self, witness: W)
+    #[inline]
+    #[doc(hidden)]
+    pub fn install_witness<W>(&self, witness: W)
     where
         W: Witness,
     {
@@ -235,7 +221,9 @@ impl Compose for Scope {
         });
     }
 
-    fn remove_witness<W>(&self) -> Option<W>
+    #[inline]
+    #[doc(hidden)]
+    pub fn remove_witness<W>(&self) -> Option<W>
     where
         W: Witness,
     {
@@ -304,13 +292,11 @@ unsafe impl Send for InnerScope {}
 /// might be responsible for creating a single display list from the memoized node fragments of
 /// a given composition's components.
 pub trait Witness: Debug + Downcast + 'static {
-    type Node: Recorded;
+    type Node: Debug + 'static;
     fn see_component(&mut self, id: ScopeId, parent: ScopeId, nodes: &[Self::Node]);
 }
 
-impl_downcast!(Witness assoc Node where Node: Recorded);
-
-pub trait Recorded = Debug + Sized + 'static;
+impl_downcast!(Witness assoc Node where Node: Debug + 'static);
 
 impl Scope {
     fn with_record_storage<Node, Ret>(
@@ -318,7 +304,7 @@ impl Scope {
         op: impl FnOnce(&mut RecordStorage<Node>) -> Ret,
     ) -> Ret
     where
-        Node: Recorded,
+        Node: Debug + 'static,
     {
         let mut storage_by_node = self.inner.records.lock();
         let storage: &mut Mutex<Box<dyn Records>> = storage_by_node
@@ -374,7 +360,7 @@ impl Scope {
 #[derive(Debug)]
 struct RecordStorage<Node>
 where
-    Node: Recorded,
+    Node: Debug + 'static,
 {
     records: Vec<Node>,
     witnesses: HashMap<TypeId, Box<dyn Witness<Node = Node>>>,
@@ -395,7 +381,7 @@ impl_downcast!(Records);
 
 impl<Node> Records for RecordStorage<Node>
 where
-    Node: Recorded,
+    Node: Debug + 'static,
 {
     fn flush_before_composition(&mut self) {
         self.records.clear();
@@ -449,7 +435,7 @@ where
 
 impl<Node> Default for RecordStorage<Node>
 where
-    Node: Recorded,
+    Node: Debug + 'static,
 {
     fn default() -> Self {
         Self {
