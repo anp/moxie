@@ -26,5 +26,5 @@ members = [
     "mox",
     "moxie-dom",
     "moxie-dom/examples/hacking/crate",
-    "moxie-wrench",
+    # "moxie-wrench",
 ]
