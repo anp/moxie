@@ -2,8 +2,8 @@ use {
     crate::{
         caps::{CallsiteId, ScopeId},
         our_prelude::*,
-        spawn::*,
         state::*,
+        Component, ComponentSpawn, Witness,
     },
     downcast_rs::*,
     futures::future::AbortHandle,
@@ -21,12 +21,6 @@ use {
         task::Waker,
     },
 };
-
-pub trait Component:
-    Clone + std::fmt::Debug + Eq + PartialEq + typename::TypeName + UnwindSafe
-{
-    fn compose(scp: Scope, props: Self);
-}
 
 /// Provides a component with access to the persistent state store and futures executor.
 #[derive(Clone, Debug)]
@@ -58,7 +52,7 @@ impl Scope {
 
     pub(crate) fn root<Spawner>(spawner: Spawner, waker: Waker, exit: AbortHandle) -> Self
     where
-        Spawner: PrioritySpawn + 'static,
+        Spawner: ComponentSpawn + 'static,
     {
         Self {
             inner: Arc::new(InnerScope {
@@ -203,7 +197,7 @@ impl Scope {
     {
         self.with_record_storage(|storage| {
             trace!({ node = field::debug(&node) }, "recording a node");
-            storage.records.push(node);
+            storage.record = Some(node);
         });
     }
 
@@ -245,8 +239,7 @@ struct InnerScope {
     children: Mutex<HashMap<ScopeId, Scope>>,
     bind_order: Mutex<Vec<ScopeId>>,
     records: Mutex<HashMap<TypeId, Mutex<Box<dyn Records>>>>,
-
-    spawner: Mutex<Box<dyn PrioritySpawn>>,
+    spawner: Mutex<Box<dyn ComponentSpawn>>,
     waker: Waker,
     exit: AbortHandle,
 }
@@ -281,22 +274,6 @@ impl PartialEq for InnerScope {
 impl Eq for InnerScope {}
 
 unsafe impl Send for InnerScope {}
-
-/// A `Witness` is a generic implementor of a close analogy to React's reconciliation/commit phase.
-/// (TODO better explanation!)
-///
-/// After a composition, each component has recorded a set of nodes into its scope, and those nodes
-/// must be operated on in some backend-specific way to fully realize them within the UI. For
-/// example, on the web a `Witness<DomElement>` might be responsible for attaching DOM nodes to
-/// their parents appropriately. On a GPU-oriented backend like Webrender, a `Witness<DisplayItem>`
-/// might be responsible for creating a single display list from the memoized node fragments of
-/// a given composition's components.
-pub trait Witness: Debug + Downcast + 'static {
-    type Node: Debug + 'static;
-    fn see_component(&mut self, id: ScopeId, parent: ScopeId, nodes: &[Self::Node]);
-}
-
-impl_downcast!(Witness assoc Node where Node: Debug + 'static);
 
 impl Scope {
     fn with_record_storage<Node, Ret>(
@@ -362,7 +339,7 @@ struct RecordStorage<Node>
 where
     Node: Debug + 'static,
 {
-    records: Vec<Node>,
+    record: Option<Node>,
     witnesses: HashMap<TypeId, Box<dyn Witness<Node = Node>>>,
 }
 
@@ -384,7 +361,7 @@ where
     Node: Debug + 'static,
 {
     fn flush_before_composition(&mut self) {
-        self.records.clear();
+        self.record = None;
     }
 
     fn show_witnesses_after_composition(&mut self, start: Scope) {
@@ -398,7 +375,9 @@ where
         // this code duplication is awkward but is a useful hack for now
         for witness in self.witnesses.values_mut() {
             trace!("showing starting scope");
-            witness.see_component(start.id(), start.parent_id(), &self.records);
+            if let Some(record) = &self.record {
+                witness.see(start.id(), start.parent_id(), record);
+            }
         }
 
         let children = start.inner.children.lock();
@@ -421,7 +400,9 @@ where
                 visiting.with_record_storage(|storage| {
                     for witness in self.witnesses.values_mut() {
                         trace!("showing witness");
-                        witness.see_component(visiting.id(), parent, &storage.records);
+                        if let Some(record) = &storage.record {
+                            witness.see(visiting.id(), parent, record);
+                        }
                     }
                 });
 
@@ -439,7 +420,7 @@ where
 {
     fn default() -> Self {
         Self {
-            records: Default::default(),
+            record: None,
             witnesses: Default::default(),
         }
     }

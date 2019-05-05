@@ -30,13 +30,11 @@ pub fn main() -> Result<(), JsValue> {
     body.append_child(&val);
 
     info!("spawning moxie runtime");
-    Runtime::go(
-        moxie_dom::WebSpawner,
-        DomBinding {
-            root: HackedApp,
-            node: body.as_node().to_owned(),
-        },
-    );
+
+    WebRuntime::default().spawn_self(DomBinding {
+        root: HackedApp,
+        node: body.as_node().to_owned(),
+    });
 
     Ok(())
 }
