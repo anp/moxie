@@ -204,7 +204,7 @@ impl StateCellInner {
 }
 
 impl std::fmt::Debug for StateCellInner {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         unimplemented!()
     }
 }
