@@ -26,13 +26,6 @@ macro_rules! task_fut (
     };
 );
 
-#[macro_export]
-macro_rules! channel {
-    ($scope:ident) => {
-        $crate::channel($crate::callsite!($scope.id()))
-    };
-}
-
 /// A `Moniker` represents the coordinates of a code location in the render hierarchy.
 ///
 /// The struct describes a location in the program specific to:
