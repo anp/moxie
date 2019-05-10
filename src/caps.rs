@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! mox {
+macro_rules! run {
     ($scope:ident <- $props:expr) => {{
         $scope.compose_child($crate::scope!($scope.id()), $props);
     }};

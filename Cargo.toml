@@ -14,6 +14,7 @@ fxhash = "0.2"
 mox = { path = "mox" }
 parking_lot = "0.7"
 rental = "0.5"
+shrinkwraprs = "0.2"
 tokio-trace = { version = "0.1", features = ["log"], optional = true }
 typename = "0.1"
 

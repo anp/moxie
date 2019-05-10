@@ -6,16 +6,14 @@ extern crate rental;
 
 #[macro_use]
 mod caps;
-mod compose;
+mod record;
+mod scope;
 mod state;
 
-pub use {
-    crate::{
-        caps::{CallsiteId, Moniker, ScopeId},
-        compose::Scope,
-        state::{Guard, Handle},
-    },
-    mox::props,
+pub use crate::{
+    caps::{CallsiteId, Moniker, ScopeId},
+    scope::Scope,
+    state::{Guard, Key},
 };
 
 #[doc(hidden)]
@@ -41,26 +39,29 @@ use {
         future::{AbortHandle, Abortable, LocalFutureObj},
         task::{LocalSpawn, SpawnError},
     },
-    std::{
-        fmt::Debug,
-        panic::{catch_unwind, AssertUnwindSafe},
-    },
+    std::panic::{catch_unwind, AssertUnwindSafe},
 };
 
-pub trait Component: Clone + std::fmt::Debug + Eq + PartialEq + typename::TypeName {
-    fn compose(scp: Scope, props: Self);
+pub trait Component {
+    fn run(self, scp: Scope);
 }
 
-pub trait Runtime: Send + Sized + 'static {
-    type Spawner: ComponentSpawn + 'static;
+pub trait Witness: 'static + Downcast {
+    type Node: 'static;
+    fn see(&mut self, node: &Self::Node, parent: Option<&Self::Node>);
+}
+impl_downcast!(Witness assoc Node where Node: 'static);
+
+pub trait Runtime: 'static + Send + Sized {
+    type Spawner: ComponentSpawn;
     fn spawner(&self) -> Self::Spawner;
 
-    fn spawn_self<C: Component + 'static>(self, root: C) {
+    fn spawn_self<C: Component + Clone + 'static>(self, root: C) {
         let mut spawner = self.spawner();
         spawner.spawn_local(self.composer(root)).unwrap();
     }
 
-    fn composer<C: Component + 'static>(self, root: C) -> LocalFutureObj<'static, ()> {
+    fn composer<C: Component + Clone + 'static>(self, root: C) -> LocalFutureObj<'static, ()> {
         let (top_level_exit, exit_registration) = AbortHandle::new_pair();
         Box::new(
             Abortable::new(
@@ -81,7 +82,7 @@ pub trait Runtime: Send + Sized + 'static {
                             let root_scope = root_scope.clone();
                             let root = root.clone();
                             trace!("composing");
-                            mox! { root_scope <- root };
+                            run! { root_scope <- root };
                         }) {
                             error!("error composing: {:?}", e);
                             // TODO soft restart (reset state, recordings, etc)
@@ -97,21 +98,14 @@ pub trait Runtime: Send + Sized + 'static {
     }
 }
 
-pub trait Witness: Debug + Downcast + 'static {
-    type Node: Debug + 'static;
-    fn see(&mut self, scope: ScopeId, parent: ScopeId, node: &Self::Node);
-}
-
-impl_downcast!(Witness assoc Node where Node: Debug + 'static);
-
-pub trait ComponentSpawn {
+pub trait ComponentSpawn: 'static {
     fn spawn_local(&mut self, fut: LocalFutureObj<'static, ()>) -> Result<(), SpawnError>;
     fn child(&self) -> Box<dyn ComponentSpawn>;
 }
 
 impl<Exec> ComponentSpawn for Exec
 where
-    Exec: Clone + LocalSpawn + 'static,
+    Exec: 'static + Clone + LocalSpawn,
 {
     fn spawn_local(&mut self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
         LocalSpawn::spawn_local_obj(self, future)

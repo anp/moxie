@@ -1,37 +1,27 @@
 use {
-    crate::caps::CallsiteId,
+    crate::{caps::CallsiteId, scope::WeakScope},
     chashmap::CHashMap,
     parking_lot::{MappedMutexGuard, Mutex, MutexGuard},
     std::{
         any::{Any, TypeId},
-        hash::{Hash, Hasher},
         panic::UnwindSafe,
         sync::{
             atomic::{AtomicU64, Ordering},
             Arc, Weak,
         },
-        task::Waker,
     },
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct States {
     revision: Arc<AtomicU64>,
-    compose_waker: Waker,
     contents: Arc<CHashMap<CallsiteId, Arc<StateCell>>>,
 }
 
 impl States {
-    pub(crate) fn new(compose_waker: Waker) -> Self {
-        Self {
-            revision: Arc::new(AtomicU64::new(0)),
-            contents: Arc::new(CHashMap::default()),
-            compose_waker,
-        }
-    }
-
     pub(crate) fn get_or_init<State: UnwindSafe + 'static>(
         &self,
+        scope: WeakScope,
         callsite: CallsiteId,
         init: impl FnOnce() -> State,
     ) -> Guard<State> {
@@ -42,11 +32,7 @@ impl States {
                 cell = Some(p);
             } else {
                 let initialized = init();
-                cell = Some(Arc::new(StateCell::new(
-                    Arc::downgrade(&self.revision),
-                    self.compose_waker.clone(),
-                    initialized,
-                )));
+                cell = Some(Arc::new(StateCell::new(scope.clone(), initialized)));
             }
             cell.clone()
         });
@@ -57,34 +43,30 @@ impl States {
 
 impl PartialEq for States {
     fn eq(&self, other: &Self) -> bool {
-        self.revision.load(Ordering::SeqCst) == other.revision.load(Ordering::SeqCst)
-            && Arc::ptr_eq(&self.contents, &other.contents)
+        Arc::ptr_eq(&self.contents, &other.contents)
+            && self.revision.load(Ordering::SeqCst) == other.revision.load(Ordering::SeqCst)
     }
 }
 
-/// A `Handle` provides access to a portion of the state database for use outside of composition.
-/// The data pointed to by a `Handle` can be mutated using the `Handle::set` method.
-///
-/// A `Handle` doesn't directly capture any values from the state database, and instead acquires
-/// the appropriate locks when `set` is called.
 #[derive(Clone, Debug)]
-pub struct Handle<S> {
+pub struct Key<S> {
     cell: WeakStateCell,
     __ty_marker: std::marker::PhantomData<S>,
 }
 
-impl<State: UnwindSafe + 'static> Handle<State> {
+impl<State: UnwindSafe + 'static> Key<State> {
     pub fn set(&self, updater: impl FnOnce(State) -> State) {
         if let Some(cell) = self.cell.upgrade() {
             let mut inner = cell.0.lock();
             let prev: State = inner.take().unwrap();
             let new = updater(prev);
             inner.replace(new);
+            cell.0.scope.tick();
         }
     }
 }
 
-impl<State> UnwindSafe for Handle<State> where State: UnwindSafe {}
+impl<State> UnwindSafe for Key<State> where State: UnwindSafe {}
 
 pub struct Guard<S: 'static> {
     pub(crate) cell: WeakStateCell,
@@ -92,8 +74,8 @@ pub struct Guard<S: 'static> {
 }
 
 impl<State: 'static> Guard<State> {
-    pub fn handle(&self) -> Handle<State> {
-        Handle {
+    pub fn handle(&self) -> Key<State> {
+        Key {
             cell: self.cell.clone(),
             __ty_marker: std::marker::PhantomData,
         }
@@ -117,19 +99,14 @@ impl<S: 'static> std::ops::DerefMut for Guard<S> {
 pub(crate) struct StateCell(Arc<StateCellInner>);
 
 impl StateCell {
-    fn new<State: UnwindSafe + 'static>(
-        scope_revision: Weak<AtomicU64>,
-        compose_waker: Waker,
-        state: State,
-    ) -> Self {
+    fn new<State: UnwindSafe + 'static>(scope: WeakScope, state: State) -> Self {
         let ty = TypeId::of::<State>();
         let contents: Box<Option<State>> = Box::new(Some(state));
         let contents = Mutex::new(Some(contents as Box<Any + UnwindSafe>));
         StateCell(Arc::new(StateCellInner {
             ty,
             contents,
-            compose_waker,
-            scope_revision,
+            scope,
         }))
     }
 
@@ -156,12 +133,6 @@ impl WeakStateCell {
     }
 }
 
-impl Hash for WeakStateCell {
-    fn hash<H: Hasher>(&self, _h: &mut H) {
-        unimplemented!()
-    }
-}
-
 impl PartialEq for WeakStateCell {
     fn eq(&self, other: &Self) -> bool {
         Weak::ptr_eq(&self.0, &other.0)
@@ -171,8 +142,7 @@ impl Eq for WeakStateCell {}
 
 pub(crate) struct StateCellInner {
     ty: TypeId,
-    scope_revision: Weak<AtomicU64>,
-    compose_waker: Waker,
+    scope: WeakScope,
     contents: Mutex<Option<Box<Any + UnwindSafe + 'static>>>,
 }
 
@@ -192,14 +162,6 @@ impl StateCellInner {
                 casted
             },
         )
-    }
-
-    // FIXME(anp): add a dropguard here probably?
-    fn tick_revision(&self) {
-        self.scope_revision
-            .upgrade()
-            .map(|inner| inner.fetch_add(1, Ordering::SeqCst));
-        self.compose_waker.clone().wake();
     }
 }
 

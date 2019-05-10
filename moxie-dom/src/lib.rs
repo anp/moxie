@@ -1,6 +1,6 @@
 pub mod prelude {
     pub use {
-        crate::{DomBinding, Span, WebRuntime},
+        crate::{DomBinding, Span, Text, WebRuntime},
         moxie::{self, *},
     };
 }
@@ -40,7 +40,7 @@ impl ComponentSpawn for WebSpawner {
     }
 }
 
-#[props]
+#[derive(Clone)]
 pub struct DomBinding<Root: Component> {
     pub node: web::Node,
     pub root: Root,
@@ -50,26 +50,41 @@ impl<Root> Component for DomBinding<Root>
 where
     Root: Component,
 {
-    fn compose(scp: Scope, Self { node, root }: Self) {
-        scp.compose_child_with_witness(scope!(scp.id()), root, Weaver::attached_to(scp.id(), node));
+    fn run(self, scp: Scope) {
+        let Self { node, root } = self;
+        scp.install_witness(Weaver);
+        scp.record(node);
+        scp.compose_child(scope!(scp.id()), root);
     }
 }
 
-#[props]
-pub struct Span {
-    pub text: Option<String>,
+#[derive(Debug)]
+pub struct Text<'txt>(pub &'txt str);
+
+impl<'txt> Component for Text<'txt> {
+    fn run(self, scp: Scope) {
+        let node = web::document().create_text_node(self.0);
+        let raw: web::Node = node.into();
+        scp.record(raw);
+    }
 }
 
-impl Component for Span {
-    fn compose(scp: Scope, props: Self) {
-        use stdweb::web::{INode, Node};
-        let node = state!(scp <- web::document().create_element("p").unwrap());
+pub struct Span<'parent, Children>
+where
+    Children: IntoIterator<Item = &'parent dyn Component>,
+{
+    pub children: Children,
+}
 
-        if let Some(text) = &props.text {
-            node.set_text_content(text);
-        }
-
-        let raw: Node = node.clone().into();
+impl<'p, Children> Component for Span<'p, Children>
+where
+    Children: IntoIterator<Item = &'p dyn Component>,
+{
+    fn run(self, scp: Scope) {
+        let node = state!(scp <- web::document().create_element("span").unwrap());
+        let raw: web::Node = node.clone().into();
         scp.record(raw);
+
+        // TODO compose children
     }
 }
