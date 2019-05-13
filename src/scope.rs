@@ -4,7 +4,7 @@ use {
         our_prelude::*,
         record::{Recorder, Records},
         state::*,
-        Component, ComponentSpawn, Witness,
+        Component, ComponentScope, ComponentSpawn, Witness,
     },
     futures::future::AbortHandle,
     parking_lot::Mutex,
@@ -26,21 +26,87 @@ use {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Scope(pub(crate) Arc<InnerScope>);
 
-impl Scope {
-    pub fn id(&self) -> ScopeId {
-        self.0.id
+impl ComponentScope for Scope {
+    fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
+        span!(
+            tokio_trace::Level::TRACE,
+            "compose_child",
+            id = field::debug(&id),
+            // name = field::display(&C::type_name()),
+        )
+        .enter(|| {
+            let child = self.child(id);
+            {
+                let child = child.clone();
+                child.prepare_to_compose();
+                props.run(child);
+            }
+            child.finish_composition();
+        })
     }
 
-    pub fn compose_child_with_witness<C, W>(&self, child_id: ScopeId, props: C, witness: W) -> W
+    fn compose_child_with_witness<C, W>(&self, child_id: ScopeId, props: C, witness: W) -> W
     where
         C: Component,
         W: Witness,
     {
-        info!("composing child with witness");
         let child_scope = self.child(child_id);
         child_scope.install_witness(witness);
         self.compose_child(child_id, props);
         child_scope.remove_witness().unwrap()
+    }
+
+    fn state<S: 'static + Any + UnwindSafe>(
+        &self,
+        callsite: CallsiteId,
+        f: impl FnOnce() -> S,
+    ) -> Guard<S> {
+        self.0.states.get_or_init(self.weak(), callsite, f)
+    }
+
+    fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        self.0
+            .spawner
+            .lock()
+            .spawn_local(
+                Box::new(AssertUnwindSafe(fut).catch_unwind().map(|r| {
+                    if let Err(e) = r {
+                        error!({ error = field::debug(&e) }, "user code panicked");
+                    }
+                }))
+                .into(),
+            )
+            .unwrap();
+    }
+
+    fn record<N>(&self, node: N)
+    where
+        N: 'static,
+    {
+        self.0.records.record(node, self.weak());
+    }
+
+    fn install_witness<W>(&self, witness: W)
+    where
+        W: Witness,
+    {
+        self.0.records.install_witness(witness);
+    }
+
+    fn remove_witness<W>(&self) -> Option<W>
+    where
+        W: Witness,
+    {
+        self.0.records.remove_witness()
+    }
+}
+
+impl Scope {
+    pub fn id(&self) -> ScopeId {
+        self.0.id
     }
 
     pub(crate) fn root<Spawner>(spawner: Spawner, waker: Waker, exit: AbortHandle) -> Self
@@ -118,71 +184,6 @@ impl Scope {
         self.0
             .records
             .for_each_storage(|records| records.show_witnesses_after_composition(self.clone()));
-    }
-
-    pub fn compose_child<C: Component>(&self, id: ScopeId, props: C) {
-        span!(
-            tokio_trace::Level::TRACE,
-            "compose_child",
-            id = field::debug(&id),
-            // name = field::display(&C::type_name()),
-        )
-        .enter(|| {
-            let child = self.child(id);
-            {
-                let child = child.clone();
-                child.prepare_to_compose();
-                props.run(child);
-            }
-            child.finish_composition();
-        })
-    }
-
-    pub fn state<S: 'static + Any + UnwindSafe>(
-        &self,
-        callsite: CallsiteId,
-        f: impl FnOnce() -> S,
-    ) -> Guard<S> {
-        self.0.states.get_or_init(self.weak(), callsite, f)
-    }
-
-    pub fn task<F>(&self, _callsite: CallsiteId, fut: F)
-    where
-        F: Future<Output = ()> + Send + 'static,
-    {
-        self.0
-            .spawner
-            .lock()
-            .spawn_local(
-                Box::new(AssertUnwindSafe(fut).catch_unwind().map(|r| {
-                    if let Err(e) = r {
-                        error!({ error = field::debug(&e) }, "user code panicked");
-                    }
-                }))
-                .into(),
-            )
-            .unwrap();
-    }
-
-    pub fn record<N>(&self, node: N)
-    where
-        N: Debug + 'static,
-    {
-        self.0.records.record(node, self.weak());
-    }
-
-    pub fn install_witness<W>(&self, witness: W)
-    where
-        W: Witness,
-    {
-        self.0.records.install_witness(witness);
-    }
-
-    pub fn remove_witness<W>(&self) -> Option<W>
-    where
-        W: Witness,
-    {
-        self.0.records.remove_witness()
     }
 }
 

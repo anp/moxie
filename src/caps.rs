@@ -19,6 +19,7 @@ macro_rules! task {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! task_fut (
     ($scope:ident <- $body:expr) => {

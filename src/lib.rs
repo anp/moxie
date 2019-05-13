@@ -39,11 +39,45 @@ use {
         future::{AbortHandle, Abortable, LocalFutureObj},
         task::{LocalSpawn, SpawnError},
     },
-    std::panic::{catch_unwind, AssertUnwindSafe},
+    std::{
+        any::Any,
+        panic::{catch_unwind, AssertUnwindSafe, UnwindSafe},
+    },
 };
 
 pub trait Component {
-    fn run(self, scp: Scope);
+    fn run(self, compose: Scope);
+}
+
+pub trait ComponentScope {
+    fn state<S: 'static + Any + UnwindSafe>(
+        &self,
+        callsite: CallsiteId,
+        f: impl FnOnce() -> S,
+    ) -> Guard<S>;
+
+    fn task<F>(&self, _callsite: CallsiteId, fut: F)
+    where
+        F: Future<Output = ()> + Send + 'static;
+
+    fn record<N>(&self, node: N)
+    where
+        N: 'static;
+
+    fn install_witness<W>(&self, witness: W)
+    where
+        W: Witness;
+
+    fn remove_witness<W>(&self) -> Option<W>
+    where
+        W: Witness;
+
+    fn compose_child<C: Component>(&self, id: ScopeId, props: C);
+
+    fn compose_child_with_witness<C, W>(&self, child_id: ScopeId, props: C, witness: W) -> W
+    where
+        C: Component,
+        W: Witness;
 }
 
 pub trait Witness: 'static + Downcast {
@@ -61,6 +95,9 @@ pub trait Runtime: 'static + Send + Sized {
         spawner.spawn_local(self.composer(root)).unwrap();
     }
 
+    /// Returns a future which will run the root component once per ready poll.
+    ///
+    /// TODO add a test!
     fn composer<C: Component + Clone + 'static>(self, root: C) -> LocalFutureObj<'static, ()> {
         let (top_level_exit, exit_registration) = AbortHandle::new_pair();
         Box::new(
