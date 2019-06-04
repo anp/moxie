@@ -1,0 +1,11 @@
+[package]
+name = "moxie-core"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+execution-context = "0.1"
+futures-preview = { version = "0.3.0-alpha.16", features = [ "async-await", "nightly" ] }
+tokio-trace = { version = "0.1", features = ["log"] }
+topo = { path = "../topo" }

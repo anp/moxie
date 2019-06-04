@@ -9,9 +9,11 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 [dependencies]
 chashmap = "2"
 downcast-rs = "1"
+froggy = "0.4"
 futures-preview = { version = "0.3.0-alpha.15", features = [ "async-await", "nightly" ] }
 fxhash = "0.2"
 mox = { path = "mox" }
+moxie-core = { path = "moxie-core" }
 parking_lot = "0.7"
 rental = "0.5"
 shrinkwraprs = "0.2"
@@ -25,7 +27,10 @@ instrument = [ "tokio-trace" ]
 [workspace]
 members = [
     "mox",
-    "moxie-dom",
-    "moxie-dom/examples/hacking/crate",
+    "moxie-core",
+    # "moxie-dom",
+    # "moxie-dom/examples/hacking/crate",
+    "topo",
+    "topo/macro",
     # "moxie-wrench",
 ]

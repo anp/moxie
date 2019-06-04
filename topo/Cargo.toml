@@ -1,0 +1,9 @@
+[package]
+name = "topo"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+topo-macro = { path = "macro" }
+static_assertions = "0.3"
