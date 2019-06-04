@@ -76,7 +76,7 @@
         "watch",
         "--clear",
         "-x",
-        "test --package moxie-core --package topo"
+        "test-core"
       ],
       "type": "shell",
       "group": "build",

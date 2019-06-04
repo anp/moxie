@@ -7,12 +7,13 @@ license = "MIT/Apache-2.0"
 description = "Declarative, asynchronous, incremental UI component runtime."
 
 [dependencies]
-moxie-core = { path = "moxie-core" }
+futures-preview = { version = "0.3.0-alpha.16", features = [ "async-await", "nightly" ] }
+tokio-trace = { version = "0.1", features = ["log"] }
+topo = { path = "topo" }
 
 [workspace]
 members = [
     "mox",
-    "moxie-core",
     # "moxie-dom",
     # "moxie-dom/examples/hacking/crate",
     "topo",

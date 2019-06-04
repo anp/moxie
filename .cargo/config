@@ -1,0 +1,2 @@
+[alias]
+test-core = "test --package moxie --package topo --package mox"
