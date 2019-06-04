@@ -4,22 +4,17 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "fmt",
-      "command": "cargo",
-      "args": [
-        "watch",
-        "--clear",
-        "-x",
-        "fmt"
+      "label": "Core",
+      "dependsOn": [
+        "check+clippy",
+        "doc",
+        "fmt",
+        "test core"
       ],
-      "type": "shell",
-      "group": "build",
-      "isBackground": true,
-      "problemMatcher": "$rustc",
       "runOptions": {
-        "runOn": "folderOpen",
-        "reevaluateOnRerun": false
-      }
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
     },
     {
       "label": "doc",
@@ -33,11 +28,27 @@
       "type": "shell",
       "group": "build",
       "isBackground": true,
+      "presentation": {
+        "group": "Tidy"
+      },
+      "problemMatcher": "$rustc"
+    },
+    {
+      "label": "fmt",
+      "command": "cargo",
+      "args": [
+        "watch",
+        "--clear",
+        "-x",
+        "fmt"
+      ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
       "problemMatcher": "$rustc",
-      "runOptions": {
-        "runOn": "folderOpen",
-        "reevaluateOnRerun": false
-      }
+      "presentation": {
+        "group": "Tidy"
+      },
     },
     {
       "label": "check+clippy",
@@ -53,11 +64,27 @@
       "type": "shell",
       "group": "build",
       "isBackground": true,
-      "problemMatcher": "$rustc",
-      "runOptions": {
-        "runOn": "folderOpen",
-        "reevaluateOnRerun": false
-      }
+      "presentation": {
+        "group": "Core"
+      },
+      "problemMatcher": "$rustc"
+    },
+    {
+      "label": "test core",
+      "command": "cargo",
+      "args": [
+        "watch",
+        "--clear",
+        "-x",
+        "test --package moxie-core --package topo"
+      ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "group": "Core"
+      },
+      "problemMatcher": "$rustc"
     },
     {
       "label": "dom-hacking server",
@@ -66,14 +93,14 @@
       "path": "moxie-dom/examples/hacking/",
       "problemMatcher": [],
       "isBackground": true
-    }
+    },
     {
       "label": "DOM",
       "dependsOn": [
         "dom-hacking server",
         "check+clippy",
         "doc",
-        "fmt",
+        "fmt"
       ]
     }
   ]

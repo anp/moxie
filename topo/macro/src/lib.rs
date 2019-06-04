@@ -23,7 +23,7 @@ use proc_macro::TokenStream;
 ///
 /// TODO
 ///
-/// ### Rust #[track_caller] attribute
+/// ### Rust #\[track_caller\] attribute
 ///
 /// Not yet implemented, not clear it'll offer same guarantees as chained TypeIds.
 ///
