@@ -1,0 +1,80 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "fmt",
+      "command": "cargo",
+      "args": [
+        "watch",
+        "--clear",
+        "-x",
+        "fmt"
+      ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": "$rustc",
+      "runOptions": {
+        "runOn": "folderOpen",
+        "reevaluateOnRerun": false
+      }
+    },
+    {
+      "label": "doc",
+      "command": "cargo",
+      "args": [
+        "watch",
+        "--clear",
+        "-x",
+        "doc --all"
+      ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": "$rustc",
+      "runOptions": {
+        "runOn": "folderOpen",
+        "reevaluateOnRerun": false
+      }
+    },
+    {
+      "label": "check+clippy",
+      "command": "cargo",
+      "args": [
+        "watch",
+        "--clear",
+        "-x",
+        "check --all",
+        "-x",
+        "clippy --all"
+      ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": "$rustc",
+      "runOptions": {
+        "runOn": "folderOpen",
+        "reevaluateOnRerun": false
+      }
+    },
+    {
+      "label": "dom-hacking server",
+      "type": "npm",
+      "script": "start",
+      "path": "moxie-dom/examples/hacking/",
+      "problemMatcher": [],
+      "isBackground": true
+    }
+    {
+      "label": "DOM",
+      "dependsOn": [
+        "dom-hacking server",
+        "check+clippy",
+        "doc",
+        "fmt",
+      ]
+    }
+  ]
+}
