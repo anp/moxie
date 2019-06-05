@@ -3,42 +3,45 @@
 //! `use topo::*;` is necessary because we haven't worked out a nice way to pass macro names around.
 pub use topo_macro::topo;
 
-use std::{
-    any::TypeId,
-    cell::Cell,
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::{any::TypeId, cell::RefCell, hash::Hash};
 
 /// Identifies a dynamic scope within the call topology.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct Point(u64);
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Point {
+    count_of_current: usize,
+    callsites: im::Vector<TypeId>,
+}
 
-static_assertions::assert_impl!(pt; Point, Clone, Copy, Debug, Hash, Eq, Send, Sync);
+static_assertions::assert_impl!(pt; Point, Clone, Hash, Eq, Send, Sync);
 
 impl Point {
     /// Returns the `Point` identifying the current dynamic scope.
     #[inline]
     pub fn current() -> Self {
-        __CURRENT_POINT.with(|p| p.get())
+        __CURRENT_POINT.with(|p| p.borrow().clone())
     }
 
     /// Enters the dynamic scope of the point and calls the closure provided, returning its value.
     pub fn enter<T>(self, op: impl FnOnce() -> T) -> T {
-        let prev = __CURRENT_POINT.with(|p| p.replace(self));
+        let prev = Some(__CURRENT_POINT.with(|p| p.replace(self)));
         let _drop_when_out_of_scope_pls = PointGuardLol { prev };
         op()
     }
 
     /// Creates the next "link" in the chain of IDs which represents our path to the current Point.
     #[inline]
-    pub fn child(&self, callsite: TypeId) -> Self {
-        let mut hasher = std::collections::hash_map::DefaultHasher::default();
+    #[doc(hidden)]
+    pub fn __child(&self, callsite: TypeId) -> Self {
+        let mut child = self.clone();
 
-        callsite.hash(&mut hasher);
-        self.hash(&mut hasher);
+        if child.callsites.back() == Some(&callsite) {
+            child.count_of_current += 1;
+        } else {
+            child.count_of_current = 0;
+            child.callsites.push_back(callsite);
+        }
 
-        Point(hasher.finish())
+        child
     }
 }
 
@@ -88,7 +91,10 @@ macro_rules! __point_id {
 
 thread_local! {
     /// The `Point` representing the current dynamic scope.
-    pub static __CURRENT_POINT: Cell<Point> = Cell::new(Point(0));
+    pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
+        count_of_current: 0,
+        callsites: im::Vector::new(),
+    });
 }
 
 /// Mark a `Point` in the call topology by creating a TypeId unique to the expanded location.
@@ -96,18 +102,18 @@ thread_local! {
 #[macro_export]
 macro_rules! __point {
     () => {
-        $crate::Point::current().child($crate::__point_id!())
+        $crate::Point::current().__child($crate::__point_id!())
     };
 }
 
 /// Resets the current Point to the one stored when the struct is dropped.
 struct PointGuardLol {
-    prev: Point,
+    prev: Option<Point>,
 }
 
 impl Drop for PointGuardLol {
     #[inline]
     fn drop(&mut self) {
-        __CURRENT_POINT.with(|p| p.set(self.prev));
+        __CURRENT_POINT.with(|p| p.replace(self.prev.take().unwrap()));
     }
 }

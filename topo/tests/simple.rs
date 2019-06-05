@@ -9,7 +9,7 @@ fn one_child() {
     assert_eq!(root, Point::current());
 
     let mut called = false;
-    second.enter(|| {
+    second.clone().enter(|| {
         assert_eq!(second, Point::current());
         called = true;
     });
@@ -24,9 +24,8 @@ fn invoke_test_topo() {
         assert_ne!(prev, Point::current());
     }
 
-    // TODO(adam): move to an actual callstack and track the iteration count for the most recent
-    // frame
-    topo_test!(Point::current()); // this is analogous to the loops case actually, and is simpler
+    let prev = Point::current();
+    topo_test!(prev);
 }
 
 #[test]
@@ -44,7 +43,7 @@ fn parent_reset_on_recovered_panic() {
     assert_eq!(root, Point::current());
 
     let res = std::panic::catch_unwind(|| {
-        second.enter(|| {
+        second.clone().enter(|| {
             assert_eq!(second, Point::current());
             call!(|| assert_ne!(Point::current(), second));
             panic!("the second should be unset by this");
