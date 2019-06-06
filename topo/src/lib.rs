@@ -84,7 +84,7 @@ macro_rules! __make_topo_macro {
 #[macro_export]
 macro_rules! __point_id {
     () => {{
-        struct UwuPlsDaddyRustcGibUniqueTypeIdPlsPls;
+        struct UwuPlsDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
         std::any::TypeId::of::<UwuPlsDaddyRustcGibUniqueTypeIdPlsPls>()
     }};
 }
