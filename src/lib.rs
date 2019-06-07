@@ -11,7 +11,6 @@ use {
         future::Future,
         ops::{Deref, DerefMut},
         panic::{catch_unwind, AssertUnwindSafe, UnwindSafe},
-        task::Waker,
     },
     topo::topo,
 };
@@ -83,12 +82,9 @@ pub struct Key<State> {
     _ty: std::marker::PhantomData<State>,
 }
 
-thread_local!(static WAKER: Waker = null_waker());
-thread_local!(static SPAWNER: Box<dyn Spawn + Send> = null_spawner());
-
 pub async fn runloop<C: Component + Clone + 'static>(
     root: C,
-    spawner: impl Spawn + Send + 'static,
+    _spawner: impl Spawn + Send + 'static,
 ) {
     // make sure we can be woken back up and exited
     // std::future::get_task_context(|cx| WAKER.set(cx.waker().clone()));
@@ -132,10 +128,13 @@ where
     }
 }
 
-fn null_waker() -> Waker {
-    unimplemented!()
-}
+// thread_local!(static WAKER: Waker = null_waker());
+// thread_local!(static SPAWNER: Box<dyn Spawn + Send> = null_spawner());
 
-fn null_spawner() -> Box<dyn Spawn + Send> {
-    unimplemented!()
-}
+// fn null_waker() -> Waker {
+//     unimplemented!()
+// }
+
+// fn null_spawner() -> Box<dyn Spawn + Send> {
+//     unimplemented!()
+// }
