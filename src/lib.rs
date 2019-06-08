@@ -46,14 +46,6 @@ pub fn task(_fut: impl Future<Output = ()> + Send + UnwindSafe + 'static) {
     unimplemented!()
 }
 
-#[topo]
-pub fn record<N>(_node: N)
-where
-    N: 'static,
-{
-    unimplemented!()
-}
-
 pub struct Guard<State> {
     // TODO
     _ty: std::marker::PhantomData<State>,
