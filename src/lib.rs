@@ -5,30 +5,18 @@
 pub extern crate tokio_trace;
 
 use {
-    futures::task::{LocalSpawn, SpawnError},
-    std::{
-        any::Any,
-        future::Future,
-        ops::{Deref, DerefMut},
-        panic::{catch_unwind, AssertUnwindSafe, UnwindSafe},
-    },
+    futures::task::LocalSpawn,
+    std::panic::{catch_unwind, AssertUnwindSafe, UnwindSafe},
     topo::topo,
 };
 
 #[doc(hidden)]
 pub use tokio_trace as __trace;
 
+pub mod memo;
+
 pub trait Component {
     fn content(self);
-}
-
-#[topo]
-fn memo<T>(initializer: impl FnOnce() -> T) -> T
-where
-    T: Clone + 'static,
-{
-    // TODO memoize it!
-    initializer()
 }
 
 #[topo]
@@ -36,97 +24,78 @@ pub fn show(_child: impl Component) {
     unimplemented!()
 }
 
-#[topo]
-pub fn state<S: 'static + Any + UnwindSafe>(_init: impl FnOnce() -> S) -> Guard<S> {
-    unimplemented!()
-}
-
-#[topo]
-pub fn task(_fut: impl Future<Output = ()> + Send + UnwindSafe + 'static) {
-    unimplemented!()
-}
-
-pub struct Guard<State> {
-    // TODO
-    _ty: std::marker::PhantomData<State>,
-}
-
-impl<State> Guard<State> {
-    pub fn key(&self) -> Key<State> {
-        unimplemented!()
-    }
-}
-
-impl<State> Deref for Guard<State> {
-    type Target = State;
-    fn deref(&self) -> &Self::Target {
-        unimplemented!()
-    }
-}
-
-impl<State> DerefMut for Guard<State> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unimplemented!()
-    }
-}
-
-pub struct Key<State> {
-    _ty: std::marker::PhantomData<State>,
-}
-
-pub async fn runloop<C: Component + Clone + 'static>(
-    root: C,
-    _spawner: impl Spawn + Send + 'static,
+pub async fn runloop(
+    root: impl Fn(&dyn Stop) + Clone + UnwindSafe + 'static,
+    _spawner: impl LocalSpawn + Send + 'static,
 ) {
     // make sure we can be woken back up and exited
     // std::future::get_task_context(|cx| WAKER.set(cx.waker().clone()));
     // SPAWNER.set(Box::new(spawner));
 
+    let (send_shutdown, recv_shutdown) = std::sync::mpsc::channel();
     loop {
-        let root = AssertUnwindSafe(root.clone());
-        if let Err(e) = catch_unwind(move || {
-            let root = root.clone();
-            trace!("composing");
-            show!(root);
-        }) {
+        let send_shutdown = AssertUnwindSafe(send_shutdown.clone());
+        let root = root.clone();
+
+        let tick_result = catch_unwind(move || root(&*send_shutdown));
+
+        if let Err(e) = tick_result {
             error!("error composing: {:?}", e);
-            // TODO soft restart (reset state, recordings, etc)
+            break;
         }
+
+        if let Ok(()) = recv_shutdown.try_recv() {
+            break;
+        }
+
         futures::pending!();
     }
 }
 
-pub trait Spawn: 'static {
-    fn spawn_local(
-        &mut self,
-        fut: Box<dyn Future<Output = ()> + 'static>,
-    ) -> Result<(), SpawnError>;
-    fn child(&self) -> Box<dyn Spawn>;
+pub trait Stop {
+    fn stop(&self);
 }
 
-impl<Exec> Spawn for Exec
-where
-    Exec: 'static + Clone + LocalSpawn,
-{
-    fn spawn_local(
-        &mut self,
-        fut: Box<dyn Future<Output = ()> + 'static>,
-    ) -> Result<(), SpawnError> {
-        LocalSpawn::spawn_local_obj(self, fut.into())
-    }
-
-    fn child(&self) -> Box<dyn Spawn> {
-        Box::new(self.clone())
+impl Stop for std::sync::mpsc::Sender<()> {
+    fn stop(&self) {
+        let _ = self.send(());
     }
 }
 
-// thread_local!(static WAKER: Waker = null_waker());
-// thread_local!(static SPAWNER: Box<dyn Spawn + Send> = null_spawner());
-
-// fn null_waker() -> Waker {
+// #[topo]
+// pub fn state<S: 'static + Any + UnwindSafe>(_init: impl FnOnce() -> S) -> Guard<S> {
 //     unimplemented!()
 // }
 
-// fn null_spawner() -> Box<dyn Spawn + Send> {
+// #[topo]
+// pub fn task(_fut: impl Future<Output = ()> + Send + UnwindSafe + 'static) {
 //     unimplemented!()
+// }
+
+// pub struct Guard<State> {
+//     // TODO
+//     _ty: std::marker::PhantomData<State>,
+// }
+
+// impl<State> Guard<State> {
+//     pub fn key(&self) -> Key<State> {
+//         unimplemented!()
+//     }
+// }
+
+// impl<State> Deref for Guard<State> {
+//     type Target = State;
+//     fn deref(&self) -> &Self::Target {
+//         unimplemented!()
+//     }
+// }
+
+// impl<State> DerefMut for Guard<State> {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         unimplemented!()
+//     }
+// }
+
+// pub struct Key<State> {
+//     _ty: std::marker::PhantomData<State>,
 // }

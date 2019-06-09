@@ -12,7 +12,9 @@ use std::{any::TypeId, cell::RefCell, hash::Hash};
 /// ```
 #[macro_export]
 macro_rules! call {
-    ($inner:expr) => {
+    ($inner:expr $(, env: {
+        $($env_item_ty:ty => $env_item:expr),+
+    })?) => {
         $crate::Point::__enter_child($crate::__point_id!(), $inner)
     };
 }
