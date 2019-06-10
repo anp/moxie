@@ -4,11 +4,7 @@
 #[macro_use]
 pub extern crate tokio_trace;
 
-use {
-    futures::task::LocalSpawn,
-    std::panic::{catch_unwind, AssertUnwindSafe, UnwindSafe},
-    topo::topo,
-};
+use topo::topo;
 
 #[doc(hidden)]
 pub use tokio_trace as __trace;
@@ -24,31 +20,33 @@ pub fn show(_child: impl Component) {
     unimplemented!()
 }
 
-pub async fn runloop(
-    root: impl Fn(&dyn Stop) + Clone + UnwindSafe + 'static,
-    _spawner: impl LocalSpawn + Send + 'static,
-) {
-    // make sure we can be woken back up and exited
-    // std::future::get_task_context(|cx| WAKER.set(cx.waker().clone()));
-    // SPAWNER.set(Box::new(spawner));
-
+pub async fn runloop(mut root: impl FnMut(&dyn Stop)) {
     let (send_shutdown, recv_shutdown) = std::sync::mpsc::channel();
+    let task_waker = std::future::get_task_context(|c| c.waker().clone());
+
     loop {
-        let send_shutdown = AssertUnwindSafe(send_shutdown.clone());
-        let root = root.clone();
+        topo::call!(|| {
+            println!("running root");
+            root(&send_shutdown);
+        }, env: {
+            LoopWaker => task_waker
+        });
 
-        let tick_result = catch_unwind(move || root(&*send_shutdown));
-
-        if let Err(e) = tick_result {
-            error!("error composing: {:?}", e);
-            break;
-        }
-
+        println!("root finished, checking shutdown channel");
         if let Ok(()) = recv_shutdown.try_recv() {
             break;
         }
+        println!("marking pending");
+        topo::Point::__flush();
+        //        futures::pending!();
+    }
+}
 
-        futures::pending!();
+struct LoopWaker(std::task::Waker);
+
+impl LoopWaker {
+    fn wake(&self) {
+        self.0.wake_by_ref();
     }
 }
 
@@ -57,6 +55,8 @@ pub trait Stop {
 }
 
 impl Stop for std::sync::mpsc::Sender<()> {
+    // TODO make this an async function when possible?
+    // by awaiting the future you'd be able to ensure the runloop was fully canceled
     fn stop(&self) {
         let _ = self.send(());
     }

@@ -1,6 +1,4 @@
 //! TODO write a better description.
-//!
-//! `use topo::*;` is necessary because we haven't worked out a nice way to pass macro names around.
 pub use topo_macro::topo;
 
 use std::{any::TypeId, cell::RefCell, hash::Hash};
@@ -22,7 +20,6 @@ macro_rules! call {
 /// Identifies a dynamic scope within the call topology.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Point {
-    current: Callsite,
     path: im::Vector<Callsite>,
     prev_sibling: Option<Callsite>,
 }
@@ -57,6 +54,13 @@ impl Point {
         __CURRENT_POINT.with(|p| p.borrow().clone())
     }
 
+    #[doc(hidden)]
+    pub fn __flush() {
+        __CURRENT_POINT.with(|p| {
+            p.borrow_mut().prev_sibling = None;
+        });
+    }
+
     /// Creates the next "link" in the chain of IDs which represents our path to the current Point.
     #[inline]
     #[doc(hidden)]
@@ -76,10 +80,9 @@ impl Point {
             let mut p = p.borrow_mut();
             let current = Callsite::new(callsite_ty, &p.prev_sibling);
             let mut path = p.path.clone();
-            path.push_back(p.current);
+            path.push_back(current);
 
             let child = Self {
-                current,
                 path,
                 prev_sibling: None,
             };
@@ -119,16 +122,15 @@ macro_rules! __make_topo_macro {
 #[macro_export]
 macro_rules! __point_id {
     () => {{
-        struct UwuPlsDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
-        std::any::TypeId::of::<UwuPlsDaddyRustcGibUniqueTypeIdPlsPls>()
+        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
+        std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>()
     }};
 }
 
 thread_local! {
     /// The `Point` representing the current dynamic scope.
     pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
-        current: Callsite {  count: 1, ty: __point_id!(), },
-        path: im::vector![],
+        path: im::vector![ Callsite {  count: 1, ty: __point_id!(), } ],
         prev_sibling: None,
     });
 }
@@ -155,7 +157,7 @@ mod tests {
             let called = AssertUnwindSafe(std::cell::Cell::new(false));
             let res = catch_unwind(|| {
                 Point::__enter_child(second_id, || {
-                    assert_eq!(second_id, Point::current().current.ty);
+                    assert_eq!(second_id, Point::current().path.back().unwrap().ty);
                     assert_ne!(
                         &*prev.borrow(),
                         &Point::current(),
@@ -169,7 +171,6 @@ mod tests {
 
             // make sure we've returned to an expected baseline
             let curr = Point::current();
-            assert_eq!(root.current, curr.current);
             assert_eq!(root.path, curr.path);
             assert!(called.get());
             assert!(res.is_err());
