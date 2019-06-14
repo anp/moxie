@@ -4,12 +4,20 @@
 #[macro_use]
 pub extern crate tokio_trace;
 
-use topo::topo;
-
 #[doc(hidden)]
 pub use tokio_trace as __trace;
 
+#[macro_use]
 pub mod memo;
+pub mod state;
+
+pub use {memo::*, state::*};
+
+use {
+    futures_timer::Delay,
+    std::time::{Duration, Instant},
+    topo::topo,
+};
 
 pub trait Component {
     fn content(self);
@@ -20,28 +28,57 @@ pub fn show(_child: impl Component) {
     unimplemented!()
 }
 
-pub async fn runloop(mut root: impl FnMut(&dyn Stop)) {
-    let (send_shutdown, recv_shutdown) = std::sync::mpsc::channel();
-    let task_waker = std::future::get_task_context(|c| c.waker().clone());
+pub enum LoopBehavior {
+    OnWake,
+    Vsync(Duration),
+    Stopped,
+}
 
-    loop {
-        topo::call!(|| {
-            println!("running root");
-            root(&send_shutdown);
-        }, env: {
-            LoopWaker => task_waker
-        });
-
-        println!("root finished, checking shutdown channel");
-        if let Ok(()) = recv_shutdown.try_recv() {
-            break;
-        }
-        println!("marking pending");
-        topo::Point::__flush();
-        //        futures::pending!();
+impl Default for LoopBehavior {
+    fn default() -> Self {
+        LoopBehavior::OnWake
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Revision(pub u64);
+
+pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
+    let task_waker = LoopWaker(std::future::get_task_context(|c| c.waker().clone()));
+
+    let mut current_revision = Revision(0);
+    loop {
+        let start = Instant::now();
+        let mut behavior_key = None;
+        topo::call!(|| {
+            let (_, behavior) = state!((), |()| LoopBehavior::default());
+            println!("running root");
+            root(&behavior);
+            behavior_key = Some(behavior);
+        }, env: {
+            LoopWaker => task_waker.clone(),
+            Revision => current_revision
+        });
+
+        topo::Point::__flush();
+
+        let loop_duration = Instant::now() - start;
+        trace!("revision {:?} took {:?}", current_revision, loop_duration);
+        current_revision.0 += 1;
+
+        let next_behavior = behavior_key.as_mut().unwrap().read().unwrap();
+
+        match *next_behavior {
+            LoopBehavior::OnWake => futures::pending!(),
+            LoopBehavior::Vsync(frame_time) => {
+                Delay::new(frame_time - loop_duration).await.unwrap()
+            }
+            LoopBehavior::Stopped => break,
+        }
+    }
+}
+
+#[derive(Clone)]
 struct LoopWaker(std::task::Waker);
 
 impl LoopWaker {
@@ -50,52 +87,7 @@ impl LoopWaker {
     }
 }
 
-pub trait Stop {
-    fn stop(&self);
-}
-
-impl Stop for std::sync::mpsc::Sender<()> {
-    // TODO make this an async function when possible?
-    // by awaiting the future you'd be able to ensure the runloop was fully canceled
-    fn stop(&self) {
-        let _ = self.send(());
-    }
-}
-
-// #[topo]
-// pub fn state<S: 'static + Any + UnwindSafe>(_init: impl FnOnce() -> S) -> Guard<S> {
-//     unimplemented!()
-// }
-
 // #[topo]
 // pub fn task(_fut: impl Future<Output = ()> + Send + UnwindSafe + 'static) {
 //     unimplemented!()
-// }
-
-// pub struct Guard<State> {
-//     // TODO
-//     _ty: std::marker::PhantomData<State>,
-// }
-
-// impl<State> Guard<State> {
-//     pub fn key(&self) -> Key<State> {
-//         unimplemented!()
-//     }
-// }
-
-// impl<State> Deref for Guard<State> {
-//     type Target = State;
-//     fn deref(&self) -> &Self::Target {
-//         unimplemented!()
-//     }
-// }
-
-// impl<State> DerefMut for Guard<State> {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         unimplemented!()
-//     }
-// }
-
-// pub struct Key<State> {
-//     _ty: std::marker::PhantomData<State>,
 // }

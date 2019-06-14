@@ -9,7 +9,9 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 [dependencies]
 chashmap = "2"
 futures-preview = { version = "0.3.0-alpha.16", features = [ "async-await", "nightly" ] }
+futures-timer = "0.2.1"
 once_cell = "0.2"
+parking_lot = "0.8"
 tokio-trace = { version = "0.1", features = ["log"] }
 topo = { path = "topo" }
 

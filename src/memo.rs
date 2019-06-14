@@ -8,9 +8,10 @@ use {
     topo::{topo, Point},
 };
 
-/// Memoize the provided function at the bound callsite, invalidating previous memoizations if the argument has changed.
+/// Memoize the provided function at the bound callsite, invalidating previous memoizations if the
+/// argument has changed.
 #[topo]
-fn memo<Arg, Init, Output>(arg: Arg, initializer: Init) -> Output
+pub fn memo<Arg, Init, Output>(arg: Arg, initializer: Init) -> Output
 where
     Arg: PartialEq + Send + Sync + 'static,
     Output: Clone + Send + Sync + 'static,
@@ -47,6 +48,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::LoopBehavior;
     use {super::*, futures::FutureExt, std::panic::AssertUnwindSafe};
 
     #[runtime::test]
@@ -56,20 +58,24 @@ mod tests {
             let mut tick_count = 0u32;
 
             println!("entering runloop");
-            crate::runloop(|stahp| {
+            crate::runloop(|behavior| {
                 tick_count += 1;
 
                 assert!(tick_count <= 5);
-                let ct = memo!((), |()| {
+                let current_call_count = memo!((), |()| {
                     println!("executing memo function");
                     call_count += 1;
                     call_count
                 });
 
-                assert_eq!(ct, 1);
+                assert_eq!(current_call_count, 1);
+                assert_eq!(call_count, 1);
                 if dbg!(tick_count) == 5 {
                     println!("stopping");
-                    stahp.stop();
+                    behavior.set(LoopBehavior::Stopped)
+                } else {
+                    println!("setting a keepalive");
+                    behavior.set(LoopBehavior::Vsync(std::time::Duration::from_millis(16)))
                 }
             })
             .await;
