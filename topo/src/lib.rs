@@ -1,7 +1,13 @@
 //! TODO write a better description.
 pub use topo_macro::topo;
 
-use std::{any::TypeId, cell::RefCell, hash::Hash};
+pub mod env;
+
+use std::{
+    any::TypeId,
+    cell::RefCell,
+    hash::{Hash, Hasher},
+};
 
 /// Calls the provided expression within a `Point` bound to the callsite.
 ///
@@ -12,16 +18,33 @@ use std::{any::TypeId, cell::RefCell, hash::Hash};
 macro_rules! call {
     ($inner:expr $(, env: {
         $($env_item_ty:ty => $env_item:expr),+
-    })?) => {
-        $crate::Point::__enter_child($crate::__point_id!(), $inner)
-    };
+    })?) => {{
+        let mut new_env = $crate::env::Env::default();
+        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
+        $crate::Point::__enter_child($crate::__point_id!(), new_env, $inner)
+    }};
 }
 
 /// Identifies a dynamic scope within the call topology.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Point {
     path: im::Vector<Callsite>,
     prev_sibling: Option<Callsite>,
+    env: env::Env,
+}
+
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path && self.prev_sibling == other.prev_sibling
+    }
+}
+impl Eq for Point {}
+
+impl Hash for Point {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        self.path.hash(h);
+        self.prev_sibling.hash(h);
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -64,7 +87,7 @@ impl Point {
     /// Creates the next "link" in the chain of IDs which represents our path to the current Point.
     #[inline]
     #[doc(hidden)]
-    pub fn __enter_child<T>(callsite_ty: TypeId, op: impl FnOnce() -> T) -> T {
+    pub fn __enter_child<T>(callsite_ty: TypeId, add_env: env::Env, op: impl FnOnce() -> T) -> T {
         struct PointGuardLol {
             prev: Option<Point>,
         }
@@ -83,6 +106,7 @@ impl Point {
             path.push_back(current);
 
             let child = Self {
+                env: p.env.child(add_env),
                 path,
                 prev_sibling: None,
             };
@@ -132,6 +156,7 @@ thread_local! {
     pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
         path: im::vector![ Callsite {  count: 1, ty: __point_id!(), } ],
         prev_sibling: None,
+        env: env::Env::default(),
     });
 }
 
@@ -156,7 +181,7 @@ mod tests {
         for _ in 0..100 {
             let called = AssertUnwindSafe(std::cell::Cell::new(false));
             let res = catch_unwind(|| {
-                Point::__enter_child(second_id, || {
+                Point::__enter_child(second_id, env::Env::default(), || {
                     assert_eq!(second_id, Point::current().path.back().unwrap().ty);
                     assert_ne!(
                         &*prev.borrow(),

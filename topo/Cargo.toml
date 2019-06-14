@@ -6,5 +6,6 @@ edition = "2018"
 
 [dependencies]
 im = "13"
+owning_ref = "0.4"
 static_assertions = "0.3"
 topo-macro = { path = "macro" }
