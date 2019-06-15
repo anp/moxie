@@ -17,8 +17,8 @@ where
     Output: Clone + Send + Sync + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    type Anon = Arc<dyn Any + Send + Sync>;
-    static CALLSITES: Lazy<CHashMap<(TypeId, Point), Anon>> = Lazy::new(CHashMap::new);
+    static CALLSITES: Lazy<CHashMap<(TypeId, Point), Arc<dyn Any + Send + Sync>>> =
+        Lazy::new(CHashMap::new);
 
     let key = (TypeId::of::<Output>(), Point::current());
 
@@ -48,42 +48,34 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::LoopBehavior;
-    use {super::*, futures::FutureExt, std::panic::AssertUnwindSafe};
+    use super::*;
+    use crate::{LoopBehavior, Revision};
 
     #[runtime::test]
-    async fn basic_memo() -> std::thread::Result<()> {
-        AssertUnwindSafe(async {
-            let mut call_count = 0u32;
-            let mut tick_count = 0u32;
+    async fn basic_memo() {
+        let mut call_count = 0u32;
 
-            println!("entering runloop");
-            crate::runloop(|behavior| {
-                tick_count += 1;
+        crate::runloop(|behavior| {
+            let revision = Revision::current();
 
-                assert!(tick_count <= 5);
-                let current_call_count = memo!((), |()| {
-                    println!("executing memo function");
-                    call_count += 1;
-                    call_count
-                });
+            assert!(revision.0 <= 5);
+            let current_call_count = memo!((), |()| {
+                info!("executing memo function");
+                call_count += 1;
+                call_count
+            });
 
-                assert_eq!(current_call_count, 1);
-                assert_eq!(call_count, 1);
-                if dbg!(tick_count) == 5 {
-                    println!("stopping");
-                    behavior.set(LoopBehavior::Stopped)
-                } else {
-                    println!("setting a keepalive");
-                    behavior.set(LoopBehavior::Vsync(std::time::Duration::from_millis(16)))
-                }
-            })
-            .await;
-
+            assert_eq!(current_call_count, 1);
             assert_eq!(call_count, 1);
-            assert_eq!(tick_count, 5);
+            if revision.0 == 5 {
+                info!("stopping");
+                behavior.set(LoopBehavior::Stopped)
+            } else {
+                behavior.set(LoopBehavior::Continue)
+            }
         })
-        .catch_unwind()
-        .await
+        .await;
+
+        assert_eq!(call_count, 1);
     }
 }

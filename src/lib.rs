@@ -11,13 +11,10 @@ pub use tokio_trace as __trace;
 pub mod memo;
 pub mod state;
 
+#[doc(inline)]
 pub use {memo::*, state::*};
 
-use {
-    futures_timer::Delay,
-    std::time::{Duration, Instant},
-    topo::topo,
-};
+use {tokio_trace::field::debug, topo::topo};
 
 pub trait Component {
     fn content(self);
@@ -28,10 +25,12 @@ pub fn show(_child: impl Component) {
     unimplemented!()
 }
 
+#[derive(Eq, PartialEq)]
 pub enum LoopBehavior {
     OnWake,
-    Vsync(Duration),
     Stopped,
+    #[cfg(test)] // a dirty dirty hack for tests for now, need to fix with tasks/timers
+    Continue,
 }
 
 impl Default for LoopBehavior {
@@ -40,40 +39,83 @@ impl Default for LoopBehavior {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
 
+impl Revision {
+    /// Returns the current revision. Will always return `Revision(0)` if called outside of a
+    /// runloop.
+    pub fn current() -> Self {
+        if let Some(r) = topo::env::get::<Revision>() {
+            *r
+        } else {
+            Revision::default()
+        }
+    }
+}
+
+/// A `runloop` is the entry point of the moxie runtime environment.
+///
+/// On each iteration
+/// of the loop:
+///
+/// 1. The loop's [Revision](crate::Revision) counter is incremented by 1.
+/// 2. The provided `root` argument is called within a corresponding [Point](topo::Point) in the
+///    call topology.
+/// 3. The loop marks its task as pending until it is woken by commits to state variables.
+///     * If during (2) `root` commits a `LoopBehavior::Stopped` change to the referenced
+///       [LoopBehavior](crate::LoopBehavior) state [Key](crate::Key), then control flow
+///       for the running future breaks out of the loop and returns, ending the runloop.
+///
+/// The simplest possible runloop stops itself as soon as it is entered:
+///
+/// ```
+/// # #![feature(async_await)]
+/// # #[runtime::main]
+/// # async fn main() {
+///
+/// moxie::runloop(|ctl| ctl.set(moxie::LoopBehavior::Stopped)).await;
+///
+/// # }
+/// ```
+///
+/// Most practical usages of the runloop rely on its continued execution, however.
+///
+/// TODO: add counting example or something actually useful maybe?
 pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     let task_waker = LoopWaker(std::future::get_task_context(|c| c.waker().clone()));
 
     let mut current_revision = Revision(0);
     loop {
-        let start = Instant::now();
+        current_revision.0 += 1;
+
         let mut behavior_key = None;
         topo::call!(|| {
             let (_, behavior) = state!((), |()| LoopBehavior::default());
-            println!("running root");
+
+            // CALLER'S CODE IS CALLED HERE
             root(&behavior);
+
+            // stash the write key for ourselves for reading after exiting this call
             behavior_key = Some(behavior);
-        }, env: {
+        }, Env {
             LoopWaker => task_waker.clone(),
             Revision => current_revision
         });
 
+        // TODO break this by adding test with multiple identical runloops that clobber each other
         topo::Point::__flush();
-
-        let loop_duration = Instant::now() - start;
-        trace!("revision {:?} took {:?}", current_revision, loop_duration);
-        current_revision.0 += 1;
 
         let next_behavior = behavior_key.as_mut().unwrap().read().unwrap();
 
         match *next_behavior {
             LoopBehavior::OnWake => futures::pending!(),
-            LoopBehavior::Vsync(frame_time) => {
-                Delay::new(frame_time - loop_duration).await.unwrap()
+            LoopBehavior::Stopped => {
+                info!(target: "runloop_stopping", revision = debug(&current_revision));
+                break;
             }
-            LoopBehavior::Stopped => break,
+            #[cfg(test)]
+            LoopBehavior::Continue => continue,
         }
     }
 }

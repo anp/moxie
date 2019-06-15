@@ -62,13 +62,13 @@ mod tests {
                 let curr_byte: u8 = *get::<u8>().unwrap();
                 assert_eq!(curr_byte, second_byte);
                 second_called = true;
-            }, env: {
+            }, Env {
                 u8 => second_byte
             });
 
             assert!(second_called);
             assert_eq!(curr_byte, first_byte);
-        }, env: {
+        }, Env {
             u8 => first_byte
         });
         assert!(first_called);

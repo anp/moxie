@@ -16,7 +16,7 @@ use std::{
 /// ```
 #[macro_export]
 macro_rules! call {
-    ($inner:expr $(, env: {
+    ($inner:expr $(, Env {
         $($env_item_ty:ty => $env_item:expr),+
     })?) => {{
         let mut new_env = $crate::env::Env::default();
