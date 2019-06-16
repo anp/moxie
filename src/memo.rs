@@ -8,8 +8,13 @@ use {
     topo::topo,
 };
 
-/// Memoize the provided function at the bound callsite, invalidating previous memoizations if the
-/// argument has changed.
+/// Memoize the provided function at the bound callsite, invalidating previous results only if
+/// the explicitly passed argument has changed.
+///
+/// While we do have the option in Rust to compare the values of initializer closures we are passed,
+/// it places a significant constraint on the initializers themselves to only capture `Clone` values
+/// or to avoid mutating its captures to implement `Fn`. Instead we require that closures accept
+/// the memoized argument by reference rather than by value.
 #[topo]
 pub fn memo<Arg, Init, Output>(arg: Arg, initializer: Init) -> Output
 where

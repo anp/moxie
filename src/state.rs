@@ -10,7 +10,8 @@ use {
 
 // TODO state tests
 
-/// Bind a state variable to this callsite.
+/// Root a state variable at this callsite, returning an up-to-date [`Commit`] of its value and
+/// a unique [`Key`] which can be used to commit new values to the variable.
 #[topo]
 // TODO: proc macro should allow topo functions to declare `arg` optional with a default to
 // which the macro can desugar invocations, so you can pass a init closure only.
@@ -21,11 +22,15 @@ where
     Output: Send + Sync + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    static ERR: &str = "`state` must be called within a moxie runloop!";
+    assert_send_and_sync::<Commit<Output>>();
+    assert_send_and_sync::<Key<Output>>();
+
     let current_revision = Revision::current();
 
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
-        let waker = topo::from_env::<RunLoopWaker>().expect(ERR).to_owned();
+        let waker = topo::from_env::<RunLoopWaker>()
+            .expect("must be called within moxie::runloop!")
+            .to_owned();
         let var = Var {
             point: topo::Id::current(),
             last_rooted: current_revision,
@@ -50,6 +55,14 @@ where
     (commit, key)
 }
 
+/// A read-only pointer to the value of a state variable *at a particular revision*.
+///
+/// Reads through a commit are not guaranteed to be the latest value visible to the runloop. Commits
+/// should be shared and used within the context of a single [`Revision`], being re-loaded from
+/// the state variable on each fresh iteration.
+// NOTE(anp): I'd like to have a lifetime on this bound to the calling frame. `Commit` could
+// benefit in the future from defining immovable types, as it would reduce the potential that old
+// state revisions leak.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     revision: Revision,
@@ -74,10 +87,9 @@ impl<State> Deref for Commit<State> {
     }
 }
 
-/// A Key is a handle to a state variable which can enqueue commits to the variable while the
-/// variable is live. Keys carry a weak reference to the state variable itself to prevent cycles,
-/// which means that all operations called against them are fallible -- we cannot know before
-/// calling a method that the state variable is still live.
+/// A Key commits new values to a state variable. Keys carry a weak reference to the state variable
+/// to prevent cycles, which means that all operations called against them are fallible -- we cannot
+/// know before calling a method that the state variable is still live.
 pub struct Key<State> {
     weak_var: Weak<Mutex<Var<State>>>,
 }
@@ -166,18 +178,8 @@ impl<State> Var<State> {
     }
 }
 
-#[allow(unused)]
 fn assert_send_and_sync<T>()
 where
     T: Send + Sync,
 {
-}
-
-#[allow(unused)]
-fn asserts<State>()
-where
-    State: Send + Sync,
-{
-    assert_send_and_sync::<Commit<State>>();
-    assert_send_and_sync::<Key<State>>();
 }

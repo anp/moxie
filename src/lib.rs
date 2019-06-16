@@ -1,7 +1,23 @@
-//! moxie is a library (and perhaps a programming model) for constructing and incrementally updating
-//! persistent trees (think DOM) with memoized function calls.
+//! moxie is a toolkit for efficiently constructing and incrementally updating trees, describing
+//! their structure and contents from the shape of a memoized function call graph.
+//!
+//! TODO example of a JSON tree, or graphviz, or something
+//!
+//! TODO diagram of tree transition over time
+//!
+//! # Memoization
+//!
+//! TODO
+//!
+//! # State
+//!
+//! TODO explain update lifecycle, pending values, commit/xact
+//!
+//! # Async Tasks & Actors
+//!
+//! TODO
 
-#![deny(clippy::all)]
+#![deny(clippy::all, missing_docs)]
 #![feature(async_await, gen_future)]
 
 #[macro_use]
@@ -21,9 +37,13 @@ use {
 /// will be woken and its executor will poll it again.
 #[derive(Eq, PartialEq)]
 pub enum LoopBehavior {
+    /// Pause the loop after each iteration until it is woken by state variables receiving commits.
     OnWake,
+    /// Stop the loop.
     Stopped,
     #[cfg(test)] // a dirty dirty hack for tests for now, need to fix with tasks/timers
+    /// Continue running the loop after each iteration without waiting for any state variables to
+    /// change.
     Continue,
 }
 
@@ -40,8 +60,7 @@ impl Default for LoopBehavior {
 pub struct Revision(pub u64);
 
 impl Revision {
-    /// Returns the current revision. Will always return `Revision(0)` if called outside of a
-    /// runloop.
+    /// Returns the current revision. Will return `Revision(0)` if called outside of a runloop.
     pub fn current() -> Self {
         if let Some(r) = topo::from_env::<Revision>() {
             *r
