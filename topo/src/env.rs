@@ -17,10 +17,6 @@ impl Env {
         new
     }
 
-    fn current() -> Env {
-        Point::current().env.clone()
-    }
-
     #[doc(hidden)]
     pub fn __set<E>(&mut self, e: E)
     where
