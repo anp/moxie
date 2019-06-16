@@ -27,11 +27,11 @@ where
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
         let waker = topo::from_env::<RunLoopWaker>().expect(ERR).to_owned();
         let var = Var {
-            point: topo::Point::current(),
+            point: topo::PointId::current(),
             last_rooted: current_revision,
             current: Commit {
                 revision: current_revision,
-                point: topo::Point::current(),
+                point: topo::PointId::current(),
                 inner: Arc::new(initializer(a)),
             },
             pending: None,
@@ -53,15 +53,15 @@ where
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     revision: Revision,
-    point: topo::Point,
+    point: topo::PointId,
     inner: Arc<State>,
 }
 
 impl<State> Clone for Commit<State> {
     fn clone(&self) -> Self {
         Self {
-            point: self.point.clone(),
             revision: self.revision,
+            point: self.point,
             inner: Arc::clone(&self.inner),
         }
     }
@@ -83,8 +83,7 @@ pub struct Key<State> {
 }
 
 impl<State> Key<State> {
-    /// Returns the current commit of the state variable if it is still referenced within the most
-    /// recent revision of the topology.
+    /// Returns the current commit of the state variable if it is live.
     pub fn read(&self) -> Option<Commit<State>> {
         self.weak_var.upgrade().map(|var| var.lock().peek())
     }
@@ -125,7 +124,7 @@ where
 
 struct Var<State> {
     current: Commit<State>,
-    point: topo::Point,
+    point: topo::PointId,
     last_rooted: Revision,
     pending: Option<Commit<State>>,
     waker: RunLoopWaker,
@@ -156,7 +155,7 @@ impl<State> Var<State> {
         if let Some(pending) = op(&*self.current) {
             self.pending = Some(Commit {
                 inner: Arc::new(pending),
-                point: self.point.clone(),
+                point: self.point,
                 revision: self.last_rooted,
             });
             self.waker.wake();
@@ -165,4 +164,20 @@ impl<State> Var<State> {
             None
         }
     }
+}
+
+#[allow(unused)]
+fn assert_send_and_sync<T>()
+where
+    T: Send + Sync,
+{
+}
+
+#[allow(unused)]
+fn asserts<State>()
+where
+    State: Send + Sync,
+{
+    assert_send_and_sync::<Commit<State>>();
+    assert_send_and_sync::<Key<State>>();
 }

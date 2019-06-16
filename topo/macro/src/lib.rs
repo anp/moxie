@@ -120,7 +120,7 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
         doc_fn_sig
     };
 
-    ["", "# Signature", "", "```ignore", &doc_fn_sig, "```"]
+    ["", "# Signature", "", "```text", &doc_fn_sig, "```"]
         .iter()
         .map(|&l| quote::quote!(#[doc = #l]))
         .fold(quote::quote!(), |a, b| quote::quote!(#a #b))

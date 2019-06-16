@@ -33,8 +33,8 @@ impl Default for LoopBehavior {
     }
 }
 
-/// A Revision represents moxie's notion of time, a counter which is incremented each time its
-/// runloop iterates. [`Commit`]s to state variables are annotated with the Revision during which
+/// Revisions measure moxie's notion of time passing. Each [`runloop`] increments its Revision
+/// on every iteration. [`Commit`]s to state variables are annotated with the Revision during which
 /// they were made.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
@@ -113,7 +113,7 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
         });
 
         // TODO break this by adding test with multiple identical runloops that clobber each other
-        topo::Point::__flush();
+        topo::Point::__reset();
 
         match next_behavior.as_ref().unwrap().deref() {
             LoopBehavior::OnWake => {

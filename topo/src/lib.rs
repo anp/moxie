@@ -1,5 +1,5 @@
 //! Topological functions execute within a context unique to the path in the runtime call
-//! graph of other topological functions which precedes each invocation/callsite.
+//! graph of other topological functions preceding the current activation record.
 //!
 //! TODO discuss creation of tree from "abstract stack frames" represented by topological
 //! invocations
@@ -13,6 +13,7 @@ pub extern crate tokio_trace as __trace;
 pub use topo_macro::topo;
 
 use {
+    im_rc::{vector, HashMap, Vector},
     owning_ref::OwningRef,
     std::{
         any::{Any, TypeId},
@@ -23,10 +24,79 @@ use {
     },
 };
 
-/// Identifies a dynamic scope within the call topology.
-#[derive(Clone, Debug)]
+/// Retrieve a reference to a value in the current Point's environment if it has been added to
+/// the environment by a parent topological invocation.
+pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
+where
+    E: Any + Send + Sync + 'static,
+{
+    Point::__with_current(|current| {
+        current
+            .env
+            .inner
+            .get(&TypeId::of::<E>())
+            .map(|guard| OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap()))
+    })
+}
+
+/// Calls the provided expression within a `Point` bound to the callsite.
+///
+/// ```
+/// let prev = topo::PointId::current();
+/// topo::call!(|| assert_ne!(prev, topo::PointId::current()));
+/// ```
+///
+/// Adding an `Env { ... }` directive to the macro input will take ownership of provided values
+/// and make them available to the code run in the [`Point`] created by the invocation.
+///
+/// ```
+/// #[derive(Debug, Eq, PartialEq)]
+/// struct Submarine(usize);
+///
+/// assert!(topo::from_env::<Submarine>().is_none());
+///
+/// topo::call!(|| {
+///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
+///
+///     topo::call!(|| {
+///         assert_eq!(&Submarine(2), &*topo::from_env::<Submarine>().unwrap());
+///     }, Env {
+///         Submarine => Submarine(2)
+///     });
+///
+///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
+/// }, Env {
+///     Submarine => Submarine(1)
+/// });
+///
+/// assert!(topo::from_env::<Submarine>().is_none());
+/// ```
+#[macro_export]
+macro_rules! call {
+    ($inner:expr $(, Env {
+        $($env_item_ty:ty => $env_item:expr),+
+    })?) => {{
+        let mut new_env = $crate::Env::default();
+        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
+        $crate::Point::__enter_child($crate::__point_id!(), new_env, $inner)
+    }};
+}
+
+/// Identifies a [`Point`] in the call topology. This is analogous to the hash cons of the IDs of
+/// topological function invocations leading to the identified activation record.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct PointId(u64);
+
+impl PointId {
+    pub fn current() -> Self {
+        Point::__with_current(|p| p.id())
+    }
+}
+
+/// The activation record of a dynamic scope within the call topology.
+#[derive(Debug)]
 pub struct Point {
-    path: im::Vector<Callsite>,
+    path: Vector<Callsite>,
     prev_sibling: Option<Callsite>,
     env: Env,
 }
@@ -38,45 +108,23 @@ impl PartialEq for Point {
 }
 impl Eq for Point {}
 
-impl Hash for Point {
-    fn hash<H: Hasher>(&self, h: &mut H) {
-        self.path.hash(h);
-        self.prev_sibling.hash(h);
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct Callsite {
-    ty: TypeId,
-    count: usize,
-}
-
-impl Callsite {
-    fn new(ty: TypeId, prev_sibling: &Option<Callsite>) -> Self {
-        let prev_count = match prev_sibling {
-            Some(ref prev) if prev.ty == ty => prev.count,
-            _ => 0,
-        };
-
-        Self {
-            ty,
-            count: prev_count + 1,
-        }
-    }
-}
-
-static_assertions::assert_impl!(pt; Point, Clone, Hash, Eq, Send, Sync);
-
 impl Point {
+    pub fn id(&self) -> PointId {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.path.hash(&mut hasher);
+        self.prev_sibling.hash(&mut hasher);
+        PointId(hasher.finish())
+    }
+
     /// Returns the `Point` identifying the current dynamic scope.
     #[inline]
     #[doc(hidden)]
-    pub fn current() -> Self {
-        __CURRENT_POINT.with(|p| p.borrow().clone())
+    pub fn __with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+        __CURRENT_POINT.with(|p| op(&*p.borrow()))
     }
 
     #[doc(hidden)]
-    pub fn __flush() {
+    pub fn __reset() {
         __CURRENT_POINT.with(|p| {
             p.borrow_mut().prev_sibling = None;
         });
@@ -117,9 +165,31 @@ impl Point {
     }
 }
 
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Callsite {
+    ty: TypeId,
+    count: usize,
+}
+
+impl Callsite {
+    fn new(ty: TypeId, prev_sibling: &Option<Callsite>) -> Self {
+        let prev_count = match prev_sibling {
+            Some(ref prev) if prev.ty == ty => prev.count,
+            _ => 0,
+        };
+
+        Self {
+            ty,
+            count: prev_count + 1,
+        }
+    }
+}
+
+#[doc(hidden)]
 #[derive(Clone, Debug, Default)]
 pub struct Env {
-    inner: im::HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    inner: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
 impl Env {
@@ -139,34 +209,6 @@ impl Env {
     {
         self.inner.insert(TypeId::of::<E>(), Arc::new(e));
     }
-}
-
-pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
-where
-    E: Any + Send + Sync + 'static,
-{
-    Point::current()
-        .env
-        .inner
-        .get(&TypeId::of::<E>())
-        .map(|guard| OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap()))
-}
-
-/// Calls the provided expression within a `Point` bound to the callsite.
-///
-/// ```
-/// let prev = topo::Point::current();
-/// topo::call!(|| assert_ne!(prev, topo::Point::current()));
-/// ```
-#[macro_export]
-macro_rules! call {
-    ($inner:expr $(, Env {
-        $($env_item_ty:ty => $env_item:expr),+
-    })?) => {{
-        let mut new_env = $crate::Env::default();
-        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
-        $crate::Point::__enter_child($crate::__point_id!(), new_env, $inner)
-    }};
 }
 
 /// Defines a new macro (named after the first metavariable) which calls a function (named in
@@ -206,10 +248,22 @@ macro_rules! __point_id {
 thread_local! {
     /// The `Point` representing the current dynamic scope.
     pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
-        path: im::vector![ Callsite {  count: 1, ty: __point_id!(), } ],
+        path: vector![ Callsite {  count: 1, ty: __point_id!(), } ],
         prev_sibling: None,
         env: Env::default(),
     });
+}
+
+#[allow(unused)]
+fn assert_send_and_sync<T>()
+where
+    T: Send + Sync,
+{
+}
+
+#[allow(unused)]
+fn asserts() {
+    assert_send_and_sync::<PointId>();
 }
 
 #[cfg(test)]
@@ -220,37 +274,49 @@ mod tests {
         panic::{catch_unwind, AssertUnwindSafe},
     };
 
+    fn clone(first: &Point) -> Point {
+        Point {
+            path: first.path.clone(),
+            prev_sibling: first.prev_sibling.clone(),
+            env: first.env.clone(),
+        }
+    }
+
     #[test]
     fn one_panicking_child_in_a_loop() {
-        let root = Point::current();
-        assert_eq!(root, Point::current());
+        let root = Point::__with_current(clone);
+        Point::__with_current(|c| assert_eq!(&root, c));
 
         let second_id = __point_id!();
-        let prev = AssertUnwindSafe(RefCell::new(Point::current()));
+        let prev = Point::__with_current(|c| AssertUnwindSafe(RefCell::new(clone(c))));
 
-        assert_eq!(root, Point::current());
+        Point::__with_current(|p| assert_eq!(&root, p));
 
         for _ in 0..100 {
             let called = AssertUnwindSafe(std::cell::Cell::new(false));
             let res = catch_unwind(|| {
                 Point::__enter_child(second_id, Env::default(), || {
-                    assert_eq!(second_id, Point::current().path.back().unwrap().ty);
-                    assert_ne!(
-                        &*prev.borrow(),
-                        &Point::current(),
-                        "entered the same Point twice in this loop"
-                    );
-                    prev.replace(Point::current());
-                    called.set(true);
-                    panic!("checking unwind safety?");
+                    Point::__with_current(|current| {
+                        assert_eq!(second_id, current.path.back().unwrap().ty);
+
+                        assert_ne!(
+                            &*prev.borrow(),
+                            current,
+                            "entered the same Point twice in this loop"
+                        );
+                        prev.replace(clone(current));
+                        called.set(true);
+                        panic!("checking unwind safety?");
+                    });
                 });
             });
 
             // make sure we've returned to an expected baseline
-            let curr = Point::current();
-            assert_eq!(root.path, curr.path);
-            assert!(called.get());
-            assert!(res.is_err());
+            Point::__with_current(|curr| {
+                assert_eq!(root.path, curr.path);
+                assert!(called.get());
+                assert!(res.is_err());
+            });
         }
     }
 

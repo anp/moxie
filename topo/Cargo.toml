@@ -5,8 +5,7 @@ authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-im = "13"
+im-rc = "13"
 owning_ref = "0.4"
-static_assertions = "0.3"
 tokio-trace = { version = "0.1", features = ["log"] }
 topo-macro = { path = "macro" }
