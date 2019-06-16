@@ -25,7 +25,7 @@ where
     let current_revision = Revision::current();
 
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
-        let waker = topo::env::get::<RunLoopWaker>().expect(ERR).to_owned();
+        let waker = topo::from_env::<RunLoopWaker>().expect(ERR).to_owned();
         let var = Var {
             point: topo::Point::current(),
             last_rooted: current_revision,

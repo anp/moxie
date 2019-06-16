@@ -1,38 +1,34 @@
+//! Topological functions execute within a context unique to the path in the runtime call
+//! graph of other topological functions which precedes each invocation/callsite.
+//!
+//! TODO discuss creation of tree from "abstract stack frames" represented by topological
+//! invocations
+//!
+//! TODO discuss propagating environment values down the topological call tree
+//!
+
 #[doc(hidden)]
 pub extern crate tokio_trace as __trace;
 
 pub use topo_macro::topo;
 
-pub mod env;
-
-use std::{
-    any::TypeId,
-    cell::RefCell,
-    hash::{Hash, Hasher},
+use {
+    owning_ref::OwningRef,
+    std::{
+        any::{Any, TypeId},
+        cell::RefCell,
+        hash::{Hash, Hasher},
+        ops::Deref,
+        sync::Arc,
+    },
 };
-
-/// Calls the provided expression within a `Point` bound to the callsite.
-///
-/// ```
-/// topo::call!(|| println!("{:?}", topo::Point::current()));
-/// ```
-#[macro_export]
-macro_rules! call {
-    ($inner:expr $(, Env {
-        $($env_item_ty:ty => $env_item:expr),+
-    })?) => {{
-        let mut new_env = $crate::env::Env::default();
-        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
-        $crate::Point::__enter_child($crate::__point_id!(), new_env, $inner)
-    }};
-}
 
 /// Identifies a dynamic scope within the call topology.
 #[derive(Clone, Debug)]
 pub struct Point {
     path: im::Vector<Callsite>,
     prev_sibling: Option<Callsite>,
-    env: env::Env,
+    env: Env,
 }
 
 impl PartialEq for Point {
@@ -89,7 +85,7 @@ impl Point {
     /// Creates the next "link" in the chain of IDs which represents our path to the current Point.
     #[inline]
     #[doc(hidden)]
-    pub fn __enter_child<T>(callsite_ty: TypeId, add_env: env::Env, op: impl FnOnce() -> T) -> T {
+    pub fn __enter_child<T>(callsite_ty: TypeId, add_env: Env, op: impl FnOnce() -> T) -> T {
         struct PointGuardLol {
             prev: Option<Point>,
         }
@@ -108,7 +104,7 @@ impl Point {
             path.push_back(current);
 
             let child = Self {
-                env: p.env.child(add_env),
+                env: p.env.__child(add_env),
                 path,
                 prev_sibling: None,
             };
@@ -119,6 +115,58 @@ impl Point {
         });
         op()
     }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Env {
+    inner: im::HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+}
+
+impl Env {
+    #[doc(hidden)]
+    pub fn __child(&self, additional: Env) -> Env {
+        let mut new = self.clone();
+        for (k, v) in additional.inner {
+            new.inner.insert(k, v);
+        }
+        new
+    }
+
+    #[doc(hidden)]
+    pub fn __set<E>(&mut self, e: E)
+    where
+        E: Any + Send + Sync + 'static,
+    {
+        self.inner.insert(TypeId::of::<E>(), Arc::new(e));
+    }
+}
+
+pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
+where
+    E: Any + Send + Sync + 'static,
+{
+    Point::current()
+        .env
+        .inner
+        .get(&TypeId::of::<E>())
+        .map(|guard| OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap()))
+}
+
+/// Calls the provided expression within a `Point` bound to the callsite.
+///
+/// ```
+/// let prev = topo::Point::current();
+/// topo::call!(|| assert_ne!(prev, topo::Point::current()));
+/// ```
+#[macro_export]
+macro_rules! call {
+    ($inner:expr $(, Env {
+        $($env_item_ty:ty => $env_item:expr),+
+    })?) => {{
+        let mut new_env = $crate::Env::default();
+        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
+        $crate::Point::__enter_child($crate::__point_id!(), new_env, $inner)
+    }};
 }
 
 /// Defines a new macro (named after the first metavariable) which calls a function (named in
@@ -160,7 +208,7 @@ thread_local! {
     pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
         path: im::vector![ Callsite {  count: 1, ty: __point_id!(), } ],
         prev_sibling: None,
-        env: env::Env::default(),
+        env: Env::default(),
     });
 }
 
@@ -185,7 +233,7 @@ mod tests {
         for _ in 0..100 {
             let called = AssertUnwindSafe(std::cell::Cell::new(false));
             let res = catch_unwind(|| {
-                Point::__enter_child(second_id, env::Env::default(), || {
+                Point::__enter_child(second_id, Env::default(), || {
                     assert_eq!(second_id, Point::current().path.back().unwrap().ty);
                     assert_ne!(
                         &*prev.borrow(),
@@ -204,5 +252,32 @@ mod tests {
             assert!(called.get());
             assert!(res.is_err());
         }
+    }
+
+    #[test]
+    fn call_env() {
+        let (mut first_called, mut second_called) = (false, false);
+        let (first_byte, second_byte) = (0u8, 1u8);
+
+        call!(|| {
+            let curr_byte: u8 = *from_env::<u8>().unwrap();
+            assert_eq!(curr_byte, first_byte);
+            first_called = true;
+
+            call!(|| {
+                let curr_byte: u8 = *from_env::<u8>().unwrap();
+                assert_eq!(curr_byte, second_byte);
+                second_called = true;
+            }, Env {
+                u8 => second_byte
+            });
+
+            assert!(second_called);
+            assert_eq!(curr_byte, first_byte);
+        }, Env {
+            u8 => first_byte
+        });
+        assert!(first_called);
+        assert!(from_env::<u8>().is_none());
     }
 }

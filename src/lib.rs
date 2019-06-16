@@ -43,7 +43,7 @@ impl Revision {
     /// Returns the current revision. Will always return `Revision(0)` if called outside of a
     /// runloop.
     pub fn current() -> Self {
-        if let Some(r) = topo::env::get::<Revision>() {
+        if let Some(r) = topo::from_env::<Revision>() {
             *r
         } else {
             Revision::default()

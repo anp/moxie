@@ -2,21 +2,24 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use syn::export::TokenStream2;
 
-/// Topological functions form a runtime graph from their control flow, and each function's
-/// scope has a unique identifier at runtime based on that specific invocation's position within
-/// this call graph.
+/// Transforms a function declaration into a topological function invoked with macro syntax.
+///
+/// A macro transformation is used to capture unique callsite information from the invoking
+/// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
+/// callsite which can be used to identify the chain of topological invocations.
 ///
 /// ## Implications of using macros
 ///
-/// This has a number of implications: it is not currently feasible to abstract over topological
-/// functions, visibility rules are less granular, and error messages are generally worse. Because
-/// topological function calls are a bit more expensive than normal function calls, it makes sense
-/// to call them out as different invocations than typical functions, in particular because they
-/// literally bind to the source location at which they're invoked.
+/// Upside: Because topological function calls are a bit more expensive than normal function calls,
+/// it makes sense to call them out as different invocations than typical functions, in particular
+/// because they literally bind to the source location at which they're invoked.
+///
+/// However, it is not currently feasible to abstract over topological
+/// functions, visibility rules are less granular, and error messages are generally worse.
 ///
 /// ## Macro alternatives
 ///
-/// ### React: top-level of functions only
+/// ### React: runtime-only tracking, forces hooks to only be used at the top-level
 ///
 /// TODO explain more
 ///
