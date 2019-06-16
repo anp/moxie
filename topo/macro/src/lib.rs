@@ -57,9 +57,7 @@ pub fn topo(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
     for attr in tmp {
         match attr.parse_meta() {
-            Ok(syn::Meta::NameValue(syn::MetaNameValue { ref ident, .. }))
-                if ident.to_string() == "doc" =>
-            {
+            Ok(syn::Meta::NameValue(syn::MetaNameValue { ref ident, .. })) if *ident == "doc" => {
                 doc_attrs.push(attr);
             }
             _ => input_fn.attrs.push(attr),
@@ -99,9 +97,9 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
     let doc_fn_sig = syn::ItemFn {
         attrs: vec![],
         vis: syn::Visibility::Inherited,
-        constness: input_fn.constness.clone(),
-        asyncness: input_fn.asyncness.clone(),
-        unsafety: input_fn.unsafety.clone(),
+        constness: input_fn.constness,
+        asyncness: input_fn.asyncness,
+        unsafety: input_fn.unsafety,
         abi: input_fn.abi.clone(),
         ident: input_fn.ident.clone(),
         decl: input_fn.decl.clone(),

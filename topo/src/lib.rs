@@ -53,7 +53,7 @@ use {
     std::{
         any::{Any, TypeId},
         cell::RefCell,
-        collections::HashMap,
+        collections::{hash_map::DefaultHasher, HashMap},
         hash::{Hash, Hasher},
         ops::Deref,
         rc::Rc,
@@ -158,7 +158,7 @@ impl Eq for Point {}
 impl Point {
     fn id(&self) -> Id {
         // FIXME probably need a better hash function?
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        let mut hasher = DefaultHasher::new();
         self.path.hash(&mut hasher);
         self.prev_sibling.hash(&mut hasher);
         Id(hasher.finish())
@@ -313,7 +313,7 @@ mod tests {
     fn clone(first: &Point) -> Point {
         Point {
             path: first.path.clone(),
-            prev_sibling: first.prev_sibling.clone(),
+            prev_sibling: first.prev_sibling,
             env: first.env.clone(),
         }
     }
