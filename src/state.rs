@@ -27,11 +27,11 @@ where
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
         let waker = topo::from_env::<RunLoopWaker>().expect(ERR).to_owned();
         let var = Var {
-            point: topo::PointId::current(),
+            point: topo::Id::current(),
             last_rooted: current_revision,
             current: Commit {
                 revision: current_revision,
-                point: topo::PointId::current(),
+                point: topo::Id::current(),
                 inner: Arc::new(initializer(a)),
             },
             pending: None,
@@ -53,7 +53,7 @@ where
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     revision: Revision,
-    point: topo::PointId,
+    point: topo::Id,
     inner: Arc<State>,
 }
 
@@ -124,7 +124,7 @@ where
 
 struct Var<State> {
     current: Commit<State>,
-    point: topo::PointId,
+    point: topo::Id,
     last_rooted: Revision,
     pending: Option<Commit<State>>,
     waker: RunLoopWaker,

@@ -8,6 +8,19 @@ use syn::export::TokenStream2;
 /// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
 /// callsite which can be used to identify the chain of topological invocations.
 ///
+/// ```
+/// # use topo::topo;
+/// #[topo]
+/// fn print_id() {
+///     // this will print something different depending
+///     // on location in the call topology
+///     println!("{:?}", topo::Id::current());
+/// }
+///
+/// print_id!();
+/// print_id!();
+/// ```
+///
 /// ## Implications of using macros
 ///
 /// Upside: Because topological function calls are a bit more expensive than normal function calls,

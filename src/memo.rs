@@ -5,7 +5,7 @@ use {
         any::{Any, TypeId},
         sync::Arc,
     },
-    topo::{topo, PointId},
+    topo::topo,
 };
 
 /// Memoize the provided function at the bound callsite, invalidating previous memoizations if the
@@ -17,10 +17,10 @@ where
     Output: Clone + Send + Sync + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    static CALLSITES: Lazy<CHashMap<(TypeId, PointId), Arc<dyn Any + Send + Sync>>> =
+    static CALLSITES: Lazy<CHashMap<(TypeId, topo::Id), Arc<dyn Any + Send + Sync>>> =
         Lazy::new(CHashMap::new);
 
-    let key = (TypeId::of::<Output>(), PointId::current());
+    let key = (TypeId::of::<Output>(), topo::Id::current());
 
     let mut ret: Option<Output> = None;
     CALLSITES.alter(key, |maybe_val| {

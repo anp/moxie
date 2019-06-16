@@ -1,10 +1,43 @@
 //! Topological functions execute within a context unique to the path in the runtime call
 //! graph of other topological functions preceding the current activation record.
 //!
+//! Define a topological function with the `topo` attribute:
+//!
+//! ```
+//! # use topo::topo;
+//! #[topo]
+//! fn basic_topo() -> topo::Id { topo::Id::current() }
+//!
+//! #[topo]
+//! fn tier_two() -> topo::Id { basic_topo!() }
+//!
+//! // each of these functions will be run in separately identified
+//! // contexts as the source locations for their calls are different
+//! let first = basic_topo!();
+//! let second = basic_topo!();
+//! assert_ne!(first, second);
+//!
+//! let third = tier_two!();
+//! let fourth = tier_two!();
+//! assert_ne!(third, fourth);
+//! assert_ne!(first, third);
+//! assert_ne!(first, fourth);
+//! assert_ne!(second, fourth);
+//! ```
+//!
+//! Because topological functions are sensitive to the location at which they're invoked and bound
+//! to their parent `Point`, we transform the function definition into a macro so we can link
+//! the two activation records via macro expansion. See the docs for the attribute for more detail
+//! and further discussion of the tradeoffs.
+//!
+//! TODO include diagram of topology
+//!
 //! TODO discuss creation of tree from "abstract stack frames" represented by topological
 //! invocations
 //!
 //! TODO discuss propagating environment values down the topological call tree
+//!
+//! TODO show example of a rendering loop
 //!
 
 #[doc(hidden)]
@@ -13,19 +46,20 @@ pub extern crate tokio_trace as __trace;
 pub use topo_macro::topo;
 
 use {
-    im_rc::{vector, HashMap, Vector},
+    im_rc::{vector, Vector},
     owning_ref::OwningRef,
     std::{
         any::{Any, TypeId},
         cell::RefCell,
+        collections::HashMap,
         hash::{Hash, Hasher},
         ops::Deref,
         sync::Arc,
     },
 };
 
-/// Retrieve a reference to a value in the current Point's environment if it has been added to
-/// the environment by a parent topological invocation.
+/// Returns a reference to a value in the current environment if it has been added to the
+/// environment by parent/enclosing [`call`] invocations.
 pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
 where
     E: Any + Send + Sync + 'static,
@@ -42,12 +76,12 @@ where
 /// Calls the provided expression within a `Point` bound to the callsite.
 ///
 /// ```
-/// let prev = topo::PointId::current();
-/// topo::call!(|| assert_ne!(prev, topo::PointId::current()));
+/// let prev = topo::Id::current();
+/// topo::call!(|| assert_ne!(prev, topo::Id::current()));
 /// ```
 ///
 /// Adding an `Env { ... }` directive to the macro input will take ownership of provided values
-/// and make them available to the code run in the [`Point`] created by the invocation.
+/// and make them available to the code run in the `Point` created by the invocation.
 ///
 /// ```
 /// #[derive(Debug, Eq, PartialEq)]
@@ -82,18 +116,28 @@ macro_rules! call {
     }};
 }
 
-/// Identifies a [`Point`] in the call topology. This is analogous to the hash cons of the IDs of
-/// topological function invocations leading to the identified activation record.
+/// Identifies an activation record in the call topology. This is analogous to the [hash cons][cons]
+/// of the topological function invocations' `Id`s leading to the identified activation record.
+///
+/// [cons]: https://en.wikipedia.org/wiki/Hash_consing
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct PointId(u64);
+pub struct Id(u64);
 
-impl PointId {
+impl Id {
     pub fn current() -> Self {
+        fn assert_send_and_sync<T>()
+        where
+            T: Send + Sync,
+        {
+        }
+        assert_send_and_sync::<Id>();
+
         Point::__with_current(|p| p.id())
     }
 }
 
 /// The activation record of a dynamic scope within the call topology.
+#[doc(hidden)]
 #[derive(Debug)]
 pub struct Point {
     path: Vector<Callsite>,
@@ -109,11 +153,12 @@ impl PartialEq for Point {
 impl Eq for Point {}
 
 impl Point {
-    pub fn id(&self) -> PointId {
+    fn id(&self) -> Id {
+        // FIXME probably need a better hash function?
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         self.path.hash(&mut hasher);
         self.prev_sibling.hash(&mut hasher);
-        PointId(hasher.finish())
+        Id(hasher.finish())
     }
 
     /// Returns the `Point` identifying the current dynamic scope.
@@ -247,23 +292,11 @@ macro_rules! __point_id {
 
 thread_local! {
     /// The `Point` representing the current dynamic scope.
-    pub static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
+    static __CURRENT_POINT: RefCell<Point> = RefCell::new(Point {
         path: vector![ Callsite {  count: 1, ty: __point_id!(), } ],
         prev_sibling: None,
         env: Env::default(),
     });
-}
-
-#[allow(unused)]
-fn assert_send_and_sync<T>()
-where
-    T: Send + Sync,
-{
-}
-
-#[allow(unused)]
-fn asserts() {
-    assert_send_and_sync::<PointId>();
 }
 
 #[cfg(test)]
