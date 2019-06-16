@@ -14,8 +14,8 @@ use syn::export::TokenStream2;
 /// it makes sense to call them out as different invocations than typical functions, in particular
 /// because they literally bind to the source location at which they're invoked.
 ///
-/// However, it is not currently feasible to abstract over topological
-/// functions, visibility rules are less granular, and error messages are generally worse.
+/// However, it is not currently feasible to abstract over topological functions, visibility rules
+/// are less granular, autocomplete doesn't show types, and error messages are generally worse.
 ///
 /// ## Macro alternatives
 ///
