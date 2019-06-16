@@ -1,2 +1,48 @@
 [alias]
-test-core = "test --package moxie --package topo --package mox"
+
+bench-core = """
+bench
+    --package moxie
+    --package mox
+    --package topo
+    --package topo-macro
+"""
+
+check-core = """
+check --all-targets
+    --package moxie
+    --package mox
+    --package topo
+    --package topo-macro
+"""
+
+clippy-core = """
+clippy --all-targets
+    --package moxie
+    --package topo
+    --package topo-macro
+"""
+
+docs-core = """
+doc --no-deps
+    --package moxie
+    --package mox
+    --package topo
+    --package topo-macro
+"""
+
+test-core = """
+test
+    --package moxie
+    --package mox
+    --package topo
+    --package topo-macro
+"""
+
+watch-core = """
+watch --clear
+    -x fmt
+    -x check-core
+    -x test-core
+    -x clippy-core
+"""

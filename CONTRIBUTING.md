@@ -7,7 +7,8 @@ This is a placeholder for if/when the project is ready to onboard more contribut
 ## Development environment
 
 * [rustup](https://rustup.rs)
-* [cargo-make](https://sagiegurari.github.io/cargo-make)
+  * `rustup component add clippy rustfmt`
+* [cargo-watch](https://crates.io/crates/cargo-watch)
 
 ### moxie-dom dev env
 
