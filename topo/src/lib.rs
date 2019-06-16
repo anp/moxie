@@ -40,6 +40,8 @@
 //! TODO show example of a rendering loop
 //!
 
+#![deny(missing_docs)]
+
 #[doc(hidden)]
 pub extern crate tokio_trace as __trace;
 
@@ -124,6 +126,7 @@ macro_rules! call {
 pub struct Id(u64);
 
 impl Id {
+    /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
         fn assert_send_and_sync<T>()
         where

@@ -1,6 +1,9 @@
+//! Procedural macro support crate for the `topo` crate.
+
+#![deny(missing_docs)]
+
 extern crate proc_macro;
-use proc_macro::TokenStream;
-use syn::export::TokenStream2;
+use {proc_macro::TokenStream, syn::export::TokenStream2};
 
 /// Transforms a function declaration into a topological function invoked with macro syntax.
 ///
