@@ -164,7 +164,13 @@ impl<State> Var<State> {
     /// Initiate a commit to the state variable. The commit will actually complete asynchronously
     /// when the state variable is next rooted in a topological function, flushing the pending commit.
     fn enqueue_commit(&mut self, op: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
-        if let Some(pending) = op(&*self.current) {
+        let pending = if let Some(pending) = &self.pending {
+            op(pending)
+        } else {
+            op(&*self.current)
+        };
+
+        if let Some(pending) = pending {
             self.pending = Some(Commit {
                 inner: Arc::new(pending),
                 point: self.point,
