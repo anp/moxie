@@ -1,5 +1,5 @@
 use {
-    crate::{memo::*, LoopWaker, Revision},
+    crate::{memo::*, Revision, RunLoopWaker},
     parking_lot::Mutex,
     std::{
         ops::Deref,
@@ -24,29 +24,27 @@ where
     static ERR: &str = "`state` must be called within a moxie runloop!";
     let current_revision = Revision::current();
 
-    let root: Arc<Mutex<Cell<Output>>> = memo!(arg, |a| {
-        let waker = topo::env::get::<LoopWaker>().expect(ERR).to_owned();
-        let cell = Cell {
+    let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
+        let waker = topo::env::get::<RunLoopWaker>().expect(ERR).to_owned();
+        let var = Var {
+            point: topo::Point::current(),
             last_rooted: current_revision,
             current: Commit {
                 revision: current_revision,
+                point: topo::Point::current(),
                 inner: Arc::new(initializer(a)),
             },
             pending: None,
             waker,
         };
 
-        Arc::new(Mutex::new(cell))
+        Arc::new(Mutex::new(var))
     });
 
-    let commit = {
-        let mut rooted = root.lock();
-        rooted.last_rooted = current_revision;
-        rooted.read()
-    };
+    let commit = root.lock().root();
 
     let key = Key {
-        cell: Arc::downgrade(&root),
+        weak_var: Arc::downgrade(&root),
     };
 
     (commit, key)
@@ -55,12 +53,14 @@ where
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     revision: Revision,
+    point: topo::Point,
     inner: Arc<State>,
 }
 
 impl<State> Clone for Commit<State> {
     fn clone(&self) -> Self {
         Self {
+            point: self.point.clone(),
             revision: self.revision,
             inner: Arc::clone(&self.inner),
         }
@@ -74,28 +74,41 @@ impl<State> Deref for Commit<State> {
     }
 }
 
+/// A Key is a handle to a state variable which can enqueue commits to the variable while the
+/// variable is live. Keys carry a weak reference to the state variable itself to prevent cycles,
+/// which means that all operations called against them are fallible -- we cannot know before
+/// calling a method that the state variable is still live.
 pub struct Key<State> {
-    cell: Weak<Mutex<Cell<State>>>,
+    weak_var: Weak<Mutex<Var<State>>>,
 }
 
 impl<State> Key<State> {
     /// Returns the current commit of the state variable if it is still referenced within the most
     /// recent revision of the topology.
     pub fn read(&self) -> Option<Commit<State>> {
-        self.cell.upgrade().map(|cell| {
-            let mut cell = cell.lock();
-            cell.read()
-        })
+        self.weak_var.upgrade().map(|var| var.lock().peek())
     }
 
-    /// Commits a new value to the state variable if it is still referenced within the most recent
-    /// revision. Accepts an updater to which the current value is passed by reference, and which
-    /// has the option to skip a full update by returning `None`.
-    pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) {
-        if let Some(cell) = self.cell.upgrade() {
-            let mut cell = cell.lock();
-            cell.commit(updater);
+    /// Enqueues a new commit to the state variable if it is still live. Accepts an `updater` to
+    /// which the current value is passed by reference. If `updater` returns `None` then no commit
+    /// is enqueued and the runloop is not woken.
+    ///
+    /// Returns the [`Revision`] at which the state variable was last rooted if the variable is
+    /// live, otherwise returns `None`.
+    pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
+        if let Some(var) = self.weak_var.upgrade() {
+            let mut var = var.lock();
+            var.enqueue_commit(updater)
+        } else {
+            None
         }
+    }
+
+    pub(crate) fn flushed(&self) -> &Self {
+        if let Some(var) = self.weak_var.upgrade() {
+            var.lock().flush();
+        }
+        self
     }
 }
 
@@ -103,36 +116,53 @@ impl<State> Key<State>
 where
     State: PartialEq,
 {
-    /// Commits a new state value if it is unequal to the current value and the state variable was
-    /// referenced in the last revision.
-    pub fn set(&self, new: State) {
-        self.update(|prev| if prev == &new { None } else { Some(new) });
+    /// Commits a new state value if it is unequal to the current value and the state variable is
+    /// still live.
+    pub fn set(&self, new: State) -> Option<Revision> {
+        self.update(|prev| if prev == &new { None } else { Some(new) })
     }
 }
 
-struct Cell<State> {
+struct Var<State> {
     current: Commit<State>,
+    point: topo::Point,
     last_rooted: Revision,
     pending: Option<Commit<State>>,
-    waker: LoopWaker,
+    waker: RunLoopWaker,
 }
 
-impl<State> Cell<State> {
-    fn read(&mut self) -> Commit<State> {
+impl<State> Var<State> {
+    fn root(&mut self) -> Commit<State> {
+        self.last_rooted = Revision::current();
+        self.flush();
+        self.peek()
+    }
+
+    /// Finishes the pending comment if one exists.
+    fn flush(&mut self) {
         if let Some(pending) = self.pending.take() {
             self.current = pending;
         }
+    }
 
+    /// Snapshots the current commit.
+    fn peek(&self) -> Commit<State> {
         self.current.clone()
     }
 
-    fn commit(&mut self, op: impl FnOnce(&State) -> Option<State>) {
+    /// Initiate a commit to the state variable. The commit will actually complete asynchronously
+    /// when the state variable is next rooted in a topological function, flushing the pending commit.
+    fn enqueue_commit(&mut self, op: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
         if let Some(pending) = op(&*self.current) {
             self.pending = Some(Commit {
                 inner: Arc::new(pending),
+                point: self.point.clone(),
                 revision: self.last_rooted,
             });
             self.waker.wake();
+            Some(self.last_rooted)
+        } else {
+            None
         }
     }
 }

@@ -1,30 +1,24 @@
+//! moxie is a library (and perhaps a programming model) for constructing and incrementally updating
+//! persistent trees (think DOM) with memoized function calls.
+
 #![deny(clippy::all)]
 #![feature(async_await, gen_future)]
 
 #[macro_use]
-pub extern crate tokio_trace;
-
-#[doc(hidden)]
-pub use tokio_trace as __trace;
-
-#[macro_use]
-pub mod memo;
-pub mod state;
+mod memo;
+mod state;
 
 #[doc(inline)]
 pub use {memo::*, state::*};
 
-use {tokio_trace::field::debug, topo::topo};
+use {
+    std::ops::Deref,
+    topo::__trace::{field::debug, *},
+};
 
-pub trait Component {
-    fn content(self);
-}
-
-#[topo]
-pub fn show(_child: impl Component) {
-    unimplemented!()
-}
-
+/// Controls the iteration behavior of a runloop. The default of `OnWake` will leave the runloop
+/// in a pending state until a state variable receives a commit, at which point the runloop's task
+/// will be woken and its executor will poll it again.
 #[derive(Eq, PartialEq)]
 pub enum LoopBehavior {
     OnWake,
@@ -39,6 +33,9 @@ impl Default for LoopBehavior {
     }
 }
 
+/// A Revision represents moxie's notion of time, a counter which is incremented each time its
+/// runloop iterates. [`Commit`]s to state variables are annotated with the Revision during which
+/// they were made.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
 
@@ -54,42 +51,54 @@ impl Revision {
     }
 }
 
-/// A `runloop` is the entry point of the moxie runtime environment.
+/// A `runloop` is the entry point of the moxie runtime environment. The async function returns a
+/// `Future<Output=()>` which calls the root closure once per call to [Future::poll]. Typically
+/// the root closure will cause some memoized side effect to the outer environment in order to
+/// render a view of data available to the user. A runloop's root closure will also distribute other
+/// asynchronous tasks to an executor to handle I/O events and to update the state persisted by the
+/// runloop during its iteration.
 ///
-/// On each iteration
-/// of the loop:
+/// While the runloop will iterate very frequently (potentially more than once for any given output
+/// frame), we use [topological memoization](crate::memo) to minimize the code we run each time.
 ///
-/// 1. The loop's [Revision](crate::Revision) counter is incremented by 1.
-/// 2. The provided `root` argument is called within a corresponding [Point](topo::Point) in the
-///    call topology.
-/// 3. The loop marks its task as pending until it is woken by commits to state variables.
+/// [Future::poll]: std::future::Future::poll
+///
+/// # Loop Body
+///
+/// On each iteration of the loop:
+///
+/// 1. The loop's [`Revision`] counter is incremented by 1.
+/// 2. The provided `root` function is called within its [`topo::Point`] in the call topology.
+/// 3. By default, the loop marks its task as pending until it is woken by commits to state
+///    variables.
 ///     * If during (2) `root` commits a `LoopBehavior::Stopped` change to the referenced
-///       [LoopBehavior](crate::LoopBehavior) state [Key](crate::Key), then control flow
-///       for the running future breaks out of the loop and returns, ending the runloop.
+///       state [`Key`]`<`[`LoopBehavior`]`>`, then control flow for the running future breaks out
+///       of the loop and returns out of the runloop.
 ///
-/// The simplest possible runloop stops itself as soon as it is entered:
+/// # Examples
+///
+/// ## Minimal
+///
+/// The simplest possible runloop stops itself as soon as it is entered. Most practical usages of
+/// the runloop rely on its continued execution, however.
 ///
 /// ```
 /// # #![feature(async_await)]
 /// # #[runtime::main]
 /// # async fn main() {
-///
-/// moxie::runloop(|ctl| ctl.set(moxie::LoopBehavior::Stopped)).await;
-///
+/// moxie::runloop(|ctl| {
+///     ctl.set(moxie::LoopBehavior::Stopped);
+/// }).await;
 /// # }
 /// ```
-///
-/// Most practical usages of the runloop rely on its continued execution, however.
-///
-/// TODO: add counting example or something actually useful maybe?
 pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
-    let task_waker = LoopWaker(std::future::get_task_context(|c| c.waker().clone()));
+    let task_waker = RunLoopWaker(std::future::get_task_context(|c| c.waker().clone()));
 
     let mut current_revision = Revision(0);
+    let mut next_behavior = None;
     loop {
         current_revision.0 += 1;
 
-        let mut behavior_key = None;
         topo::call!(|| {
             let (_, behavior) = state!((), |()| LoopBehavior::default());
 
@@ -97,19 +106,20 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
             root(&behavior);
 
             // stash the write key for ourselves for reading after exiting this call
-            behavior_key = Some(behavior);
+            next_behavior = behavior.flushed().read();
         }, Env {
-            LoopWaker => task_waker.clone(),
+            RunLoopWaker => task_waker.clone(),
             Revision => current_revision
         });
 
         // TODO break this by adding test with multiple identical runloops that clobber each other
         topo::Point::__flush();
 
-        let next_behavior = behavior_key.as_mut().unwrap().read().unwrap();
-
-        match *next_behavior {
-            LoopBehavior::OnWake => futures::pending!(),
+        match next_behavior.as_ref().unwrap().deref() {
+            LoopBehavior::OnWake => {
+                trace!(target: "runloop_pending", revision = debug(&current_revision));
+                futures::pending!();
+            }
             LoopBehavior::Stopped => {
                 info!(target: "runloop_stopping", revision = debug(&current_revision));
                 break;
@@ -120,10 +130,13 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     }
 }
 
+/// Responsible for waking the runloop task. Because the topo environment is namespaced by type,
+/// we create a newtype here so that other crates don't accidentally cause strage behavior by
+/// overriding our access to it.
 #[derive(Clone)]
-struct LoopWaker(std::task::Waker);
+struct RunLoopWaker(std::task::Waker);
 
-impl LoopWaker {
+impl RunLoopWaker {
     fn wake(&self) {
         self.0.wake_by_ref();
     }

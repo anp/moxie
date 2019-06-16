@@ -48,8 +48,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{LoopBehavior, Revision};
+    use {
+        crate::{memo::*, LoopBehavior, Revision},
+        topo::__trace::*,
+    };
 
     #[runtime::test]
     async fn basic_memo() {
@@ -69,9 +71,9 @@ mod tests {
             assert_eq!(call_count, 1);
             if revision.0 == 5 {
                 info!("stopping");
-                behavior.set(LoopBehavior::Stopped)
+                behavior.set(LoopBehavior::Stopped);
             } else {
-                behavior.set(LoopBehavior::Continue)
+                behavior.set(LoopBehavior::Continue);
             }
         })
         .await;

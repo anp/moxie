@@ -8,4 +8,5 @@ edition = "2018"
 im = "13"
 owning_ref = "0.4"
 static_assertions = "0.3"
+tokio-trace = { version = "0.1", features = ["log"] }
 topo-macro = { path = "macro" }

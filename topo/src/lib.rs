@@ -1,4 +1,6 @@
-//! TODO write a better description.
+#[doc(hidden)]
+pub extern crate tokio_trace as __trace;
+
 pub use topo_macro::topo;
 
 pub mod env;
@@ -135,7 +137,9 @@ macro_rules! __make_topo_macro {
         $name:ident $mangled_name:ident
         match $matcher:tt
         subst $pass:tt
+        doc ($($docs:tt)*)
     ) => {
+        $($docs)*
         #[macro_export]
         macro_rules! $name { $matcher => { $crate::call!(|| $mangled_name $pass) }; }
     };
