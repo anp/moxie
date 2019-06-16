@@ -9,3 +9,10 @@ im-rc = "13"
 owning_ref = "0.4"
 tokio-trace = { version = "0.1", features = ["log"] }
 topo-macro = { path = "macro" }
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "simple"
+harness = false

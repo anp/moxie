@@ -45,4 +45,5 @@ watch --clear
     -x check-core
     -x test-core
     -x clippy-core
+    -x bench-core
 """

@@ -56,7 +56,7 @@ use {
         collections::HashMap,
         hash::{Hash, Hasher},
         ops::Deref,
-        sync::Arc,
+        rc::Rc,
     },
 };
 
@@ -237,7 +237,7 @@ impl Callsite {
 #[doc(hidden)]
 #[derive(Clone, Debug, Default)]
 pub struct Env {
-    inner: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    inner: HashMap<TypeId, Rc<dyn Any + Send + Sync>>,
 }
 
 impl Env {
@@ -255,7 +255,7 @@ impl Env {
     where
         E: Any + Send + Sync + 'static,
     {
-        self.inner.insert(TypeId::of::<E>(), Arc::new(e));
+        self.inner.insert(TypeId::of::<E>(), Rc::new(e));
     }
 }
 
