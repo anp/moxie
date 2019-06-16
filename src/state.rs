@@ -163,11 +163,14 @@ impl<State> Var<State> {
 
     /// Initiate a commit to the state variable. The commit will actually complete asynchronously
     /// when the state variable is next rooted in a topological function, flushing the pending commit.
-    fn enqueue_commit(&mut self, op: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
+    fn enqueue_commit(
+        &mut self,
+        updater: impl FnOnce(&State) -> Option<State>,
+    ) -> Option<Revision> {
         let pending = if let Some(pending) = &self.pending {
-            op(pending)
+            updater(pending)
         } else {
-            op(&*self.current)
+            updater(&*self.current)
         };
 
         if let Some(pending) = pending {
