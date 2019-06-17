@@ -118,7 +118,7 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     loop {
         current_revision.0 += 1;
 
-        topo::call!(|| {
+        topo::root!(|| {
             let (_, behavior) = state!((), |()| LoopBehavior::default());
 
             // CALLER'S CODE IS CALLED HERE
@@ -130,9 +130,6 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
             RunLoopWaker => task_waker.clone(),
             Revision => current_revision
         });
-
-        // TODO break this by adding test with multiple identical runloops that clobber each other
-        topo::Point::__reset();
 
         match next_behavior.as_ref().unwrap().deref() {
             LoopBehavior::OnWake => {
