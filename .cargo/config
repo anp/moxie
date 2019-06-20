@@ -44,6 +44,6 @@ watch --clear
     -x fmt
     -x check-core
     -x test-core
-    -x clippy-core
     -x bench-core
 """
+#    -x clippy-core
