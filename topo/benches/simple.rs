@@ -5,17 +5,33 @@ use criterion::{black_box, Criterion, ParameterizedBenchmark};
 
 fn empty_env(c: &mut Criterion) {
     c.bench_function("call empty env", |b| {
-        b.iter(|| black_box(topo::call!(|| topo::Id::current())))
+        b.iter(|| black_box(topo::call!(topo::Id::current())))
     });
 }
 
 fn create_small_env(c: &mut Criterion) {
     c.bench_function("call create small env", |b| {
         b.iter(|| {
-            black_box(topo::call!(|| topo::Id::current(), Env {
-                u128 => 10
-            }))
+            black_box(topo::call!(
+                topo::Id::current(),
+                env! {
+                    u128 => 10,
+                }
+            ))
         });
+    });
+}
+
+fn call_small_env(c: &mut Criterion) {
+    c.bench_function("call within small env", |b| {
+        topo::call!(
+            b.iter(|| {
+                black_box(topo::call!(topo::Id::current()));
+            }),
+            env! {
+                u128 => 10,
+            }
+        )
     });
 }
 
@@ -23,12 +39,12 @@ fn create_small_env(c: &mut Criterion) {
 fn topo_bench(b: &mut criterion::Bencher, depth: &usize) {
     macro_rules! mk {
         (go $depth_spec:ident) => {
-            topo::call!(|| {
+            topo::call!({
                 mk!(pass $depth_spec 0);
-            }, Env { u128 => 10 });
+            }, env! { u128 => 10, });
         };
         (pass $depth_spec:ident $call_depth:expr) => {
-            topo::call!(|| {
+            topo::call!({
                 mk!(cur $depth_spec ($call_depth + 1));
             });
         };
@@ -91,7 +107,7 @@ fn topo_bench(b: &mut criterion::Bencher, depth: &usize) {
     }
 }
 
-fn enter_small_env(c: &mut Criterion) {
+fn from_small_env(c: &mut Criterion) {
     c.bench(
         "topo fns",
         ParameterizedBenchmark::new(
@@ -102,5 +118,11 @@ fn enter_small_env(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, empty_env, create_small_env, enter_small_env);
-criterion_main!(benches);
+criterion::criterion_group!(
+    benches,
+    empty_env,
+    create_small_env,
+    from_small_env,
+    call_small_env
+);
+criterion::criterion_main!(benches);

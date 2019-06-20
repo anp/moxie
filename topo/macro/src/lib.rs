@@ -5,24 +5,12 @@
 extern crate proc_macro;
 use {proc_macro::TokenStream, syn::export::TokenStream2};
 
-/// Transforms a function declaration into a topological function invoked with macro syntax.
+/// Transforms a function declaration into a topological function invoked with macro syntax to
+/// *bind* its call tree's (sub)topology to the parent topology.
 ///
 /// A macro transformation is used to capture unique callsite information from the invoking
 /// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
 /// callsite which can be used to identify the chain of topological invocations.
-///
-/// ```
-/// # use topo::topo;
-/// #[topo]
-/// fn print_id() {
-///     // this will print something different depending
-///     // on location in the call topology
-///     println!("{:?}", topo::Id::current());
-/// }
-///
-/// print_id!();
-/// print_id!();
-/// ```
 ///
 /// ## Implications of using macros
 ///
@@ -49,7 +37,7 @@ use {proc_macro::TokenStream, syn::export::TokenStream2};
 ///
 /// TODO expand
 #[proc_macro_attribute]
-pub fn topo(_attrs: TokenStream, input: TokenStream) -> TokenStream {
+pub fn bound(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
     let tmp = std::mem::replace(&mut input_fn.attrs, Vec::new());
@@ -105,7 +93,6 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
         decl: input_fn.decl.clone(),
         block: Box::new(syn::Block {
             brace_token: syn::token::Brace {
-                // we
                 span: proc_macro::Span::call_site().into(),
             },
             stmts: vec![],

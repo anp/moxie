@@ -5,17 +5,18 @@ use {
         ops::Deref,
         sync::{Arc, Weak},
     },
-    topo::topo,
+    topo::bound,
 };
 
 // TODO state tests
 
-/// Root a state variable at this callsite, returning an up-to-date [`Commit`] of its value and
-/// a unique [`Key`] which can be used to commit new values to the variable.
-#[topo]
 // TODO: proc macro should allow topo functions to declare `arg` optional with a default to
 // which the macro can desugar invocations, so you can pass a init closure only.
 // TODO: move arg after initializer
+
+/// Root a state variable at this callsite, returning an up-to-date [`Commit`] of its value and
+/// a unique [`Key`] which can be used to commit new values to the variable.
+#[bound]
 pub fn state<Arg, Init, Output>(arg: Arg, initializer: Init) -> (Commit<Output>, Key<Output>)
 where
     Arg: PartialEq + Send + Sync + 'static,

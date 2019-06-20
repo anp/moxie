@@ -5,7 +5,6 @@ use {
         any::{Any, TypeId},
         sync::Arc,
     },
-    topo::topo,
 };
 
 /// Memoize the provided function at the bound callsite, invalidating previous results only if
@@ -15,7 +14,7 @@ use {
 /// it places a significant constraint on the initializers themselves to only capture `Clone` values
 /// or to avoid mutating its captures to implement `Fn`. Instead we require that closures accept
 /// the memoized argument by reference rather than by value.
-#[topo]
+#[topo::bound]
 pub fn memo<Arg, Init, Output>(arg: Arg, initializer: Init) -> Output
 where
     Arg: PartialEq + Send + Sync + 'static,
@@ -55,7 +54,7 @@ where
 mod tests {
     use {
         crate::{memo::*, LoopBehavior, Revision},
-        topo::__trace::*,
+        tokio_trace::*,
     };
 
     #[runtime::test]

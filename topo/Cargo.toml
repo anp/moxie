@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 owning_ref = "0.4"
-tokio-trace = { version = "0.1", features = ["log"] }
 topo-macro = { path = "macro" }
 
 [dev-dependencies]

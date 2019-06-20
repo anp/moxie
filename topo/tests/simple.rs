@@ -2,7 +2,7 @@ use topo::*;
 
 #[test]
 fn invoke_test_topo() {
-    #[topo]
+    #[bound]
     fn topo_test(prev: Id) {
         assert_ne!(prev, Id::current());
     }

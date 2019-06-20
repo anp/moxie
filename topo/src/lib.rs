@@ -1,14 +1,18 @@
+#![deny(missing_docs, intra_doc_link_resolution_failure)]
+
 //! Topological functions execute within a context unique to the path in the runtime call
 //! graph of other topological functions preceding the current activation record.
 //!
-//! Define a topological function with the `topo` attribute:
+//! Defining a topological function results in a macro definition for binding the topological
+//! function to each callsite where it is invoked.
+//!
+//! Define a topological function with the `topo::bound` attribute:
 //!
 //! ```
-//! # use topo::topo;
-//! #[topo]
+//! #[topo::bound]
 //! fn basic_topo() -> topo::Id { topo::Id::current() }
 //!
-//! #[topo]
+//! #[topo::bound]
 //! fn tier_two() -> topo::Id { basic_topo!() }
 //!
 //! // each of these functions will be run in separately identified
@@ -40,19 +44,14 @@
 //! TODO show example of a rendering loop
 //!
 
-#![deny(missing_docs)]
-
-#[doc(hidden)]
-pub extern crate tokio_trace as __trace;
-
-pub use topo_macro::topo;
+pub use topo_macro::bound;
 
 use {
     owning_ref::OwningRef,
     std::{
         any::{Any, TypeId},
         cell::RefCell,
-        collections::{hash_map::DefaultHasher, HashMap},
+        collections::{hash_map::DefaultHasher, HashMap as Map},
         hash::{Hash, Hasher},
         mem::replace,
         ops::Deref,
@@ -76,34 +75,36 @@ where
     })
 }
 
-/// Calls the provided expression within an [`Env`] bound to the callsite.
+/// Calls the provided expression within an [`Env`] bound to the callsite, optionally passing
+/// an environment to the child scope.
 ///
 /// ```
 /// let prev = topo::Id::current();
-/// topo::call!(|| assert_ne!(prev, topo::Id::current()));
+/// topo::call!(assert_ne!(prev, topo::Id::current()));
 /// ```
 ///
-/// Adding an `Env { ... }` directive to the macro input will take ownership of provided values
+/// Adding an `env! { ... }` directive to the macro input will take ownership of provided values
 /// and make them available to the code run in the `Point` created by the invocation.
 ///
 /// ```
+/// # use topo;
 /// #[derive(Debug, Eq, PartialEq)]
 /// struct Submarine(usize);
 ///
 /// assert!(topo::from_env::<Submarine>().is_none());
 ///
-/// topo::call!(|| {
+/// topo::call!({
 ///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
 ///
-///     topo::call!(|| {
+///     topo::call!({
 ///         assert_eq!(&Submarine(2), &*topo::from_env::<Submarine>().unwrap());
-///     }, Env {
-///         Submarine => Submarine(2)
+///     }, env! {
+///         Submarine => Submarine(2),
 ///     });
 ///
 ///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
-/// }, Env {
-///     Submarine => Submarine(1)
+/// }, env! {
+///     Submarine => Submarine(1),
 /// });
 ///
 /// assert!(topo::from_env::<Submarine>().is_none());
@@ -111,84 +112,102 @@ where
 #[macro_export]
 macro_rules! call {
     ($($input:tt)*) => {{
-        $crate::__raw_call!(is_root: false, $($input)*)
+        $crate::__raw_call!(is_root: false, call: $($input)*)
     }}
 }
 
 /// Roots a topology at a particular callsite while calling the provided expression with the same
 /// convention as [`call`].
 ///
-/// Rooted calls reset the state at the parent [`Id`] to that of before their execution, causing
-/// repeated invocations of contained topological functions to receive the same [`Id`] on each
-/// execution rather than being treated as new iterations within the same overal `Point`. This is
-/// particularly useful when called in a loop:
+/// Normally, when a topological function is repeatedly bound to the same callsite in a loop,
+/// each invocation receives a different [`Id`], as these invocations model siblings in the
+/// topology. The overall goal of this crate, however, is to provide imperative codepaths with
+/// stable identifiers *across* executions at the same callsite. In practice, we must have a root
+/// to the subtopology we are maintaining across these impure calls, and after each execution of the
+/// subtopology it must reset the state at its [`Id`] so that the next execution of the root
+/// is bound to the same point at its parent as its previous execution was. This is...an opaque
+/// explanation at best and TODO revise it.
+///
+/// In this first example, a scope containing the loop can observe each separate loop
+/// iteration mutating `count` and the root closure mutating `exit`. The variables `root_ids` and
+/// `child_ids` observe the identifiers of the
 ///
 /// ```
+/// # use topo::{self, *};
+/// # use std::collections::{HashMap, HashSet};
 /// struct LoopCount(usize);
 ///
 /// let mut count = 0;
-/// loop {
+/// let mut exit = false;
+/// let mut root_ids = HashSet::new();
+/// let mut child_ids = HashMap::new();
+/// while !exit {
 ///     count += 1;
-///     let mut exit = false;
-///     topo::root!(|| {
-///         let count = topo::from_env::<LoopCount>().unwrap().0;
-///         if count == 10 {
+///     topo::root!({
+///         root_ids.insert(topo::Id::current());
+///         assert_eq!(
+///             root_ids.len(),
+///             1,
+///             "the Id of this scope should be repeated, not incremented"
+///         );
+///
+///         let outer_count = topo::from_env::<LoopCount>().unwrap().0;
+///         assert!(outer_count <= 10);
+///         if outer_count == 10 {
 ///             exit = true;
 ///         }
-///     }, Env {
-///          LoopCount => LoopCount(count)
-///     });
 ///
-///     if exit {
-///         break;
-///     }
+///         for i in 0..10 {
+///             topo::call!({
+///                 let current_id = topo::Id::current();
+///                 if outer_count > 1 {
+///                     assert_eq!(child_ids[&i], current_id);
+///                 }
+///                 child_ids.insert(i, current_id);
+///                 assert!(
+///                     child_ids.len() <= 10,
+///                     "only 10 children should be observed across all loop iterations",
+///                 );
+///             });
+///         }
+///         assert_eq!(child_ids.len(), 10);
+///     }, env! {
+///          LoopCount => LoopCount(count),
+///     });
+///     assert_eq!(child_ids.len(), 10);
+///     assert_eq!(root_ids.len(), 1);
 /// }
 /// ```
 #[macro_export]
 macro_rules! root {
     ($($input:tt)*) => {{
-        $crate::__raw_call!(is_root: true, $($input)*)
+        $crate::__raw_call!(is_root: true, call: $($input)*)
     }}
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __raw_call {
-    (is_root: $is_root:expr, $inner:expr $(, Env {
-    $($env_item_ty:ty => $env_item:expr),+
-    })?) => {{
-        let mut new_env = $crate::Env::default();
-        $( $( new_env.__set::<$env_item_ty>($env_item); )+ )?
-        $crate::__enter_child($crate::__point_id!(), new_env, $is_root, $inner)
-    }}
+    (is_root: $is_root:expr, call: $inner:expr $(, env! { $($env:tt)* })?) => {{
+        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
+
+        #[allow(unused_mut)]
+        let mut _new_env = Default::default();
+        $( _new_env = $crate::env! { $($env)* };  )?
+
+        let _reset_to_parent_on_drop_pls = $crate::__pin_point(
+                std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>(),
+                _new_env,
+                $is_root
+        );
+
+        $inner
+    }};
 }
 
-/// Creates the next "link" in the chain of IDs which represents our path to the current Point.
 #[doc(hidden)]
-pub fn __enter_child<T>(
-    callsite_ty: TypeId,
-    add_env: Env,
-    is_root: bool,
-    op: impl FnOnce() -> T,
-) -> T {
-    struct PointGuardLol {
-        reset_on_drop: bool,
-        prev_initial_state: Option<State>,
-        prev: Option<Point>,
-    }
-
-    impl Drop for PointGuardLol {
-        #[inline]
-        fn drop(&mut self) {
-            let mut prev = self.prev.take().unwrap();
-            if self.reset_on_drop {
-                prev.state = self.prev_initial_state.take().unwrap();
-            }
-            __CURRENT_POINT.with(|p| p.replace(prev));
-        }
-    }
-
-    let _drop_when_out_of_scope_pls = __CURRENT_POINT.with(|parent| {
+pub fn __pin_point(callsite_ty: TypeId, add_env: EnvInner, reset_on_drop: bool) -> impl Drop {
+    __CURRENT_POINT.with(|parent| {
         let mut parent = parent.borrow_mut();
 
         // this must be copied *before* creating the child below, which will mutate the state
@@ -197,12 +216,28 @@ pub fn __enter_child<T>(
         let child = parent.child(callsite_ty, add_env);
 
         PointGuardLol {
-            reset_on_drop: is_root,
+            reset_on_drop,
             prev_initial_state: Some(parent_initial_state),
             prev: Some(replace(&mut *parent, child)),
         }
-    });
-    op()
+    })
+}
+
+struct PointGuardLol {
+    reset_on_drop: bool,
+    prev_initial_state: Option<State>,
+    prev: Option<Point>,
+}
+
+impl Drop for PointGuardLol {
+    #[inline]
+    fn drop(&mut self) {
+        let mut prev = self.prev.take().unwrap();
+        if self.reset_on_drop {
+            prev.state = self.prev_initial_state.take().unwrap();
+        }
+        __CURRENT_POINT.with(|p| p.replace(prev));
+    }
 }
 
 /// Identifies an activation record in the call topology. This is implemented approximately similar
@@ -239,7 +274,7 @@ struct Point {
 
 impl Point {
     /// Mark a child Point in the topology.
-    fn child(&mut self, callsite_ty: TypeId, additional: Env) -> Self {
+    fn child(&mut self, callsite_ty: TypeId, additional: EnvInner) -> Self {
         let callsite = Callsite::new(callsite_ty, &self.state.last_child);
 
         let mut hasher = DefaultHasher::new();
@@ -254,9 +289,8 @@ impl Point {
         }
     }
 
-    /// Returns the `Point` identifying the current dynamic scope.
-    #[doc(hidden)]
-    pub fn __with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+    /// Runs the provided closure with access to the current [`Point`].
+    fn __with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
         __CURRENT_POINT.with(|p| op(&*p.borrow()))
     }
 }
@@ -278,7 +312,7 @@ struct State {
 }
 
 impl State {
-    fn child(&mut self, callsite: Callsite, additional: Env) -> Self {
+    fn child(&mut self, callsite: Callsite, additional: EnvInner) -> Self {
         self.last_child = Some(callsite);
         self.child_count += 1;
 
@@ -310,27 +344,35 @@ impl Callsite {
     }
 }
 
-///  
+/// Immutable environment container for the current (sub)topology. Environment values can be
+/// provided by parent topological invocations (currently just with [`call`] and
+/// [`root`]), but child functions can only mutate their environment through interior
+/// mutability.
+///
+/// The environment is type-indexed/type-directed, and each `Env` holds 0-1 instances
+/// of every [`std::any::Any`]` + 'static` type. Access is provided through read-only references.
+///
+/// Aside: one interesting implication of the above is the ability to define "private scoped global
+/// values" which are private to functions which are nonetheless propagating the values with
+/// their control flow. This can be useful for runtimes to offer themselves execution-local values
+/// in functions which are invoked by external code. It can also be severely abused, like any
+/// implicit state, and should be used with caution.
 #[derive(Clone, Debug, Default)]
 pub struct Env {
-    inner: HashMap<TypeId, Rc<dyn Any>>,
+    inner: Rc<EnvInner>,
 }
 
-impl Env {
-    #[doc(hidden)]
-    pub fn __set<E>(&mut self, e: E)
-    where
-        E: Any + 'static,
-    {
-        self.inner.insert(TypeId::of::<E>(), Rc::new(e));
-    }
+type EnvInner = Map<TypeId, Rc<dyn Any>>;
 
-    fn child(&self, additional: Env) -> Env {
-        let mut new = self.clone();
-        for (k, v) in additional.inner {
-            new.inner.insert(k, v);
+impl Env {
+    fn child(&self, additional: EnvInner) -> Env {
+        let mut new: EnvInner = (*self.inner).to_owned();
+
+        new.extend(additional.iter().map(|(t, v)| (*t, v.clone())));
+
+        Env {
+            inner: Rc::new(new),
         }
-        new
     }
 }
 
@@ -354,18 +396,34 @@ macro_rules! __make_topo_macro {
     ) => {
         $($docs)*
         #[macro_export]
-        macro_rules! $name { $matcher => { $crate::call!(|| $mangled_name $pass) }; }
+        macro_rules! $name {
+            $matcher => {
+                $crate::__raw_call!(is_root: false, call: $mangled_name $pass)
+            };
+        }
     };
 }
 
-/// Creates and expands to a TypeId unique to the expansion site.
-#[doc(hidden)]
+/// Declare additional environment values to expose to a child topological function's call tree.
 #[macro_export]
-macro_rules! __point_id {
-    () => {{
-        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
-        std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>()
-    }};
+macro_rules! env {
+    ($($env_item_ty:ty => $env_item:expr,)*) => {{
+        use std::collections::HashMap;
+
+        #[allow(unused_mut)]
+        let mut new_env = HashMap::new();
+        $({
+            use std::{
+                any::{Any, TypeId},
+                rc::Rc,
+            };
+            new_env.insert(
+                TypeId::of::<$env_item_ty>(),
+                Rc::new($env_item) as Rc<dyn Any>,
+            );
+        })*
+        new_env
+    }}
 }
 
 thread_local! {
@@ -380,7 +438,7 @@ thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{from_env, Point};
     use std::{
         cell::{Cell, RefCell},
         panic::{catch_unwind, AssertUnwindSafe},
@@ -398,7 +456,6 @@ mod tests {
         let root = Point::__with_current(clone);
         Point::__with_current(|c| assert_eq!(&root, c));
 
-        let second_id = __point_id!();
         let prev = Point::__with_current(|c| AssertUnwindSafe(RefCell::new(clone(c))));
 
         Point::__with_current(|p| assert_eq!(&root, p));
@@ -406,7 +463,7 @@ mod tests {
         for _ in 0..100 {
             let called = AssertUnwindSafe(Cell::new(false));
             let res = catch_unwind(|| {
-                __enter_child(second_id, Env::default(), false, || {
+                call!({
                     Point::__with_current(|current| {
                         assert_ne!(
                             prev.borrow().id,
@@ -431,27 +488,34 @@ mod tests {
 
     #[test]
     fn call_env() {
-        let (mut first_called, mut second_called) = (false, false);
+        let first_called;
+        let second_called;
         let (first_byte, second_byte) = (0u8, 1u8);
 
-        call!(|| {
-            let curr_byte: u8 = *from_env::<u8>().unwrap();
-            assert_eq!(curr_byte, first_byte);
-            first_called = true;
-
-            call!(|| {
+        call!(
+            {
                 let curr_byte: u8 = *from_env::<u8>().unwrap();
-                assert_eq!(curr_byte, second_byte);
-                second_called = true;
-            }, Env {
-                u8 => second_byte
-            });
+                assert_eq!(curr_byte, first_byte);
+                first_called = true;
 
-            assert!(second_called);
-            assert_eq!(curr_byte, first_byte);
-        }, Env {
-            u8 => first_byte
-        });
+                call!(
+                    {
+                        let curr_byte: u8 = *from_env::<u8>().unwrap();
+                        assert_eq!(curr_byte, second_byte);
+                        second_called = true;
+                    },
+                    env! {
+                        u8 => second_byte,
+                    }
+                );
+
+                assert!(second_called);
+                assert_eq!(curr_byte, first_byte);
+            },
+            env! {
+                u8 => first_byte,
+            }
+        );
         assert!(first_called);
         assert!(from_env::<u8>().is_none());
     }

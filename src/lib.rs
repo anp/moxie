@@ -17,7 +17,7 @@
 //!
 //! TODO
 
-#![deny(clippy::all, missing_docs)]
+#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
 #![feature(async_await, gen_future)]
 
 #[macro_use]
@@ -29,7 +29,7 @@ pub use {memo::*, state::*};
 
 use {
     std::ops::Deref,
-    topo::__trace::{field::debug, *},
+    tokio_trace::{field::debug, *},
 };
 
 /// Controls the iteration behavior of a runloop. The default of `OnWake` will leave the runloop
@@ -114,22 +114,25 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     let task_waker = RunLoopWaker(std::future::get_task_context(|c| c.waker().clone()));
 
     let mut current_revision = Revision(0);
-    let mut next_behavior = None;
+    let mut next_behavior;
     loop {
         current_revision.0 += 1;
 
-        topo::root!(|| {
-            let (_, behavior) = state!((), |()| LoopBehavior::default());
+        topo::root!(
+            {
+                let (_, behavior) = state!((), |()| LoopBehavior::default());
 
-            // CALLER'S CODE IS CALLED HERE
-            root(&behavior);
+                // CALLER'S CODE IS CALLED HERE
+                root(&behavior);
 
-            // stash the write key for ourselves for reading after exiting this call
-            next_behavior = behavior.flushed().read();
-        }, Env {
-            RunLoopWaker => task_waker.clone(),
-            Revision => current_revision
-        });
+                // stash the write key for ourselves for reading after exiting this call
+                next_behavior = behavior.flushed().read();
+            },
+            env! {
+                RunLoopWaker => task_waker.clone(),
+                Revision => current_revision,
+            }
+        );
 
         match next_behavior.as_ref().unwrap().deref() {
             LoopBehavior::OnWake => {
