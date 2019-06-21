@@ -65,7 +65,7 @@ pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
 where
     E: Any + 'static,
 {
-    Point::__with_current(|current| {
+    Point::with_current(|current| {
         current
             .state
             .env
@@ -195,7 +195,7 @@ macro_rules! __raw_call {
         let mut _new_env = Default::default();
         $( _new_env = $crate::env! { $($env)* };  )?
 
-        let _reset_to_parent_on_drop_pls = $crate::__pin_point(
+        let _reset_to_parent_on_drop_pls = $crate::Point::__pin_prev_enter_child(
                 std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>(),
                 _new_env,
                 $is_root
@@ -203,41 +203,6 @@ macro_rules! __raw_call {
 
         $inner
     }};
-}
-
-#[doc(hidden)]
-pub fn __pin_point(callsite_ty: TypeId, add_env: EnvInner, reset_on_drop: bool) -> impl Drop {
-    __CURRENT_POINT.with(|parent| {
-        let mut parent = parent.borrow_mut();
-
-        // this must be copied *before* creating the child below, which will mutate the state
-        let parent_initial_state = parent.state.clone();
-
-        let child = parent.child(callsite_ty, add_env);
-
-        PointGuardLol {
-            reset_on_drop,
-            prev_initial_state: Some(parent_initial_state),
-            prev: Some(replace(&mut *parent, child)),
-        }
-    })
-}
-
-struct PointGuardLol {
-    reset_on_drop: bool,
-    prev_initial_state: Option<State>,
-    prev: Option<Point>,
-}
-
-impl Drop for PointGuardLol {
-    #[inline]
-    fn drop(&mut self) {
-        let mut prev = self.prev.take().unwrap();
-        if self.reset_on_drop {
-            prev.state = self.prev_initial_state.take().unwrap();
-        }
-        __CURRENT_POINT.with(|p| p.replace(prev));
-    }
 }
 
 /// Identifies an activation record in the call topology. This is implemented approximately similar
@@ -260,19 +225,54 @@ impl Id {
         }
         assert_send_and_sync::<Id>();
 
-        Point::__with_current(|p| p.id)
+        Point::with_current(|p| p.id)
     }
 }
 
 /// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
 /// topological functions.
+///
+/// The current `Point` contains the local [`Env`], [`Id`], and some additional internal state to
+/// uniquely identify each child topological function invocations.
 #[derive(Debug)]
-struct Point {
+pub struct Point {
     id: Id,
     state: State,
 }
 
 impl Point {
+    /// "Root" a new child [`Point`]. When the guard returned from this function is dropped, the
+    /// parent point is restored as the "current" `Point`. By calling provided code while the
+    /// returned guard is live on the stack, we create the tree of indices and environments that
+    /// correspond to the topological call tree, exiting the child context when the rooted scope
+    /// ends.
+    #[doc(hidden)]
+    pub fn __pin_prev_enter_child(
+        callsite_ty: TypeId,
+        add_env: EnvInner,
+        reset_on_drop: bool,
+    ) -> impl Drop {
+        CURRENT_POINT.with(|parent| {
+            let mut parent = parent.borrow_mut();
+
+            // this must be copied *before* creating the child below, which will mutate the state
+            let parent_initial_state = parent.state.clone();
+
+            let child = parent.child(callsite_ty, add_env);
+            let parent = replace(&mut *parent, child);
+
+            scopeguard::guard(
+                (parent_initial_state, parent),
+                move |(prev_initial_state, mut prev)| {
+                    if reset_on_drop {
+                        prev.state = prev_initial_state;
+                    }
+                    CURRENT_POINT.with(|p| p.replace(prev));
+                },
+            )
+        })
+    }
+
     /// Mark a child Point in the topology.
     fn child(&mut self, callsite_ty: TypeId, additional: EnvInner) -> Self {
         let callsite = Callsite::new(callsite_ty, &self.state.last_child);
@@ -290,8 +290,8 @@ impl Point {
     }
 
     /// Runs the provided closure with access to the current [`Point`].
-    fn __with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
-        __CURRENT_POINT.with(|p| op(&*p.borrow()))
+    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+        CURRENT_POINT.with(|p| op(&*p.borrow()))
     }
 }
 
@@ -428,7 +428,7 @@ macro_rules! env {
 
 thread_local! {
     /// The `Point` representing the current dynamic scope.
-    static __CURRENT_POINT: RefCell<Point> = {
+    static CURRENT_POINT: RefCell<Point> = {
         RefCell::new(Point {
             id: Id(0),
             state: Default::default(),
@@ -453,18 +453,18 @@ mod tests {
 
     #[test]
     fn one_panicking_child_in_a_loop() {
-        let root = Point::__with_current(clone);
-        Point::__with_current(|c| assert_eq!(&root, c));
+        let root = Point::with_current(clone);
+        Point::with_current(|c| assert_eq!(&root, c));
 
-        let prev = Point::__with_current(|c| AssertUnwindSafe(RefCell::new(clone(c))));
+        let prev = Point::with_current(|c| AssertUnwindSafe(RefCell::new(clone(c))));
 
-        Point::__with_current(|p| assert_eq!(&root, p));
+        Point::with_current(|p| assert_eq!(&root, p));
 
         for _ in 0..100 {
             let called = AssertUnwindSafe(Cell::new(false));
             let res = catch_unwind(|| {
                 call!({
-                    Point::__with_current(|current| {
+                    Point::with_current(|current| {
                         assert_ne!(
                             prev.borrow().id,
                             current.id,
@@ -478,7 +478,7 @@ mod tests {
             });
 
             // make sure we've returned to an expected baseline
-            Point::__with_current(|curr| {
+            Point::with_current(|curr| {
                 assert_eq!(&root, curr);
                 assert!(called.get());
                 assert!(res.is_err());

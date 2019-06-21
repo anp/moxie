@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 owning_ref = "0.4"
+scopeguard = "1"
 topo-macro = { path = "macro" }
 
 [dev-dependencies]
