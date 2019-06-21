@@ -1,15 +1,7 @@
-trigger:
-- master
-
 strategy:
   matrix:
-    linux:
-      imageName: 'ubuntu-16.04'
-    mac:
-      imageName: 'macOS-10.14'
     windows:
       imageName: 'windows-2019'
-  maxParallel: 10
 
 pool:
   vmImage: $(imageName)
