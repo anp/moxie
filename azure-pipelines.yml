@@ -15,7 +15,7 @@ pool:
   vmImage: $(imageName)
 
 steps:
- - script: rustup component add rustfmt
+- script: rustup component add rustfmt
 
 - script: cargo fmt -- --check
 - script: cargo check-core
