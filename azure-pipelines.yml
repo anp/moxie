@@ -15,7 +15,6 @@ pool:
   vmImage: $(imageName)
 
 steps:
-- script: cargo +stable fmt -- --check
 - script: cargo check-core
 
 - script: cargo test-core
