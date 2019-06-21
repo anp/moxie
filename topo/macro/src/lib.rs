@@ -62,7 +62,7 @@ pub fn bound(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let macro_name = std::mem::replace(&mut input_fn.ident, mangled_name.clone());
 
     quote::quote!(
-        topo::__make_topo_macro!(
+        topo::unstable_make_topo_macro!(
             #macro_name #mangled_name
             match ($($arg:expr),*)
             subst ($($arg),*)

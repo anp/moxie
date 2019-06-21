@@ -96,7 +96,7 @@ use {
 #[macro_export]
 macro_rules! call {
     ($($input:tt)*) => {{
-        $crate::__raw_call!(is_root: false, call: $($input)*)
+        $crate::unstable_raw_call!(is_root: false, call: $($input)*)
     }}
 }
 
@@ -165,13 +165,13 @@ macro_rules! call {
 #[macro_export]
 macro_rules! root {
     ($($input:tt)*) => {{
-        $crate::__raw_call!(is_root: true, call: $($input)*)
+        $crate::unstable_raw_call!(is_root: true, call: $($input)*)
     }}
 }
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! __raw_call {
+macro_rules! unstable_raw_call {
     (is_root: $is_root:expr, call: $inner:expr $(, env! { $($env:tt)* })?) => {{
         struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
 
@@ -179,7 +179,7 @@ macro_rules! __raw_call {
         let mut _new_env = Default::default();
         $( _new_env = $crate::env! { $($env)* };  )?
 
-        let _reset_to_parent_on_drop_pls = $crate::Point::__pin_prev_enter_child(
+        let _reset_to_parent_on_drop_pls = $crate::Point::unstable_pin_prev_enter_child(
                 std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>(),
                 _new_env,
                 $is_root
@@ -231,7 +231,7 @@ impl Point {
     /// correspond to the topological call tree, exiting the child context when the rooted scope
     /// ends.
     #[doc(hidden)]
-    pub fn __pin_prev_enter_child(
+    pub fn unstable_pin_prev_enter_child(
         callsite_ty: TypeId,
         add_env: EnvInner,
         reset_on_drop: bool,
@@ -389,7 +389,7 @@ impl Env {
 /// macro from a procedural macro without needing to enable a (as of writing) unstable feature.
 #[doc(hidden)]
 #[macro_export]
-macro_rules! __make_topo_macro {
+macro_rules! unstable_make_topo_macro {
     (
         $name:ident $mangled_name:ident
         match $matcher:tt
@@ -400,7 +400,7 @@ macro_rules! __make_topo_macro {
         #[macro_export]
         macro_rules! $name {
             $matcher => {
-                $crate::__raw_call!(is_root: false, call: $mangled_name $pass)
+                $crate::unstable_raw_call!(is_root: false, call: $mangled_name $pass)
             };
         }
     };
