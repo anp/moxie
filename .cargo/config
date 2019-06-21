@@ -16,13 +16,6 @@ check --all-targets
     --package topo-macro
 """
 
-clippy-core = """
-clippy --all-targets
-    --package moxie
-    --package topo
-    --package topo-macro
-"""
-
 docs-core = """
 doc --no-deps
     --package moxie
@@ -46,4 +39,3 @@ watch --clear
     -x test-core
     -x bench-core
 """
-#    -x clippy-core
