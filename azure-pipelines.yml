@@ -15,10 +15,14 @@ pool:
   vmImage: $(imageName)
 
 steps:
-- script: rustup component add clippy rustfmt
+ - script: rustup component add rustfmt
+
 - script: cargo fmt -- --check
 - script: cargo check-core
-- script: cargo clippy-core
-- script: cargo docs-core
+
 - script: cargo test-core
 - script: cargo bench-core
+
+- script: cargo docs-core
+- publish: target/doc
+  artifact: documentation
