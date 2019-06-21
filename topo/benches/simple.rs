@@ -120,9 +120,9 @@ fn from_small_env(c: &mut Criterion) {
 
 criterion::criterion_group!(
     benches,
-    empty_env,
-    create_small_env,
     from_small_env,
-    call_small_env
+    create_small_env,
+    empty_env,
+    call_small_env,
 );
 criterion::criterion_main!(benches);
