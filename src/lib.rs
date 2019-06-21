@@ -62,7 +62,7 @@ pub struct Revision(pub u64);
 impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called outside of a runloop.
     pub fn current() -> Self {
-        if let Some(r) = topo::from_env::<Revision>() {
+        if let Some(r) = topo::Env::get::<Revision>() {
             *r
         } else {
             Revision::default()

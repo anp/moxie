@@ -86,7 +86,7 @@ fn topo_bench(b: &mut criterion::Bencher, depth: &usize) {
         };
         (cur zero $depth:expr) => {
             b.iter(|| {
-                topo::root!(|| assert_eq!(10, *topo::from_env::<u128>().unwrap()))
+                topo::root!(|| assert_eq!(10, *topo::Env::get::<u128>().unwrap()))
             });
         };
     }
@@ -111,7 +111,7 @@ fn from_small_env(c: &mut Criterion) {
     c.bench(
         "topo fns",
         ParameterizedBenchmark::new(
-            "call from_env within small env at depth",
+            "call Env::get within small env at depth",
             topo_bench,
             vec![1, 3, 9, 12],
         ),

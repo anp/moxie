@@ -59,22 +59,6 @@ use {
     },
 };
 
-/// Returns a reference to a value in the current environment if it has been added to the
-/// environment by parent/enclosing [`call`] invocations.
-pub fn from_env<E>() -> Option<impl Deref<Target = E> + 'static>
-where
-    E: Any + 'static,
-{
-    Point::with_current(|current| {
-        current
-            .state
-            .env
-            .inner
-            .get(&TypeId::of::<E>())
-            .map(|guard| OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap()))
-    })
-}
-
 /// Calls the provided expression within an [`Env`] bound to the callsite, optionally passing
 /// an environment to the child scope.
 ///
@@ -91,23 +75,23 @@ where
 /// #[derive(Debug, Eq, PartialEq)]
 /// struct Submarine(usize);
 ///
-/// assert!(topo::from_env::<Submarine>().is_none());
+/// assert!(topo::Env::get::<Submarine>().is_none());
 ///
 /// topo::call!({
-///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
+///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
 ///
 ///     topo::call!({
-///         assert_eq!(&Submarine(2), &*topo::from_env::<Submarine>().unwrap());
+///         assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap());
 ///     }, env! {
 ///         Submarine => Submarine(2),
 ///     });
 ///
-///     assert_eq!(&Submarine(1), &*topo::from_env::<Submarine>().unwrap());
+///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
 /// }, env! {
 ///     Submarine => Submarine(1),
 /// });
 ///
-/// assert!(topo::from_env::<Submarine>().is_none());
+/// assert!(topo::Env::get::<Submarine>().is_none());
 /// ```
 #[macro_export]
 macro_rules! call {
@@ -151,7 +135,7 @@ macro_rules! call {
 ///             "the Id of this scope should be repeated, not incremented"
 ///         );
 ///
-///         let outer_count = topo::from_env::<LoopCount>().unwrap().0;
+///         let outer_count = topo::Env::get::<LoopCount>().unwrap().0;
 ///         assert!(outer_count <= 10);
 ///         if outer_count == 10 {
 ///             exit = true;
@@ -365,6 +349,24 @@ pub struct Env {
 type EnvInner = Map<TypeId, Rc<dyn Any>>;
 
 impl Env {
+    /// Returns a reference to a value in the current environment if it has been added to the
+    /// environment by parent/enclosing [`call`] invocations.
+    pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
+    where
+        E: Any + 'static,
+    {
+        Point::with_current(|current| {
+            current
+                .state
+                .env
+                .inner
+                .get(&TypeId::of::<E>())
+                .map(|guard| {
+                    OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap())
+                })
+        })
+    }
+
     fn child(&self, additional: EnvInner) -> Env {
         let mut new: EnvInner = (*self.inner).to_owned();
 
@@ -438,7 +440,7 @@ thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use super::{from_env, Point};
+    use super::{Env, Point};
     use std::{
         cell::{Cell, RefCell},
         panic::{catch_unwind, AssertUnwindSafe},
@@ -494,13 +496,13 @@ mod tests {
 
         call!(
             {
-                let curr_byte: u8 = *from_env::<u8>().unwrap();
+                let curr_byte: u8 = *Env::get::<u8>().unwrap();
                 assert_eq!(curr_byte, first_byte);
                 first_called = true;
 
                 call!(
                     {
-                        let curr_byte: u8 = *from_env::<u8>().unwrap();
+                        let curr_byte: u8 = *Env::get::<u8>().unwrap();
                         assert_eq!(curr_byte, second_byte);
                         second_called = true;
                     },
@@ -517,6 +519,6 @@ mod tests {
             }
         );
         assert!(first_called);
-        assert!(from_env::<u8>().is_none());
+        assert!(Env::get::<u8>().is_none());
     }
 }

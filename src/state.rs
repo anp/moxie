@@ -29,7 +29,7 @@ where
     let current_revision = Revision::current();
 
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
-        let waker = topo::from_env::<RunLoopWaker>()
+        let waker = topo::Env::get::<RunLoopWaker>()
             .expect("must be called within moxie::runloop!")
             .to_owned();
         let var = Var {
