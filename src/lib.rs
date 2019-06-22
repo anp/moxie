@@ -118,6 +118,8 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     loop {
         current_revision.0 += 1;
 
+        // TODO make sure we're rooting into the same parent on each tick somehow, in case
+        // some weird nesting and thread migration happens?
         topo::root!(
             {
                 let (_, behavior) = state!((), |()| LoopBehavior::default());
