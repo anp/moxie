@@ -208,8 +208,7 @@ impl Id {
         {
         }
         assert_send_and_sync::<Id>();
-
-        Point::with_current(|p| p.id)
+        CURRENT_POINT.with(|p| p.borrow().id)
     }
 }
 
@@ -440,51 +439,27 @@ thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use super::{Env, Point};
-    use std::{
-        cell::{Cell, RefCell},
-        panic::{catch_unwind, AssertUnwindSafe},
-    };
-
-    fn clone(first: &Point) -> Point {
-        Point {
-            id: first.id,
-            state: first.state.clone(),
-        }
-    }
+    use super::{Env, Id};
 
     #[test]
-    fn one_panicking_child_in_a_loop() {
-        let root = Point::with_current(clone);
-        Point::with_current(|c| assert_eq!(&root, c));
+    fn one_child_in_a_loop() {
+        let root = Id::current();
+        assert_eq!(root, Id::current());
 
-        let prev = Point::with_current(|c| AssertUnwindSafe(RefCell::new(clone(c))));
-
-        Point::with_current(|p| assert_eq!(&root, p));
+        let mut prev = root;
 
         for _ in 0..100 {
-            let called = AssertUnwindSafe(Cell::new(false));
-            let res = catch_unwind(|| {
-                call!({
-                    Point::with_current(|current| {
-                        assert_ne!(
-                            prev.borrow().id,
-                            current.id,
-                            "entered the same Point twice in this loop"
-                        );
-                        prev.replace(clone(current));
-                        called.set(true);
-                        panic!("checking unwind safety?");
-                    });
-                });
+            let called;
+            call!({
+                let current = Id::current();
+                assert_ne!(prev, current, "each Id in this loop should be unique");
+                prev = current;
+                called = true;
             });
 
             // make sure we've returned to an expected baseline
-            Point::with_current(|curr| {
-                assert_eq!(&root, curr);
-                assert!(called.get());
-                assert!(res.is_err());
-            });
+            assert_eq!(root, Id::current());
+            assert!(called);
         }
     }
 
