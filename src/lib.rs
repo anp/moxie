@@ -103,18 +103,18 @@ impl Revision {
 ///
 /// ```
 /// # #![feature(async_await)]
-/// # #[runtime::main]
-/// # async fn main() {
-/// moxie::runloop(|ctl| {
-///     ctl.set(moxie::LoopBehavior::Stopped);
-/// }).await;
-/// # }
+/// futures::executor::block_on(
+///     moxie::runloop(|ctl| {
+///         ctl.set(moxie::LoopBehavior::Stopped);
+///     })
+/// )
 /// ```
 pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
     let task_waker = RunLoopWaker(std::future::get_task_context(|c| c.waker().clone()));
 
     let mut current_revision = Revision(0);
     let mut next_behavior;
+    let memo_store = MemoStore::default();
     loop {
         current_revision.0 += 1;
 
@@ -131,8 +131,9 @@ pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
                 next_behavior = behavior.flushed().read();
             },
             env! {
-                RunLoopWaker => task_waker.clone(),
+                MemoStore => memo_store.clone(),
                 Revision => current_revision,
+                RunLoopWaker => task_waker.clone(),
             }
         );
 

@@ -7,16 +7,10 @@ license = "MIT/Apache-2.0"
 description = "Declarative, asynchronous, incremental UI component runtime."
 
 [dependencies]
-chashmap = "2"
 futures-preview = { version = "0.3.0-alpha.16", features = [ "async-await", "nightly" ] }
-once_cell = "0.2"
 parking_lot = "0.8"
 tokio-trace = "0.1"
-topo = { path = "topo" }
-
-[dev-dependencies]
-futures-timer = "0.2.1"
-runtime = "0.3.0-alpha.4"
+topo = { path = "topo", version = "0.8" }
 
 [workspace]
 members = [

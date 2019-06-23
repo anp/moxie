@@ -1,10 +1,8 @@
-use {
-    chashmap::CHashMap,
-    once_cell::sync::Lazy,
-    std::{
-        any::{Any, TypeId},
-        sync::Arc,
-    },
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    collections::{hash_map::Entry, HashMap},
+    rc::Rc,
 };
 
 /// Memoize the provided function at the bound callsite, invalidating previous results only if
@@ -17,51 +15,52 @@ use {
 #[topo::bound]
 pub fn memo<Arg, Init, Output>(arg: Arg, initializer: Init) -> Output
 where
-    Arg: PartialEq + Send + Sync + 'static,
-    Output: Clone + Send + Sync + 'static,
+    Arg: PartialEq + 'static,
+    Output: Clone + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    static CALLSITES: Lazy<CHashMap<(TypeId, topo::Id), Arc<dyn Any + Send + Sync>>> =
-        Lazy::new(CHashMap::new);
+    let callsites = topo::Env::get::<MemoStore>().unwrap();
+    let callsites = &mut *(&*callsites).inner.borrow_mut();
 
-    let key = (TypeId::of::<Output>(), topo::Id::current());
+    match callsites.entry((TypeId::of::<Output>(), topo::Id::current())) {
+        Entry::Occupied(mut occ) => {
+            let v = occ.get();
+            let (ref prev_arg, ref output): &(Arg, Output) = v.downcast_ref().unwrap();
 
-    let mut ret: Option<Output> = None;
-    CALLSITES.alter(key, |maybe_val| {
-        Some(
-            maybe_val
-                .and_then(|v| {
-                    let (ref prev_arg, ref output): &(Arg, Output) = v.downcast_ref().unwrap();
+            if prev_arg == &arg {
+                output.to_owned()
+            } else {
+                let new_output = initializer(&arg);
+                occ.insert(Rc::new((arg, new_output.clone())));
+                new_output
+            }
+        }
+        Entry::Vacant(vac) => {
+            let new_output = initializer(&arg);
+            vac.insert(Rc::new((arg, new_output.clone())));
+            new_output
+        }
+    }
+}
 
-                    if prev_arg == &arg {
-                        ret = Some(output.to_owned());
-                        Some(v)
-                    } else {
-                        None
-                    }
-                })
-                .unwrap_or_else(|| {
-                    let output = initializer(&arg);
-                    ret = Some(output.clone());
-                    Arc::new((arg, output))
-                }),
-        )
-    });
-    ret.unwrap()
+#[derive(Clone, Default)]
+pub(crate) struct MemoStore {
+    inner: Rc<RefCell<HashMap<(TypeId, topo::Id), Rc<dyn Any>>>>,
 }
 
 #[cfg(test)]
 mod tests {
     use {
         crate::{memo::*, LoopBehavior, Revision},
+        futures::executor::block_on,
         tokio_trace::*,
     };
 
-    #[runtime::test]
-    async fn basic_memo() {
+    #[test]
+    fn basic_memo() {
         let mut call_count = 0u32;
 
-        crate::runloop(|behavior| {
+        block_on(crate::runloop(|behavior| {
             let revision = Revision::current();
 
             assert!(revision.0 <= 5);
@@ -79,8 +78,7 @@ mod tests {
             } else {
                 behavior.set(LoopBehavior::Continue);
             }
-        })
-        .await;
+        }));
 
         assert_eq!(call_count, 1);
     }
