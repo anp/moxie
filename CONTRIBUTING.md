@@ -25,6 +25,12 @@ $ cargo watch-core
 
 See [its definition](./.cargo/config) for details.
 
+#### Releases
+
+##### topo
+
+`topo` and `topo-macro` must be released in sync.
+
 ### moxie-dom dev env
 
 * [node >= LTS](https://nodejs.org)
