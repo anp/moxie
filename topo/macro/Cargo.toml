@@ -1,8 +1,11 @@
 [package]
 name = "topo-macro"
-version = "0.8.0"
+version = "0.8.0-dev"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+
+include = ["Cargo.toml", "src/**/*.rs"]
 
 [lib]
 proc-macro = true
@@ -10,6 +13,3 @@ proc-macro = true
 [dependencies]
 quote = "0.6"
 syn = { version = "0.15", features = ["full"] }
-
-[dev-dependencies]
-topo = { path = ".." }

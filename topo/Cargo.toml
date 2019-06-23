@@ -1,13 +1,16 @@
 [package]
 name = "topo"
-version = "0.8.0"
+version = "0.8.0-dev"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+
+include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]
 
 [dependencies]
 owning_ref = "0.4"
 scopeguard = "1"
-topo-macro = { path = "macro" }
+topo-macro = { path = "macro", version = "0.8.0-dev" }
 
 [dev-dependencies]
 criterion = "0.2"
