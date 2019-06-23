@@ -1,5 +1,17 @@
 [alias]
 
+################################################################
+# development
+################################################################
+
+watch-core = """
+watch --clear
+    -x fmt
+    -x check-core
+    -x test-core
+    -x bench-core
+"""
+
 bench-core = """
 bench
     --package moxie
@@ -32,10 +44,4 @@ test
     --package topo-macro
 """
 
-watch-core = """
-watch --clear
-    -x fmt
-    -x check-core
-    -x test-core
-    -x bench-core
-"""
+tool = "script tool --"
