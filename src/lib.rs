@@ -24,43 +24,44 @@
 mod memo;
 mod state;
 
+#[doc(hidden)]
+pub use topo;
 #[doc(inline)]
 pub use {memo::*, state::*};
 
 use {
-    std::ops::Deref,
-    tokio_trace::{field::debug, *},
+    futures::Poll,
+    std::future::Future,
+    std::pin::Pin,
+    std::task::{Context, Waker},
+    topo::bound,
 };
 
-/// Controls the iteration behavior of a runloop. The default of `OnWake` will leave the runloop
-/// in a pending state until a state variable receives a commit, at which point the runloop's task
-/// will be woken and its executor will poll it again.
-#[derive(Eq, PartialEq)]
-pub enum LoopBehavior {
-    /// Pause the loop after each iteration until it is woken by state variables receiving commits.
-    OnWake,
-    /// Stop the loop.
-    Stopped,
-    #[cfg(test)] // a dirty dirty hack for tests for now, need to fix with tasks/timers
-    /// Continue running the loop after each iteration without waiting for any state variables to
-    /// change.
-    Continue,
+/// TODO explain a component...somehow
+pub trait Component {
+    /// Defines the `Component` at a given point in time.
+    ///
+    /// TODO explain "right now" declaration
+    /// TODO explain memoization of this call
+    /// TODO explain show macro
+    fn contents(&self);
 }
 
-impl Default for LoopBehavior {
-    fn default() -> Self {
-        LoopBehavior::OnWake
-    }
+#[bound]
+pub fn show(component: impl Component + PartialEq + 'static) {
+    use crate::*;
+    memo!(component, |c| c.contents());
 }
 
-/// Revisions measure moxie's notion of time passing. Each [`runloop`] increments its Revision
+/// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
 /// on every iteration. [`Commit`]s to state variables are annotated with the Revision during which
 /// they were made.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
 
 impl Revision {
-    /// Returns the current revision. Will return `Revision(0)` if called outside of a runloop.
+    /// Returns the current revision. Will return `Revision(0)` if called outside of a Runtime's
+    /// execution.
     pub fn current() -> Self {
         if let Some(r) = topo::Env::get::<Revision>() {
             *r
@@ -70,90 +71,100 @@ impl Revision {
     }
 }
 
-/// A `runloop` is the entry point of the moxie runtime environment. The async function returns a
-/// `Future<Output=()>` which calls the root closure once per call to [Future::poll]. Typically
-/// the root closure will cause some memoized side effect to the outer environment in order to
-/// render a view of data available to the user. A runloop's root closure will also distribute other
-/// asynchronous tasks to an executor to handle I/O events and to update the state persisted by the
-/// runloop during its iteration.
+/// A `Runtime` is the entry point of the moxie runtime environment. On each invocation of
+/// `run_once`, it calls the root with which it was initialized. Typically this is invoked in a loop
+/// which sleeps until the provided waker is invoked, as is the case in the `Future` implementation.
+/// Usually root closure will cause some memoized side effect to the render environment in order to
+/// produce a view of the input data. A Runtime's root closure will also transitively establish
+/// event handlers, either via locally polled `Future`s or via the containing environment's
+/// callback or event mechanisms.
 ///
-/// While the runloop will iterate very frequently (potentially more than once for any given output
-/// frame), we use [topological memoization](crate::memo) to minimize the code we run each time.
+/// While the Runtime may iterate very frequently (potentially more than once for any given output
+/// frame), we use [topological memoization](crate::memo) to minimize the code run each time.
 ///
-/// [Future::poll]: std::future::Future::poll
+/// See the documentation for [`Runtime::run_once`] for details on the core loop body.
 ///
-/// # Loop Body
+/// ## Minimal Example
 ///
-/// On each iteration of the loop:
-///
-/// 1. The loop's [`Revision`] counter is incremented by 1.
-/// 2. The provided `root` function is called within its [`topo::Point`] in the call topology.
-/// 3. By default, the loop marks its task as pending until it is woken by commits to state
-///    variables.
-///     * If during (2) `root` commits a `LoopBehavior::Stopped` change to the referenced
-///       state [`Key`]`<`[`LoopBehavior`]`>`, then control flow for the running future breaks out
-///       of the loop and returns out of the runloop.
-///
-/// # Examples
-///
-/// ## Minimal
-///
-/// The simplest possible runloop stops itself as soon as it is entered. Most practical usages of
-/// the runloop rely on its continued execution, however.
+/// The simplest possible Runtime does nothing and is only called once. Most practical usages of
+/// the Runtime rely on its continued execution, however.
 ///
 /// ```
-/// # #![feature(async_await)]
-/// futures::executor::block_on(
-///     moxie::runloop(|ctl| {
-///         ctl.set(moxie::LoopBehavior::Stopped);
-///     })
-/// )
+/// let mut rt = moxie::Runtime::new(|| {});
+/// rt.run_once();
+/// assert_eq!(rt.revision(), moxie::Revision(1));
 /// ```
-pub async fn runloop(mut root: impl FnMut(&state::Key<LoopBehavior>)) {
-    let task_waker = RunLoopWaker(std::future::get_task_context(|c| c.waker().clone()));
+pub struct Runtime<Root> {
+    revision: Revision,
+    store: MemoStore,
+    root: Root,
+    wk: Waker,
+    // TODO add tasks executor
+}
 
-    let mut current_revision = Revision(0);
-    let mut next_behavior;
-    let memo_store = MemoStore::default();
-    loop {
-        current_revision.0 += 1;
+impl<Root> Runtime<Root>
+where
+    Root: FnMut(),
+{
+    /// Construct a new Runtime at revision 0 and blank storage.
+    pub fn new(root: Root) -> Self {
+        Self {
+            revision: Revision(0),
+            store: MemoStore::default(),
+            root,
+            wk: futures::task::noop_waker(),
+        }
+    }
 
-        // TODO make sure we're rooting into the same parent on each tick somehow, in case
-        // some weird nesting and thread migration happens?
+    /// The current revision of the runtime.
+    pub fn revision(&self) -> Revision {
+        self.revision
+    }
+
+    /// Run a single iteration of the root closure with access to the [`Env`] provided by the
+    /// [`Runtime`] . Increments the [`Revision`] counter of this [`Runtime`] by one.
+    pub fn run_once(&mut self) {
+        self.revision.0 += 1;
+
         topo::root!(
-            {
-                let (_, behavior) = state!((), |()| LoopBehavior::default());
-
-                // CALLER'S CODE IS CALLED HERE
-                root(&behavior);
-
-                // stash the write key for ourselves for reading after exiting this call
-                next_behavior = behavior.flushed().read();
-            },
+            (self.root)(),
             env! {
-                MemoStore => memo_store.clone(),
-                Revision => current_revision,
-                RunLoopWaker => task_waker.clone(),
+                MemoStore => self.store.clone(),
+                Revision => self.revision,
+                RunLoopWaker => RunLoopWaker(self.wk.clone()),
             }
         );
+    }
 
-        match next_behavior.as_ref().unwrap().deref() {
-            LoopBehavior::OnWake => {
-                trace!(target: "runloop_pending", revision = debug(&current_revision));
-                futures::pending!();
-            }
-            LoopBehavior::Stopped => {
-                info!(target: "runloop_stopping", revision = debug(&current_revision));
-                break;
-            }
-            #[cfg(test)]
-            LoopBehavior::Continue => continue,
-        }
+    /// Sets the [`std::task::Waker`] which will be called when [`state::Var`]s receive commits.
+    ///
+    /// In the `Future` impl for `Runtime`, this is set to match the waker of the task to which
+    /// the Runtime is bound. Other implementations may have integrations with systems that e.g.
+    /// expect a callback to be enqueued, and those implementations should make a custom `Waker`
+    /// using [`std::task::RawWaker`].
+    pub fn set_state_change_waker(&mut self, wk: Waker) -> &mut Self {
+        self.wk = wk;
+        self
     }
 }
 
-/// Responsible for waking the runloop task. Because the topo environment is namespaced by type,
-/// we create a newtype here so that other crates don't accidentally cause strage behavior by
+/// A [`Runtime`] can be run as a `Future`, and is primarily used for testing as of writing.
+impl<Root> Future for Runtime<Root>
+where
+    Root: FnMut() + Unpin,
+{
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
+        self.get_mut()
+            .set_state_change_waker(cx.waker().clone())
+            .run_once();
+        Poll::Pending
+    }
+}
+
+/// Responsible for waking the Runtime task. Because the topo environment is namespaced by type,
+/// we create a newtype here so that other crates don't accidentally cause strange behavior by
 /// overriding our access to it.
 #[derive(Clone)]
 struct RunLoopWaker(std::task::Waker);
@@ -163,8 +174,3 @@ impl RunLoopWaker {
         self.0.wake_by_ref();
     }
 }
-
-// #[topo]
-// pub fn task(_fut: impl Future<Output = ()> + Send + UnwindSafe + 'static) {
-//     unimplemented!()
-// }

@@ -9,14 +9,13 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 [dependencies]
 futures-preview = { version = "0.3.0-alpha.16", features = [ "async-await", "nightly" ] }
 parking_lot = "0.8"
-tokio-trace = "0.1"
 topo = { path = "topo", version = "0.8" }
 
 [workspace]
 members = [
     "mox",
-    # "moxie-dom",
-    # "moxie-dom/examples/hacking/crate",
+    "moxie-dom",
+    "moxie-dom/examples/hacking/crate",
     "topo",
     "topo/macro",
     # "moxie-wrench",

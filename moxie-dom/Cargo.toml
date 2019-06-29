@@ -11,10 +11,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 futures01 = { package = "futures", version = "0.1", optional = true }
-futures-preview = { version = "=0.3.0-alpha.15", features = ["compat"] }
+futures-preview = { version = "=0.3.0-alpha.16", features = ["compat"] }
 moxie = { path = "../", version = "0.1" }
 stdweb = "0.4.16"
 tokio-trace = { version = "0.1", features = ["log"] }
+topo = { version = "0.8.0", path = "../topo" }
 wasm-bindgen-futures= "0.3"
 wasm-bindgen = "0.2"
 

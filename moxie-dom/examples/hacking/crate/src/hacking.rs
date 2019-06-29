@@ -1,17 +1,18 @@
 use {
-    moxie_dom::prelude::*,
+    moxie::*,
+    moxie_dom::*,
     stdweb::{traits::*, *},
     wasm_bindgen::prelude::*,
 };
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct HackedApp;
 
 impl Component for HackedApp {
-    fn run(self, scp: Scope) {
-        run! { scp <- Span {
-            children: vec![&Text("hello world from moxie!") as &dyn Component],
-        }};
+    fn contents(&self) {
+        show!(Span {
+            children: Text("hello world from moxie!".into()),
+        });
     }
 }
 
@@ -23,10 +24,7 @@ pub fn main() -> Result<(), JsValue> {
     let root = web::document().create_element("div").unwrap();
     body.append_child(&root);
 
-    WebRuntime::default().spawn_self(DomBinding {
-        root: HackedApp,
-        node: root.as_node().to_owned(),
-    });
+    moxie_dom::mount!(HackedApp, root.as_node().to_owned());
 
     Ok(())
 }

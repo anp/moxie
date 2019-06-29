@@ -1,46 +1,22 @@
-pub mod prelude {
-    pub use {
-        crate::{DomBinding, Span, Text, WebRuntime},
-        moxie::{self, *},
-    };
-}
+#![warn(doc_missing)]
 
+#[doc(hidden)] // TODO fix the topo function export stuff
+//pub use moxie::*;
 use {
-    crate::{prelude::*, weaver::Weaver},
     futures::{
         future::{FutureExt, LocalFutureObj, TryFutureExt},
         task::SpawnError,
     },
-    stdweb::*,
+    moxie::{self, *},
+    stdweb::{traits::*, *},
 };
 
-mod weaver;
-
-#[derive(Default)]
-pub struct WebRuntime {}
-
-impl Runtime for WebRuntime {
-    type Spawner = WebSpawner;
-    fn spawner(&self) -> Self::Spawner {
-        WebSpawner
-    }
+#[topo::bound]
+pub fn mount(root: impl Component, on: web::Node) {
+    unimplemented!()
 }
 
-#[derive(Default)]
-pub struct WebSpawner;
-
-impl ComponentSpawn for WebSpawner {
-    fn spawn_local(&mut self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
-        wasm_bindgen_futures::spawn_local(future.unit_error().compat());
-        Ok(())
-    }
-
-    fn child(&self) -> Box<dyn ComponentSpawn> {
-        Box::new(WebSpawner)
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct DomBinding<Root: Component> {
     pub node: web::Node,
     pub root: Root,
@@ -50,40 +26,36 @@ impl<Root> Component for DomBinding<Root>
 where
     Root: Component,
 {
-    fn run(self, scp: Scope) {
+    fn contents(&self) {
         let Self { node, root } = self;
-        scp.install_witness(Weaver);
-        scp.record(node);
-        scp.compose_child(scope!(scp.id()), root);
+        unimplemented!()
     }
 }
 
-#[derive(Debug)]
-pub struct Text<'txt>(pub &'txt str);
+#[derive(Debug, PartialEq)]
+pub struct Text(pub String);
 
-impl<'txt> Component for Text<'txt> {
-    fn run(self, scp: Scope) {
-        let node = web::document().create_text_node(self.0);
+impl Component for Text {
+    fn contents(&self) {
+        let node = web::document().create_text_node(&self.0);
         let raw: web::Node = node.into();
-        scp.record(raw);
+        unimplemented!()
     }
 }
 
-pub struct Span<'parent, Children>
-where
-    Children: IntoIterator<Item = &'parent dyn Component>,
-{
+#[derive(Debug, PartialEq)]
+pub struct Span<Children> {
     pub children: Children,
 }
 
-impl<'p, Children> Component for Span<'p, Children>
+impl<Children> Component for Span<Children>
 where
-    Children: IntoIterator<Item = &'p dyn Component>,
+    Children: Component,
 {
-    fn run(self, scp: Scope) {
-        let node = state!(scp <- web::document().create_element("span").unwrap());
+    fn contents(&self) {
+        let node = memo!((), |()| web::document().create_element("span").unwrap());
         let raw: web::Node = node.clone().into();
-        scp.record(raw);
+        unimplemented!()
 
         // TODO compose children
     }

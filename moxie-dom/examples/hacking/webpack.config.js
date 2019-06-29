@@ -4,6 +4,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const dist = path.resolve(__dirname, "dist");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
+const crateDir = path.resolve(__dirname, "crate");
+
 module.exports = {
   entry: "./js/index.js",
   output: {
@@ -19,7 +21,7 @@ module.exports = {
     }),
 
     new WasmPackPlugin({
-      crateDirectory: path.resolve(__dirname, "crate"),
+      crateDirectory: crateDir,
       // WasmPackPlugin defaults to compiling in "dev" profile. To change that, use forceMode: 'release':
       // forceMode: 'release'
     }),

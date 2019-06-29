@@ -14,24 +14,19 @@ use {
 // which the macro can desugar invocations, so you can pass a init closure only.
 // TODO: move arg after initializer
 
-/// Root a state variable at this callsite, returning an up-to-date [`Commit`] of its value and
+/// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
 /// a unique [`Key`] which can be used to commit new values to the variable.
 #[bound]
 pub fn state<Arg, Init, Output>(arg: Arg, initializer: Init) -> (Commit<Output>, Key<Output>)
 where
-    Arg: PartialEq + Send + Sync + 'static,
-    Output: Send + Sync + 'static,
+    Arg: PartialEq + 'static,
+    Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    assert_send_and_sync::<Commit<Output>>();
-    assert_send_and_sync::<Key<Output>>();
-
     let current_revision = Revision::current();
 
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
-        let waker = topo::Env::get::<RunLoopWaker>()
-            .expect("must be called within moxie::runloop!")
-            .to_owned();
+        let waker = topo::Env::expect::<RunLoopWaker>().to_owned();
         let var = Var {
             point: topo::Id::current(),
             last_rooted: current_revision,
@@ -61,9 +56,6 @@ where
 /// Reads through a commit are not guaranteed to be the latest value visible to the runloop. Commits
 /// should be shared and used within the context of a single [`Revision`], being re-loaded from
 /// the state variable on each fresh iteration.
-// NOTE(anp): I'd like to have a lifetime on this bound to the calling frame. `Commit` could
-// benefit in the future from defining immovable types, as it would reduce the potential that old
-// state revisions leak.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     revision: Revision,
@@ -186,10 +178,4 @@ impl<State> Var<State> {
             None
         }
     }
-}
-
-fn assert_send_and_sync<T>()
-where
-    T: Send + Sync,
-{
 }

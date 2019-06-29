@@ -223,6 +223,11 @@ pub struct Point {
     state: State,
 }
 
+thread_local! {
+    /// The `Point` representing the current dynamic scope.
+    static CURRENT_POINT: RefCell<Point> = Default::default();
+}
+
 impl Point {
     /// "Root" a new child [`Point`]. When the guard returned from this function is dropped, the
     /// parent point is restored as the "current" `Point`. By calling provided code while the
@@ -241,7 +246,13 @@ impl Point {
             // this must be copied *before* creating the child below, which will mutate the state
             let parent_initial_state = parent.state.clone();
 
-            let child = parent.child(callsite_ty, add_env);
+            let child = if reset_on_drop {
+                let mut root = Point::default();
+                root.state = root.state.child(Callsite::new(callsite_ty, &None), add_env);
+                root
+            } else {
+                parent.child(callsite_ty, add_env)
+            };
             let parent = replace(&mut *parent, child);
 
             scopeguard::guard(
@@ -275,6 +286,15 @@ impl Point {
     /// Runs the provided closure with access to the current [`Point`].
     fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
         CURRENT_POINT.with(|p| op(&*p.borrow()))
+    }
+}
+
+impl Default for Point {
+    fn default() -> Self {
+        Self {
+            id: Id(0),
+            state: Default::default(),
+        }
     }
 }
 
@@ -366,6 +386,16 @@ impl Env {
         })
     }
 
+    /// Returns a reference to a value in the current environment, as [`Env::get`] does, but panics
+    /// if the value has not been set in the environment.
+    // TODO typename for debugging here would be v. nice
+    pub fn expect<E>() -> impl Deref<Target = E> + 'static
+    where
+        E: Any + 'static,
+    {
+        Self::get().expect("expected a value from the environment, found none")
+    }
+
     fn child(&self, additional: EnvInner) -> Env {
         let mut new: EnvInner = (*self.inner).to_owned();
 
@@ -399,7 +429,7 @@ macro_rules! unstable_make_topo_macro {
         #[macro_export]
         macro_rules! $name {
             $matcher => {
-                $crate::unstable_raw_call!(is_root: false, call: $mangled_name $pass)
+                topo::unstable_raw_call!(is_root: false, call: $mangled_name $pass)
             };
         }
     };
@@ -425,16 +455,6 @@ macro_rules! env {
         })*
         new_env
     }}
-}
-
-thread_local! {
-    /// The `Point` representing the current dynamic scope.
-    static CURRENT_POINT: RefCell<Point> = {
-        RefCell::new(Point {
-            id: Id(0),
-            state: Default::default(),
-        })
-    };
 }
 
 #[cfg(test)]

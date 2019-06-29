@@ -19,7 +19,7 @@ where
     Output: Clone + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let callsites = topo::Env::get::<MemoStore>().unwrap();
+    let callsites = topo::Env::expect::<MemoStore>();
     let callsites = &mut *(&*callsites).inner.borrow_mut();
 
     match callsites.entry((TypeId::of::<Output>(), topo::Id::current())) {
@@ -50,36 +50,42 @@ pub(crate) struct MemoStore {
 
 #[cfg(test)]
 mod tests {
-    use {
-        crate::{memo::*, LoopBehavior, Revision},
-        futures::executor::block_on,
-        tokio_trace::*,
-    };
+    use crate::{memo::*, Revision};
 
     #[test]
     fn basic_memo() {
         let mut call_count = 0u32;
 
-        block_on(crate::runloop(|behavior| {
+        let mut prev_revision = None;
+        let mut comp_skipped_count = 0;
+        let mut rt = crate::Runtime::new(|| {
             let revision = Revision::current();
+
+            if let Some(pr) = prev_revision {
+                assert!(revision.0 > pr);
+            } else {
+                comp_skipped_count += 1;
+            }
+            prev_revision = Some(revision.0);
+            assert!(comp_skipped_count <= 1);
 
             assert!(revision.0 <= 5);
             let current_call_count = memo!((), |()| {
-                info!("executing memo function");
                 call_count += 1;
                 call_count
             });
 
             assert_eq!(current_call_count, 1);
             assert_eq!(call_count, 1);
-            if revision.0 == 5 {
-                info!("stopping");
-                behavior.set(LoopBehavior::Stopped);
-            } else {
-                behavior.set(LoopBehavior::Continue);
-            }
-        }));
+        });
 
+        for i in 0..5 {
+            assert_eq!(rt.revision().0, i);
+
+            rt.run_once();
+
+            assert_eq!(rt.revision().0, i + 1);
+        }
         assert_eq!(call_count, 1);
     }
 }
