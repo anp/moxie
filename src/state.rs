@@ -107,13 +107,6 @@ impl<State> Key<State> {
             None
         }
     }
-
-    pub(crate) fn flushed(&self) -> &Self {
-        if let Some(var) = self.weak_var.upgrade() {
-            var.lock().flush();
-        }
-        self
-    }
 }
 
 impl<State> Key<State>
