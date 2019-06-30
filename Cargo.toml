@@ -15,7 +15,7 @@ topo = { path = "topo", version = "0.8" }
 members = [
     "mox",
     "dom",
-    "dom/examples/hacking/crate",
+    "dom/examples/hacking",
     "topo",
     "topo/macro",
     # "moxie-wrench",

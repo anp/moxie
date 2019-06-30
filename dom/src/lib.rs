@@ -1,7 +1,5 @@
 #![warn(missing_docs)]
 
-#[doc(hidden)] // TODO fix the topo function export stuff
-//pub use moxie::*;
 use {
     moxie::{self, *},
     stdweb::*,

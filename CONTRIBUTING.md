@@ -32,5 +32,6 @@ See [its definition](./.cargo/config) for details.
 
 ### moxie-dom dev env
 
-* [node >= LTS](https://nodejs.org)
-* [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+For examples:
+
+* [cargo-web](https://crates.io/crates/cargo-web)
