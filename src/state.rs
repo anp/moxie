@@ -1,5 +1,8 @@
 use {
-    crate::{memo::*, Revision, RunLoopWaker},
+    crate::{
+        memo::*,
+        runtime::{Revision, RunLoopWaker},
+    },
     parking_lot::Mutex,
     std::{
         ops::Deref,
