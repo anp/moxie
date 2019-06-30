@@ -121,7 +121,7 @@ where
         self.revision
     }
 
-    /// Run a single iteration of the root closure with access to the [`Env`] provided by the
+    /// Run a single iteration of the root closure with access to the [`topo::Env`] provided by the
     /// [`Runtime`] . Increments the [`Revision`] counter of this [`Runtime`] by one.
     pub fn run_once(&mut self) {
         self.revision.0 += 1;

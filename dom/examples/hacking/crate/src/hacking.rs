@@ -24,7 +24,7 @@ pub fn main() -> Result<(), JsValue> {
     let root = web::document().create_element("div").unwrap();
     body.append_child(&root);
 
-    moxie_dom::mount!(HackedApp, root.as_node().to_owned());
+    moxie_dom::mount!(root.as_node().to_owned(), || show!(HackedApp));
 
     Ok(())
 }

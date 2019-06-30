@@ -1,18 +1,14 @@
-#![warn(doc_missing)]
+#![warn(missing_docs)]
 
 #[doc(hidden)] // TODO fix the topo function export stuff
 //pub use moxie::*;
 use {
-    futures::{
-        future::{FutureExt, LocalFutureObj, TryFutureExt},
-        task::SpawnError,
-    },
     moxie::{self, *},
-    stdweb::{traits::*, *},
+    stdweb::*,
 };
 
 #[topo::bound]
-pub fn mount(root: impl Component, on: web::Node) {
+pub fn mount(new_parent: web::Node, contents: impl FnOnce()) {
     unimplemented!()
 }
 
@@ -38,7 +34,7 @@ pub struct Text(pub String);
 impl Component for Text {
     fn contents(&self) {
         let node = web::document().create_text_node(&self.0);
-        let raw: web::Node = node.into();
+        let _raw: web::Node = node.into();
         unimplemented!()
     }
 }
@@ -54,7 +50,7 @@ where
 {
     fn contents(&self) {
         let node = memo!((), |()| web::document().create_element("span").unwrap());
-        let raw: web::Node = node.clone().into();
+        let _raw: web::Node = node.clone().into();
         unimplemented!()
 
         // TODO compose children
