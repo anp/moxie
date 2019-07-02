@@ -20,27 +20,35 @@ where
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
     let callsites = topo::Env::expect::<MemoStore>();
-    let callsites = &mut *(&*callsites).inner.borrow_mut();
+    let memo_key = (TypeId::of::<Output>(), topo::Id::current());
 
-    match callsites.entry((TypeId::of::<Output>(), topo::Id::current())) {
-        Entry::Occupied(mut occ) => {
-            let v = occ.get();
-            let (ref prev_arg, ref output): &(Arg, Output) = v.downcast_ref().unwrap();
+    let memoized: Option<Output> = {
+        // borrow_mut needs to be in a block separate from the initializer!
+        let callsites = &*callsites.inner.borrow();
+
+        if let Some(existing) = callsites.get(&memo_key) {
+            let (ref prev_arg, ref output): &(Arg, Output) = existing.downcast_ref().unwrap();
 
             if prev_arg == &arg {
-                output.to_owned()
+                Some(output.to_owned())
             } else {
-                let new_output = initializer(&arg);
-                occ.insert(Rc::new((arg, new_output.clone())));
-                new_output
+                None
             }
+        } else {
+            None
         }
-        Entry::Vacant(vac) => {
-            let new_output = initializer(&arg);
-            vac.insert(Rc::new((arg, new_output.clone())));
-            new_output
-        }
-    }
+    };
+
+    memoized.unwrap_or_else(|| {
+        // initializer must be called before mutable borrow -- the initializer may re-entrantly
+        // acquire a mutable borrow
+        let new_output = initializer(&arg);
+        callsites
+            .inner
+            .borrow_mut()
+            .insert(memo_key, Rc::new((arg, new_output.clone())));
+        new_output
+    })
 }
 
 #[derive(Clone, Default)]
