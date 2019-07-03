@@ -1,4 +1,3 @@
-#![feature(proc_macro_diagnostic)]
 #![deny(clippy::all)]
 
 extern crate proc_macro;

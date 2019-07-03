@@ -18,7 +18,7 @@
 //! TODO
 
 #![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
-#![feature(async_await, gen_future)]
+#![feature(async_await)]
 
 #[macro_use]
 mod memo;

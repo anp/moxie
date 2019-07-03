@@ -16,6 +16,10 @@ TODO write a book about what all this means? and put at least one code example h
 [swiftui]: https://developer.apple.com/xcode/swiftui/
 [compose]: https://developer.android.com/jetpack/compose
 
+## Versioning
+
+`moxie` currently requires a nightly Rust toolchain as specified in `./rust-toolchain` for the [`async_await` feature](https://github.com/rust-lang/rust/issues/62149).
+
 ## Contributing
 
 The project is not yet ready for external contributions, although I hope to change this message before RustConf 2019 (we'll see!). In the meantime, I'm currently trying out a [Discord server](https://discord.gg/vTAzk3d) for chat and will continue working towards the project's maturity enough to onboard!
