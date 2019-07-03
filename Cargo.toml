@@ -13,7 +13,6 @@ topo = { path = "topo", version = "0.8" }
 
 [workspace]
 members = [
-    "mox",
     "dom",
     "dom/examples/hacking",
     "topo",

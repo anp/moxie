@@ -3,7 +3,6 @@
 bench-core = """
 bench
     --package moxie
-    --package mox
     --package topo
     --package topo-macro
 """
@@ -11,7 +10,6 @@ bench
 check-core = """
 check --all-targets
     --package moxie
-    --package mox
     --package topo
     --package topo-macro
 """
@@ -25,7 +23,6 @@ check --all-targets
 docs-core = """
 doc --no-deps
     --package moxie
-    --package mox
     --package topo
     --package topo-macro
 """
@@ -33,7 +30,6 @@ doc --no-deps
 test-core = """
 test
     --package moxie
-    --package mox
     --package topo
     --package topo-macro
 """
