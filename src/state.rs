@@ -5,11 +5,134 @@ use {
     },
     parking_lot::Mutex,
     std::{
+        cell::Cell,
+        fmt::{Debug, Display, Formatter, Result as FmtResult},
         ops::Deref,
+        rc::Rc,
         sync::{Arc, Weak},
     },
     topo::bound,
+    tracing::*,
 };
+
+/// The current revision of state in this component subtree. Set to the last ran [`Revision`] when
+/// state receives commits in the subtree of [`crate::Component`]s called by the `Component` to
+/// which this chain corresponds.
+///
+/// We store a chain of [`RevisionNode`]s so that we can notify parent Components that they may
+/// need to run. Without building out a nice system for re-running specific component subtrees
+/// on state changes, this is the cleanest way of ensuring we call the path from the root to the
+/// `Component` which needs to be called.
+#[derive(Clone)]
+pub(super) struct RevisionChain(Rc<RevisionNode>);
+
+/// A link in the [`RevisionChain`].
+struct RevisionNode {
+    current: Cell<u64>,
+    parent: std::rc::Weak<Self>,
+}
+
+impl RevisionChain {
+    pub(super) fn new() -> Self {
+        let parent = if let Some(parent_state) = topo::Env::get::<Self>() {
+            Rc::downgrade(&parent_state.0)
+        } else {
+            std::rc::Weak::new()
+        };
+
+        RevisionChain(Rc::new(RevisionNode {
+            parent,
+            current: Cell::new(Revision::current().0),
+        }))
+    }
+
+    pub(super) fn current(&self) -> u64 {
+        self.0.current.get()
+    }
+
+    fn increment(&self) -> u64 {
+        self.0.current.set(self.current() + 1);
+        if let Some(parent) = self.0.parent.upgrade() {
+            RevisionChain(parent).increment();
+        }
+        self.current()
+    }
+}
+
+impl Debug for RevisionChain {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_fmt(format_args!("{:?}", self.0.current.get()))
+    }
+}
+
+impl PartialEq for RevisionChain {
+    fn eq(&self, other: &Self) -> bool {
+        let self_current = self.0.current.get();
+        let other_current = other.0.current.get();
+        trace!({ self_current, other_current }, "comparing revision chains");
+        self_current.eq(&other_current)
+    }
+}
+
+/// The underlying container of state variables. Vends copies of the latest [`Commit`] for reads
+/// and internally [`Weak`] pointers to these structs are used for updating state with a [`Key`].
+struct Var<State> {
+    current: Commit<State>,
+    point: topo::Id,
+    rev_path: RevisionChain,
+    last_rooted: Revision,
+    pending: Option<Commit<State>>,
+    waker: RunLoopWaker,
+}
+
+impl<State> Var<State> {
+    /// Attach this `Var` to a specific callsite, performing any pending commit and returning the
+    /// resulting latest commit.
+    fn root(&mut self) -> Commit<State> {
+        trace!("rooting state var");
+        self.last_rooted = Revision::current();
+        self.flush();
+        self.peek()
+    }
+
+    /// Finishes the pending comment if one exists.
+    fn flush(&mut self) {
+        if let Some(pending) = self.pending.take() {
+            self.current = pending;
+        }
+    }
+
+    /// Snapshots the current commit.
+    fn peek(&self) -> Commit<State> {
+        self.current.clone()
+    }
+
+    /// Initiate a commit to the state variable. The commit will actually complete asynchronously
+    /// when the state variable is next rooted in a topological function, flushing the pending
+    /// commit.
+    fn enqueue_commit(
+        &mut self,
+        updater: impl FnOnce(&State) -> Option<State>,
+    ) -> Option<Revision> {
+        trace!("run updater");
+        let pending = updater(&self.pending.as_ref().unwrap_or(&self.current));
+
+        if let Some(pending) = pending {
+            trace!("pending commit");
+            let current = Revision(self.rev_path.increment());
+            self.pending = Some(Commit {
+                inner: Arc::new(pending),
+                point: self.point,
+                revision: current,
+            });
+            self.waker.wake();
+            Some(current)
+        } else {
+            trace!("skipped commit");
+            None
+        }
+    }
+}
 
 // TODO state tests
 
@@ -29,10 +152,12 @@ where
     let current_revision = Revision::current();
 
     let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
+        trace!("init var");
         let waker = topo::Env::expect::<RunLoopWaker>().to_owned();
         let var = Var {
             point: topo::Id::current(),
             last_rooted: current_revision,
+            rev_path: topo::Env::expect::<RevisionChain>().to_owned(),
             current: Commit {
                 revision: current_revision,
                 point: topo::Id::current(),
@@ -83,6 +208,15 @@ impl<State> Deref for Commit<State> {
     }
 }
 
+impl<State> Display for Commit<State>
+where
+    State: Display,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_fmt(format_args!("{}", self.inner))
+    }
+}
+
 /// A Key commits new values to a state variable. Keys carry a weak reference to the state variable
 /// to prevent cycles, which means that all operations called against them are fallible -- we cannot
 /// know before calling a method that the state variable is still live.
@@ -93,6 +227,7 @@ pub struct Key<State> {
 impl<State> Key<State> {
     /// Returns the current commit of the state variable if it is live.
     pub fn read(&self) -> Option<Commit<State>> {
+        trace!("read var");
         self.weak_var.upgrade().map(|var| var.lock().peek())
     }
 
@@ -105,8 +240,10 @@ impl<State> Key<State> {
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
         if let Some(var) = self.weak_var.upgrade() {
             let mut var = var.lock();
+            trace!("perform update");
             var.enqueue_commit(updater)
         } else {
+            warn!("ignored dead store");
             None
         }
     }
@@ -120,58 +257,5 @@ where
     /// still live.
     pub fn set(&self, new: State) -> Option<Revision> {
         self.update(|prev| if prev == &new { None } else { Some(new) })
-    }
-}
-
-struct Var<State> {
-    current: Commit<State>,
-    point: topo::Id,
-    last_rooted: Revision,
-    pending: Option<Commit<State>>,
-    waker: RunLoopWaker,
-}
-
-impl<State> Var<State> {
-    fn root(&mut self) -> Commit<State> {
-        self.last_rooted = Revision::current();
-        self.flush();
-        self.peek()
-    }
-
-    /// Finishes the pending comment if one exists.
-    fn flush(&mut self) {
-        if let Some(pending) = self.pending.take() {
-            self.current = pending;
-        }
-    }
-
-    /// Snapshots the current commit.
-    fn peek(&self) -> Commit<State> {
-        self.current.clone()
-    }
-
-    /// Initiate a commit to the state variable. The commit will actually complete asynchronously
-    /// when the state variable is next rooted in a topological function, flushing the pending commit.
-    fn enqueue_commit(
-        &mut self,
-        updater: impl FnOnce(&State) -> Option<State>,
-    ) -> Option<Revision> {
-        let pending = if let Some(pending) = &self.pending {
-            updater(pending)
-        } else {
-            updater(&*self.current)
-        };
-
-        if let Some(pending) = pending {
-            self.pending = Some(Commit {
-                inner: Arc::new(pending),
-                point: self.point,
-                revision: self.last_rooted,
-            });
-            self.waker.wake();
-            Some(self.last_rooted)
-        } else {
-            None
-        }
     }
 }

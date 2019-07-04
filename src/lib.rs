@@ -22,15 +22,16 @@
 
 #[macro_use]
 mod memo;
+mod nodes;
 mod runtime;
 mod state;
 
 #[doc(hidden)]
 pub use topo;
 #[doc(inline)]
-pub use {memo::*, runtime::*, state::*};
+pub use {memo::*, nodes::*, runtime::*, state::*};
 
-use topo::bound;
+use {std::fmt::Debug, tracing::*};
 
 /// TODO explain a component...somehow
 pub trait Component {
@@ -42,8 +43,21 @@ pub trait Component {
     fn contents(&self);
 }
 
-#[bound]
-pub fn show(component: impl Component + PartialEq + 'static) {
-    use crate::*;
-    memo!(component, |c| c.contents());
+#[topo::bound]
+pub fn show(component: impl Component + Debug + PartialEq + 'static) {
+    let show_span = once!(|| trace_span!("show component"));
+    let state_revision = once!(|| RevisionChain::new());
+
+    let _in_span = show_span.enter();
+    topo::call!(
+        {
+            memo!((state_revision.current(), component), |(rev, c)| {
+                trace!({ props = ?c }, "showing");
+                c.contents();
+            });
+        },
+        env! {
+            RevisionChain => state_revision.clone(),
+        }
+    );
 }

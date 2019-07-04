@@ -51,6 +51,14 @@ where
     })
 }
 
+#[topo::bound]
+pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
+where
+    Output: Clone + 'static,
+{
+    memo!((), |()| expr())
+}
+
 #[derive(Clone, Default)]
 pub(crate) struct MemoStore {
     inner: Rc<RefCell<HashMap<(TypeId, topo::Id), Rc<dyn Any>>>>,
@@ -58,7 +66,10 @@ pub(crate) struct MemoStore {
 
 #[cfg(test)]
 mod tests {
-    use crate::{memo::*, Revision};
+    use {
+        crate::{memo::*, Revision},
+        std::cell::Cell,
+    };
 
     #[test]
     fn basic_memo() {
@@ -78,7 +89,7 @@ mod tests {
             assert!(comp_skipped_count <= 1);
 
             assert!(revision.0 <= 5);
-            let current_call_count = memo!((), |()| {
+            let current_call_count = once!(|| {
                 call_count += 1;
                 call_count
             });
@@ -95,5 +106,37 @@ mod tests {
             assert_eq!(rt.revision().0, i + 1);
         }
         assert_eq!(call_count, 1);
+    }
+
+    #[test]
+    fn invalidation() {
+        let loop_ct = Cell::new(0);
+        let raw_exec = Cell::new(0);
+        let memo_exec = Cell::new(0);
+        let mut rt = crate::Runtime::new(|| {
+            raw_exec.set(raw_exec.get() + 1);
+            memo!(loop_ct.get(), |_| {
+                memo_exec.set(memo_exec.get() + 1);
+            });
+        });
+
+        for i in 0..10 {
+            loop_ct.set(i);
+
+            assert_eq!(
+                memo_exec.get(),
+                i,
+                "memo block should execute exactly once per loop_ct value"
+            );
+
+            assert_eq!(
+                raw_exec.get(),
+                i * 2,
+                "runtime's root block should run exactly twice per loop_ct value"
+            );
+
+            rt.run_once();
+            rt.run_once();
+        }
     }
 }

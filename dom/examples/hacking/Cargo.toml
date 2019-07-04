@@ -9,5 +9,4 @@ log = "0.4"
 moxie = { path = "../../../" }
 moxie-dom = { path = "../../" }
 stdweb = "0.4.16"
-typed-html = { version = "0.2", features = ["stdweb"] }
 web_logger = "0.1"

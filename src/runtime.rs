@@ -1,10 +1,4 @@
-use {
-    crate::MemoStore,
-    futures::Poll,
-    std::future::Future,
-    std::pin::Pin,
-    std::task::{Context, Waker},
-};
+use {crate::MemoStore, std::task::Waker, tracing::*};
 
 /// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
 /// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
@@ -52,7 +46,7 @@ pub struct Runtime<Root> {
     store: MemoStore,
     root: Root,
     wk: Waker,
-    // TODO add tasks executor
+    span: Span,
 }
 
 impl<Root> Runtime<Root>
@@ -61,7 +55,9 @@ where
 {
     /// Construct a new Runtime at revision 0 and blank storage.
     pub fn new(root: Root) -> Self {
+        let span = trace_span!("runtime", rev = 0);
         Self {
+            span,
             revision: Revision(0),
             store: MemoStore::default(),
             root,
@@ -78,6 +74,8 @@ where
     /// [`Runtime`] . Increments the [`Revision`] counter of this [`Runtime`] by one.
     pub fn run_once(&mut self) {
         self.revision.0 += 1;
+        self.span.record("rev", &self.revision.0);
+        let _entered = self.span.enter();
 
         topo::root!(
             (self.root)(),
@@ -101,20 +99,23 @@ where
     }
 }
 
-/// A [`Runtime`] can be run as a `Future`, and is primarily used for testing as of writing.
-impl<Root> Future for Runtime<Root>
-where
-    Root: FnMut() + Unpin,
-{
-    type Output = ();
+// /// A [`Runtime`] can be run as a `Future`, and is primarily used for testing as of writing.
+// ///
+// /// This future never returns without either panicking or external cancellation. See
+// /// [`futures::future::abortable`] for one common option for cancelling futures.
+// impl<Root> Future for Runtime<Root>
+// where
+//     Root: FnMut() + Unpin,
+// {
+//     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
-        self.get_mut()
-            .set_state_change_waker(cx.waker().clone())
-            .run_once();
-        Poll::Pending
-    }
-}
+//     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
+//         self.get_mut()
+//             .set_state_change_waker(cx.waker().clone())
+//             .run_once();
+//         Poll::Pending
+//     }
+// }
 
 /// Responsible for waking the Runtime task. Because the topo environment is namespaced by type,
 /// we create a newtype here so that other crates don't accidentally cause strange behavior by
