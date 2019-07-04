@@ -1,7 +1,7 @@
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
-    collections::{hash_map::Entry, HashMap},
+    collections::HashMap,
     rc::Rc,
 };
 

@@ -7,7 +7,7 @@ use {
     moxie::{self, *},
     std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc},
     stdweb::{traits::*, *},
-    tokio_trace::*,
+    tracing::*,
 };
 
 #[topo::bound]
@@ -52,6 +52,10 @@ struct WebRuntime {
 struct RuntimeWaker {
     wrt: Rc<RefCell<WebRuntime>>,
 }
+
+// don't send these to workers until have a fix :P
+unsafe impl Send for RuntimeWaker {}
+unsafe impl Sync for RuntimeWaker {}
 
 impl ArcWake for RuntimeWaker {
     fn wake_by_ref(arc_self: &Arc<Self>) {

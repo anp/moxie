@@ -52,6 +52,7 @@ pub fn show(component: impl Component + Debug + PartialEq + 'static) {
     topo::call!(
         {
             memo!((state_revision.current(), component), |(rev, c)| {
+                show_span.record("rev", &rev);
                 trace!({ props = ?c }, "showing");
                 c.contents();
             });
