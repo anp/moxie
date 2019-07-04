@@ -7,8 +7,8 @@ use {
 };
 
 /// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
-/// on every iteration. [`Commit`]s to state variables are annotated with the Revision during which
-/// they were made.
+/// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
+/// during which they were made.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
 
@@ -89,7 +89,7 @@ where
         );
     }
 
-    /// Sets the [`std::task::Waker`] which will be called when [`state::Var`]s receive commits.
+    /// Sets the [`std::task::Waker`] which will be called when state variables receive commits.
     ///
     /// In the `Future` impl for `Runtime`, this is set to match the waker of the task to which
     /// the Runtime is bound. Other implementations may have integrations with systems that e.g.
