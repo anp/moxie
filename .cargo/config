@@ -14,12 +14,6 @@ check --all-targets
     --package topo-macro
 """
 
-check-dom = """
-check --all-targets
-    --package moxie-dom
-    --package dom-hacking
-"""
-
 docs-core = """
 doc --no-deps
     --package moxie
@@ -38,9 +32,13 @@ watch-core = """
 watch --clear
     -x fmt
     -x check-core
-    -x check-dom
+    -x check-dom-lib
+    -x check-dom-hacking
     -x test-core
 """
+
+check-dom-lib = "web check --package moxie-dom"
+check-dom-hacking = "web check --package dom-hacking"
 
 test-dom = "web test --package moxie-dom"
 watch-dom-hacking = "web start --package dom-hacking"
