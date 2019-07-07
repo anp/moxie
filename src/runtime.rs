@@ -85,6 +85,8 @@ where
                 RunLoopWaker => RunLoopWaker(self.wk.clone()),
             }
         );
+        trace!("collecting garbage");
+        self.store.gc();
     }
 
     /// Sets the [`std::task::Waker`] which will be called when state variables receive commits.

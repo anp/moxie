@@ -9,5 +9,6 @@ description = "TBA"
 [dependencies]
 futures-preview = "0.3.0-alpha.17"
 moxie = { path = "../", version = "0.1" }
+scopeguard = "1"
 stdweb = "0.4.16"
 tracing = { version = "0.1.1", features = ["log"] }

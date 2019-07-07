@@ -5,30 +5,43 @@ pub use moxie::*;
 use {
     futures::task::ArcWake,
     moxie::{self, *},
-    std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc},
+    std::{
+        cell::RefCell,
+        fmt::Debug,
+        rc::Rc,
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
+    },
     stdweb::{traits::*, *},
     tracing::*,
 };
 
 #[topo::bound]
-pub fn mount(new_parent: web::Node, root: impl Component + Clone + Debug + PartialEq + 'static) {
+pub fn mount(
+    new_parent: impl web::INode + 'static,
+    root: impl Component + Clone + Debug + PartialEq + 'static,
+) {
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
-        moxie::produce_root!(MountedNode(new_parent.clone()), || {
+        produce_without_attaching!(MountedNode(new_parent.as_node().to_owned()), || {
             show!(root.clone());
         });
     }));
 
     let wrt = WebRuntime { rt, handle: None };
 
-    let mut wrt = Rc::new(RefCell::new(wrt));
+    let wrt = Rc::new((AtomicBool::new(false), RefCell::new(wrt)));
     let wrt2 = Rc::clone(&wrt);
 
     let waker = ArcWake::into_waker(Arc::new(RuntimeWaker { wrt }));
 
-    wrt2.borrow_mut()
-        .rt
-        .set_state_change_waker(waker)
-        .run_once();
+    {
+        // ensure we've released our mutable borrow by running it in a separate block
+        wrt2.1.borrow_mut().rt.set_state_change_waker(waker.clone());
+    }
+
+    waker.wake_by_ref();
 }
 
 #[topo::bound]
@@ -38,9 +51,22 @@ pub fn produce_dom(node: impl web::INode, children: impl FnOnce()) {
 
 struct MountedNode(web::Node);
 
+struct UnmountDomNodeOnDrop(web::Node);
+
+impl Drop for UnmountDomNodeOnDrop {
+    fn drop(&mut self) {
+        if let Some(parent) = self.0.parent_node() {
+            trace!("unmounting node from parent");
+            parent.remove_child(&self.0);
+        }
+    }
+}
+
 impl Node for MountedNode {
-    fn child(&mut self, id: topo::Id, child_node: &MountedNode) {
+    type MountHandle = UnmountDomNodeOnDrop;
+    fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
         self.0.append_child(&child_node.0);
+        UnmountDomNodeOnDrop(child_node.0.clone())
     }
 }
 
@@ -50,7 +76,7 @@ struct WebRuntime {
 }
 
 struct RuntimeWaker {
-    wrt: Rc<RefCell<WebRuntime>>,
+    wrt: Rc<(AtomicBool, RefCell<WebRuntime>)>,
 }
 
 // don't send these to workers until have a fix :P
@@ -58,22 +84,25 @@ unsafe impl Send for RuntimeWaker {}
 unsafe impl Sync for RuntimeWaker {}
 
 impl ArcWake for RuntimeWaker {
-    fn wake_by_ref(arc_self: &Arc<Self>) {
-        let needs_handle = { arc_self.wrt.borrow().handle.is_none() };
-
-        if needs_handle {
-            trace!("wake web runtime");
+    fn wake_by_ref(arc_self: &Arc<RuntimeWaker>) {
+        let scheduled: &AtomicBool = &arc_self.wrt.0;
+        if !scheduled.load(Ordering::SeqCst) {
+            trace!("wake web runtime, scheduling");
             let wrt = Rc::clone(&arc_self.wrt);
 
+            scheduled.store(true, Ordering::SeqCst);
             let handle = web::window().request_animation_frame(move |_time| {
-                let mut wrt = wrt.borrow_mut();
+                let scheduled = &wrt.0;
+                let mut wrt = wrt.1.borrow_mut();
                 wrt.handle = None;
+                scopeguard::defer!(scheduled.store(false, Ordering::SeqCst));
+
                 wrt.rt.run_once();
             });
 
-            arc_self.wrt.borrow_mut().handle = Some(handle);
+            arc_self.wrt.1.borrow_mut().handle = Some(handle);
         } else {
-            trace!("")
+            trace!("skipped scheduling web runtime")
         }
     }
 }

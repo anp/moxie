@@ -40,22 +40,21 @@ pub trait Component {
     /// TODO explain "right now" declaration
     /// TODO explain memoization of this call
     /// TODO explain show macro
-    fn contents(&self);
+    fn contents(self);
 }
 
 #[topo::bound]
-pub fn show(component: impl Component + Debug + PartialEq + 'static) {
+pub fn show(component: impl Component + Debug + 'static) {
     let show_span = once!(|| trace_span!("show component"));
     let state_revision = once!(|| RevisionChain::new());
 
     let _in_span = show_span.enter();
     topo::call!(
         {
-            memo!((state_revision.current(), component), |(rev, c)| {
-                show_span.record("rev", &rev);
-                trace!({ props = ?c }, "showing");
-                c.contents();
-            });
+            let rev = state_revision.current();
+            show_span.record("rev", &rev);
+            trace!({ props = ?component }, "showing");
+            component.contents();
         },
         env! {
             RevisionChain => state_revision.clone(),

@@ -19,36 +19,9 @@ where
     Output: Clone + 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let callsites = topo::Env::expect::<MemoStore>();
-    let memo_key = (TypeId::of::<Output>(), topo::Id::current());
-
-    let memoized: Option<Output> = {
-        // borrow_mut needs to be in a block separate from the initializer!
-        let callsites = &*callsites.inner.borrow();
-
-        if let Some(existing) = callsites.get(&memo_key) {
-            let (ref prev_arg, ref output): &(Arg, Output) = existing.downcast_ref().unwrap();
-
-            if prev_arg == &arg {
-                Some(output.to_owned())
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    };
-
-    memoized.unwrap_or_else(|| {
-        // initializer must be called before mutable borrow -- the initializer may re-entrantly
-        // acquire a mutable borrow
-        let new_output = initializer(&arg);
-        callsites
-            .inner
-            .borrow_mut()
-            .insert(memo_key, Rc::new((arg, new_output.clone())));
-        new_output
-    })
+    let key = (TypeId::of::<Output>(), topo::Id::current());
+    let store = topo::Env::expect::<MemoStore>();
+    store.get_or_init(key, arg, initializer)
 }
 
 #[topo::bound]
@@ -60,8 +33,74 @@ where
 }
 
 #[derive(Clone, Default)]
-pub(crate) struct MemoStore {
-    inner: Rc<RefCell<HashMap<(TypeId, topo::Id), Rc<dyn Any>>>>,
+pub(crate) struct MemoStore(Rc<RefCell<MemoStorage>>);
+
+impl MemoStore {
+    pub fn gc(&self) {
+        self.0.borrow_mut().gc();
+    }
+
+    fn get_or_init<Arg, Output, Init>(
+        &self,
+        memo_key: MemoKey,
+        arg: Arg,
+        initializer: Init,
+    ) -> Output
+    where
+        Arg: PartialEq + 'static,
+        Output: Clone + 'static,
+        for<'a> Init: FnOnce(&'a Arg) -> Output,
+    {
+        let maybe_memod = self.0.borrow_mut().get_if_arg_eq(memo_key, &arg);
+        // ^ this binding is necessary to keep the below borrow_mut from panicking
+        maybe_memod.unwrap_or_else(|| {
+            let new_output = initializer(&arg);
+            self.0
+                .borrow_mut()
+                .insert(memo_key, arg, new_output.clone());
+            new_output
+        })
+    }
+}
+
+type MemoKey = (TypeId, topo::Id);
+
+#[derive(Default)]
+pub(crate) struct MemoStorage {
+    inner: HashMap<MemoKey, Rc<dyn Any>>,
+    next: HashMap<MemoKey, Rc<dyn Any>>,
+}
+
+impl MemoStorage {
+    fn get_if_arg_eq<Arg, Output>(&mut self, key: MemoKey, arg: &Arg) -> Option<Output>
+    where
+        Arg: PartialEq + 'static,
+        Output: Clone + 'static,
+    {
+        if let Some(existing) = self.inner.get(&key) {
+            let (ref prev_arg, ref output): &(Arg, Output) = existing.downcast_ref().unwrap();
+
+            if prev_arg == arg {
+                self.next.insert(key, existing.clone()); // ensure this is live when we gc
+                Some(output.to_owned())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn insert<Arg: 'static, Output: 'static>(&mut self, key: MemoKey, arg: Arg, val: Output) {
+        let to_insert = Rc::new((arg, val));
+        self.inner.insert(key, to_insert.clone());
+        self.next.insert(key, to_insert.clone());
+    }
+
+    fn gc(&mut self) {
+        std::mem::swap(&mut self.inner, &mut self.next);
+        std::mem::replace(&mut self.next, HashMap::new());
+    }
 }
 
 #[cfg(test)]
