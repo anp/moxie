@@ -14,12 +14,7 @@ check --all-targets
     --package topo-macro
 """
 
-docs-core = """
-doc --no-deps
-    --package moxie
-    --package topo
-    --package topo-macro
-"""
+docs-all = "doc --all"
 
 test-core = """
 test
@@ -34,6 +29,7 @@ watch --clear
     -x check-core
     -x check-dom-lib
     -x check-dom-hacking
+    -x docs-all
     -x test-core
 """
 
