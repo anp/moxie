@@ -1,5 +1,6 @@
 #![warn(missing_docs)]
 
+#[doc(hidden)]
 pub use moxie::*;
 
 use {
@@ -17,6 +18,9 @@ use {
     stdweb::{traits::*, *},
     tracing::*,
 };
+
+pub mod elements;
+pub mod events;
 
 #[topo::bound]
 pub fn mount(

@@ -5,10 +5,7 @@ edition = "2018"
 license = "Apache-2.0/MIT"
 
 [dependencies]
-derive_builder = "0.7"
-log = "0.4"
-moxie = { path = "../../../" }
 moxie-dom = { path = "../../" }
-scopeguard = "1"
 stdweb = "0.4.16"
+tracing = { version = "0.1", features = ["log"] }
 web_logger = "0.1"

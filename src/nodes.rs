@@ -9,7 +9,7 @@ pub trait Node {
     /// node is no longer mounted.
     type MountHandle;
 
-    /// Mount a new child to this node, returning a [`MountHandle`].
+    /// Mount a new child to this node, returning a [`Node::MountHandle`].
     fn child(&mut self, child: &Self) -> Self::MountHandle;
 }
 
