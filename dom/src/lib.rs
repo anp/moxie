@@ -61,7 +61,7 @@ impl Drop for UnmountDomNodeOnDrop {
     fn drop(&mut self) {
         if let Some(parent) = self.0.parent_node() {
             trace!("unmounting node from parent");
-            parent.remove_child(&self.0);
+            let _dont_care = parent.remove_child(&self.0);
         }
     }
 }
