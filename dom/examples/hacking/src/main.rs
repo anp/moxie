@@ -13,17 +13,7 @@ impl Component for HackedApp {
 
         show!(text!("hello world from moxie! ({})", count));
 
-        show!(Button::new()
-            .events(
-                on().set_click(move || {
-                    let revision = count_key.update(|c| Some(c + 1));
-                    info!("clicked, updated at revision {:?}", revision);
-                })
-                .build()
-                .unwrap()
-            )
-            .build()
-            .unwrap());
+        show!(Button::new().on_click(count_key, |c, _| Some(c + 1)));
     }
 }
 

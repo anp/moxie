@@ -1,19 +1,41 @@
-use {
-    crate::{elements::Text, events::Handlers, *},
-    derive_builder::*,
-    moxie::*,
-    std::fmt::{Debug, Formatter, Result as FmtResult},
-    stdweb::{traits::*, *},
-    tracing::*,
+use crate::{
+    events::{EventTarget, Handlers},
+    *,
 };
 
-#[derive(Builder, Debug, PartialEq)]
-#[builder(pattern = "owned", setter(into))]
+#[derive(Debug, Default)]
 pub struct Button {
-    #[builder(default)]
     ty: ButtonType,
-    #[builder(default)]
     events: Handlers,
+}
+
+impl Button {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl EventTarget for Button {
+    fn handlers(&mut self) -> &mut Handlers {
+        &mut self.events
+    }
+}
+
+impl Component for Button {
+    fn contents(self) {
+        let button = web::document().create_element("button").unwrap();
+
+        produce_dom!(button.clone(), || {
+            show!(text!("increment"));
+        });
+
+        self.events.apply(&button.as_node().clone().into());
+
+        match self.ty {
+            ButtonType::Button => button.set_attribute("type", "button").unwrap(),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -27,30 +49,5 @@ pub enum ButtonType {
 impl Default for ButtonType {
     fn default() -> Self {
         ButtonType::Button
-    }
-}
-
-impl Button {
-    pub fn new() -> ButtonBuilder {
-        ButtonBuilder::default()
-    }
-}
-
-impl Component for Button {
-    fn contents(self) {
-        let button = web::document().create_element("button").unwrap();
-
-        produce_dom!(button.clone(), || {
-            show!(text!("increment"));
-        });
-
-        if let Some(mut click) = self.events.click {
-            button.add_event_listener(move |_: web::event::ClickEvent| click());
-        }
-
-        match self.ty {
-            ButtonType::Button => button.set_attribute("type", "button").unwrap(),
-            _ => unimplemented!(),
-        }
     }
 }

@@ -1,39 +1,49 @@
 use {
     crate::*,
-    derive_builder::*,
-    moxie::*,
     std::fmt::{Debug, Formatter, Result as FmtResult},
-    stdweb::{traits::*, *},
-    tracing::*,
 };
 
-pub fn on() -> HandlersBuilder {
-    HandlersBuilder::default()
-}
+pub trait EventTarget: Sized {
+    fn handlers(&mut self) -> &mut Handlers;
 
-#[derive(Builder, Default)]
-#[builder(pattern = "owned", setter(into, strip_option))]
-pub struct Handlers {
-    pub(crate) click: Option<Box<dyn FnMut() + 'static>>,
-}
-
-impl HandlersBuilder {
-    pub fn set_click(mut self, f: impl FnMut() + 'static) -> Self {
-        self.click = Some(Some(Box::new(f)));
+    fn on_click<State, Updater>(mut self, key: Key<State>, updater: Updater) -> Self
+    where
+        State: 'static,
+        Updater: 'static + FnMut(&State, web::event::ClickEvent) -> Option<State>,
+    {
+        self.handlers().add_listener(key, updater);
         self
+    }
+}
+
+#[derive(Default)]
+pub struct Handlers {
+    inner: Vec<Box<dyn FnOnce(&web::EventTarget) + 'static>>,
+}
+
+impl Handlers {
+    fn add_listener<Event, State, Updater>(&mut self, key: Key<State>, mut updater: Updater)
+    where
+        Event: web::event::ConcreteEvent,
+        State: 'static,
+        Updater: 'static + FnMut(&State, Event) -> Option<State>,
+    {
+        self.inner.push(Box::new(move |target| {
+            target.add_event_listener(move |event: Event| {
+                key.update(|prev| updater(prev, event));
+            });
+        }));
+    }
+
+    pub(crate) fn apply(self, target: &web::EventTarget) {
+        for handler in self.inner {
+            handler(target);
+        }
     }
 }
 
 impl Debug for Handlers {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("Handlers")
-            .field("click", &self.click.as_ref().map(|_| "..."))
-            .finish()
-    }
-}
-
-impl PartialEq for Handlers {
-    fn eq(&self, _other: &Self) -> bool {
-        false
+        f.debug_struct("Handlers").finish()
     }
 }
