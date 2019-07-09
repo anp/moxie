@@ -17,7 +17,8 @@
 //!
 //! TODO
 
-#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, intra_doc_link_resolution_failure)]
+#![warn(missing_docs)]
 #![feature(async_await)]
 
 #[macro_use]
@@ -34,7 +35,7 @@ pub use {memo::*, nodes::*, runtime::*, state::*};
 use {std::fmt::Debug, tracing::*};
 
 /// TODO explain a component...somehow
-pub trait Component {
+pub trait Component: Debug + Sized + 'static {
     /// Defines the `Component` at a given point in time.
     ///
     /// TODO explain "right now" declaration
@@ -43,8 +44,20 @@ pub trait Component {
     fn contents(self);
 }
 
+impl<I, C> Component for I
+where
+    I: IntoIterator<Item = C> + Debug + 'static,
+    C: Component,
+{
+    fn contents(self) {
+        for component in self {
+            show!(component);
+        }
+    }
+}
+
 #[topo::bound]
-pub fn show(component: impl Component + Debug + 'static) {
+pub fn show(component: impl Component) {
     let show_span = once!(|| trace_span!("show component"));
     let state_revision = once!(|| RevisionChain::new());
 
@@ -60,4 +73,47 @@ pub fn show(component: impl Component + Debug + 'static) {
             RevisionChain => state_revision.clone(),
         }
     );
+}
+
+#[macro_export]
+macro_rules! show_children {
+    ($($child:expr),+) => {
+        $($crate::show!($child);)+
+    };
+}
+
+pub trait Parent<Next: Component>: Component {
+    // TODO can we express these automatically in terms of the Self<T> -> Self<Sibs<T, Next>> xform?
+    type Output: Component;
+    type Child: Component;
+
+    fn child(self, next: Next) -> Self::Output;
+}
+
+pub fn sib_cons<Current, Next>(curr: Current, next: Next) -> Sibs<Current, Next> {
+    Sibs { curr, next }
+}
+
+#[derive(Debug)]
+pub struct Sibs<Current, Next> {
+    curr: Current,
+    next: Next,
+}
+
+impl<Current, Next> Component for Sibs<Current, Next>
+where
+    Current: Component,
+    Next: Component,
+{
+    fn contents(self) {
+        show!(self.curr);
+        show!(self.next);
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NilChild;
+
+impl Component for NilChild {
+    fn contents(self) {}
 }

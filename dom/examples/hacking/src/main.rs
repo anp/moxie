@@ -10,10 +10,13 @@ struct HackedApp;
 impl Component for HackedApp {
     fn contents(self) {
         let (count, count_key) = state!((), |()| 0);
-
-        show!(text!("hello world from moxie! ({})", count));
-
-        show!(Button::new().on_click(count_key, |c, _| Some(c + 1)));
+        show_children![
+            text!("hello world from moxie! ({})", count),
+            Button::new()
+                .child(text!("increment"))
+                .on_click(count_key, |count, _event| Some(count + 1)),
+            vec![text!("first"), text!(" second"), text!(" third"),]
+        ];
     }
 }
 
