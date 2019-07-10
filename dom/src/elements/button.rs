@@ -1,7 +1,6 @@
 use crate::{
     elements::*,
     events::{EventTarget, Handlers},
-    *,
 };
 
 #[derive(Debug, Default)]

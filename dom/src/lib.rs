@@ -8,7 +8,6 @@ use {
     moxie::{self, *},
     std::{
         cell::RefCell,
-        fmt::Debug,
         rc::Rc,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -23,10 +22,7 @@ pub mod elements;
 pub mod events;
 
 #[topo::bound]
-pub fn mount(
-    new_parent: impl web::INode + 'static,
-    root: impl Component + Clone + Debug + PartialEq + 'static,
-) {
+pub fn mount(new_parent: impl web::INode + 'static, root: impl Component + Clone) {
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
         produce_without_attaching!(MountedNode(new_parent.as_node().to_owned()), || {
             show!(root.clone());

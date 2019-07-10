@@ -13,8 +13,8 @@ impl Component for HackedApp {
         show_children![
             text!("hello world from moxie! ({})", count),
             Button::new()
-                .child(text!("increment"))
-                .on_click(count_key, |count, _event| Some(count + 1)),
+                .on_click(count_key, |count, _event| Some(count + 1))
+                .child(text!("increment")),
             vec![text!("first"), text!(" second"), text!(" third"),]
         ];
     }
@@ -26,9 +26,6 @@ fn main() {
         error!("{:#?}", info);
     }));
 
-    let root = web::document().create_element("div").unwrap();
-    web::document().body().unwrap().append_child(&root);
-
     info!("mounting moxie-dom to root");
-    moxie_dom::mount!(root, HackedApp);
+    mount!(web::document().body().unwrap(), HackedApp);
 }
