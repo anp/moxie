@@ -83,24 +83,24 @@ macro_rules! show_children {
 }
 
 pub trait Parent<Next: Component>: Component {
-    // TODO can we express these automatically in terms of the Self<T> -> Self<Sibs<T, Next>> xform?
+    // TODO can we express these automatically in terms of the Self<T> -> Self<SibList<T, Next>> xform?
     type Output: Component;
     type Child: Component;
 
     fn child(self, next: Next) -> Self::Output;
 }
 
-pub fn sib_cons<Current, Next>(curr: Current, next: Next) -> Sibs<Current, Next> {
-    Sibs { curr, next }
+pub fn sib_cons<Current, Next>(curr: Current, next: Next) -> SibList<Current, Next> {
+    SibList { curr, next }
 }
 
 #[derive(Debug)]
-pub struct Sibs<Current, Next> {
+pub struct SibList<Current, Next> {
     curr: Current,
     next: Next,
 }
 
-impl<Current, Next> Component for Sibs<Current, Next>
+impl<Current, Next> Component for SibList<Current, Next>
 where
     Current: Component,
     Next: Component,
@@ -112,8 +112,8 @@ where
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct NilChild;
+pub struct Empty;
 
-impl Component for NilChild {
+impl Component for Empty {
     fn contents(self) {}
 }

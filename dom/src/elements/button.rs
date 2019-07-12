@@ -4,7 +4,7 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct Button<C = NilChild> {
+pub struct Button<C = Empty> {
     ty: ButtonType,
     events: Handlers,
     children: C,
@@ -17,7 +17,7 @@ impl Button {
 }
 
 impl<C: Component, Next: Component> Parent<Next> for Button<C> {
-    type Output = Button<Sibs<C, Next>>;
+    type Output = Button<SibList<C, Next>>;
     type Child = C;
 
     fn child(self, next: Next) -> Self::Output {
