@@ -179,6 +179,14 @@ where
     (commit, key)
 }
 
+#[bound]
+pub fn default_state<Output>() -> (Commit<Output>, Key<Output>)
+where
+    Output: Default + 'static,
+{
+    state!((), |()| Default::default())
+}
+
 /// A read-only pointer to the value of a state variable *at a particular revision*.
 ///
 /// Reads through a commit are not guaranteed to be the latest value visible to the runloop. Commits
@@ -257,5 +265,19 @@ where
     /// still live.
     pub fn set(&self, new: State) -> Option<Revision> {
         self.update(|prev| if prev == &new { None } else { Some(new) })
+    }
+}
+
+impl<State> Clone for Key<State> {
+    fn clone(&self) -> Self {
+        Self {
+            weak_var: self.weak_var.clone(),
+        }
+    }
+}
+
+impl<State> Debug for Key<State> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        unimplemented!()
     }
 }

@@ -17,6 +17,7 @@ topo = { path = "topo", version = "0.8" }
 members = [
     "dom",
     "dom/examples/hacking",
+    "dom/examples/todo",
     "topo",
     "topo/macro",
 ]

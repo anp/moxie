@@ -23,18 +23,21 @@ test
     --package topo-macro
 """
 
-watch-core = """
+core-flow = """
 watch --clear
     -x fmt
     -x check-core
     -x check-dom-lib
     -x check-dom-hacking
+    -x check-dom-todo
     -x docs-all
     -x test-core
 """
 
 check-dom-lib = "web check --package moxie-dom"
 check-dom-hacking = "web check --package dom-hacking"
+check-dom-todo = "web check --package todomvc-moxie"
 
 test-dom = "web test --package moxie-dom"
 watch-dom-hacking = "web start --package dom-hacking"
+watch-dom-todo = "web start --package todomvc-moxie"

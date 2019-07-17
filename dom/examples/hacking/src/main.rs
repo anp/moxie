@@ -10,7 +10,7 @@ struct HackedApp;
 impl Component for HackedApp {
     fn contents(self) {
         let (count, count_key) = state!((), |()| 0);
-        show_children![
+        show_many![
             text!("hello world from moxie! ({})", count),
             Button::new()
                 .on_click(count_key, |count, _event| Some(count + 1))

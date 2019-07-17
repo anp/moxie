@@ -76,7 +76,7 @@ pub fn show(component: impl Component) {
 }
 
 #[macro_export]
-macro_rules! show_children {
+macro_rules! show_many {
     ($($child:expr),+) => {
         $($crate::show!($child);)+
     };

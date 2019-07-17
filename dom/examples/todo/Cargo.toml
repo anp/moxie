@@ -1,0 +1,11 @@
+[package]
+name = "todomvc-moxie"
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0/MIT"
+
+[dependencies]
+moxie-dom = { path = "../../" }
+stdweb = "0.4.16"
+tracing = { version = "0.1", features = ["log"] }
+web_logger = "0.1"
