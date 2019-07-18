@@ -14,6 +14,8 @@ check --all-targets
     --package topo-macro
 """
 
+check-tools = "check --all-targets --package moxie-tools"
+
 docs-all = "doc --all"
 
 test-core = """
@@ -26,6 +28,7 @@ test
 core-flow = """
 watch --clear
     -x fmt
+    -x check-tools
     -x check-core
     -x check-dom-lib
     -x check-dom-hacking

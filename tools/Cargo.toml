@@ -1,0 +1,9 @@
+[package]
+name = "moxie-tools"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+wasm-pack = "0.8"
