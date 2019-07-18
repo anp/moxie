@@ -7,7 +7,10 @@ pub use button::*;
 
 #[macro_export]
 macro_rules! text {
-    ($($arg:tt)*) => {
+    ($arg:expr) => {
+        $crate::elements::Text($arg.into())
+    };
+    ($($arg:tt)+) => {
         $crate::elements::Text(format!( $($arg)* ))
     };
 }

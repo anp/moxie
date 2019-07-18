@@ -142,8 +142,9 @@ impl<State> Var<State> {
 
 /// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
 /// a unique [`Key`] which can be used to commit new values to the variable.
+#[doc(hidden)]
 #[bound]
-pub fn state<Arg, Init, Output>(arg: Arg, initializer: Init) -> (Commit<Output>, Key<Output>)
+pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> (Commit<Output>, Key<Output>)
 where
     Arg: PartialEq + 'static,
     Output: 'static,
@@ -151,7 +152,7 @@ where
 {
     let current_revision = Revision::current();
 
-    let root: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
+    let var: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
         trace!("init var");
         let waker = topo::Env::expect::<RunLoopWaker>().to_owned();
         let var = Var {
@@ -170,21 +171,22 @@ where
         Arc::new(Mutex::new(var))
     });
 
-    let commit = root.lock().root();
+    let commit = var.lock().root();
 
-    let key = Key {
-        weak_var: Arc::downgrade(&root),
-    };
-
-    (commit, key)
+    (commit, Key { var })
 }
 
-#[bound]
-pub fn default_state<Output>() -> (Commit<Output>, Key<Output>)
-where
-    Output: Default + 'static,
-{
-    state!((), |()| Default::default())
+#[macro_export]
+macro_rules! state {
+    ($arg:expr, $init:expr) => {
+        $crate::make_state!($arg, $init)
+    };
+    (|| $init:expr) => {
+        $crate::make_state!((), |()| $init)
+    };
+    () => {
+        $crate::make_state!((), |()| Default::default())
+    };
 }
 
 /// A read-only pointer to the value of a state variable *at a particular revision*.
@@ -229,14 +231,13 @@ where
 /// to prevent cycles, which means that all operations called against them are fallible -- we cannot
 /// know before calling a method that the state variable is still live.
 pub struct Key<State> {
-    weak_var: Weak<Mutex<Var<State>>>,
+    var: Arc<Mutex<Var<State>>>,
 }
 
 impl<State> Key<State> {
     /// Returns the current commit of the state variable if it is live.
-    pub fn read(&self) -> Option<Commit<State>> {
-        trace!("read var");
-        self.weak_var.upgrade().map(|var| var.lock().peek())
+    pub fn read(&self) -> Commit<State> {
+        self.var.lock().peek()
     }
 
     /// Enqueues a new commit to the state variable if it is still live. Accepts an `updater` to
@@ -246,14 +247,7 @@ impl<State> Key<State> {
     /// Returns the [`Revision`] at which the state variable was last rooted if the variable is
     /// live, otherwise returns `None`.
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
-        if let Some(var) = self.weak_var.upgrade() {
-            let mut var = var.lock();
-            trace!("perform update");
-            var.enqueue_commit(updater)
-        } else {
-            warn!("ignored dead store");
-            None
-        }
+        self.var.lock().enqueue_commit(updater)
     }
 }
 
@@ -271,13 +265,22 @@ where
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
         Self {
-            weak_var: self.weak_var.clone(),
+            var: self.var.clone(),
         }
     }
 }
 
-impl<State> Debug for Key<State> {
+impl<State> Debug for Key<State>
+where
+    State: Debug,
+{
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        unimplemented!()
+        self.var.lock().peek().fmt(f)
+    }
+}
+
+impl<State> PartialEq for Key<State> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.var, &other.var)
     }
 }
