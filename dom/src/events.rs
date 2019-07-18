@@ -6,10 +6,11 @@ use {
 pub trait EventTarget: Sized {
     fn handlers(&mut self) -> &mut Handlers;
 
-    fn on_click<State, Updater>(mut self, key: Key<State>, updater: Updater) -> Self
+    fn on<Event, State, Updater>(mut self, key: Key<State>, updater: Updater) -> Self
     where
+        Event: 'static + web::event::ConcreteEvent,
         State: 'static,
-        Updater: 'static + FnMut(&State, web::event::ClickEvent) -> Option<State>,
+        Updater: 'static + FnMut(&State, Event) -> Option<State>,
     {
         self.handlers().add_listener(key, updater);
         self

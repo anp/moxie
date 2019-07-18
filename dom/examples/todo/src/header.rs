@@ -1,8 +1,6 @@
 use {
     super::*,
     moxie_dom::{elements::*, events::*, *},
-    stdweb::{traits::*, *},
-    tracing::*,
 };
 
 #[derive(Clone, Debug, PartialEq)]

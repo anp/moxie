@@ -1,6 +1,6 @@
 use {
     moxie_dom::{elements::*, events::*, *},
-    stdweb::{traits::*, *},
+    stdweb::web::{document, event::ClickEvent},
     tracing::*,
 };
 
@@ -10,10 +10,10 @@ struct HackedApp;
 impl Component for HackedApp {
     fn contents(self) {
         let (count, count_key) = state!(|| 0);
-        show_many![
+        show![
             text!("hello world from moxie! ({})", count),
             Button::new()
-                .on_click(count_key, |count, _event| Some(count + 1))
+                .on(count_key, |count, event: ClickEvent| Some(count + 1))
                 .child(text!("increment")),
             vec![text!("first"), text!(" second"), text!(" third"),]
         ];
@@ -27,5 +27,5 @@ fn main() {
     }));
 
     info!("mounting moxie-dom to root");
-    mount!(web::document().body().unwrap(), HackedApp);
+    mount!(document().body().unwrap(), HackedApp);
 }

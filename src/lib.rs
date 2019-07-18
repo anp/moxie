@@ -56,8 +56,9 @@ where
     }
 }
 
+#[doc(hidden)]
 #[topo::bound]
-pub fn show(component: impl Component) {
+pub fn show_one(component: impl Component) {
     let show_span = once!(|| trace_span!("show component"));
     let state_revision = once!(|| RevisionChain::new());
 
@@ -76,9 +77,9 @@ pub fn show(component: impl Component) {
 }
 
 #[macro_export]
-macro_rules! show_many {
+macro_rules! show {
     ($($child:expr),+) => {
-        $($crate::show!($child);)+
+        $(show_one!($child);)+
     };
 }
 

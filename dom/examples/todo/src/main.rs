@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use {
     header::*,
     moxie_dom::{elements::*, events::*, *},
@@ -7,6 +8,18 @@ use {
 };
 
 pub mod header;
+
+#[derive(Clone, Debug, PartialEq)]
+struct TodoApp;
+
+impl Component for TodoApp {
+    fn contents(self) {
+        let (_visibility, _visibility_key) = state!(|| Visibility::default());
+        let (_todos, todos_key) = state!(|| vec![Todo::new("whoaaa")]);
+
+        show!(Header::new(todos_key), MainSection);
+    }
+}
 
 #[derive(Debug)]
 pub struct Todo {
@@ -31,18 +44,6 @@ fn next_id() -> u32 {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct TodoApp;
-
-impl Component for TodoApp {
-    fn contents(self) {
-        let (visibility, visibility_key) = state!(|| Visibility::default());
-        let (todos, todos_key): (Commit<Vec<Todo>>, _) = state!((), |()| vec![Todo::new("whoaaa")]);
-
-        show_many!(Header::new(todos_key.clone()), MainSection);
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
 struct MainSection;
 
 impl Component for MainSection {
@@ -58,8 +59,6 @@ impl Default for Visibility {
         Visibility::All
     }
 }
-
-struct TodoTextInput {}
 
 fn main() {
     web_logger::init();
