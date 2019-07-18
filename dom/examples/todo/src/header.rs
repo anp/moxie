@@ -1,4 +1,5 @@
 use {
+    super::*,
     moxie_dom::{elements::*, events::*, *},
     stdweb::{traits::*, *},
     tracing::*,
@@ -10,7 +11,7 @@ pub struct Header {
 }
 
 impl Header {
-    fn new(todos: Key<Vec<Todo>>) -> Self {
+    pub fn new(todos: Key<Vec<Todo>>) -> Self {
         Self { todos }
     }
 }

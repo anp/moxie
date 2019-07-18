@@ -1,12 +1,15 @@
 use {
+    header::*,
     moxie_dom::{elements::*, events::*, *},
+    std::sync::atomic::{AtomicU32, Ordering},
     stdweb::{traits::*, *},
     tracing::*,
 };
 
 pub mod header;
 
-struct Todo {
+#[derive(Debug)]
+pub struct Todo {
     id: u32,
     text: String,
     completed: bool,
@@ -23,7 +26,8 @@ impl Todo {
 }
 
 fn next_id() -> u32 {
-    unimplemented!()
+    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+    NEXT_ID.fetch_add(1, Ordering::SeqCst)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,7 +35,7 @@ struct TodoApp;
 
 impl Component for TodoApp {
     fn contents(self) {
-        let (visibility, visibility_key): (Commit<Visibility>, _) = default_state!();
+        let (visibility, visibility_key) = state!(|| Visibility::default());
         let (todos, todos_key): (Commit<Vec<Todo>>, _) = state!((), |()| vec![Todo::new("whoaaa")]);
 
         show_many!(Header::new(todos_key.clone()), MainSection);
