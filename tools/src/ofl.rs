@@ -4,7 +4,7 @@ use {failure::Error, gumdrop::Options, tracing::*};
 
 mod serve;
 
-#[runtime::main]
+#[runtime::main(runtime_tokio::Tokio)]
 async fn main() -> Result<(), Error> {
     simple_logger::init_with_level(log::Level::Info).unwrap();
     let args = Args::parse_args_default_or_exit();
