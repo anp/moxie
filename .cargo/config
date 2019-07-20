@@ -1,5 +1,7 @@
 [alias]
 
+ofl = "run --package ofl --"
+
 bench-core = """
 bench
     --package moxie
@@ -14,7 +16,7 @@ check --all-targets
     --package topo-macro
 """
 
-check-tools = "check --all-targets --package moxie-tools"
+check-tools = "check --all-targets --package ofl"
 
 docs-all = "doc --all"
 
@@ -24,6 +26,7 @@ test
     --package topo
     --package topo-macro
 """
+test-tools = "test --all-targets --package ofl"
 
 core-flow = """
 watch --clear
@@ -35,6 +38,7 @@ watch --clear
     -x check-dom-todo
     -x docs-all
     -x test-core
+    -x test-tools
 """
 
 check-dom-lib = "web check --package moxie-dom"
