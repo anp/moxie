@@ -19,19 +19,17 @@ This is a placeholder for if/when the project is ready to onboard more contribut
 From the project root, this command will run the default development loop:
 
 ```shell
-$ cargo watch-core
+$ cargo core-flow
 ```
 
 See [its definition](./.cargo/config) for details.
+
+#### dom examples
+
+
 
 #### Releases
 
 ##### topo
 
 `topo` and `topo-macro` must be released in sync.
-
-### moxie-dom dev env
-
-For examples:
-
-* [cargo-web](https://crates.io/crates/cargo-web)

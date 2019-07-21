@@ -1,7 +1,5 @@
 [alias]
 
-ofl = "run --package ofl --"
-
 bench-core = """
 bench
     --package moxie
@@ -16,8 +14,6 @@ check --all-targets
     --package topo-macro
 """
 
-check-tools = "check --all-targets --package ofl"
-
 docs-all = "doc --all"
 
 test-core = """
@@ -26,25 +22,19 @@ test
     --package topo
     --package topo-macro
 """
-test-tools = "test --all-targets --package ofl"
 
 core-flow = """
 watch --clear
     -x fmt
-    -x check-tools
     -x check-core
     -x check-dom-lib
-    -x check-dom-hacking
     -x check-dom-todo
     -x docs-all
     -x test-core
-    -x test-tools
 """
 
-check-dom-lib = "web check --package moxie-dom"
-check-dom-hacking = "web check --package dom-hacking"
-check-dom-todo = "web check --package todomvc-moxie"
+check-dom-lib = "check --package moxie-dom --target wasm32-unknown-unknown"
+check-dom-hacking = "check --package dom-hacking --target wasm32-unknown-unknown"
+check-dom-todo = "check --package todomvc-moxie --target wasm32-unknown-unknown"
 
-test-dom = "web test --package moxie-dom"
 watch-dom-hacking = "web start --package dom-hacking"
-watch-dom-todo = "web start --package todomvc-moxie"
