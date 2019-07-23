@@ -2,6 +2,7 @@ use {
     moxie_dom::{elements::*, events::*, *},
     stdweb::web::{document, event::ClickEvent},
     tracing::*,
+    wasm_bindgen::prelude::*,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,8 +21,9 @@ impl Component for HackedApp {
     }
 }
 
-fn main() {
-    web_logger::init();
+#[wasm_bindgen(start)]
+pub fn main() {
+    console_log::init();
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));
