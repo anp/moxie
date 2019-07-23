@@ -4,11 +4,7 @@
 
 `moxie` (<small>/ˈmäksē/</small>) is a lightweight platform-agnostic UI runtime written in Rust, powering a strongly-typed declarative programming style with minimal interaction latency.
 
-The runtime itself doesn't have a "native" platform, and a `moxie::runloop` instance is a `Future` which owns the UI state and can be polled in-place or spawned onto an executor as defined by the application. Instances of the runtime are (TODO) independent of one another, and resource consumption is the only limit on concurrent execution of multiple runloops. This aligns with the project's goal to both empower Rust users to integrate existing frameworks into a top-level Rust app *and* to allow Rust-implemented UI components to be used across many language and application environments.
-
-TODO write a book about what all this means? and put at least one code example here.
-
-`moxie` is principally inspired by [React][react] and more specifically the recent [Hooks API][hooks]. It aims to smoothly bridge the gap between stateless tools like [dear imgui][dear] and "traditional" UI paradigms with manually managed graphs of stateful, mutable objects. There are many interesting parallels in our design to those of recently announced UI frameworks [Jetpack Compose][compose] and [SwiftUI][swiftui], although a more in-depth comparison hasn't yet been written. Also, in the course of looking for prior art (_ahem_ googling "memoized imgui"), I found a very interesting [thread on LtU](http://lambda-the-ultimate.org/node/4561) discussing various commenters' efforts and curiosities -- it's a fun read.
+`moxie` is principally inspired by [React][react] and more specifically the recent [Hooks API][hooks]. It aims to smoothly bridge the gap between stateless tools like [dear imgui][dear] and "traditional" UI paradigms with manually managed graphs of stateful, mutable objects. There are many interesting parallels in our design to those of recently announced UI frameworks [Jetpack Compose][compose] and [SwiftUI][swiftui], although a more in-depth comparison hasn't yet been made. Also, in the course of looking for prior art (_ahem_ googling "memoized imgui"), I found a very interesting [thread on LtU](http://lambda-the-ultimate.org/node/4561) discussing various commenters' efforts and curiosities -- it's a fun read.
 
 [react]: https://reactjs.org
 [hooks]: https://reactjs.org/docs/hooks-intro.html
