@@ -19,11 +19,14 @@
 #![feature(async_await)]
 
 use {
-    futures::{compat::Future01CompatExt, TryFutureExt},
+    futures::{
+        compat::{Compat, Future01CompatExt},
+        TryFutureExt,
+    },
     gumdrop::Options,
     http::Request,
     hyper::Body,
-    hyper_staticfile::{Static, StaticFuture},
+    hyper_staticfile::Static,
     std::io::Error,
     std::{net::IpAddr, path::Path},
     tracing::*,
@@ -73,13 +76,36 @@ impl MainService {
     }
 }
 
+type ResponseResult = Result<http::Response<Body>, Error>;
+type ResponseFuture = futures::future::BoxFuture<'static, ResponseResult>;
+
 impl hyper::service::Service for MainService {
     type ReqBody = Body;
     type ResBody = Body;
     type Error = Error;
-    type Future = StaticFuture<Body>;
+    type Future = Compat<ResponseFuture>;
 
-    fn call(&mut self, req: Request<Body>) -> Self::Future {
-        self.static_.serve(req)
+    fn call(&mut self, request: Request<Body>) -> Self::Future {
+        let (metadata, body) = request.into_parts();
+        let request_str = format!("{:?}", &metadata);
+        let request = Request::from_parts(metadata, body);
+        let fut = self.static_.serve(request);
+        let boxed: ResponseFuture = Box::pin(async {
+            let request_str = request_str;
+            let res = fut.compat().await;
+
+            if let Ok(response) = &res {
+                let status = response.status();
+                if status.is_server_error() {
+                    error!("server error: {:?} -> {:?}", request_str, &response);
+                } else if status.is_client_error() {
+                    info!("client error: {:?} -> {:?}", request_str, &response);
+                }
+            }
+
+            res
+        });
+
+        boxed.compat()
     }
 }
