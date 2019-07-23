@@ -5,6 +5,7 @@ use {
     std::sync::atomic::{AtomicU32, Ordering},
     stdweb::{traits::*, *},
     tracing::*,
+    wasm_bindgen::prelude::*,
 };
 
 pub mod header;
@@ -60,8 +61,9 @@ impl Default for Visibility {
     }
 }
 
-fn main() {
-    web_logger::init();
+#[wasm_bindgen(start)]
+pub fn main() {
+    console_log::init_with_level(log::Level::Debug);
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));
