@@ -11,6 +11,7 @@ This is a placeholder for if/when the project is ready to onboard more contribut
 * [rustup](https://rustup.rs)
   * `rustup component add clippy rustfmt`
 * [cargo-watch](https://crates.io/crates/cargo-watch)
+* [cargo-script](https://crates.io/crates/cargo-script)
 
 ### Workflows
 
@@ -26,7 +27,7 @@ See [its definition](./.cargo/config) for details.
 
 #### dom examples
 
-
+The moxie-dom examples are compiled as part of `core-flow`, and you can serve them locally with `cargo serve`. This will start a local HTTP server providing access to the project directory.
 
 #### Releases
 

@@ -26,15 +26,22 @@ test
 core-flow = """
 watch --clear
     -x fmt
+    -x fmt-scripts
     -x check-core
-    -x check-dom-lib
-    -x check-dom-todo
-    -x docs-all
     -x test-core
+    -x check-dom-lib
+    -x build-dom-hacking
+    -x build-dom-todo
+    -x docs-all
 """
 
-check-dom-lib = "check --package moxie-dom --target wasm32-unknown-unknown"
-check-dom-hacking = "check --package dom-hacking --target wasm32-unknown-unknown"
-check-dom-todo = "check --package todomvc-moxie --target wasm32-unknown-unknown"
+check-dom-lib = "check --target wasm32-unknown-unknown --package moxie-dom"
 
-watch-dom-hacking = "web start --package dom-hacking"
+fmt-scripts = "fmt -- scripts/serve.rs"
+
+serve_once = "script scripts/serve.rs --"
+serve = "watch -w scripts -x serve_once"
+
+wa-pack = "script scripts/wasm-pack.rs --"
+build-dom-hacking = "wa-pack build dom/examples/hacking --target web --out-name index"
+build-dom-todo = "wa-pack build dom/examples/todo --target web --out-name index"

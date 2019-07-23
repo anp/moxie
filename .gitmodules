@@ -1,3 +1,0 @@
-[submodule "vendor/hyper-staticfile"]
-	path = vendor/hyper-staticfile
-	url = https://github.com/stephank/hyper-staticfile.git

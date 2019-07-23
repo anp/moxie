@@ -5,3 +5,4 @@ Cargo.lock
 .vscode/
 node_modules/
 .idea/
+pkg/
