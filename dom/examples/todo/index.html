@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>TodoMVC (moxie)</title>
     <meta charset="utf-8" />
@@ -7,13 +8,32 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1" name="viewport" />
     <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
     <script type="module">
         import init from './pkg/index.js';
+
+        function listenToChangeEvents() {
+            let changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
+            // TODO retry in a backoff loop?
+            changes.onopen = () => console.log('livereload socket connected');
+            changes.onclose = () => {
+                console.log('livereload socket closed, scheduling reconnect');
+                setTimeout(listenToChangeEvents, 3000);
+            };
+            changes.onerror = ({ data: error }) => { 
+                console.error('livereload error', error); 
+                changes.close(); 
+            };
+            changes.message = () => location.reload();
+        }
+
         async function run() {
             await init();
+            listenToChangeEvents();
         }
         run();
     </script>
 </body>
+
 </html>

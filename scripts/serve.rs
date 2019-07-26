@@ -5,31 +5,30 @@
 //! edition = "2018"
 //!
 //! [dependencies]
+//! actix = "0.8"
+//! actix-files = "0.1"
+//! actix-service = "0.4"
+//! actix-web = "1"
+//! actix-web-actors = "1"
 //! futures-preview = { version = "0.3.0-alpha.17", features = [ "async-await", "compat", "nightly" ] }
 //! gumdrop = "0.6"
-//! http = "0.1"
-//! hyper = "0.12"
-//! hyper-staticfile = "0.3"
-//! mime_guess = "1.8"
+//! parking_lot = "0.9"
 //! pretty_env_logger = "0.3"
-//! runtime = "0.3.0-alpha.6"
-//! runtime-tokio = "0.3.0-alpha.5"
-//! sfz = "*"
 //! tracing = { version = "0.1", features = [ "log" ] }
 //! ```
 #![feature(async_await)]
 
 use {
-    futures::{
-        compat::{Compat, Future01CompatExt},
-        TryFutureExt,
-    },
+    actix::prelude::*,
+    actix_service::ServiceExt,
+    actix_web::{middleware, web, App, HttpServer},
+    actix_web_actors::ws,
     gumdrop::Options,
-    http::Request,
-    hyper::Body,
-    hyper_staticfile::Static,
-    std::io::Error,
-    std::{net::IpAddr, path::Path},
+    std::{
+        net::IpAddr,
+        path::{Path, PathBuf},
+        time::{Duration, Instant},
+    },
     tracing::*,
 };
 
@@ -42,8 +41,7 @@ struct Config {
     port: u16,
 }
 
-#[runtime::main(runtime_tokio::Tokio)]
-async fn main() {
+fn main() {
     pretty_env_logger::formatted_timed_builder()
         .filter_level(log::LevelFilter::Warn)
         .filter_module(module_path!(), log::LevelFilter::Debug)
@@ -52,72 +50,77 @@ async fn main() {
 
     let scripts_path = std::env::var("CARGO_SCRIPT_BASE_PATH").unwrap();
     let root_path = Path::new(&scripts_path).parent().unwrap().to_path_buf();
-
     let config = Config::parse_args_default_or_exit();
 
-    let addr = (config.addr, config.port).into();
-    let make_service = hyper::service::make_service_fn(move |_| {
-        let svc = MainService::new(&root_path);
-        Box::pin(async { Ok::<_, hyper::Error>(svc) }).compat()
-    });
-    let server = hyper::Server::bind(&addr).serve(make_service);
-    info!("server running on http://{}/", addr);
-    server.compat().await.unwrap();
+    let change_socket = |req, stream: web::Payload| {
+        ws::start(
+            ChangeWatchSession {
+                last_heartbeat: Instant::now(),
+            },
+            &req,
+            stream,
+        )
+    };
+
+    HttpServer::new(move || {
+        App::new()
+            .wrap(middleware::Logger::default())
+            .service(web::resource("/ch-ch-ch-changes").route(web::get().to(change_socket)))
+            .service(actix_files::Files::new("/", &root_path).show_files_listing())
+    })
+    .bind((config.addr, config.port))
+    .unwrap()
+    .run()
+    .unwrap();
 }
 
-struct MainService {
-    static_: Static,
+struct ChangeWatchSession {
+    last_heartbeat: Instant,
 }
 
-impl MainService {
-    fn new(project_root: &Path) -> MainService {
-        MainService {
-            static_: Static::new(project_root),
+impl ChangeWatchSession {
+    fn tick_heartbeat(&mut self) {
+        self.last_heartbeat = Instant::now();
+    }
+}
+
+impl StreamHandler<ws::Message, ws::ProtocolError> for ChangeWatchSession {
+    fn handle(&mut self, msg: ws::Message, cx: &mut Self::Context) {
+        match msg {
+            ws::Message::Ping(msg) => {
+                self.tick_heartbeat();
+                cx.pong(&msg);
+            }
+            ws::Message::Pong(_) => {
+                self.tick_heartbeat();
+            }
+            ws::Message::Close(_) => {
+                cx.stop();
+            }
+            ws::Message::Nop => (),
+            ws::Message::Text(text) => {
+                self.tick_heartbeat();
+                debug!("ignoring text ws message {:?}", text);
+            }
+            ws::Message::Binary(_bin) => {
+                self.tick_heartbeat();
+                debug!("ignoring binary ws message");
+            }
         }
     }
 }
 
-type ResponseResult = Result<http::Response<Body>, Error>;
-type ResponseFuture = futures::future::BoxFuture<'static, ResponseResult>;
+impl Actor for ChangeWatchSession {
+    type Context = ws::WebsocketContext<Self>;
 
-impl hyper::service::Service for MainService {
-    type ReqBody = Body;
-    type ResBody = Body;
-    type Error = Error;
-    type Future = Compat<ResponseFuture>;
-
-    fn call(&mut self, request: Request<Body>) -> Self::Future {
-        // get a string repr...
-        let (metadata, body) = request.into_parts();
-        let request_str = format!("{:?}", &metadata);
-        let request = Request::from_parts(metadata, body);
-
-        let mime_type = mime_guess::guess_mime_type(request.uri().path()).to_string();
-        let fut = self.static_.serve(request);
-
-        let boxed: ResponseFuture = Box::pin(async {
-            let mime_type = mime_type;
-            let request_str = request_str;
-            let mut res = fut.compat().await;
-
-            if let Ok(ref mut response) = &mut res {
-                let status = response.status();
-                if status.is_server_error() {
-                    error!("server error: {:?} -> {:?}", request_str, &response);
-                } else if status.is_client_error() {
-                    info!("client error: {:?} -> {:?}", request_str, &response);
-                } else if status.is_success() {
-                    // set the mime type correctly
-                    let val = http::header::HeaderValue::from_str(&mime_type).unwrap();
-                    response
-                        .headers_mut()
-                        .insert(http::header::CONTENT_TYPE, val);
-                }
+    fn started(&mut self, cx: &mut Self::Context) {
+        cx.run_interval(Duration::from_secs(3), |session, cx| {
+            if Instant::now().duration_since(session.last_heartbeat) > Duration::from_secs(10) {
+                info!("ws change event client timed out, disconnecting");
+                cx.stop();
+                return;
             }
-
-            res
+            cx.ping("");
         });
-
-        boxed.compat()
     }
 }
