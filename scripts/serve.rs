@@ -22,18 +22,18 @@
 use {
     actix::prelude::*,
     actix_web::{
-        dev::{Service, Transform},
-        middleware, web, App, Error, HttpServer,
+        dev::{MessageBody, Service, ServiceRequest, ServiceResponse, Transform},
+        http::uri::Uri,
+        middleware, web, App, HttpServer,
     },
     actix_web_actors::ws,
     crossbeam::channel::{select, unbounded as chan, Receiver, Sender},
     futures::{compat::Compat, future::Ready, TryFutureExt},
-    futures01::Async,
+    futures01::{Async, Future as OldFuture},
     gumdrop::Options,
     notify::Watcher,
     std::{
-        collections::BTreeSet,
-        fmt::Debug,
+        collections::HashSet,
         net::IpAddr,
         path::{Path, PathBuf},
         sync::Arc,
@@ -61,17 +61,21 @@ fn main() {
     let scripts_path = std::env::var("CARGO_SCRIPT_BASE_PATH").unwrap();
     let root_path = Path::new(&scripts_path).parent().unwrap().to_path_buf();
     let config = Config::parse_args_default_or_exit();
-    let watcher = Arc::new(FilesWatcher::new(&root_path));
+    let (session_tx, session_rx) = chan();
+    let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
 
     HttpServer::new(move || {
+        let session_tx = session_tx.clone();
         let watcher_middleware = watcher.clone();
         App::new()
             .wrap(middleware::Logger::default())
             .service(web::resource("/ch-ch-ch-changes").route(web::get().to(
-                |req, stream: web::Payload| {
+                move |req, stream: web::Payload| {
+                    let session_tx = session_tx.clone();
                     ws::start(
                         ChangeWatchSession {
                             last_heartbeat: Instant::now(),
+                            session_tx,
                         },
                         &req,
                         stream,
@@ -87,82 +91,102 @@ fn main() {
     .unwrap();
 }
 
-struct FilesWatcher {
-    path: PathBuf,
-    paths_of_interest: BTreeSet<PathBuf>,
-    path_tx: Sender<PathBuf>,
-    event_rx: Receiver<Result<notify::event::Event, notify::Error>>,
-    sessions: Vec<actix::Addr<ChangeWatchSession>>,
-}
+fn pump_channels(
+    root: PathBuf,
+    (uri_rx, session_rx): (Receiver<Uri>, Receiver<Addr<ChangeWatchSession>>),
+) {
+    let (event_tx, event_rx) = chan();
+    let mut paths_of_interest = HashSet::new();
+    let mut sessions = Vec::new();
 
-impl FilesWatcher {
-    fn new(root_path: &Path) -> Self {
-        let (path_tx, path_rx) = chan();
-        let (event_tx, event_rx) = chan();
-        let remote_event_rx = event_rx.clone();
-        let root = root_path.to_owned();
-        std::thread::spawn(move || {
-            let mut watcher =
-                notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
-            watcher
-                .watch(root, notify::RecursiveMode::Recursive)
-                .unwrap();
-            let path_rx = path_rx;
-            let event_rx = remote_event_rx;
-            let mut paths_of_interest = BTreeSet::new();
-            loop {
-                select! {
-                    recv(event_rx) -> event => {
-                        let event = event.expect("filesystem events should be live");
-                        println!("not multiplexing events just yet");
-                    },
-                    recv(path_rx) -> new_path => {
-                        paths_of_interest.insert(new_path.expect("path events should be live"));
-                    },
+    let mut watcher = notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
+    watcher
+        .watch(&root, notify::RecursiveMode::Recursive)
+        .unwrap();
+
+    loop {
+        select! {
+            recv(uri_rx) -> new_uri => {
+                let mut new_path = root.clone();
+                let new_uri = new_uri.expect("path events should be live");
+
+                for part in new_uri.path().split("/") {
+                    new_path.push(part);
                 }
-            }
-        });
 
-        Self {
-            path: root_path.to_owned(),
-            event_rx,
-            path_tx,
-            paths_of_interest: Default::default(),
-            sessions: Default::default(),
+                let to_log = format!("watching {}", new_path.display());
+                if paths_of_interest.insert(new_path) {
+                    debug!("{}", to_log);
+                }
+            },
+            recv(session_rx) -> new_session => {
+                let new_session = new_session.expect("session events should be live");
+                sessions.push(new_session);
+                debug!("new change watch session");
+            },
+            recv(event_rx) -> event => {
+                let _event = event.expect("filesystem events should be live");
+            },
         }
     }
 }
 
-impl<S> Transform<S> for FilesWatcher
+struct FilesWatcher {
+    uri_tx: Sender<Uri>,
+}
+
+impl FilesWatcher {
+    fn new(root_path: &Path, session_rx: Receiver<Addr<ChangeWatchSession>>) -> Self {
+        let (uri_tx, uri_rx) = chan();
+        let root = root_path.to_owned();
+        std::thread::spawn(|| pump_channels(root, (uri_rx, session_rx)));
+
+        Self { uri_tx }
+    }
+}
+
+impl<S, B> Transform<S> for FilesWatcher
 where
-    S: Service,
-    S::Request: Debug,
+    B: MessageBody,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>>,
+    S::Future: 'static,
 {
-    type Request = S::Request;
-    type Response = S::Response;
+    type Request = ServiceRequest;
+    type Response = ServiceResponse<B>;
     type Error = S::Error;
     type Transform = WatchHandle<S>;
     type InitError = ();
     type Future = Compat<Ready<Result<Self::Transform, Self::InitError>>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        futures::future::ok(WatchHandle { service }).compat()
+        futures::future::ok(WatchHandle {
+            service,
+            uri_tx: self.uri_tx.clone(),
+        })
+        .compat()
     }
 }
 
 struct WatchHandle<S> {
     service: S,
+    uri_tx: Sender<Uri>,
 }
 
-impl<S> Service for WatchHandle<S>
+impl<S, B> Service for WatchHandle<S>
 where
-    S: Service,
-    S::Request: Debug,
+    B: MessageBody,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>>,
+    S::Future: 'static,
 {
-    type Request = S::Request;
-    type Response = S::Response;
+    type Request = ServiceRequest;
+    type Response = ServiceResponse<B>;
     type Error = S::Error;
-    type Future = S::Future;
+    type Future = Box<
+        dyn OldFuture<
+                Item = <<S as Service>::Future as OldFuture>::Item,
+                Error = <<S as Service>::Future as OldFuture>::Error,
+            > + 'static,
+    >;
 
     fn poll_ready(&mut self) -> Result<Async<()>, Self::Error> {
         Ok(Async::Ready(()))
@@ -170,13 +194,22 @@ where
 
     fn call(&mut self, req: Self::Request) -> Self::Future {
         // TODO inspect the request to see whether we want to add it to watch paths
-        debug!("watch handle serving request {:#?}", &req);
-        self.service.call(req)
+        let request_uri = req.uri().clone();
+        let uri_tx = self.uri_tx.clone();
+        let result = self.service.call(req);
+        let mapped = result.map(move |response| {
+            uri_tx
+                .send(request_uri)
+                .unwrap_or_else(|_| warn!("wasn't able to send a new uri to watch"));
+            response
+        });
+        Box::new(mapped)
     }
 }
 
 struct ChangeWatchSession {
     last_heartbeat: Instant,
+    session_tx: Sender<Addr<ChangeWatchSession>>,
 }
 
 impl ChangeWatchSession {
@@ -215,6 +248,7 @@ impl Actor for ChangeWatchSession {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, cx: &mut Self::Context) {
+        self.session_tx.send(cx.address()).unwrap();
         cx.run_interval(Duration::from_secs(3), |session, cx| {
             if Instant::now().duration_since(session.last_heartbeat) > Duration::from_secs(10) {
                 info!("ws change event client timed out, disconnecting");
