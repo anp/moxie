@@ -37,7 +37,7 @@ watch --clear
 
 check-dom-lib = "check --target wasm32-unknown-unknown --package moxie-dom"
 
-fmt-scripts = "fmt -- scripts/serve.rs"
+fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
 
 serve_once = "script scripts/serve.rs --"
 serve = "watch -w scripts -x serve_once"
