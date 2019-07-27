@@ -22,18 +22,15 @@
 use {
     actix::prelude::*,
     actix_web::{
-        dev::{Service, ServiceRequest, ServiceResponse, Transform},
+        dev::{Service, Transform},
         middleware, web, App, Error, HttpServer,
     },
     actix_web_actors::ws,
     crossbeam::channel::{select, unbounded as chan, Receiver, Sender},
-    futures::{
-        compat::Compat,
-        future::{BoxFuture, Ready},
-        TryFutureExt,
-    },
+    futures::{compat::Compat, future::Ready, TryFutureExt},
     futures01::Async,
     gumdrop::Options,
+    notify::Watcher,
     std::{
         collections::BTreeSet,
         fmt::Debug,
@@ -103,8 +100,13 @@ impl FilesWatcher {
         let (path_tx, path_rx) = chan();
         let (event_tx, event_rx) = chan();
         let remote_event_rx = event_rx.clone();
+        let root = root_path.to_owned();
         std::thread::spawn(move || {
-            let watcher = notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
+            let mut watcher =
+                notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
+            watcher
+                .watch(root, notify::RecursiveMode::Recursive)
+                .unwrap();
             let path_rx = path_rx;
             let event_rx = remote_event_rx;
             let mut paths_of_interest = BTreeSet::new();
