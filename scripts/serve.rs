@@ -10,11 +10,10 @@
 //! actix-web = "1"
 //! actix-web-actors = "1"
 //! crossbeam = "0.7"
-//! futures01 = { version = "0.1", package = "futures" }
 //! futures = { package = "futures-preview", version = "0.3.0-alpha.17", features = [ "async-await", "compat", "nightly" ] }
+//! futures01 = { version = "0.1", package = "futures" }
 //! gumdrop = "0.6"
 //! notify = "5.0.0-pre.1"
-//! parking_lot = "0.9"
 //! pretty_env_logger = "0.3"
 //! tracing = { version = "0.1", features = [ "log" ] }
 //! ```
@@ -27,16 +26,20 @@ use {
         middleware, web, App, Error, HttpServer,
     },
     actix_web_actors::ws,
-    futures::{compat::Compat, future::BoxFuture},
-    // crossbeam::channel::unbounded as chan,
+    crossbeam::channel::{select, unbounded as chan, Receiver, Sender},
+    futures::{
+        compat::Compat,
+        future::{BoxFuture, Ready},
+        TryFutureExt,
+    },
     futures01::Async,
     gumdrop::Options,
-    // notify::Watcher,
-    // parking_lot::Mutex,
     std::{
+        collections::BTreeSet,
+        fmt::Debug,
         net::IpAddr,
         path::{Path, PathBuf},
-        // sync::Arc,
+        sync::Arc,
         time::{Duration, Instant},
     },
     tracing::*,
@@ -61,8 +64,10 @@ fn main() {
     let scripts_path = std::env::var("CARGO_SCRIPT_BASE_PATH").unwrap();
     let root_path = Path::new(&scripts_path).parent().unwrap().to_path_buf();
     let config = Config::parse_args_default_or_exit();
+    let watcher = Arc::new(FilesWatcher::new(&root_path));
 
     HttpServer::new(move || {
+        let watcher_middleware = watcher.clone();
         App::new()
             .wrap(middleware::Logger::default())
             .service(web::resource("/ch-ch-ch-changes").route(web::get().to(
@@ -76,7 +81,7 @@ fn main() {
                     )
                 },
             )))
-            .wrap(FilesWatcher::new(&root_path))
+            .wrap(watcher_middleware)
             .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
     })
     .bind((config.addr, config.port))
@@ -87,76 +92,84 @@ fn main() {
 
 struct FilesWatcher {
     path: PathBuf,
-    paths_of_interest: Vec<PathBuf>,
-    watcher: notify::RecommendedWatcher,
+    paths_of_interest: BTreeSet<PathBuf>,
+    path_tx: Sender<PathBuf>,
+    event_rx: Receiver<Result<notify::event::Event, notify::Error>>,
     sessions: Vec<actix::Addr<ChangeWatchSession>>,
-    joiner: Option<()>,
 }
 
 impl FilesWatcher {
     fn new(root_path: &Path) -> Self {
-        unimplemented!()
+        let (path_tx, path_rx) = chan();
+        let (event_tx, event_rx) = chan();
+        let remote_event_rx = event_rx.clone();
+        std::thread::spawn(move || {
+            let watcher = notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
+            let path_rx = path_rx;
+            let event_rx = remote_event_rx;
+            let mut paths_of_interest = BTreeSet::new();
+            loop {
+                select! {
+                    recv(event_rx) -> event => {
+                        let event = event.expect("filesystem events should be live");
+                        println!("not multiplexing events just yet");
+                    },
+                    recv(path_rx) -> new_path => {
+                        paths_of_interest.insert(new_path.expect("path events should be live"));
+                    },
+                }
+            }
+        });
 
-        // let joiner = self.joiner.as_mut();
-
-        // if joiner.is_none() {
-        //     let (tx, _rx) = chan();
-
-        //     std::thread::spawn(|| {
-        //         let watcher = Arc::new(Mutex::new(
-        //             notify::watcher(tx, std::time::Duration::from_millis(500)).unwrap(),
-        //         ));
-        //         watcher
-        //             .lock()
-        //             .watch(root, notify::RecursiveMode::Recursive)
-        //             .unwrap();
-        //     });
-        // }
-
-        // self.joiner.as_ref().unwrap().0.clone()
+        Self {
+            path: root_path.to_owned(),
+            event_rx,
+            path_tx,
+            paths_of_interest: Default::default(),
+            sessions: Default::default(),
+        }
     }
 }
 
-impl<S> Transform<S> for FilesWatcher {
-    type Request = ServiceRequest;
-    type Response = ServiceResponse;
-    type Error = Error;
-    type Transform = WatchHandle;
+impl<S> Transform<S> for FilesWatcher
+where
+    S: Service,
+    S::Request: Debug,
+{
+    type Request = S::Request;
+    type Response = S::Response;
+    type Error = S::Error;
+    type Transform = WatchHandle<S>;
     type InitError = ();
-    type Future = Compat<BoxFuture<'static, Result<Self::Transform, Self::InitError>>>;
+    type Future = Compat<Ready<Result<Self::Transform, Self::InitError>>>;
+
     fn new_transform(&self, service: S) -> Self::Future {
-        unimplemented!()
+        futures::future::ok(WatchHandle { service }).compat()
     }
 }
 
-struct WatchHandle {
-    request: ServiceRequest,
+struct WatchHandle<S> {
+    service: S,
 }
 
-impl WatchHandle {
-    fn add_session(&self, session: Addr<ChangeWatchSession>) {
-        unimplemented!()
-    }
+impl<S> Service for WatchHandle<S>
+where
+    S: Service,
+    S::Request: Debug,
+{
+    type Request = S::Request;
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
 
-    fn watch_path(&self, path: PathBuf) {
-        unimplemented!()
-    }
-
-    fn start_watching(&self, request: &ServiceRequest) {
-        unimplemented!()
-    }
-}
-
-impl Service for WatchHandle {
-    type Request = ServiceRequest;
-    type Response = ServiceResponse;
-    type Error = Error;
-    type Future = Compat<BoxFuture<'static, Result<Self::Response, Self::Error>>>;
     fn poll_ready(&mut self) -> Result<Async<()>, Self::Error> {
-        unimplemented!()
+        Ok(Async::Ready(()))
     }
+
     fn call(&mut self, req: Self::Request) -> Self::Future {
-        unimplemented!()
+        // TODO inspect the request to see whether we want to add it to watch paths
+        debug!("watch handle serving request {:#?}", &req);
+        self.service.call(req)
     }
 }
 

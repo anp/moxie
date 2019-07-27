@@ -13,13 +13,16 @@
     <script type="module">
         import init from './pkg/index.js';
 
+        let timeoutExp = 6;
+        let changes = null;
         function listenToChangeEvents() {
-            let changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
-            // TODO retry in a backoff loop?
+            changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
             changes.onopen = () => console.log('livereload socket connected');
             changes.onclose = () => {
-                console.log('livereload socket closed, scheduling reconnect');
-                setTimeout(listenToChangeEvents, 3000);
+                let timeout = Math.pow(2, timeoutExp);
+                timeoutExp += 1;
+                console.log('livereload socket closed, scheduling reconnect in', timeout, 'ms');
+                setTimeout(listenToChangeEvents, timeout);
             };
             changes.onerror = ({ data: error }) => { 
                 console.error('livereload error', error); 
