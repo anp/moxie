@@ -1,6 +1,5 @@
 use {
     moxie_dom::{elements::*, events::*, *},
-    stdweb::web::{document, event::ClickEvent},
     tracing::*,
     wasm_bindgen::prelude::*,
 };

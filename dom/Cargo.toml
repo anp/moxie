@@ -11,5 +11,20 @@ derive_builder = "0.7"
 futures-preview = "0.3.0-alpha.17"
 moxie = { path = "../", version = "0.1" }
 scopeguard = "1"
-stdweb = "0.4.16"
 tracing = { version = "0.1.1", features = ["log"] }
+wasm-bindgen = "0.2.48"
+
+[dependencies.web-sys]
+version = "0.3.25"
+features = [
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlButtonElement",
+    "HtmlElement",
+    "MouseEvent",
+    "Node",
+    "Text",
+    "Window",
+]

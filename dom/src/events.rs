@@ -1,50 +1,51 @@
 use {
     crate::*,
-    std::fmt::{Debug, Formatter, Result as FmtResult},
+    std::{
+        fmt::{Debug, Formatter, Result as FmtResult},
+        ops::Deref,
+    },
+    web_sys::Event as DomEvent,
 };
 
-pub trait EventTarget: Sized {
-    fn handlers(&mut self) -> &mut Handlers;
+pub trait Target<Ev, State, Updater>
+where
+    Ev: Event,
+    Updater: 'static + FnMut(&State, Ev) -> Option<State>,
+{
+    type Output: Component;
 
-    fn on<Event, State, Updater>(mut self, key: Key<State>, updater: Updater) -> Self
-    where
-        Event: 'static + web::event::ConcreteEvent,
-        State: 'static,
-        Updater: 'static + FnMut(&State, Event) -> Option<State>,
-    {
-        self.handlers().add_listener(key, updater);
-        self
-    }
+    fn on(self, key: Key<State>, updater: Updater) -> Self::Output;
 }
 
-#[derive(Default)]
-pub struct Handlers {
-    inner: Vec<Box<dyn FnOnce(&web::EventTarget) + 'static>>,
+pub struct Handler<State, Updater> {
+    key: Key<State>,
+    updater: Updater,
 }
 
-impl Handlers {
-    fn add_listener<Event, State, Updater>(&mut self, key: Key<State>, mut updater: Updater)
-    where
-        Event: web::event::ConcreteEvent,
-        State: 'static,
-        Updater: 'static + FnMut(&State, Event) -> Option<State>,
-    {
-        self.inner.push(Box::new(move |target| {
-            target.add_event_listener(move |event: Event| {
-                key.update(|prev| updater(prev, event));
-            });
-        }));
-    }
-
-    pub(crate) fn apply(self, target: &web::EventTarget) {
-        for handler in self.inner {
-            handler(target);
-        }
-    }
-}
-
-impl Debug for Handlers {
+impl<State, Updater> Debug for Handler<State, Updater>
+where
+    State: Debug,
+{
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("Handlers").finish()
+        unimplemented!()
+    }
+}
+
+pub trait Event: Deref<Target = DomEvent> {
+    fn ty(&self) -> &'static str;
+}
+
+pub struct ClickEvent(web_sys::MouseEvent);
+
+impl Deref for ClickEvent {
+    type Target = DomEvent;
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+impl Event for ClickEvent {
+    fn ty(&self) -> &'static str {
+        "click"
     }
 }

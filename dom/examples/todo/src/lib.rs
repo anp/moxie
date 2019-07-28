@@ -3,7 +3,6 @@ use {
     header::*,
     moxie_dom::{elements::*, events::*, *},
     std::sync::atomic::{AtomicU32, Ordering},
-    stdweb::{traits::*, *},
     tracing::*,
     wasm_bindgen::prelude::*,
 };
@@ -67,5 +66,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));
-    mount!(web::document().body().unwrap(), TodoApp);
+    mount!(document().body().unwrap(), TodoApp);
 }

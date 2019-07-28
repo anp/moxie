@@ -1,12 +1,15 @@
-use crate::{
-    elements::*,
-    events::{EventTarget, Handlers},
+use {
+    crate::{
+        elements::*,
+        events::{Event, Handler, Target},
+    },
+    std::fmt::Debug,
 };
 
 #[derive(Debug, Default)]
-pub struct Button<C = Empty> {
+pub struct Button<C = Empty, H = Empty> {
     ty: ButtonType,
-    events: Handlers,
+    handlers: H,
     children: C,
 }
 
@@ -16,53 +19,66 @@ impl Button {
     }
 }
 
-impl<C: Component, Next: Component> Parent<Next> for Button<C> {
-    type Output = Button<SibList<C, Next>>;
-    type Child = C;
+impl<C, H, Next> Parent<Next> for Button<C, H>
+where
+    C: Component,
+    H: Debug + 'static,
+    Next: Component,
+{
+    type Output = Button<SibList<C, Next>, H>;
 
     fn child(self, next: Next) -> Self::Output {
         let Self {
             ty,
-            events,
+            handlers,
             children,
         } = self;
 
         Button {
             ty,
-            events,
+            handlers,
             children: sib_cons(children, next),
         }
     }
 }
 
-impl<C> EventTarget for Button<C> {
-    fn handlers(&mut self) -> &mut Handlers {
-        &mut self.events
+impl<C, H, Ev, State, Updater> Target<Ev, State, Updater> for Button<C, H>
+where
+    C: Component,
+    Ev: Event,
+    H: Debug + 'static,
+    State: Debug + 'static,
+    Updater: FnMut(&State, Ev) -> Option<State> + 'static,
+{
+    type Output = Button<C, SibList<H, Handler<State, Updater>>>;
+    fn on(self, key: Key<State>, updater: Updater) -> Self::Output {
+        unimplemented!()
     }
 }
 
-impl<C> Component for Button<C>
+impl<C, H> Component for Button<C, H>
 where
     C: Component,
+    H: Debug + 'static,
 {
     fn contents(self) {
         let Self {
             ty,
-            events,
+            handlers,
             children,
         } = self;
-        let button = web::document().create_element("button").unwrap();
+        let button = document().create_element("button").unwrap();
+        match ty {
+            ButtonType::Button => button.set_attribute("type", "button").unwrap(),
+            _ => unimplemented!(),
+        }
 
         produce_dom!(button.clone(), || {
             show!(children);
         });
 
-        events.apply(&button.as_node().clone().into());
-
-        match ty {
-            ButtonType::Button => button.set_attribute("type", "button").unwrap(),
-            _ => unimplemented!(),
-        }
+        // handlers.apply(&button);
+        unimplemented!()
     }
 }
 

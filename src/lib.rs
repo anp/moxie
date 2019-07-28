@@ -86,7 +86,6 @@ macro_rules! show {
 pub trait Parent<Next: Component>: Component {
     // TODO can we express these automatically in terms of the Self<T> -> Self<SibList<T, Next>> xform?
     type Output: Component;
-    type Child: Component;
 
     fn child(self, next: Next) -> Self::Output;
 }

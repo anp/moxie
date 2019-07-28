@@ -10,6 +10,5 @@ crate-type = [ "cdylib" ]
 [dependencies]
 console_log = "0.1.2"
 moxie-dom = { path = "../../" }
-stdweb = "0.4.16"
 tracing = { version = "0.1", features = [ "log" ] }
 wasm-bindgen = "0.2"

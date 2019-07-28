@@ -14,17 +14,29 @@ use {
             Arc,
         },
     },
-    stdweb::{traits::*, *},
     tracing::*,
+    wasm_bindgen::{prelude::*, JsCast},
+    web_sys::Node as DomNode,
 };
 
 pub mod elements;
 pub mod events;
 
+pub fn window() -> web_sys::Window {
+    web_sys::window().expect("must run from within a `window`")
+}
+
+pub fn document() -> web_sys::Document {
+    window()
+        .document()
+        .expect("must run from withing a `window` with a valid `document`")
+}
+
 #[topo::bound]
-pub fn mount(new_parent: impl web::INode + 'static, root: impl Component + Clone) {
+pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Clone) {
+    let new_parent = new_parent.into();
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
-        produce_without_attaching!(MountedNode(new_parent.as_node().to_owned()), || {
+        produce_without_attaching!(MountedNode(new_parent.clone()), || {
             show!(root.clone());
         });
     }));
@@ -45,13 +57,13 @@ pub fn mount(new_parent: impl web::INode + 'static, root: impl Component + Clone
 }
 
 #[topo::bound]
-pub fn produce_dom(node: impl web::INode, children: impl FnOnce()) {
-    produce!(MountedNode(node.as_node().to_owned()), children);
+pub fn produce_dom(node: impl Into<DomNode>, children: impl FnOnce()) {
+    produce!(MountedNode(node.into()), children);
 }
 
-struct MountedNode(web::Node);
+struct MountedNode(DomNode);
 
-struct UnmountDomNodeOnDrop(web::Node);
+struct UnmountDomNodeOnDrop(DomNode);
 
 impl Drop for UnmountDomNodeOnDrop {
     fn drop(&mut self) {
@@ -72,7 +84,7 @@ impl Node for MountedNode {
 
 struct WebRuntime {
     rt: Runtime<Box<dyn FnMut()>>,
-    handle: Option<web::RequestAnimationFrameHandle>,
+    handle: Option<(i32, Closure<dyn FnMut()>)>,
 }
 
 struct RuntimeWaker {
@@ -90,17 +102,20 @@ impl ArcWake for RuntimeWaker {
             trace!("wake web runtime, scheduling");
             let wrt = Rc::clone(&arc_self.wrt);
 
-            scheduled.store(true, Ordering::SeqCst);
-            let handle = web::window().request_animation_frame(move |_time| {
+            let closure = Closure::once(Box::new(move || {
                 let scheduled = &wrt.0;
                 let mut wrt = wrt.1.borrow_mut();
                 wrt.handle = None;
                 scopeguard::defer!(scheduled.store(false, Ordering::SeqCst));
 
                 wrt.rt.run_once();
-            });
+            }));
+            let handle = window()
+                .request_animation_frame(closure.as_ref().unchecked_ref())
+                .unwrap();
+            scheduled.store(true, Ordering::SeqCst);
 
-            arc_self.wrt.1.borrow_mut().handle = Some(handle);
+            arc_self.wrt.1.borrow_mut().handle = Some((handle, closure));
         } else {
             trace!("skipped scheduling web runtime")
         }
