@@ -16,7 +16,12 @@
         let timeoutExp = 6;
         let changes = null;
         function listenToChangeEvents() {
-            changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
+            try {
+                changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
+            } catch (e) {
+                changes.error(e);
+            }
+
             changes.onopen = () => console.log('livereload socket connected');
             changes.onclose = () => {
                 let timeout = Math.pow(2, timeoutExp);
@@ -28,7 +33,10 @@
                 console.error('livereload error', error); 
                 changes.close(); 
             };
-            changes.message = () => location.reload();
+            changes.onmessage = ({ data }) => { 
+                console.log(data);
+                location.reload(); 
+            };
         }
 
         async function run() {

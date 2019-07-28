@@ -114,9 +114,9 @@ fn pump_channels(
                     new_path.push(part);
                 }
 
-                let to_log = format!("watching {}", new_path.display());
-                if paths_of_interest.insert(new_path) {
-                    debug!("{}", to_log);
+                let displayed = format!("{}", new_path.display());
+                if paths_of_interest.insert(displayed.clone()) {
+                    debug!("watching {}", displayed);
                 }
             },
             recv(session_rx) -> new_session => {
@@ -125,10 +125,29 @@ fn pump_channels(
                 debug!("new change watch session");
             },
             recv(event_rx) -> event => {
-                let _event = event.expect("filesystem events should be live");
+                if let Ok(event) = event.expect("filesystem events should be live") {
+                    'this_event: for path in event.paths {
+                        let changed = path.display().to_string();
+
+                        if paths_of_interest.contains(&changed) {
+                            info!("file change detected at {}", changed);
+
+                            for session in &sessions {
+                                session.do_send(Changed(changed.clone()));
+                            }
+                            break 'this_event;
+                        }
+                    }
+                }
             },
         }
     }
+}
+
+struct Changed(String);
+
+impl Message for Changed {
+    type Result = ();
 }
 
 struct FilesWatcher {
@@ -215,6 +234,18 @@ struct ChangeWatchSession {
 impl ChangeWatchSession {
     fn tick_heartbeat(&mut self) {
         self.last_heartbeat = Instant::now();
+    }
+}
+
+impl Handler<Changed> for ChangeWatchSession {
+    type Result = ();
+    fn handle(
+        &mut self,
+        Changed(changed): Changed,
+        cx: &mut <Self as Actor>::Context,
+    ) -> Self::Result {
+        info!("notifying client of changed file");
+        cx.text(changed);
     }
 }
 
