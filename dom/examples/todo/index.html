@@ -7,16 +7,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1" name="viewport" />
     <link rel="stylesheet" href="index.css">
+    <script src="../../../scripts/reloadOnChanges.js"></script>
 </head>
 
 <body>
     <script type="module">
         import init from './pkg/index.js';
-        import listenToChangeEvents from '/scripts/reloadOnChanges.js';
-
         async function run() {
             await init();
-            listenToChangeEvents();
         }
         run();
     </script>

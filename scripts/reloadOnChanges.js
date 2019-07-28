@@ -1,6 +1,7 @@
 let timeoutExp = 6;
 let changes = null;
-export default function listenToChangeEvents() {
+
+function listenToChangeEvents() {
     try {
         changes = new WebSocket(`ws://${(location.host || "[::1]:8000")}/ch-ch-ch-changes`);
     } catch (e) {
@@ -23,3 +24,5 @@ export default function listenToChangeEvents() {
         location.reload();
     };
 }
+
+listenToChangeEvents();
