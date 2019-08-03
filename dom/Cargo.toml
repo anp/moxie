@@ -9,6 +9,7 @@ description = "TBA"
 [dependencies]
 derive_builder = "0.7"
 futures-preview = "0.3.0-alpha.17"
+js-sys = "0.3.25"
 moxie = { path = "../", version = "0.1" }
 scopeguard = "1"
 tracing = { version = "0.1.1", features = ["log"] }

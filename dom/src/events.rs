@@ -7,10 +7,31 @@ pub trait Event: AsRef<web_sys::Event> {
     const NAME: &'static str;
 }
 
+struct Callback {
+    cb: Closure<dyn FnMut()>,
+}
+
+impl Callback {
+    fn new<Ev, State, Updater>(key: Key<State>, updater: Updater) -> Self
+    where
+        Ev: Event,
+        Updater: FnMut(&State, Ev) -> Option<State>,
+    {
+        let cb = Closure::wrap(Box::new(move || {
+            debug!("callback called");
+        }) as Box<dyn FnMut()>);
+        Self { cb }
+    }
+
+    fn as_fn(&self) -> &js_sys::Function {
+        self.cb.as_ref().unchecked_ref()
+    }
+}
+
 #[must_use]
 pub struct EventHandle {
     target: web_sys::EventTarget,
-    callback: Closure<dyn FnMut()>,
+    callback: Callback,
     name: &'static str,
 }
 
@@ -22,14 +43,13 @@ impl EventHandle {
     ) -> Self
     where
         Ev: Event,
-        Updater: FnOnce(&State, Ev) -> Option<State>,
+        Updater: FnMut(&State, Ev) -> Option<State>,
     {
-        let callback =
-            Closure::wrap(Box::new(move || info!("callback called")) as Box<dyn FnMut()>);
+        let callback = Callback::new(key, updater);
         debug!("binding event listener");
         let name = Ev::NAME;
         target
-            .add_event_listener_with_callback(name, callback.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(name, callback.as_fn())
             .unwrap();
         Self {
             target,
@@ -43,7 +63,7 @@ impl Drop for EventHandle {
     fn drop(&mut self) {
         debug!("removing event listener");
         self.target
-            .remove_event_listener_with_callback(self.name, self.callback.as_ref().unchecked_ref())
+            .remove_event_listener_with_callback(self.name, self.callback.as_fn())
             .unwrap();
     }
 }
@@ -68,7 +88,7 @@ pub struct Handlers {
 }
 
 impl Handlers {
-    fn add_listener<Ev, State, Updater>(&mut self, key: Key<State>, mut updater: Updater)
+    fn add_listener<Ev, State, Updater>(&mut self, key: Key<State>, updater: Updater)
     where
         Ev: Event,
         State: 'static,
@@ -82,7 +102,7 @@ impl Handlers {
     pub(crate) fn apply(self, target: &web_sys::EventTarget) -> Vec<EventHandle> {
         self.inner
             .into_iter()
-            .map(|mut handler| handler(target))
+            .map(|handler| handler(target))
             .collect()
     }
 }
