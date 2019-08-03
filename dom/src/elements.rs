@@ -21,6 +21,6 @@ pub struct Text(pub String);
 impl Component for Text {
     fn contents(self) {
         let text_node = document().create_text_node(&self.0);
-        produce_dom!(text_node, || {});
+        produce_dom!(text_node, vec![], || {});
     }
 }

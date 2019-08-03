@@ -1,15 +1,15 @@
 use {
     crate::{
         elements::*,
-        events::{Event, Handler, Target},
+        events::{EventTarget, Handlers},
     },
     std::fmt::Debug,
 };
 
 #[derive(Debug, Default)]
-pub struct Button<C = Empty, H = Empty> {
+pub struct Button<C = Empty> {
     ty: ButtonType,
-    handlers: H,
+    handlers: Handlers,
     children: C,
 }
 
@@ -19,13 +19,21 @@ impl Button {
     }
 }
 
-impl<C, H, Next> Parent<Next> for Button<C, H>
+impl<C> EventTarget for Button<C>
 where
     C: Component,
-    H: Debug + 'static,
+{
+    fn handlers(&mut self) -> &mut Handlers {
+        &mut self.handlers
+    }
+}
+
+impl<C, Next> Parent<Next> for Button<C>
+where
+    C: Component,
     Next: Component,
 {
-    type Output = Button<SibList<C, Next>, H>;
+    type Output = Button<SibList<C, Next>>;
 
     fn child(self, next: Next) -> Self::Output {
         let Self {
@@ -42,24 +50,9 @@ where
     }
 }
 
-impl<C, H, Ev, State, Updater> Target<Ev, State, Updater> for Button<C, H>
+impl<C> Component for Button<C>
 where
     C: Component,
-    Ev: Event,
-    H: Debug + 'static,
-    State: Debug + 'static,
-    Updater: FnMut(&State, Ev) -> Option<State> + 'static,
-{
-    type Output = Button<C, SibList<H, Handler<State, Updater>>>;
-    fn on(self, key: Key<State>, updater: Updater) -> Self::Output {
-        unimplemented!()
-    }
-}
-
-impl<C, H> Component for Button<C, H>
-where
-    C: Component,
-    H: Debug + 'static,
 {
     fn contents(self) {
         let Self {
@@ -73,12 +66,9 @@ where
             _ => unimplemented!(),
         }
 
-        produce_dom!(button.clone(), || {
+        produce_dom!(button.clone(), handlers.apply(&button), || {
             show!(children);
         });
-
-        // handlers.apply(&button);
-        unimplemented!()
     }
 }
 

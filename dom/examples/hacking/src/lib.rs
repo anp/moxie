@@ -13,7 +13,7 @@ impl Component for HackedApp {
         show![
             text!("hello world from moxie! ({})", count),
             Button::new()
-                .on(count_key, |count, event: ClickEvent| Some(count + 1))
+                .on(count_key, |count, _: ClickEvent| Some(count + 1))
                 .child(text!("increment")),
             vec![text!("first"), text!(" second"), text!(" third"),]
         ];
@@ -22,7 +22,7 @@ impl Component for HackedApp {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    console_log::init();
+    console_log::init_with_level(log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));

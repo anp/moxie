@@ -62,7 +62,7 @@ impl Default for Visibility {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    console_log::init_with_level(log::Level::Debug);
+    console_log::init_with_level(log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));

@@ -36,7 +36,7 @@ pub fn document() -> web_sys::Document {
 pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Clone) {
     let new_parent = new_parent.into();
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
-        produce_without_attaching!(MountedNode(new_parent.clone()), || {
+        produce_without_attaching!(MountedNode(new_parent.clone(), vec![]), || {
             show!(root.clone());
         });
     }));
@@ -57,11 +57,15 @@ pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Cl
 }
 
 #[topo::bound]
-pub fn produce_dom(node: impl Into<DomNode>, children: impl FnOnce()) {
-    produce!(MountedNode(node.into()), children);
+pub fn produce_dom(
+    node: impl Into<DomNode>,
+    event_handles: Vec<events::EventHandle>,
+    children: impl FnOnce(),
+) {
+    produce!(MountedNode(node.into(), event_handles), children);
 }
 
-struct MountedNode(DomNode);
+struct MountedNode(DomNode, Vec<events::EventHandle>);
 
 struct UnmountDomNodeOnDrop(DomNode);
 
