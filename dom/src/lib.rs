@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 #[doc(hidden)]
 pub use moxie::*;
@@ -81,7 +81,7 @@ impl Drop for UnmountDomNodeOnDrop {
 impl Node for MountedNode {
     type MountHandle = UnmountDomNodeOnDrop;
     fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
-        self.0.append_child(&child_node.0);
+        self.0.append_child(&child_node.0).unwrap();
         UnmountDomNodeOnDrop(child_node.0.clone())
     }
 }

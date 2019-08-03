@@ -1,9 +1,6 @@
-use {
-    crate::{
-        elements::*,
-        events::{EventTarget, Handlers},
-    },
-    std::fmt::Debug,
+use crate::{
+    elements::*,
+    events::{EventTarget, Handlers},
 };
 
 #[derive(Debug, Default)]
