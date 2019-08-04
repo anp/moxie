@@ -14,7 +14,7 @@ check --all-targets
     --package topo-macro
 """
 
-docs-all = "doc --all"
+docs-all = "doc --all --no-deps"
 
 test-core = """
 test
