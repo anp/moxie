@@ -17,7 +17,10 @@ impl Component for TodoApp {
         let (_visibility, _visibility_key) = state!(|| Visibility::default());
         let (_todos, todos_key) = state!(|| vec![Todo::new("whoaaa")]);
 
-        show!(Header::new(todos_key), MainSection);
+        show!(element("div")
+            .attr("class", "todoapp")
+            .child(Header::new(todos_key))
+            .child(MainSection));
     }
 }
 

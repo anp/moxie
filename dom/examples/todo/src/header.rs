@@ -16,9 +16,8 @@ impl Header {
 
 impl Component for Header {
     fn contents(self) {
-        // show!(header().class_name("header").contains(sibs![
-        //     h1().contains(text!("todos")),
-        //     // TodoTextInput::new().on_save()
-        // ]))
+        show!(element("header")
+            .attr("class", "header")
+            .child(element("h1").child(text!("todos"))))
     }
 }
