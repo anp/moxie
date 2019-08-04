@@ -21,7 +21,6 @@ impl Callback {
         let cb = Closure::wrap(Box::new(move |ev: JsValue| {
             let ev: Ev = ev.dyn_into().unwrap();
             key.update(|prev| updater(prev, ev));
-            debug!("callback called");
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
@@ -50,7 +49,6 @@ impl EventHandle {
         Updater: FnMut(&State, Ev) -> Option<State> + 'static,
     {
         let callback = Callback::new(key, updater);
-        debug!("binding event listener");
         let name = Ev::NAME;
         target
             .add_event_listener_with_callback(name, callback.as_fn())
@@ -65,7 +63,6 @@ impl EventHandle {
 
 impl Drop for EventHandle {
     fn drop(&mut self) {
-        debug!("removing event listener");
         self.target
             .remove_event_listener_with_callback(self.name, self.callback.as_fn())
             .unwrap();
