@@ -39,16 +39,16 @@ pub struct Element<C = Empty> {
     children: C,
 }
 
-impl Element {
-    pub fn new(ty: &'static str) -> Self {
-        Self {
-            ty,
-            attrs: Default::default(),
-            handlers: Default::default(),
-            children: Empty,
-        }
+pub fn element(ty: &'static str) -> Element {
+    Element {
+        ty,
+        attrs: Default::default(),
+        handlers: Default::default(),
+        children: Empty,
     }
+}
 
+impl Element {
     pub fn attr(mut self, key: &'static str, value: impl ToString) -> Self {
         self.attrs.inner.insert(key, value.to_string());
         self

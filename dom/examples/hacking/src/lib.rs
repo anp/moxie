@@ -12,7 +12,7 @@ impl Component for HackedApp {
         let (count, count_key) = state!(|| 0);
         show![
             text!("hello world from moxie! ({})", count),
-            Element::new("button")
+            element("button")
                 .attr("type", "button")
                 .on(count_key, |count, _: ClickEvent| Some(count + 1))
                 .child(text!("increment")),
