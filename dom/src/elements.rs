@@ -1,4 +1,4 @@
-use crate::*;
+use {crate::*, std::collections::HashMap};
 
 mod button;
 
@@ -23,4 +23,9 @@ impl Component for Text {
         let text_node = memo!(self.0, |text| document().create_text_node(text));
         produce_dom!(text_node, vec![], || {});
     }
+}
+
+#[derive(Debug, Default)]
+struct Attrs {
+    inner: HashMap<&'static str, String>,
 }

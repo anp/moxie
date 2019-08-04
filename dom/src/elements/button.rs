@@ -3,20 +3,31 @@ use crate::{
     events::{EventTarget, Handlers},
 };
 
-#[derive(Debug, Default)]
-pub struct Button<C = Empty> {
-    ty: ButtonType,
+#[derive(Debug)]
+pub struct Element<C = Empty> {
+    ty: &'static str,
+    attrs: Attrs,
     handlers: Handlers,
     children: C,
 }
 
-impl Button {
-    pub fn new() -> Self {
-        Default::default()
+impl Element {
+    pub fn new(ty: &'static str) -> Self {
+        Self {
+            ty,
+            attrs: Default::default(),
+            handlers: Default::default(),
+            children: Empty,
+        }
+    }
+
+    pub fn attr(mut self, key: &'static str, value: impl ToString) -> Self {
+        self.attrs.inner.insert(key, value.to_string());
+        self
     }
 }
 
-impl<C> EventTarget for Button<C>
+impl<C> EventTarget for Element<C>
 where
     C: Component,
 {
@@ -25,21 +36,23 @@ where
     }
 }
 
-impl<C, Next> Parent<Next> for Button<C>
+impl<C, Next> Parent<Next> for Element<C>
 where
     C: Component,
     Next: Component,
 {
-    type Output = Button<SibList<C, Next>>;
+    type Output = Element<SibList<C, Next>>;
 
     fn child(self, next: Next) -> Self::Output {
         let Self {
+            attrs,
             ty,
             handlers,
             children,
         } = self;
 
-        Button {
+        Element {
+            attrs,
             ty,
             handlers,
             children: sib_cons(children, next),
@@ -47,38 +60,25 @@ where
     }
 }
 
-impl<C> Component for Button<C>
+impl<C> Component for Element<C>
 where
     C: Component,
 {
     fn contents(self) {
         let Self {
             ty,
+            attrs,
             handlers,
             children,
         } = self;
-        let button = document().create_element("button").unwrap();
-        match ty {
-            ButtonType::Button => button.set_attribute("type", "button").unwrap(),
-            _ => unimplemented!(),
+        let element = document().create_element(ty).unwrap();
+
+        for (key, val) in attrs.inner {
+            element.set_attribute(key, &val).unwrap();
         }
 
-        produce_dom!(button.clone(), handlers.apply(&button), || {
+        produce_dom!(element.clone(), handlers.apply(&element), || {
             show!(children);
         });
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ButtonType {
-    Button,
-    Submit,
-    Reset,
-    Menu,
-}
-
-impl Default for ButtonType {
-    fn default() -> Self {
-        ButtonType::Button
     }
 }
