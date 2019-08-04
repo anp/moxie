@@ -3,23 +3,26 @@ use {
     std::fmt::{Debug, Formatter, Result as FmtResult},
 };
 
-pub trait Event: AsRef<web_sys::Event> {
+pub trait Event: AsRef<web_sys::Event> + JsCast {
     const NAME: &'static str;
 }
 
 struct Callback {
-    cb: Closure<dyn FnMut()>,
+    cb: Closure<dyn FnMut(JsValue)>,
 }
 
 impl Callback {
-    fn new<Ev, State, Updater>(key: Key<State>, updater: Updater) -> Self
+    fn new<Ev, State, Updater>(key: Key<State>, mut updater: Updater) -> Self
     where
         Ev: Event,
-        Updater: FnMut(&State, Ev) -> Option<State>,
+        State: 'static,
+        Updater: FnMut(&State, Ev) -> Option<State> + 'static,
     {
-        let cb = Closure::wrap(Box::new(move || {
+        let cb = Closure::wrap(Box::new(move |ev: JsValue| {
+            let ev: Ev = ev.dyn_into().unwrap();
+            key.update(|prev| updater(prev, ev));
             debug!("callback called");
-        }) as Box<dyn FnMut()>);
+        }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
 
@@ -43,7 +46,8 @@ impl EventHandle {
     ) -> Self
     where
         Ev: Event,
-        Updater: FnMut(&State, Ev) -> Option<State>,
+        State: 'static,
+        Updater: FnMut(&State, Ev) -> Option<State> + 'static,
     {
         let callback = Callback::new(key, updater);
         debug!("binding event listener");
@@ -113,11 +117,32 @@ impl Debug for Handlers {
     }
 }
 
+#[wasm_bindgen]
 pub struct ClickEvent(web_sys::MouseEvent);
 
 impl AsRef<web_sys::Event> for ClickEvent {
     fn as_ref(&self) -> &web_sys::Event {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<JsValue> for ClickEvent {
+    fn as_ref(&self) -> &JsValue {
+        self.0.as_ref()
+    }
+}
+
+impl JsCast for ClickEvent {
+    fn instanceof(val: &JsValue) -> bool {
+        <web_sys::MouseEvent as JsCast>::instanceof(val)
+    }
+
+    fn unchecked_from_js(val: JsValue) -> Self {
+        ClickEvent(<web_sys::MouseEvent as JsCast>::unchecked_from_js(val))
+    }
+
+    fn unchecked_from_js_ref(_val: &JsValue) -> &Self {
+        unimplemented!()
     }
 }
 
