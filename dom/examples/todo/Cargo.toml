@@ -1,8 +1,10 @@
 [package]
 name = "todomvc-moxie"
+description = "TodoMVC clone with moxie-dom"
 version = "0.1.0"
 edition = "2018"
-license = "Apache-2.0/MIT"
+license-file = "../../../../LICENSE-MIT"
+repository = "https://github.com/anp/moxie.git"
 
 [lib]
 crate-type = [ "cdylib" ]
