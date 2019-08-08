@@ -14,7 +14,7 @@ impl Component for HackedApp {
             text!("hello world from moxie! ({})", &count),
             element("button")
                 .attr("type", "button")
-                .on(count, |count, _: ClickEvent| Some(count + 1))
+                .on(|_: ClickEvent, count| Some(count + 1), count)
                 .child(text!("increment")),
             vec![text!("first"), text!(" second"), text!(" third"),]
         ];

@@ -54,23 +54,23 @@ impl Component for TextInput {
             .attr("placeholder", self.placeholder)
             .attr("type", "text")
             .attr("value", &*text)
-            // TODO find a way to bind ChangeEvent to `on` more eagerly in the syntax here
-            .on(text2, |_prev, change: ChangeEvent| Some(input_value(
-                change
-            )))
-            .on(self.todos, move |todos, keypress: KeyDownEvent| {
-                if keypress.key() == "Enter" {
-                    // first, zero out the persistent state, we're taking the value from the dom node and hoisting it into parent state as a Todo
-                    text.update(|_| Some("".into()));
+            .on(|change: ChangeEvent, _| Some(input_value(change)), text2)
+            .on(
+                move |keypress: KeyDownEvent, todos| {
+                    if keypress.key() == "Enter" {
+                        // first, zero out the persistent state, we're taking the value from the dom node and hoisting it into parent state as a Todo
+                        text.update(|_| Some("".into()));
 
-                    let mut todos: Vec<Todo> = todos.to_vec();
-                    todos.push(Todo::new(input_value(keypress)));
+                        let mut todos: Vec<Todo> = todos.to_vec();
+                        todos.push(Todo::new(input_value(keypress)));
 
-                    info!({ ?todos }, "updated todos");
-                    Some(todos)
-                } else {
-                    None
-                }
-            }));
+                        info!({ ?todos }, "updated todos");
+                        Some(todos)
+                    } else {
+                        None
+                    }
+                },
+                self.todos
+            ));
     }
 }
