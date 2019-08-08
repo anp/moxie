@@ -24,7 +24,7 @@ impl Component for TodoApp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Todo {
     id: u32,
     text: String,

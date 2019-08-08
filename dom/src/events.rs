@@ -114,35 +114,51 @@ impl Debug for Handlers {
     }
 }
 
-#[wasm_bindgen]
-pub struct ClickEvent(web_sys::MouseEvent);
+macro_rules! event_ty {
+    ($name:ident, $ty_str:expr, $parent_ty:ty) => {
+        #[wasm_bindgen]
+        pub struct $name($parent_ty);
 
-impl AsRef<web_sys::Event> for ClickEvent {
-    fn as_ref(&self) -> &web_sys::Event {
-        self.0.as_ref()
-    }
+        impl AsRef<web_sys::Event> for $name {
+            fn as_ref(&self) -> &web_sys::Event {
+                self.0.as_ref()
+            }
+        }
+
+        impl AsRef<JsValue> for $name {
+            fn as_ref(&self) -> &JsValue {
+                self.0.as_ref()
+            }
+        }
+
+        impl std::ops::Deref for $name {
+            type Target = $parent_ty;
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl JsCast for $name {
+            fn instanceof(val: &JsValue) -> bool {
+                <$parent_ty as JsCast>::instanceof(val)
+            }
+
+            fn unchecked_from_js(val: JsValue) -> Self {
+                $name(<$parent_ty as JsCast>::unchecked_from_js(val))
+            }
+
+            fn unchecked_from_js_ref(_val: &JsValue) -> &Self {
+                unimplemented!()
+            }
+        }
+
+        impl Event for $name {
+            const NAME: &'static str = $ty_str;
+        }
+    };
 }
 
-impl AsRef<JsValue> for ClickEvent {
-    fn as_ref(&self) -> &JsValue {
-        self.0.as_ref()
-    }
-}
-
-impl JsCast for ClickEvent {
-    fn instanceof(val: &JsValue) -> bool {
-        <web_sys::MouseEvent as JsCast>::instanceof(val)
-    }
-
-    fn unchecked_from_js(val: JsValue) -> Self {
-        ClickEvent(<web_sys::MouseEvent as JsCast>::unchecked_from_js(val))
-    }
-
-    fn unchecked_from_js_ref(_val: &JsValue) -> &Self {
-        unimplemented!()
-    }
-}
-
-impl Event for ClickEvent {
-    const NAME: &'static str = "click";
-}
+event_ty!(BlurEvent, "blur", web_sys::FocusEvent);
+event_ty!(ChangeEvent, "change", web_sys::Event);
+event_ty!(ClickEvent, "click", web_sys::MouseEvent);
+event_ty!(KeyDownEvent, "keydown", web_sys::KeyboardEvent);

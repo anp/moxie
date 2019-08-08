@@ -22,6 +22,8 @@ use {
 pub mod elements;
 pub mod events;
 
+pub use web_sys as sys;
+
 pub fn window() -> web_sys::Window {
     web_sys::window().expect("must run from within a `window`")
 }
