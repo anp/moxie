@@ -9,12 +9,12 @@ struct HackedApp;
 
 impl Component for HackedApp {
     fn contents(self) {
-        let (count, count_key) = state!(|| 0);
+        let count = state!(|| 0);
         show![
-            text!("hello world from moxie! ({})", count),
+            text!("hello world from moxie! ({})", &count),
             element("button")
                 .attr("type", "button")
-                .on(count_key, |count, _: ClickEvent| Some(count + 1))
+                .on(count, |count, _: ClickEvent| Some(count + 1))
                 .child(text!("increment")),
             vec![text!("first"), text!(" second"), text!(" third"),]
         ];

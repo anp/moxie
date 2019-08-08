@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use {
     header::*,
+    main_section::MainSection,
     moxie_dom::{elements::*, events::*, *},
     std::sync::atomic::{AtomicU32, Ordering},
     tracing::*,
@@ -8,19 +9,20 @@ use {
 };
 
 pub mod header;
+pub mod main_section;
 
 #[derive(Clone, Debug, PartialEq)]
 struct TodoApp;
 
 impl Component for TodoApp {
     fn contents(self) {
-        let (_visibility, _visibility_key) = state!(|| Visibility::default());
-        let (_todos, todos_key) = state!(|| vec![Todo::new("whoaaa")]);
+        let visibility = state!(|| Visibility::default());
+        let todos = state!(|| vec![Todo::new("whoaaa")]);
 
         show!(element("div")
             .attr("class", "todoapp")
-            .child(Header::new(todos_key))
-            .child(MainSection));
+            .child(Header::new(todos.clone()))
+            .child(MainSection::new(todos, visibility)));
     }
 }
 
@@ -45,15 +47,8 @@ fn next_id() -> u32 {
     static NEXT_ID: AtomicU32 = AtomicU32::new(0);
     NEXT_ID.fetch_add(1, Ordering::SeqCst)
 }
-
-#[derive(Clone, Debug, PartialEq)]
-struct MainSection;
-
-impl Component for MainSection {
-    fn contents(self) {}
-}
-
-enum Visibility {
+#[derive(Debug)]
+pub enum Visibility {
     All,
 }
 

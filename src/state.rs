@@ -9,7 +9,7 @@ use {
         fmt::{Debug, Display, Formatter, Result as FmtResult},
         ops::Deref,
         rc::Rc,
-        sync::{Arc, Weak},
+        sync::Arc,
     },
     topo::bound,
     tracing::*,
@@ -144,7 +144,7 @@ impl<State> Var<State> {
 /// a unique [`Key`] which can be used to commit new values to the variable.
 #[doc(hidden)]
 #[bound]
-pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> (Commit<Output>, Key<Output>)
+pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
     Output: 'static,
@@ -171,9 +171,12 @@ where
         Arc::new(Mutex::new(var))
     });
 
-    let commit = var.lock().root();
+    let commit_at_root = var.lock().root();
 
-    (commit, Key { var })
+    Key {
+        commit_at_root,
+        var,
+    }
 }
 
 #[macro_export]
@@ -231,6 +234,7 @@ where
 /// to prevent cycles, which means that all operations called against them are fallible -- we cannot
 /// know before calling a method that the state variable is still live.
 pub struct Key<State> {
+    commit_at_root: Commit<State>,
     var: Arc<Mutex<Var<State>>>,
 }
 
@@ -265,8 +269,16 @@ where
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
         Self {
+            commit_at_root: self.commit_at_root.clone(),
             var: self.var.clone(),
         }
+    }
+}
+
+impl<State> Deref for Key<State> {
+    type Target = State;
+    fn deref(&self) -> &Self::Target {
+        self.commit_at_root.deref()
     }
 }
 
@@ -275,7 +287,16 @@ where
     State: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.var.lock().peek().fmt(f)
+        self.commit_at_root.fmt(f)
+    }
+}
+
+impl<State> Display for Key<State>
+where
+    State: Display,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        self.commit_at_root.fmt(f)
     }
 }
 

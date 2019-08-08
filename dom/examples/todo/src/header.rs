@@ -22,7 +22,7 @@ impl Component for Header {
             .child(element("h1").child(text!("todos")))
             .child(TextInput {
                 placeholder: "What needs to be done?".into(),
-                key: self.todos,
+                todos: self.todos,
             }))
     }
 }
@@ -30,14 +30,14 @@ impl Component for Header {
 #[derive(Debug)]
 struct TextInput {
     placeholder: String,
-    key: Key<Vec<Todo>>,
+    todos: Key<Vec<Todo>>,
 }
 
 impl Component for TextInput {
     fn contents(self) {
         // let class_name = if text.is_none() {  } else { "edit" };
-        let (text, text_key) = state!((), |()| String::new());
-        let text_key2 = text_key.clone();
+        let text = state!((), |()| String::new());
+        let text2 = text.clone();
 
         fn input_value(ev: impl AsRef<sys::Event>) -> String {
             let event: &sys::Event = ev.as_ref();
@@ -55,13 +55,13 @@ impl Component for TextInput {
             .attr("type", "text")
             .attr("value", &*text)
             // TODO find a way to bind ChangeEvent to `on` more eagerly in the syntax here
-            .on(text_key2, |_prev, change: ChangeEvent| Some(input_value(
+            .on(text2, |_prev, change: ChangeEvent| Some(input_value(
                 change
             )))
-            .on(self.key, move |todos, keypress: KeyDownEvent| {
+            .on(self.todos, move |todos, keypress: KeyDownEvent| {
                 if keypress.key() == "Enter" {
                     // first, zero out the persistent state, we're taking the value from the dom node and hoisting it into parent state as a Todo
-                    text_key.update(|_| Some("".into()));
+                    text.update(|_| Some("".into()));
 
                     let mut todos: Vec<Todo> = todos.to_vec();
                     todos.push(Todo::new(input_value(keypress)));
