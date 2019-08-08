@@ -47,6 +47,7 @@ fn next_id() -> u32 {
     static NEXT_ID: AtomicU32 = AtomicU32::new(0);
     NEXT_ID.fetch_add(1, Ordering::SeqCst)
 }
+
 #[derive(Debug)]
 pub enum Visibility {
     All,
