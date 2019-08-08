@@ -7,11 +7,14 @@ pool:
   vmImage: $(imageName)
 
 steps:
+- script: cargo fmt -- --check
+- script: cargo fmt-scripts --check
 - script: cargo check-core
-
 - script: cargo test-core
-- script: cargo bench-core
+- script: cargo check-dom-lib
+- script: cargo build-dom-hacking
+- script: cargo build-dom-todo
 
-- script: cargo docs-core
+- script: cargo docs-all
 - publish: target/doc
   artifact: documentation
