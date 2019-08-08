@@ -196,8 +196,8 @@ macro_rules! state {
 /// the state variable on each fresh iteration.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
-    revision: Revision,
     point: topo::Id,
+    revision: Revision,
     inner: Arc<State>,
 }
 

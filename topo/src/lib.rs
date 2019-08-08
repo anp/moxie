@@ -196,7 +196,7 @@ macro_rules! unstable_raw_call {
 /// TODO explore more efficient implementations by piggybacking on those?
 ///
 /// [cons]: https://en.wikipedia.org/wiki/Hash_consing
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Id(u64);
 
 impl Id {
@@ -209,6 +209,12 @@ impl Id {
         }
         assert_send_and_sync::<Id>();
         CURRENT_POINT.with(|p| p.borrow().id)
+    }
+}
+
+impl std::fmt::Debug for Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:x?}", self.0))
     }
 }
 

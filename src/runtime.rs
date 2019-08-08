@@ -3,7 +3,7 @@ use {crate::MemoStore, std::task::Waker, tracing::*};
 /// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
 /// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
 /// during which they were made.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
 
 impl Revision {
@@ -15,6 +15,12 @@ impl Revision {
         } else {
             Revision::default()
         }
+    }
+}
+
+impl std::fmt::Debug for Revision {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("r{}", self.0))
     }
 }
 
