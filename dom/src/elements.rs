@@ -9,7 +9,7 @@ use {
 #[macro_export]
 macro_rules! text {
     ($arg:expr) => {
-        $crate::elements::Text($arg.into())
+        $crate::elements::Text($arg.to_string())
     };
     ($($arg:tt)+) => {
         $crate::elements::Text(format!( $($arg)* ))

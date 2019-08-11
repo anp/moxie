@@ -161,4 +161,5 @@ macro_rules! event_ty {
 event_ty!(BlurEvent, "blur", web_sys::FocusEvent);
 event_ty!(ChangeEvent, "change", web_sys::Event);
 event_ty!(ClickEvent, "click", web_sys::MouseEvent);
+event_ty!(DoubleClickEvent, "dblclick", web_sys::MouseEvent);
 event_ty!(KeyDownEvent, "keydown", web_sys::KeyboardEvent);

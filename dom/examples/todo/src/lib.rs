@@ -8,6 +8,7 @@ use {
     wasm_bindgen::prelude::*,
 };
 
+pub mod footer;
 pub mod header;
 pub mod main_section;
 
@@ -16,7 +17,7 @@ struct TodoApp;
 
 impl Component for TodoApp {
     fn contents(self) {
-        let visibility = state!(|| Visibility::default());
+        let visibility = state!(|| footer::Visibility::default());
         let todos = state!(|| vec![Todo::new("whoaaa")]);
 
         show!(element("div")
@@ -35,27 +36,12 @@ pub struct Todo {
 
 impl Todo {
     fn new(s: impl Into<String>) -> Self {
+        static NEXT_ID: AtomicU32 = AtomicU32::new(0);
         Self {
-            id: next_id(),
+            id: NEXT_ID.fetch_add(1, Ordering::SeqCst),
             text: s.into(),
             completed: false,
         }
-    }
-}
-
-fn next_id() -> u32 {
-    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-    NEXT_ID.fetch_add(1, Ordering::SeqCst)
-}
-
-#[derive(Debug)]
-pub enum Visibility {
-    All,
-}
-
-impl Default for Visibility {
-    fn default() -> Self {
-        Visibility::All
     }
 }
 

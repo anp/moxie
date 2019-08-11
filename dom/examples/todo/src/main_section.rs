@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{footer::*, *};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MainSection {
@@ -15,32 +15,157 @@ impl MainSection {
 impl Component for MainSection {
     fn contents(self) {
         let todos_empty = self.todos.is_empty();
+        let todos_count = self.todos.len();
+        let completed_count = self.todos.iter().filter(|t| t.completed).count();
+
         show!(element("section").attr("class", "main").inner(move || {
-            // const { todos } = useStore(TodoStore);
-            // const todosCount = todos.length;
-            // const completedCount = getCompletedCount(todos);
-
-            if todos_empty {
-
-                // <span>
-                //   <input
-                //     className="toggle-all"
-                //     type="checkbox"
-                //     defaultChecked={completedCount === todosCount}
-                //   />
-                //   <label onClick={completeAllTodos} />
-                // </span>
+            if !todos_empty {
+                show!(Toggle {
+                    default_checked: completed_count == todos_count,
+                    todos: self.todos.clone(),
+                })
             }
 
-            // show!(TodoList::new());
+            show!(TodoList {
+                todos: self.todos.clone(),
+                visibility: self.visibility.clone(),
+            });
 
-            if todos_empty {
-                // <Footer
-                //   completedCount={completedCount}
-                //   activeCount={todosCount - completedCount}
-                //   onClearCompleted={clearCompletedTodos}
-                // />
+            if !todos_empty {
+                show!(Footer {
+                    completed_count,
+                    active_count: todos_count - completed_count,
+                    todos: self.todos,
+                    visibility: self.visibility,
+                });
             }
         }));
+    }
+}
+
+#[derive(Debug)]
+struct TodoList {
+    todos: Key<Vec<Todo>>,
+    visibility: Key<Visibility>,
+}
+
+impl Component for TodoList {
+    fn contents(self) {
+        show!(element("ul").attr("class", "todo-list").inner(|| {
+            for todo in self.todos.iter().filter(|t| self.visibility.should_show(t)) {
+                show!(TodoItem {
+                    todo: todo.to_owned(),
+                    todos: self.todos.clone(),
+                });
+            }
+        }))
+    }
+}
+
+#[derive(Debug)]
+struct TodoItem {
+    todo: Todo,
+    todos: Key<Vec<Todo>>,
+}
+
+impl Component for TodoItem {
+    fn contents(self) {
+        let editing = state!(|| false);
+
+        let mut classes = String::new();
+        if self.todo.completed {
+            classes.push_str("completed ");
+        }
+        if *editing {
+            classes.push_str("editing");
+        }
+
+        let id = self.todo.id;
+
+        show!(element("li").attr("class", classes).inner(|| {
+            if *editing {
+                // let element;
+                // if (this.state.editing) {
+                //   element = (
+                //     <TodoTextInput
+                //       text={todo.text}
+                //       editing={this.state.editing}
+                //       onSave={text => this.handleSave(todo.id, text)}
+                //     />
+                //   );
+                // }
+            } else {
+                show!(element("div")
+                    .attr("class", "view")
+                    .child(
+                        element("input")
+                            .attr("class", "toggle")
+                            .attr("type", "checkbox")
+                            .attr("checked", self.todo.completed)
+                            .on(
+                                move |change: ChangeEvent, todos| {
+                                    Some(
+                                        todos
+                                            .iter()
+                                            .cloned()
+                                            .map(move |mut t| {
+                                                if t.id == id {
+                                                    t.completed = !t.completed;
+                                                    t
+                                                } else {
+                                                    t
+                                                }
+                                            })
+                                            .collect(),
+                                    )
+                                },
+                                self.todos.clone()
+                            )
+                    )
+                    .child(
+                        element("label")
+                            .on(|_: DoubleClickEvent, _editing| { Some(true) }, editing)
+                            .child(text!(self.todo.text))
+                    )
+                    .child(element("button").attr("class", "destroy").on(
+                        move |_: ClickEvent, todos| {
+                            Some(todos.iter().filter(|t| t.id != id).cloned().collect())
+                        },
+                        self.todos
+                    )))
+            }
+        }))
+    }
+}
+
+#[derive(Debug)]
+struct Toggle {
+    default_checked: bool,
+    todos: Key<Vec<Todo>>,
+}
+
+impl Component for Toggle {
+    fn contents(self) {
+        show!(element("span")
+            .child(
+                element("input")
+                    .attr("class", "toggle-all")
+                    .attr("type", "checkbox")
+                    .attr("defaultChecked", self.default_checked)
+            )
+            .child(element("label").on(
+                |_: ClickEvent, todos| -> Option<Vec<Todo>> {
+                    todos
+                        .iter()
+                        .map(|t| {
+                            let mut new = t.clone();
+                            new.completed = true;
+                            new
+                        })
+                        .collect::<Vec<_>>()
+                        .into()
+                },
+                self.todos
+            )));
     }
 }
