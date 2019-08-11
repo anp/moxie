@@ -88,6 +88,30 @@ where
     }
 }
 
+impl<C> Element<C>
+where
+    C: Component,
+{
+    pub fn inner<F>(self, f: F) -> Element<SibList<C, Clomp<F>>>
+    where
+        F: FnOnce(),
+    {
+        let Self {
+            attrs,
+            ty,
+            handlers,
+            children,
+        } = self;
+
+        Element {
+            attrs,
+            ty,
+            handlers,
+            children: sib_cons(children, Clomp(f)),
+        }
+    }
+}
+
 impl<C> Component for Element<C>
 where
     C: Component,

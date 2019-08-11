@@ -35,7 +35,7 @@ pub use {memo::*, nodes::*, runtime::*, state::*};
 use {std::fmt::Debug, tracing::*};
 
 /// TODO explain a component...somehow
-pub trait Component: Debug + Sized + 'static {
+pub trait Component: Debug + Sized {
     /// Defines the `Component` at a given point in time.
     ///
     /// TODO explain "right now" declaration
@@ -116,4 +116,31 @@ pub struct Empty;
 
 impl Component for Empty {
     fn contents(self) {}
+}
+
+/// TODO find a better name. A wrapper for a closure which is called as if it were a child component, i.e. in its own topological point.
+pub struct Clomp<F>(pub F);
+
+impl<F> Clomp<F>
+where
+    F: FnOnce() + 'static,
+{
+    fn new(op: F) -> Self {
+        Clomp(op)
+    }
+}
+
+impl<F> Component for Clomp<F>
+where
+    F: FnOnce() + 'static,
+{
+    fn contents(self) {
+        (self.0)()
+    }
+}
+
+impl<F> std::fmt::Debug for Clomp<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("Clomp(TODO better output)"))
+    }
 }
