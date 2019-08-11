@@ -46,7 +46,7 @@ pub trait Component: Debug + Sized {
 
 impl<I, C> Component for I
 where
-    I: IntoIterator<Item = C> + Debug + 'static,
+    I: IntoIterator<Item = C> + Debug,
     C: Component,
 {
     fn contents(self) {
@@ -123,7 +123,7 @@ pub struct Clomp<F>(pub F);
 
 impl<F> Clomp<F>
 where
-    F: FnOnce() + 'static,
+    F: FnOnce(),
 {
     fn new(op: F) -> Self {
         Clomp(op)
@@ -132,7 +132,7 @@ where
 
 impl<F> Component for Clomp<F>
 where
-    F: FnOnce() + 'static,
+    F: FnOnce(),
 {
     fn contents(self) {
         (self.0)()
