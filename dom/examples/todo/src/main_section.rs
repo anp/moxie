@@ -84,16 +84,28 @@ impl Component for TodoItem {
 
         show!(element("li").attr("class", classes).inner(|| {
             if *editing {
-                // let element;
-                // if (this.state.editing) {
-                //   element = (
-                //     <TodoTextInput
-                //       text={todo.text}
-                //       editing={this.state.editing}
-                //       onSave={text => this.handleSave(todo.id, text)}
-                //     />
-                //   );
-                // }
+                let todos = self.todos;
+                let this_todo = self.todo;
+                let placeholder = this_todo.text.clone();
+
+                let on_save: Box<dyn Fn(String)> = Box::new(move |value: String| {
+                    editing.set(false);
+                    todos.update(|todos| {
+                        let mut todos = todos.to_vec();
+                        if let Some(mut todo) =
+                            todos.iter_mut().filter(|t| t.id == this_todo.id).next()
+                        {
+                            todo.text = value;
+                        }
+                        Some(todos)
+                    });
+                });
+
+                show!(TextInput {
+                    placeholder,
+                    editing: true,
+                    on_save,
+                });
             } else {
                 show!(element("div")
                     .attr("class", "view")
@@ -103,7 +115,7 @@ impl Component for TodoItem {
                             .attr("type", "checkbox")
                             .attr("checked", self.todo.completed)
                             .on(
-                                move |change: ChangeEvent, todos| {
+                                move |_: ChangeEvent, todos| {
                                     Some(
                                         todos
                                             .iter()

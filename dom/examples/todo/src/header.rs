@@ -17,60 +17,95 @@ impl Header {
 
 impl Component for Header {
     fn contents(self) {
+        let Self { todos } = self;
+
+        let on_save: Box<dyn Fn(String)> = Box::new(move |value: String| {
+            todos.update(|prev| {
+                let mut todos: Vec<Todo> = prev.to_vec();
+                todos.push(Todo::new(value));
+                info!({ ?todos }, "added new todo");
+                Some(todos)
+            });
+        });
+
         show!(element("header")
             .attr("class", "header")
             .child(element("h1").child(text!("todos")))
             .child(TextInput {
                 placeholder: "What needs to be done?".into(),
-                todos: self.todos,
+                editing: false,
+                on_save
             }))
     }
 }
 
-#[derive(Debug)]
-struct TextInput {
-    placeholder: String,
-    todos: Key<Vec<Todo>>,
+pub struct TextInput<F> {
+    pub placeholder: String,
+    pub editing: bool,
+    pub on_save: F,
 }
 
-impl Component for TextInput {
+// need to avoid putting a debug constraint around on_save
+impl<F> std::fmt::Debug for TextInput<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("TextInput")
+            .field("placeholder", &self.placeholder)
+            .finish()
+    }
+}
+
+impl<F> Component for TextInput<F>
+where
+    F: Fn(String) + 'static,
+{
     fn contents(self) {
-        // let class_name = if text.is_none() {  } else { "edit" };
-        let text = state!((), |()| String::new());
-        let text2 = text.clone();
+        let Self {
+            editing,
+            on_save,
+            placeholder,
+        } = self;
+
+        let text = state!(|| if editing {
+            placeholder.clone()
+        } else {
+            String::new()
+        });
 
         fn input_value(ev: impl AsRef<sys::Event>) -> String {
             let event: &sys::Event = ev.as_ref();
             let target = event.target().unwrap();
             let input: sys::HtmlInputElement = target.dyn_into().unwrap();
             let val = input.value();
-            input.set_value(""); // it's a little weird to clear the text every time, TODO clean up later
+            input.set_value(""); // it's a little weird to clear the text every time, TODO clean up
             val
         }
 
-        show!(element("input")
+        let mut elem = element("input")
             .attr("autoFocus", "true")
             .attr("class", "new-todo")
-            .attr("placeholder", self.placeholder)
+            .attr("placeholder", placeholder)
             .attr("type", "text")
             .attr("value", &*text)
-            .on(|change: ChangeEvent, _| Some(input_value(change)), text2)
             .on(
-                move |keypress: KeyDownEvent, todos| {
+                |change: ChangeEvent, _| Some(input_value(change)),
+                text.clone(),
+            )
+            .on(
+                move |keypress: KeyDownEvent, _| {
                     if keypress.key() == "Enter" {
-                        // first, zero out the persistent state, we're taking the value from the dom node and hoisting it into parent state as a Todo
-                        text.update(|_| Some("".into()));
-
-                        let mut todos: Vec<Todo> = todos.to_vec();
-                        todos.push(Todo::new(input_value(keypress)));
-
-                        info!({ ?todos }, "updated todos");
-                        Some(todos)
+                        on_save(input_value(keypress));
+                        Some("".into())
                     } else {
                         None
                     }
                 },
-                self.todos
-            ));
+                text,
+            );
+
+        if editing {
+            elem = elem.attr("class", "edit");
+        }
+
+        show!(elem);
     }
 }
