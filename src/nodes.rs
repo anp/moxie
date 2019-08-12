@@ -95,7 +95,7 @@ pub fn produce_without_attaching<N>(new_root: N, with_new_root_as_parent: impl F
 where
     N: Node + 'static,
 {
-    let parent = once!(|| Parent::new());
+    let parent = once!(Parent::new);
     parent.set(new_root);
 
     let on_end = parent.clone();

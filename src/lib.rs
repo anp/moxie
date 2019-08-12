@@ -60,7 +60,7 @@ where
 #[topo::bound]
 pub fn show_one(component: impl Component) {
     let show_span = once!(|| trace_span!("show component"));
-    let state_revision = once!(|| RevisionChain::new());
+    let state_revision = once!(RevisionChain::new);
 
     let _in_span = show_span.enter();
     topo::call!(
