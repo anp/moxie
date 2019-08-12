@@ -1,15 +1,18 @@
 #![allow(unused_imports)]
 use {
-    header::*,
+    filter::Visibility,
+    header::Header,
     main_section::MainSection,
-    moxie_dom::{elements::*, events::*, *},
+    moxie_dom::prelude::*,
     std::sync::atomic::{AtomicU32, Ordering},
-    tracing::*,
+    tracing::{error, log},
     wasm_bindgen::prelude::*,
 };
 
+pub mod filter;
 pub mod footer;
 pub mod header;
+pub mod input;
 pub mod main_section;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +20,7 @@ struct TodoApp;
 
 impl Component for TodoApp {
     fn contents(self) {
-        let visibility = state!(|| footer::Visibility::default());
+        let visibility: Key<Visibility> = state!();
         let todos = state!(|| vec![Todo::new("whoaaa")]);
 
         show!(element("div")
@@ -51,5 +54,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));
-    mount!(document().body().unwrap(), TodoApp);
+    moxie_dom::mount!(document().body().unwrap(), TodoApp);
 }

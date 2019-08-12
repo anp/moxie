@@ -1,4 +1,7 @@
-use crate::{footer::*, *};
+use {
+    crate::{filter::Visibility, footer::Footer, input::TextInput, Todo},
+    moxie_dom::prelude::*,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MainSection {
