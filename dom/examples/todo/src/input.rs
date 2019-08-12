@@ -57,7 +57,10 @@ where
             .on(
                 move |keypress: KeyDownEvent, _| {
                     if keypress.key() == "Enter" {
-                        on_save(input_value(keypress));
+                        let value = input_value(keypress);
+                        if !value.is_empty() {
+                            on_save(value);
+                        }
                         Some("".into())
                     } else {
                         None
