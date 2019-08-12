@@ -33,7 +33,6 @@ use {
     gumdrop::Options,
     notify::Watcher,
     std::{
-        collections::HashSet,
         net::IpAddr,
         path::{Path, PathBuf},
         sync::Arc,
@@ -96,13 +95,9 @@ fn pump_channels(
     (uri_rx, session_rx): (Receiver<Uri>, Receiver<Addr<ChangeWatchSession>>),
 ) {
     let (event_tx, event_rx) = chan();
-    let mut paths_of_interest = HashSet::new();
     let mut sessions = Vec::new();
 
     let mut watcher = notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
-    watcher
-        .watch(&root, notify::RecursiveMode::Recursive)
-        .unwrap();
 
     loop {
         select! {
@@ -114,9 +109,12 @@ fn pump_channels(
                     new_path.push(part);
                 }
 
-                let displayed = format!("{}", new_path.display());
-                if paths_of_interest.insert(displayed.clone()) {
-                    debug!("watching {}", displayed);
+                let displayed = new_path.display().to_string();
+
+                if let Err(why) = watcher.watch(&displayed, notify::RecursiveMode::NonRecursive) {
+                    warn!("couldn't add a watch for {} because {:?}", &displayed, why);
+                } else {
+                    debug!("added/refreshed watch for {}", &displayed);
                 }
             },
             recv(session_rx) -> new_session => {
@@ -129,14 +127,12 @@ fn pump_channels(
                     'this_event: for path in event.paths {
                         let changed = path.display().to_string();
 
-                        if paths_of_interest.contains(&changed) {
-                            info!("file change detected at {}", changed);
+                        info!("file change detected at {}", &changed);
 
-                            for session in &sessions {
-                                session.do_send(Changed(changed.clone()));
-                            }
-                            break 'this_event;
+                        for session in &sessions {
+                            session.do_send(Changed(changed.clone()));
                         }
+                        break 'this_event;
                     }
                 }
             },
