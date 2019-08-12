@@ -21,6 +21,19 @@ use {
 
 pub mod elements;
 pub mod events;
+pub mod prelude {
+    pub use crate::{
+        __mount_impl, // impl detail of topo leaking through here FIXME!
+        document,
+        elements::{element, Element},
+        events::{
+            BlurEvent, ChangeEvent, ClickEvent, DoubleClickEvent, Event, EventTarget, KeyDownEvent,
+        },
+        text,
+        window,
+    };
+    pub use moxie::*;
+}
 
 pub use web_sys as sys;
 
