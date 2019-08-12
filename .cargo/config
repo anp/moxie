@@ -1,4 +1,19 @@
 [alias]
+####################################################################################################
+# core crates:
+# * moxie
+# * topo
+# * topo-macro
+
+core-flow = """
+watch --clear
+    -x fmt
+    -x fmt-scripts
+    -x check-core
+    -x clippy-core
+    -x test-core
+    -x docs-all
+"""
 
 bench-core = """
 bench
@@ -14,7 +29,7 @@ check --all-targets
     --package topo-macro
 """
 
-docs-all = "doc --all --no-deps"
+clippy-core = "clippy --package moxie --package topo --package topo-macro"
 
 test-core = """
 test
@@ -23,25 +38,45 @@ test
     --package topo-macro
 """
 
-core-flow = """
+# core utilities
+
+docs-all = "doc --all --no-deps"
+fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
+
+
+####################################################################################################
+# dom crates and examples
+
+dom-flow = """
 watch --clear
-    -x fmt
-    -x fmt-scripts
-    -x check-core
-    -x test-core
     -x check-dom-lib
+    -x check-dom-hacking
+    -x check-dom-todo
+    -x clippy-dom-lib
+    -x clippy-dom-hacking
+    -x clippy-dom-todo
     -x build-dom-hacking
     -x build-dom-todo
-    -x docs-all
 """
 
-check-dom-lib = "check --target wasm32-unknown-unknown --package moxie-dom"
+check-dom-lib = "check-dom- --package moxie-dom"
+check-dom-hacking = "check-dom- --package dom-hacking"
+check-dom-todo = "check-dom- --package todomvc-moxie"
 
-fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
+clippy-dom-lib = "clippy-dom- --package moxie-dom"
+clippy-dom-hacking = "clippy-dom- --package dom-hacking"
+clippy-dom-todo = "clippy-dom- --package todomvc-moxie"
+
+build-dom-hacking = "wa-pack-build dom/examples/hacking"
+build-dom-todo = "wa-pack-build dom/examples/todo"
+
+# dom utilities
+check-dom- = "check --target wasm32-unknown-unknown --all-targets"
+clippy-dom- = "clippy --target wasm32-unknown-unknown --all-targets"
+wa-pack-build = "script scripts/wasm-pack.rs -- build --target web --out-name index"
+
+####################################################################################################
+# project server
 
 serve_once = "script scripts/serve.rs --"
 serve = "watch -w scripts -x serve_once"
-
-wa-pack = "script scripts/wasm-pack.rs --"
-build-dom-hacking = "wa-pack build dom/examples/hacking --target web --out-name index"
-build-dom-todo = "wa-pack build dom/examples/todo --target web --out-name index"
