@@ -8,6 +8,7 @@ pool:
 
 steps:
 - script: rustup component add rustfmt clippy
+- script: rustup target add wasm32-unknown-unknown
 - script: cargo fmt -- --check
 - script: cargo fmt-scripts --check
 - script: cargo test-core
