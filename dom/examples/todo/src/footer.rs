@@ -1,5 +1,8 @@
 use {
-    crate::{filter::Visibility, Todo},
+    crate::{
+        filter::{Filter, Visibility},
+        Todo,
+    },
     moxie_dom::prelude::*,
 };
 
@@ -34,9 +37,7 @@ impl Component for Footer {
                         " {} left",
                         if active_count == 1 { "item" } else { "items" }
                     )),
-                element("ul")
-                    .attr("class", "filters")
-                    .child(text!("TODO: filters"))
+                Filter { visibility }
             );
 
             if completed_count > 0 {
