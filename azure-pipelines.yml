@@ -10,7 +10,6 @@ steps:
 - script: rustup component add rustfmt clippy
 - script: cargo fmt -- --check
 - script: cargo fmt-scripts --check
-- script: cargo check-core
 - script: cargo test-core
 - script: cargo check-dom-lib
 - script: cargo build-dom-hacking
