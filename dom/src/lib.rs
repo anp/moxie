@@ -4,7 +4,7 @@
 pub use moxie::*;
 
 use {
-    futures::task::ArcWake,
+    futures::task::{waker, ArcWake},
     moxie::{self, *},
     std::{
         cell::RefCell,
@@ -61,7 +61,8 @@ pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Cl
     let wrt = Rc::new((AtomicBool::new(false), RefCell::new(wrt)));
     let wrt2 = Rc::clone(&wrt);
 
-    let waker = ArcWake::into_waker(Arc::new(RuntimeWaker { wrt }));
+    let arc_waker = Arc::new(RuntimeWaker { wrt });
+    let waker = waker(arc_waker);
 
     {
         // ensure we've released our mutable borrow by running it in a separate block
