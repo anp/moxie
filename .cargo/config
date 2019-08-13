@@ -15,34 +15,14 @@ watch --clear
     -x docs-all
 """
 
-bench-core = """
-bench
-    --package moxie
-    --package topo
-    --package topo-macro
-"""
-
-check-core = """
-check --all-targets
-    --package moxie
-    --package topo
-    --package topo-macro
-"""
-
+bench-core = "bench --package moxie --package topo --package topo-macro"
+check-core = "check --all-targets --package moxie --package topo --package topo-macro"
 clippy-core = "clippy --package moxie --package topo --package topo-macro"
-
-test-core = """
-test
-    --package moxie
-    --package topo
-    --package topo-macro
-"""
+test-core = "test --package moxie --package topo --package topo-macro"
 
 # core utilities
-
 docs-all = "doc --all --no-deps"
 fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
-
 
 ####################################################################################################
 # dom crates and examples
