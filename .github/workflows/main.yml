@@ -8,13 +8,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - uses: actions/checkout@master
-
     - name: install rustup
       if: matrix.os == 'macOS-10.14'
       run: |
         curl https://sh.rustup.rs -sSf | sh -s -- -y
-        source $HOME/.cargo/env
+        echo 'export PATH=$PATH:$HOME/.cargo/bin' >> $HOME/.bashrc
+
+    - uses: actions/checkout@master
 
     - name: deps
       run: |
