@@ -10,6 +10,10 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
+    - name: install rustup
+      if: matrix.os == 'macOS-10.14'
+      run: curl https://sh.rustup.rs -sSf | sh -s
+
     - name: deps
       run: |
         rustup component add rustfmt clippy
