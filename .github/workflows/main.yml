@@ -35,7 +35,7 @@ jobs:
         cargo fmt -- --check
         cargo fmt-scripts --check
 
-    - name: cargo docs-all
+    - run: cargo docs-all
 
     - name: clippy
       run: |
