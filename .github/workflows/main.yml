@@ -3,16 +3,17 @@ jobs:
   main:
     strategy:
       matrix:
-        os: [macOS-10.14, ubuntu-18.04, windows-2019]
+        os: [ubuntu-18.04, windows-2019]
+        # os: [macOS-10.14, ubuntu-18.04, windows-2019]
 
     runs-on: ${{ matrix.os }}
     
     steps:
-    - name: rustup
-      if: matrix.os == 'macOS-10.14'
-      run: |
-        curl https://sh.rustup.rs -sSf | sh -s -- -y
-        echo 'export PATH="$PATH:$HOME/.cargo/bin"' >> $HOME/.bashrc
+    # - name: rustup
+    #   if: matrix.os == 'macOS-10.14'
+    #   run: |
+    #     curl https://sh.rustup.rs -sSf | sh -s -- -y
+    #     echo 'export PATH="$PATH:$HOME/.cargo/bin"' >> $HOME/.bashrc
 
     - name: checkout
       uses: actions/checkout@master
