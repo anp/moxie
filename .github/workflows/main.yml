@@ -8,13 +8,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - name: install rustup
+    - name: rustup
       if: matrix.os == 'macOS-10.14'
       run: |
         curl https://sh.rustup.rs -sSf | sh -s -- -y
         echo 'export PATH=$PATH:$HOME/.cargo/bin' >> $HOME/.bashrc
 
-    - uses: actions/checkout@master
+    - name: checkout
+      uses: actions/checkout@master
 
     - name: deps
       run: |
@@ -22,7 +23,8 @@ jobs:
         rustup target add wasm32-unknown-unknown
         cargo install cargo-script
 
-    - run: cargo test-core
+    - name: core
+      run: cargo test-core
 
     - name: dom
       run: |
@@ -35,7 +37,8 @@ jobs:
         cargo fmt -- --check
         cargo fmt-scripts --check
 
-    - run: cargo docs-all
+    - name: docs
+      run: cargo docs-all
 
     - name: clippy
       run: |
