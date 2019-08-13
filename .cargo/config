@@ -32,27 +32,27 @@ watch --clear
     -x check-dom-lib
     -x check-dom-hacking
     -x check-dom-todo
-    -x clippy-dom-lib
-    -x clippy-dom-hacking
-    -x clippy-dom-todo
     -x build-dom-hacking
     -x build-dom-todo
+    -x clippy-dom
 """
 
 check-dom-lib = "check-dom- --package moxie-dom"
 check-dom-hacking = "check-dom- --package dom-hacking"
 check-dom-todo = "check-dom- --package todomvc-moxie"
 
-clippy-dom-lib = "clippy-dom- --package moxie-dom"
-clippy-dom-hacking = "clippy-dom- --package dom-hacking"
-clippy-dom-todo = "clippy-dom- --package todomvc-moxie"
-
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 # dom utilities
 check-dom- = "check --target wasm32-unknown-unknown --all-targets"
-clippy-dom- = "clippy --target wasm32-unknown-unknown --all-targets"
+clippy-dom = """clippy 
+    --target wasm32-unknown-unknown 
+    --all-targets 
+    --package moxie-dom 
+    --package dom-hacking 
+    --package todomvc-moxie
+"""
 wa-pack-build = "script scripts/wasm-pack.rs -- build --target web --out-name index"
 
 ####################################################################################################
