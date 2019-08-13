@@ -20,3 +20,10 @@ steps:
 - script: cargo docs-all
 - publish: target/doc
   artifact: documentation
+
+- task: ado-discord-webhook@1
+  condition: $(eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  inputs:
+    channelId: '610654874572554257'
+    webhookKey: $(discord webhook key)
+    messageType: 'embeds'
