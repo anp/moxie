@@ -12,7 +12,9 @@ jobs:
 
     - name: install rustup
       if: matrix.os == 'macOS-10.14'
-      run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      run: |
+        curl https://sh.rustup.rs -sSf | sh -s -- -y
+        source $HOME/.cargo/env
 
     - name: deps
       run: |
