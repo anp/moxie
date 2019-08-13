@@ -4,27 +4,35 @@ jobs:
     strategy:
       matrix:
         os: [macOS-10.14, ubuntu-18.04, windows-2019]
+
+    runs-on: ${{ matrix.os }}
     
     steps:
     - uses: actions/checkout@master
+
     - name: deps
       run: |
         rustup component add rustfmt clippy
         rustup target add wasm32-unknown-unknown
         cargo install cargo-script
-    - name: formatting
-      run: |
-        cargo fmt -- --check
-        cargo fmt-scripts --check
+
     - name: core
       run: cargo test-core
-    - name: docs
-      run: cargo docs-all
+
     - name: dom
       run: |
         cargo check-dom-lib
         cargo build-dom-hacking
         cargo build-dom-todo
+
+    - name: formatting
+      run: |
+        cargo fmt -- --check
+        cargo fmt-scripts --check
+
+    - name: docs
+      run: cargo docs-all
+
     - name: clippy
       run: |
         cargo clippy-core
