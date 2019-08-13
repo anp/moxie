@@ -1,6 +1,6 @@
 on: push
 jobs:
-  xplat:
+  main:
     strategy:
       matrix:
         os: [macOS-10.14, ubuntu-18.04, windows-2019]
@@ -22,8 +22,7 @@ jobs:
         rustup target add wasm32-unknown-unknown
         cargo install cargo-script
 
-    - name: core
-      run: cargo test-core
+    - run: cargo test-core
 
     - name: dom
       run: |
@@ -36,8 +35,7 @@ jobs:
         cargo fmt -- --check
         cargo fmt-scripts --check
 
-    - name: docs
-      run: cargo docs-all
+    - name: cargo docs-all
 
     - name: clippy
       run: |
