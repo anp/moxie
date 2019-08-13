@@ -26,5 +26,6 @@ jobs:
         cargo build-dom-hacking
         cargo build-dom-todo
     - name: clippy
+      run: |
         cargo clippy-core
         cargo clippy-dom
