@@ -12,6 +12,7 @@ jobs:
       if: matrix.os == 'macOS-10.14'
       run: |
         curl https://sh.rustup.rs -sSf | sh -s -- -y
+        echo 'export PATH="$PATH:$HOME/.cargo/bin"' >> $HOME/.bashrc
 
     - name: checkout
       uses: actions/checkout@master
