@@ -19,6 +19,7 @@ jobs:
     - name: deps
       run: |
         echo $PATH
+        cat $HOME/.bashrc || true
         rustup component add rustfmt clippy
         rustup target add wasm32-unknown-unknown
         cargo install cargo-script
