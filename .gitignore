@@ -1,8 +1,8 @@
-target/
+.idea/
+.vscode/
+*.log
 **/*.rs.bk
 Cargo.lock
-*.log
-.vscode/
 node_modules/
-.idea/
 pkg/
+target/
