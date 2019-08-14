@@ -41,5 +41,6 @@ Things to update:
 
 * `Cargo.toml`
 * `.cargo/config`
-* `.dependabot/config.yml`
 * `.github/workflows/main.yml`
+
+(Dependabot discovers the workspace members from the root manifest.)
