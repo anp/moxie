@@ -32,7 +32,7 @@ jobs:
     - name: dom
       run: |
         cargo check-dom-lib
-    #     cargo build-dom-hacking
+        cargo build-dom-hacking
     #     cargo build-dom-todo
 
     - name: formatting
