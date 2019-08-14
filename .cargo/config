@@ -60,3 +60,15 @@ wa-pack-build = "script scripts/wasm-pack.rs -- build --target web --out-name in
 
 serve_once = "script scripts/serve.rs --"
 serve = "watch -w scripts -x serve_once"
+
+####################################################################################################
+# windows crates and examples
+
+win-flow = """
+watch --clear
+    -x test-whim
+    -x run-win-hacking
+"""
+
+run-win-hacking = "run --package whim --example win-hacking"
+test-whim = "test --package whim"

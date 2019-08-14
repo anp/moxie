@@ -47,3 +47,18 @@ jobs:
       run: |
         cargo clippy-core
         cargo clippy-dom
+
+  # windows-only task
+  whim:
+    runs-on: windows-2019
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@master
+
+    - name: deps
+      run: |
+        cargo install cargo-script
+    
+    - name: test
+      run: cargo test-whim

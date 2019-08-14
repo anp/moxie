@@ -20,4 +20,5 @@ members = [
     "dom/examples/todo",
     "topo",
     "topo/macro",
+    "whim",
 ]

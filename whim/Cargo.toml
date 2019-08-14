@@ -1,0 +1,11 @@
+[package]
+name = "whim"
+description = "w(h)im: Windows in Moxie"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+
+[dependencies.winapi]
+version = "0.3.7"
+features = [ "std", ]
