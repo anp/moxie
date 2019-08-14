@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 description = "Declarative, asynchronous, incremental UI component runtime."
 
 [dependencies]
-futures-preview = { version = "0.3.0-alpha.17", features = [ "async-await", "nightly" ] }
+futures-preview = "0.3.0-alpha.18"
 parking_lot = "0.9"
 scopeguard = "1"
 tracing = { version = "0.1.1", features = ["log"] }
