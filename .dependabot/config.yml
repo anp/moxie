@@ -1,0 +1,25 @@
+version: 1
+update_configs:
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/"
+
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/dom"
+
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/dom/examples/hacking"
+
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/dom/examples/todo"
+
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/topo/"
+
+  - package_manager: "rust:cargo"
+    update_schedule: "live"
+    directory: "/topo/macro"
