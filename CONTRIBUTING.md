@@ -4,6 +4,11 @@
 
 This is a placeholder for if/when the project is ready to onboard more contributors.
 
+## Continuous Integration
+
+CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and 
+[configured in-tree](.github/workflows/main.yml). 
+
 ## Development environment
 
 ### Requirements
@@ -25,9 +30,24 @@ $ cargo core-flow
 
 See [its definition](./.cargo/config) for details.
 
-#### dom examples
+#### moxie-dom
 
-The moxie-dom examples are compiled as part of `core-flow`, and you can serve them locally with `cargo serve`. This will start a local HTTP server providing access to the project directory.
+The main workflow for the dom library:
+
+```shell
+$ cargo dom-flow
+```
+
+To view examples, in a separate terminal:
+
+```shell
+$ cargo serve
+```
+
+This will start a local HTTP server providing access to the project directory. It also watches the
+filesystem for changes to files it has served, delivering notifications when any of them
+change. The examples include `scripts/reloadOnChanges.js` which opens a websocket and reloads the
+page when changes to the examples are detected.
 
 #### Releases
 
