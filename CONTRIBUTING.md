@@ -34,3 +34,12 @@ The moxie-dom examples are compiled as part of `core-flow`, and you can serve th
 ##### topo
 
 `topo` and `topo-macro` must be released in sync.
+
+#### New crates
+
+Things to update:
+
+* `Cargo.toml`
+* `.cargo/config`
+* `.dependabot/config.yml`
+* `.github/workflows/main.yml`
