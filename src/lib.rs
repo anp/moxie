@@ -38,7 +38,6 @@ pub trait Component: Debug + Sized {
     /// Defines the `Component` at a given point in time.
     ///
     /// TODO explain "right now" declaration
-    /// TODO explain memoization of this call
     /// TODO explain show macro
     fn contents(self);
 }
