@@ -1,15 +1,15 @@
 [package]
 name = "moxie-dom"
-version = "0.1.0"
+version = "0.1.1-pre"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
 description = "TBA"
 
 [dependencies]
-futures-preview = "0.3.0-alpha.17"
+futures-preview = "0.3.0-alpha.18"
 js-sys = "0.3.25"
-moxie = { path = "../", version = "0.1" }
+moxie = { path = "../", version = "0.1.1-pre" }
 scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = "0.2.48"
