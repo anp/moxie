@@ -95,9 +95,7 @@ impl Component for TodoItem {
                     editing.set(false);
                     todos.update(|todos| {
                         let mut todos = todos.to_vec();
-                        if let Some(mut todo) =
-                            todos.iter_mut().filter(|t| t.id == this_todo.id).next()
-                        {
+                        if let Some(mut todo) = todos.iter_mut().find(|t| t.id == this_todo.id) {
                             todo.text = value;
                         }
                         Some(todos)
@@ -161,6 +159,7 @@ struct Toggle {
 
 impl Component for Toggle {
     fn contents(self) {
+        let toggle_to = !self.default_checked;
         show!(element("span")
             .child(
                 element("input")
@@ -169,12 +168,12 @@ impl Component for Toggle {
                     .attr("defaultChecked", self.default_checked)
             )
             .child(element("label").on(
-                |_: ClickEvent, todos| -> Option<Vec<Todo>> {
+                move |_: ClickEvent, todos| -> Option<Vec<Todo>> {
                     todos
                         .iter()
                         .map(|t| {
                             let mut new = t.clone();
-                            new.completed = true;
+                            new.completed = toggle_to;
                             new
                         })
                         .collect::<Vec<_>>()

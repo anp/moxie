@@ -1,17 +1,25 @@
 [package]
 name = "moxie"
-version = "0.1.0"
+version = "0.1.1-alpha.1-pre"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "MIT/Apache-2.0"
-description = "Declarative, asynchronous, incremental UI component runtime."
+description = "Declarative, asynchronous, incremental UI runtime."
+repository = "https://github.com/anp/moxie"
 
 [dependencies]
-futures-preview = { version = "0.3.0-alpha.17", features = [ "async-await", "nightly" ] }
+futures-preview = "0.3.0-alpha.18"
 parking_lot = "0.9"
 scopeguard = "1"
-tracing = { version = "0.1.1", features = ["log"] }
-topo = { path = "topo", version = "0.8" }
+tracing = "^0.1"
+
+[dependencies.topo]
+version = "0.8.1"
+path = "topo"
+
+[features]
+default = ["log"]
+log = ["tracing/log"]
 
 [workspace]
 members = [
@@ -21,3 +29,4 @@ members = [
     "topo",
     "topo/macro",
 ]
+exclude = ["tools"]

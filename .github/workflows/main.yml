@@ -1,49 +1,58 @@
 on: push
 jobs:
-  main:
+  core:
     strategy:
       matrix:
-        os: [ubuntu-18.04, windows-2019]
-        # os: [macOS-10.14, ubuntu-18.04, windows-2019]
-
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     
     steps:
-    # - name: rustup
-    #   if: matrix.os == 'macOS-10.14'
-    #   run: |
-    #     curl https://sh.rustup.rs -sSf | sh -s -- -y
-    #     echo 'export PATH="$PATH:$HOME/.cargo/bin"' >> $HOME/.bashrc
+    - uses: actions/checkout@master
+    - run: cargo test-core
 
-    - name: checkout
-      uses: actions/checkout@master
+  dom:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@master
+    - run: rustup target add wasm32-unknown-unknown
+    - run: cargo check-dom-lib
+    - run: cargo build-dom-hacking
+    - run: cargo build-dom-todo
+  
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: rustup component add rustfmt
+    - run: cargo fmt -- --check
+    - run: cargo fmt-tools -- --check
+  
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: rustup component add clippy
+    - run: cargo clippy-core
+    - run: cargo clippy-dom
+  
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: cargo docs-all
+    - run: cargo docs-tools
 
-    - name: deps
-      run: |
-        cat $HOME/.bashrc || true
-        echo $PATH
-        rustup component add rustfmt clippy
-        rustup target add wasm32-unknown-unknown
-        cargo install cargo-script
-
-    - name: core
-      run: cargo test-core
-
-    # - name: dom
-    #   run: |
-    #     cargo check-dom-lib
-    #     cargo build-dom-hacking
-    #     cargo build-dom-todo
-
-    - name: formatting
-      run: |
-        cargo fmt -- --check
-        cargo fmt-scripts --check
-
-    - name: docs
-      run: cargo docs-all
-
-    - name: clippy
-      run: |
-        cargo clippy-core
-        cargo clippy-dom
+  published:
+    needs: [core, dom, fmt, clippy, docs]
+    runs-on: ubuntu-latest
+    steps: 
+    - uses: actions/bin/filter@master
+      with:
+        args: branch master
+    - uses: actions/checkout@master
+    - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
+    - run: cargo published

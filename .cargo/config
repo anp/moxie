@@ -8,11 +8,10 @@
 core-flow = """
 watch --clear
     -x fmt
-    -x fmt-scripts
     -x check-core
-    -x clippy-core
     -x test-core
     -x docs-all
+    -x clippy-core
 """
 
 bench-core = "bench --package moxie --package topo --package topo-macro"
@@ -20,9 +19,7 @@ check-core = "check --all-targets --package moxie --package topo --package topo-
 clippy-core = "clippy --package moxie --package topo --package topo-macro"
 test-core = "test --package moxie --package topo --package topo-macro"
 
-# core utilities
 docs-all = "doc --all --no-deps"
-fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
 
 ####################################################################################################
 # dom crates and examples
@@ -37,26 +34,44 @@ watch --clear
     -x clippy-dom
 """
 
-check-dom-lib = "check-dom- --package moxie-dom"
-check-dom-hacking = "check-dom- --package dom-hacking"
-check-dom-todo = "check-dom- --package todomvc-moxie"
+check-dom-lib = "check --package moxie-dom"
+check-dom-hacking = "check --package dom-hacking"
+check-dom-todo = "check --package todomvc-moxie"
 
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 # dom utilities
-check-dom- = "check --target wasm32-unknown-unknown --all-targets"
 clippy-dom = """clippy 
-    --target wasm32-unknown-unknown 
     --all-targets 
     --package moxie-dom 
     --package dom-hacking 
     --package todomvc-moxie
 """
-wa-pack-build = "script scripts/wasm-pack.rs -- build --target web --out-name index"
 
 ####################################################################################################
-# project server
+# tools
 
-serve_once = "script scripts/serve.rs --"
-serve = "watch -w scripts -x serve_once"
+published = "run --manifest-path tools/ensure-published/Cargo.toml --bin ensure-published --"
+serve_once = "run --manifest-path tools/project-server/Cargo.toml --release --bin project-server --"
+wa-pack-build = """
+run --manifest-path tools/local-wasm-pack/Cargo.toml 
+    -- build --target web --out-name index
+"""
+
+server = "watch -w tools -x serve_once"
+
+tools-flow = """
+watch --clear -w tools
+    -x fmt-tools
+    -x check-tools
+    -x test-tools
+    -x docs-tools
+    -x clippy-tools
+"""
+
+check-tools = "check --manifest-path tools/Cargo.toml --all"
+clippy-tools = "clippy --manifest-path tools/Cargo.toml --all"
+fmt-tools = "fmt --manifest-path tools/Cargo.toml --all"
+test-tools = "test --manifest-path tools/Cargo.toml --all"
+docs-tools = "doc --manifest-path tools/Cargo.toml --all --no-deps"
