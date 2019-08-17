@@ -161,6 +161,7 @@ struct Toggle {
 
 impl Component for Toggle {
     fn contents(self) {
+        let toggle_to = !self.default_checked;
         show!(element("span")
             .child(
                 element("input")
@@ -169,12 +170,12 @@ impl Component for Toggle {
                     .attr("defaultChecked", self.default_checked)
             )
             .child(element("label").on(
-                |_: ClickEvent, todos| -> Option<Vec<Todo>> {
+                move |_: ClickEvent, todos| -> Option<Vec<Todo>> {
                     todos
                         .iter()
                         .map(|t| {
                             let mut new = t.clone();
-                            new.completed = true;
+                            new.completed = toggle_to;
                             new
                         })
                         .collect::<Vec<_>>()
