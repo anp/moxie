@@ -17,8 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - run: rustup target add wasm32-unknown-unknown
     - uses: actions/checkout@master
+    - run: rustup target add wasm32-unknown-unknown
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
@@ -26,8 +26,8 @@ jobs:
   housekeeping:
     runs-on: ubuntu-latest
     steps:
-    - run: rustup component add rustfmt clippy
     - uses: actions/checkout@master
+    - run: rustup component add rustfmt clippy
     - run: cargo fmt -- --check
     - run: cargo fmt-scripts -- --check
     - run: cargo clippy-core
@@ -38,6 +38,6 @@ jobs:
     needs: [core, dom, housekeeping]
     runs-on: ubuntu-latest
     steps: 
-    - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - uses: actions/checkout@master
+    - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - run: cargo published
