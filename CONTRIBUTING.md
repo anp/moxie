@@ -53,7 +53,7 @@ reloads the page when changes to the examples are detected.
 During development all non-tool crate versions should be suffixed with `-pre` indicating a
 pre-release of some kind. To release a version of a crate, publish a commit to `origin/master/HEAD`
 without the pre-release suffix. The project's continuous integration ensures that any "release"
-version (without `-pre`) have been published to crates.io.
+versions (without `-pre`) have been published to crates.io.
 
 After a release, all version numbers should be incremented and have `-pre` re-appended. PRs are
 expected to bump the version number of the crate they're modifying behind the `-pre` suffix.
