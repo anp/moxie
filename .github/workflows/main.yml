@@ -1,4 +1,3 @@
-on: push
 jobs:
   core:
     strategy:
@@ -22,24 +21,37 @@ jobs:
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
-
-  housekeeping:
+  
+  fmt:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: rustup component add rustfmt clippy
+    - run: rustup component add rustfmt
     - run: cargo fmt -- --check
     - run: cargo fmt-scripts-check
+  
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: rustup component add clippy
     - run: cargo clippy-core
     - run: cargo clippy-dom
+  
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
     - run: cargo docs-all
+    - run: cargo docs-tools
+
+  can_release:
+    needs: [core, dom, fmt, clippy, docs]
+    uses: actions/bin/filter@master
+    args: branch master
 
   published:
-    on:
-      push:
-        branches:
-        - master
-    needs: [core, dom, housekeeping]
+    needs: can_release
     runs-on: ubuntu-latest
     steps: 
     - uses: actions/checkout@master
