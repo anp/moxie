@@ -43,17 +43,15 @@ watch --clear
     -x clippy-dom
 """
 
-check-dom-lib = "check-dom- --package moxie-dom"
-check-dom-hacking = "check-dom- --package dom-hacking"
-check-dom-todo = "check-dom- --package todomvc-moxie"
+check-dom-lib = "check --package moxie-dom"
+check-dom-hacking = "check --package dom-hacking"
+check-dom-todo = "check --package todomvc-moxie"
 
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 # dom utilities
-check-dom- = "check --target wasm32-unknown-unknown --all-targets"
 clippy-dom = """clippy 
-    --target wasm32-unknown-unknown 
     --all-targets 
     --package moxie-dom 
     --package dom-hacking 
