@@ -28,7 +28,7 @@ impl std::fmt::Display for Visibility {
 }
 
 impl Visibility {
-    pub fn should_show(&self, todo: &Todo) -> bool {
+    pub fn should_show(self, todo: &Todo) -> bool {
         match self {
             All => true,
             Active => !todo.completed,
@@ -67,7 +67,7 @@ impl Component for FilterLink {
 
         let mut link = element("a").attr("style", "cursor: pointer;");
 
-        if &*key == &to_set {
+        if *key == to_set {
             link = link.attr("class", "selected");
         }
 

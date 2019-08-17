@@ -95,9 +95,7 @@ impl Component for TodoItem {
                     editing.set(false);
                     todos.update(|todos| {
                         let mut todos = todos.to_vec();
-                        if let Some(mut todo) =
-                            todos.iter_mut().filter(|t| t.id == this_todo.id).next()
-                        {
+                        if let Some(mut todo) = todos.iter_mut().find(|t| t.id == this_todo.id) {
                             todo.text = value;
                         }
                         Some(todos)
