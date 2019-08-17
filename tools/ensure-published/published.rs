@@ -18,7 +18,11 @@ struct Config {
 }
 
 fn inputs() -> Result<(Config, Metadata), Error> {
-    let root_path = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let root_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap();
     let config = Config::parse_args_default_or_exit();
 
     let metadata = cargo_metadata::MetadataCommand::new()
@@ -43,6 +47,8 @@ fn main() -> Result<(), Error> {
             for id in to_publish {
                 let package = &metadata[&id];
                 publish(package, config.dry_run)?;
+                info!("sleeping a bit");
+                std::thread::sleep(std::time::Duration::from_secs(30));
             }
             Ok(())
         },
@@ -59,7 +65,9 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
     for member in members {
         let package = &metadata[&member];
 
-        if package.name == env!("CARGO_PKG_NAME") {
+        let manifest = std::fs::read_to_string(&package.manifest_path)?;
+        if manifest.contains("publish = false") {
+            info!({ %package.name }, "skipping non-publish package");
             continue;
         }
 

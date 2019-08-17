@@ -1,29 +1,5 @@
 [alias]
 ####################################################################################################
-# scripts
-
-scripts = "run --manifest-path scripts/Cargo.toml --bin"
-build-scripts = "build --manifest-path scripts/Cargo.toml --all-targets"
-fmt-scripts = """
-fmt -- 
-    scripts/src/bin/published.rs 
-    scripts/src/bin/serve.rs 
-    scripts/src/bin/wasm-pack.rs
-"""
-fmt-scripts-check = """
-fmt -- --check
-    scripts/src/bin/published.rs 
-    scripts/src/bin/serve.rs 
-    scripts/src/bin/wasm-pack.rs
-"""
-
-published = "scripts published --"
-serve_once = "scripts serve --"
-wa-pack-build = "scripts wasm-pack -- build --target web --out-name index"
-
-serve = "watch -w scripts -x serve_once"
-
-####################################################################################################
 # core crates:
 # * moxie
 # * topo
@@ -32,8 +8,6 @@ serve = "watch -w scripts -x serve_once"
 core-flow = """
 watch --clear
     -x fmt
-    -x fmt-scripts
-    -x build-scripts
     -x check-core
     -x clippy-core
     -x test-core
@@ -74,3 +48,30 @@ clippy-dom = """clippy
     --package dom-hacking 
     --package todomvc-moxie
 """
+
+####################################################################################################
+# tools
+
+published = "run --manifest-path tools/ensure-published/Cargo.toml --bin ensure-published --"
+serve_once = "run --manifest-path tools/project-server/Cargo.toml --release --bin project-server --"
+wa-pack-build = """
+run --manifest-path tools/local-wasm-pack/Cargo.toml 
+    -- build --target web --out-name index
+"""
+
+server = "watch -w tools -x serve_once"
+
+tools-flow = """
+watch --clear
+    -x fmt-tools
+    -x check-tools
+    -x clippy-tools
+    -x docs-tools
+    -x test-tools
+"""
+
+check-tools = "check --manifest-path tools/Cargo.toml --all"
+clippy-tools = "clippy --manifest-path tools/Cargo.toml --all"
+fmt-tools = "fmt --manifest-path tools/Cargo.toml --all"
+test-tools = "test --manifest-path tools/Cargo.toml --all"
+docs-tools = "doc --manifest-path tools/Cargo.toml --all --no-deps"

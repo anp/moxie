@@ -1,28 +1,28 @@
 [package]
-name = "scripts"
+name = "project-server"
 version = "0.1.0"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 publish = false
-description = "internal tools for moxie"
+
+[[bin]]
+path = "server.rs"
+name = "project-server"
 
 [dependencies]
 actix = "0.8"
 actix-files = "0.1"
 actix-web = "1"
 actix-web-actors = "1"
-cargo_metadata = "0.8.1"
-crates_io_api = "0.5"
 crossbeam = "0.7"
 failure = "0.1"
-futures = { package = "futures-preview", version = "0.3.0-alpha.17", features = [ "async-await", "compat", "nightly" ] }
 futures01 = { version = "0.1", package = "futures" }
 gumdrop = "0.6"
 notify = "5.0.0-pre.1"
-pathfinding = "1.1.12"
 pretty_env_logger = "0.3"
-semver = "0.9"
-structopt = "0.2"
 tracing = { version = "0.1", features = [ "log" ] }
-tracing-fmt = "0.0.1-alpha.3"
-wasm-pack = "0.8"
+
+[dependencies.futures]
+package = "futures-preview"
+version = "0.3.0-alpha.18"
+features = [ "async-await", "compat", "nightly" ]

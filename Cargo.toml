@@ -29,4 +29,4 @@ members = [
     "topo",
     "topo/macro",
 ]
-exclude = ["scripts"]
+exclude = ["tools"]
