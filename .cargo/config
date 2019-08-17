@@ -62,7 +62,7 @@ run --manifest-path tools/local-wasm-pack/Cargo.toml
 server = "watch -w tools -x serve_once"
 
 tools-flow = """
-watch --clear
+watch --clear -w tools
     -x fmt-tools
     -x check-tools
     -x test-tools
