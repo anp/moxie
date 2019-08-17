@@ -52,11 +52,11 @@ jobs:
     needs: main
     runs-on: ubuntu-latest
     steps: 
+    - name: login
+      run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - name: checkout
       uses: actions/checkout@master
     - name: deps
       run: cargo install cargo-script
-    - name: login
-      run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - name: published
       run: cargo published
