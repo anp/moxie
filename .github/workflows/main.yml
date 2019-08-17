@@ -51,7 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps: 
     - uses: actions/bin/filter@master
-      args: branch master
+      with:
+        args: branch master
     - uses: actions/checkout@master
     - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - run: cargo published
