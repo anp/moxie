@@ -51,6 +51,11 @@ page when changes to the examples are detected.
 
 #### Releases
 
+Use [`cargo-release`](https://github.com/sunng87/cargo-release) 
+([reference](https://github.com/sunng87/cargo-release/blob/master/docs/reference.md#bump-level))
+to bump the relevant crate versions. The configuration at the workspace root will only create
+commits. Release commits on `master` will be published by CI (TODO).
+
 ##### topo
 
 `topo` and `topo-macro` must be released in sync.

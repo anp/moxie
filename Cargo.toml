@@ -4,14 +4,21 @@ version = "0.1.0"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "MIT/Apache-2.0"
-description = "Declarative, asynchronous, incremental UI component runtime."
+description = "Declarative, asynchronous, incremental UI runtime."
 
 [dependencies]
 futures-preview = "0.3.0-alpha.18"
 parking_lot = "0.9"
 scopeguard = "1"
 tracing = "^0.1"
-topo = { path = "topo", version = "0.8" }
+
+[dependencies.topo]
+version = "0.8"
+path = "topo"
+
+[features]
+default = ["log"]
+log = ["tracing/log"]
 
 [workspace]
 members = [
@@ -21,7 +28,3 @@ members = [
     "topo",
     "topo/macro",
 ]
-
-[features]
-default = ["log"]
-log = ["tracing/log"]
