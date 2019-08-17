@@ -10,7 +10,7 @@ description = "Declarative, asynchronous, incremental UI component runtime."
 futures-preview = "0.3.0-alpha.18"
 parking_lot = "0.9"
 scopeguard = "1"
-tracing = { version = "0.1.1", features = ["log"] }
+tracing = "^0.1"
 topo = { path = "topo", version = "0.8" }
 
 [workspace]
@@ -21,3 +21,7 @@ members = [
     "topo",
     "topo/macro",
 ]
+
+[features]
+default = ["log"]
+log = ["tracing/log"]
