@@ -120,6 +120,8 @@ stdout:
         bail!("cargo failure");
     }
 
+    // TODO tag this commit with a version string
+
     Ok(())
 }
 
