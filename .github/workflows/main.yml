@@ -47,3 +47,13 @@ jobs:
       run: |
         cargo clippy-core
         cargo clippy-dom
+
+  published:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: checkout
+      uses: actions/checkout@master
+    - name: deps
+      run: cargo install cargo-script
+    - name: published
+      run: cargo published
