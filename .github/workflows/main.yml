@@ -1,62 +1,42 @@
 on: push
 jobs:
-  main:
+  core:
     strategy:
       matrix:
         os: [ubuntu-18.04, windows-2019]
-        # os: [macOS-10.14, ubuntu-18.04, windows-2019]
-
     runs-on: ${{ matrix.os }}
     
     steps:
-    # - name: rustup
-    #   if: matrix.os == 'macOS-10.14'
-    #   run: |
-    #     curl https://sh.rustup.rs -sSf | sh -s -- -y
-    #     echo 'export PATH="$PATH:$HOME/.cargo/bin"' >> $HOME/.bashrc
+    - uses: actions/checkout@master
+    - run: cargo test-core
 
-    - name: checkout
-      uses: actions/checkout@master
+  dom:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, windows-2019]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - run: rustup target add wasm32-unknown-unknown
+    - run: cargo check-dom-lib
+    - run: cargo build-dom-hacking
+    - run: cargo build-dom-todo
 
-    - name: deps
-      run: |
-        cat $HOME/.bashrc || true
-        echo $PATH
-        rustup component add rustfmt clippy
-        rustup target add wasm32-unknown-unknown
-        cargo install cargo-script
-
-    - name: core
-      run: cargo test-core
-
-    - name: dom
-      run: |
-        cargo check-dom-lib
-        cargo build-dom-hacking
-        cargo build-dom-todo
-
-    - name: formatting
-      run: |
-        cargo fmt -- --check
-        cargo fmt-scripts --check
-
-    - name: docs
-      run: cargo docs-all
-
-    - name: clippy
-      run: |
-        cargo clippy-core
-        cargo clippy-dom
+  housekeeping:
+    runs-on: ubuntu-latest
+    steps:
+    - run: rustup component add rustfmt clippy
+    - uses: actions/checkout@master
+    - run: cargo fmt -- --check
+    - run: cargo fmt-scripts -- --check
+    - run: cargo clippy-core
+    - run: cargo clippy-dom
+    - run: cargo docs-all
 
   published:
-    needs: main
+    needs: [core, dom, housekeeping]
     runs-on: ubuntu-latest
     steps: 
-    - name: login
-      run: cargo login ${{ secrets.CARGO_API_TOKEN }}
-    - name: checkout
-      uses: actions/checkout@master
-    - name: deps
-      run: cargo install cargo-script
-    - name: published
-      run: cargo published
+    - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
+    - uses: actions/checkout@master
+    - run: cargo published

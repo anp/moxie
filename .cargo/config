@@ -4,6 +4,12 @@
 
 scripts = "run --manifest-path scripts/Cargo.toml --bin"
 build-scripts = "build --manifest-path scripts/Cargo.toml --all-targets"
+fmt-scripts = """
+fmt -- 
+    scripts/src/bin/published.rs 
+    scripts/src/bin/serve.rs 
+    scripts/src/bin/wasm-pack.rs
+"""
 
 published = "scripts published --"
 serve_once = "scripts serve --"
@@ -20,6 +26,7 @@ serve = "watch -w scripts -x serve_once"
 core-flow = """
 watch --clear
     -x fmt
+    -x fmt-scripts
     -x build-scripts
     -x check-core
     -x clippy-core
