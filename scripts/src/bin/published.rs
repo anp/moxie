@@ -1,18 +1,3 @@
-//! ```cargo
-//! [package]
-//! edition = "2018"
-//!
-//! [dependencies]
-//! cargo_metadata = "0.8.1"
-//! crates_io_api = "0.5"
-//! failure = "0.1"
-//! gumdrop = "0.6"
-//! pathfinding = "1.1.12"
-//! semver = "0.9"
-//! tracing = { version = "0.1", features = [ "log" ] }
-//! tracing-fmt = "0.0.1-alpha.3"
-//! ```
-
 use {
     cargo_metadata::{Metadata, Package, PackageId},
     crates_io_api as crates,
@@ -33,8 +18,7 @@ struct Config {
 }
 
 fn inputs() -> Result<(Config, Metadata), Error> {
-    let scripts_path = std::env::var("CARGO_SCRIPT_BASE_PATH").unwrap();
-    let root_path = Path::new(&scripts_path).parent().unwrap().to_path_buf();
+    let root_path = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let config = Config::parse_args_default_or_exit();
 
     let metadata = cargo_metadata::MetadataCommand::new()
@@ -74,6 +58,10 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
 
     for member in members {
         let package = &metadata[&member];
+
+        if package.name == env!("CARGO_PKG_NAME") {
+            continue;
+        }
 
         if package.version.to_string().ends_with("-pre") {
             pre_release_ids.push(member);

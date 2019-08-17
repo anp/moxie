@@ -1,22 +1,4 @@
 //! Serve the project directory from a local HTTP server.
-//!
-//! ```cargo
-//! [package]
-//! edition = "2018"
-//!
-//! [dependencies]
-//! actix = "0.8"
-//! actix-files = "0.1"
-//! actix-web = "1"
-//! actix-web-actors = "1"
-//! crossbeam = "0.7"
-//! futures = { package = "futures-preview", version = "0.3.0-alpha.17", features = [ "async-await", "compat", "nightly" ] }
-//! futures01 = { version = "0.1", package = "futures" }
-//! gumdrop = "0.6"
-//! notify = "5.0.0-pre.1"
-//! pretty_env_logger = "0.3"
-//! tracing = { version = "0.1", features = [ "log" ] }
-//! ```
 #![feature(async_await)]
 
 use {
@@ -57,8 +39,7 @@ fn main() {
         .init();
     debug!("logging init'd");
 
-    let scripts_path = std::env::var("CARGO_SCRIPT_BASE_PATH").unwrap();
-    let root_path = Path::new(&scripts_path).parent().unwrap().to_path_buf();
+    let root_path = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let config = Config::parse_args_default_or_exit();
     let (session_tx, session_rx) = chan();
     let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));

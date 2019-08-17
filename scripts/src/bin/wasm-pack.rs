@@ -1,13 +1,3 @@
-//! ```cargo
-//! [package]
-//! edition = "2018"
-//!
-//! [dependencies]
-//! pretty_env_logger = "0.3"
-//! structopt = "0.2"
-//! wasm-pack = "0.8"
-//! ```
-
 use structopt::StructOpt;
 
 fn main() {

@@ -1,5 +1,17 @@
 [alias]
 ####################################################################################################
+# scripts
+
+scripts = "run --manifest-path scripts/Cargo.toml --bin"
+build-scripts = "build --manifest-path scripts/Cargo.toml --all-targets"
+
+published = "scripts published --"
+serve_once = "scripts serve --"
+wa-pack-build = "scripts wasm-pack -- build --target web --out-name index"
+
+serve = "watch -w scripts -x serve_once"
+
+####################################################################################################
 # core crates:
 # * moxie
 # * topo
@@ -8,7 +20,7 @@
 core-flow = """
 watch --clear
     -x fmt
-    -x fmt-scripts
+    -x build-scripts
     -x check-core
     -x clippy-core
     -x test-core
@@ -20,15 +32,7 @@ check-core = "check --all-targets --package moxie --package topo --package topo-
 clippy-core = "clippy --package moxie --package topo --package topo-macro"
 test-core = "test --package moxie --package topo --package topo-macro"
 
-# core utilities
 docs-all = "doc --all --no-deps"
-fmt-scripts = """
-fmt -- 
-    scripts/published.rs
-    scripts/serve.rs 
-    scripts/wasm-pack.rs
-"""
-published = "script scripts/published.rs --"
 
 ####################################################################################################
 # dom crates and examples
@@ -57,10 +61,3 @@ clippy-dom = """clippy
     --package dom-hacking 
     --package todomvc-moxie
 """
-wa-pack-build = "script scripts/wasm-pack.rs -- build --target web --out-name index"
-
-####################################################################################################
-# project server
-
-serve_once = "script scripts/serve.rs --"
-serve = "watch -w scripts -x serve_once"
