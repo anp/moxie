@@ -22,7 +22,13 @@ test-core = "test --package moxie --package topo --package topo-macro"
 
 # core utilities
 docs-all = "doc --all --no-deps"
-fmt-scripts = "fmt -- scripts/serve.rs scripts/wasm-pack.rs"
+fmt-scripts = """
+fmt -- 
+    scripts/published.rs
+    scripts/serve.rs 
+    scripts/wasm-pack.rs
+"""
+published = "script scripts/published.rs --"
 
 ####################################################################################################
 # dom crates and examples
