@@ -46,15 +46,12 @@ jobs:
     - run: cargo docs-all
     - run: cargo docs-tools
 
-  can_release:
-    needs: [core, dom, fmt, clippy, docs]
-    uses: actions/bin/filter@master
-    args: branch master
-
   published:
-    needs: can_release
+    needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
     steps: 
+    - uses: actions/bin/filter@master
+      args: branch master
     - uses: actions/checkout@master
     - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - run: cargo published
