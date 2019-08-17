@@ -10,6 +10,12 @@ fmt --
     scripts/src/bin/serve.rs 
     scripts/src/bin/wasm-pack.rs
 """
+fmt-scripts-check = """
+fmt -- --check
+    scripts/src/bin/published.rs 
+    scripts/src/bin/serve.rs 
+    scripts/src/bin/wasm-pack.rs
+"""
 
 published = "scripts published --"
 serve_once = "scripts serve --"

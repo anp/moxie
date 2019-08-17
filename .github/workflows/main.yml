@@ -29,7 +29,7 @@ jobs:
     - uses: actions/checkout@master
     - run: rustup component add rustfmt clippy
     - run: cargo fmt -- --check
-    - run: cargo fmt-scripts -- --check
+    - run: cargo fmt-scripts-check
     - run: cargo clippy-core
     - run: cargo clippy-dom
     - run: cargo docs-all
