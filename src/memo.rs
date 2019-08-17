@@ -1,8 +1,11 @@
-use std::{
-    any::{Any, TypeId},
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
+use {
+    std::{
+        any::{Any, TypeId},
+        cell::RefCell,
+        collections::HashMap,
+        rc::Rc,
+    },
+    tracing::instrument,
 };
 
 /// Memoize the provided function at the bound callsite, invalidating previous results only if
@@ -36,6 +39,7 @@ where
 pub(crate) struct MemoStore(Rc<RefCell<MemoStorage>>);
 
 impl MemoStore {
+    #[instrument]
     pub fn gc(&self) {
         self.0.borrow_mut().gc();
     }
@@ -94,7 +98,7 @@ impl MemoStorage {
     fn insert<Arg: 'static, Output: 'static>(&mut self, key: MemoKey, arg: Arg, val: Output) {
         let to_insert = Rc::new((arg, val));
         self.inner.insert(key, to_insert.clone());
-        self.next.insert(key, to_insert.clone());
+        self.next.insert(key, to_insert);
     }
 
     fn gc(&mut self) {

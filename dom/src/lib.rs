@@ -83,9 +83,17 @@ pub fn produce_dom(
 
 struct MountedNode(DomNode, Vec<events::EventHandle>);
 
+impl PartialEq for MountedNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.is_same_node(Some(&other.0))
+    }
+}
+
+#[derive(Debug)]
 struct UnmountDomNodeOnDrop(DomNode);
 
 impl Drop for UnmountDomNodeOnDrop {
+    #[instrument]
     fn drop(&mut self) {
         if let Some(parent) = self.0.parent_node() {
             trace!("unmounting node from parent");
@@ -96,7 +104,18 @@ impl Drop for UnmountDomNodeOnDrop {
 
 impl Node for MountedNode {
     type MountHandle = UnmountDomNodeOnDrop;
-    fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
+    fn child(
+        &mut self,
+        child_node: &MountedNode,
+        mounted: Option<Self::MountHandle>,
+    ) -> Self::MountHandle {
+        if let Some(mounted) = mounted {
+            if mounted.0.is_same_node(Some(&child_node.0)) {
+                // trace!(target: "reusing dom node", { ?mounted });
+                return mounted;
+            }
+        }
+
         self.0.append_child(&child_node.0).unwrap();
         UnmountDomNodeOnDrop(child_node.0.clone())
     }

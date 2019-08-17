@@ -49,7 +49,7 @@ impl Todo {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    console_log::init_with_level(log::Level::Debug).unwrap();
+    console_log::init_with_level(log::Level::Trace).unwrap();
     std::panic::set_hook(Box::new(|info| {
         error!("{:#?}", info);
     }));

@@ -4,13 +4,13 @@ use {
 };
 
 /// A type which can be attached to parents of its type and which can receive children.
-pub trait Node {
+pub trait Node: PartialEq {
     /// A handle returned by mounting a child to this node. The handle will be `Drop`'d when the
     /// node is no longer mounted.
     type MountHandle;
 
     /// Mount a new child to this node, returning a [`Node::MountHandle`].
-    fn child(&mut self, child: &Self) -> Self::MountHandle;
+    fn child(&mut self, child: &Self, mounted: Option<Self::MountHandle>) -> Self::MountHandle;
 }
 
 enum Liveness {
@@ -34,6 +34,12 @@ where
         }
     }
 
+    fn set(&mut self, node: N) {
+        if &node != &self.node {
+            *self = NodeMount::new(node);
+        }
+    }
+
     fn end_children(&mut self) {
         // only keep those things that still live
         self.mounts.retain(|_, (lness, _)| match lness {
@@ -47,8 +53,9 @@ where
     }
 
     fn child(&mut self, id: topo::Id, child: &N) {
-        self.mounts
-            .insert(id, (Liveness::Live, self.node.child(child)));
+        let previous = self.mounts.remove(&id).map(|(_, p)| p);
+        let mounted = self.node.child(child, previous);
+        self.mounts.insert(id, (Liveness::Live, mounted));
     }
 }
 
@@ -67,7 +74,13 @@ where
     }
 
     fn set(&self, node: N) {
-        std::mem::replace(&mut *self.mounted.borrow_mut(), Some(NodeMount::new(node)));
+        let mounted = &mut *self.mounted.borrow_mut();
+
+        if let Some(mounted) = mounted {
+            mounted.set(node);
+        } else {
+            *mounted = Some(NodeMount::new(node));
+        }
     }
 
     fn end_children(&self) {

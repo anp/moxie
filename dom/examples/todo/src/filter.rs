@@ -65,14 +65,15 @@ impl Component for FilterLink {
     fn contents(self) {
         let Self { to_set, key } = self;
 
-        let mut link = element("a").attr("style", "cursor: pointer;");
+        let mut link = element("a");
 
         if *key == to_set {
             link = link.attr("class", "selected");
         }
 
         show!(element("li").child(
-            link.on(move |_: ClickEvent, _| Some(to_set), key)
+            link.attr("style", "cursor: pointer;")
+                .on(move |_: ClickEvent, _| Some(to_set), key)
                 .child(text!(to_set.to_string()))
         ));
     }

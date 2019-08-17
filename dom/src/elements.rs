@@ -3,7 +3,7 @@ use {
         events::{EventTarget, Handlers},
         *,
     },
-    std::collections::HashMap,
+    std::collections::BTreeMap,
 };
 
 #[macro_export]
@@ -28,7 +28,7 @@ impl Component for Text {
 
 #[derive(Debug, Default)]
 struct Attrs {
-    inner: HashMap<&'static str, String>,
+    inner: BTreeMap<&'static str, String>,
 }
 
 #[derive(Debug)]
@@ -123,13 +123,29 @@ where
             handlers,
             children,
         } = self;
-        let element = document().create_element(ty).unwrap();
+        let element = once!(|| document().create_element(ty).unwrap());
 
-        for (key, val) in attrs.inner {
-            element.set_attribute(key, &val).unwrap();
+        // TODO think about a "memo by map key" api
+        let existing_attrs = element.attributes();
+        let existing_attrs = (0..existing_attrs.length())
+            .map(|i| existing_attrs.item(i).unwrap())
+            .collect::<Vec<_>>();
+        for attr in existing_attrs {
+            let attr_name = attr.name();
+            if !attrs.inner.contains_key(&*attr_name) {
+                // element.remove_attribute_node(&attr).unwrap();
+            }
         }
 
-        produce_dom!(element.clone(), handlers.apply(&element), || {
+        for pair in attrs.inner {
+            memo!(pair, |(name, value)| element
+                .set_attribute(name, value)
+                .unwrap());
+        }
+
+        let event_handler_dot_dot_dot_handles = handlers.apply(&element);
+
+        produce_dom!(element, event_handler_dot_dot_dot_handles, || {
             show!(children);
         });
     }
