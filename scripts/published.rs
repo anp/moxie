@@ -16,7 +16,7 @@
 use {
     cargo_metadata::{Metadata, Package, PackageId},
     crates_io_api as crates,
-    failure::{bail, Error},
+    failure::{bail, Error, ResultExt},
     gumdrop::Options,
     semver::Version,
     std::{collections::BTreeMap, path::Path},
@@ -54,20 +54,19 @@ fn main() -> Result<(), Error> {
             .finish(),
         || {
             debug!("logging init'd");
-            ensure_published()
+            let (config, metadata) = inputs()?;
+            let to_publish = packages_to_publish(&metadata)?;
+            for id in to_publish {
+                let package = &metadata[&id];
+                publish(package, config.dry_run)?;
+            }
+            Ok(())
         },
     )
 }
 
-fn ensure_published() -> Result<(), Error> {
-    let (config, metadata) = inputs()?;
-    if config.dry_run {
-        info!("dry run beginning");
-    } else {
-        warn!("LIVE");
-    }
-
-    let members = workspace_members_reverse_topo_sorted(&metadata);
+fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
+    let members = workspace_members_reverse_topo_sorted(metadata);
 
     let mut pre_release_ids = vec![];
     let mut release_published_ids = vec![];
@@ -95,25 +94,36 @@ fn ensure_published() -> Result<(), Error> {
     info!({ ?pre_release, ?release_published }, "skipping");
 
     info!("will publish: {:#?}", &to_publish);
-
-    to_publish_ids
-        .iter()
-        .map(|id| &metadata[id])
-        .map(prepublish)
-        .collect::<Result<Vec<()>, Error>>()?;
-
-    if config.dry_run {
-        info!("just kidding, it's a dry run");
-    } else {
-        warn!("PUBLISHING");
-        bail!("TODO");
-    }
-
-    Ok(())
+    Ok(to_publish_ids)
 }
 
-fn prepublish(package: &Package) -> Result<(), Error> {
-    info!({ %package.name }, "prepublish verification");
+fn publish(package: &Package, dry_run: bool) -> Result<(), Error> {
+    info!({ %package.name, %package.version }, "publishing");
+
+    let subcommand = if dry_run { "package" } else { "publish" };
+
+    let output = std::process::Command::new("cargo")
+        .arg(subcommand)
+        .arg("--manifest-path")
+        .arg(&package.manifest_path)
+        .output()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8(output.stderr).context("output as utf8")?;
+        let stdout = String::from_utf8(output.stdout).context("output as utf8")?;
+        error!(
+            "failed to package {}
+stderr:
+{}
+stdout:
+{}",
+            package.manifest_path.display(),
+            stderr,
+            stdout,
+        );
+        bail!("cargo failure");
+    }
+
     Ok(())
 }
 
