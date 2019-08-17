@@ -7,6 +7,9 @@ license = "MIT/Apache-2.0"
 description = "TBA"
 repository = "https://github.com/anp/moxie"
 
+[package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
+
 [dependencies]
 futures-preview = "0.3.0-alpha.18"
 js-sys = "0.3.25"
