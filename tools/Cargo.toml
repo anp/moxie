@@ -1,0 +1,17 @@
+[package]
+name = "tools"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+publish = false
+description = "internal tools for moxie"
+
+[lib]
+path = "lib.rs"
+
+[workspace]
+members = [
+    "ensure-published",
+    "local-wasm-pack",
+    "project-server",
+]

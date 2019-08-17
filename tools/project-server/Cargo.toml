@@ -1,0 +1,28 @@
+[package]
+name = "project-server"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+publish = false
+
+[[bin]]
+path = "server.rs"
+name = "project-server"
+
+[dependencies]
+actix = "0.8"
+actix-files = "0.1"
+actix-web = "1"
+actix-web-actors = "1"
+crossbeam = "0.7"
+failure = "0.1"
+futures01 = { version = "0.1", package = "futures" }
+gumdrop = "0.6"
+notify = "5.0.0-pre.1"
+pretty_env_logger = "0.3"
+tracing = { version = "0.1", features = [ "log" ] }
+
+[dependencies.futures]
+package = "futures-preview"
+version = "0.3.0-alpha.18"
+features = [ "async-await", "compat", "nightly" ]

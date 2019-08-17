@@ -2,7 +2,6 @@ use {
     crate::{input::TextInput, Todo},
     moxie_dom::prelude::*,
     tracing::info,
-    wasm_bindgen::JsCast,
 };
 
 #[derive(Clone, Debug, PartialEq)]

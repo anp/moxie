@@ -4,6 +4,11 @@
 
 This is a placeholder for if/when the project is ready to onboard more contributors.
 
+## Continuous Integration
+
+CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and 
+[configured in-tree](.github/workflows/main.yml). 
+
 ## Development environment
 
 ### Requirements
@@ -11,7 +16,6 @@ This is a placeholder for if/when the project is ready to onboard more contribut
 * [rustup](https://rustup.rs)
   * `rustup component add clippy rustfmt`
 * [cargo-watch](https://crates.io/crates/cargo-watch)
-* [cargo-script](https://crates.io/crates/cargo-script)
 
 ### Workflows
 
@@ -25,15 +29,34 @@ $ cargo core-flow
 
 See [its definition](./.cargo/config) for details.
 
-#### dom examples
+#### moxie-dom
 
-The moxie-dom examples are compiled as part of `core-flow`, and you can serve them locally with `cargo serve`. This will start a local HTTP server providing access to the project directory.
+The main workflow for the dom library:
+
+```shell
+$ cargo dom-flow
+```
+
+To view examples, in a separate terminal:
+
+```shell
+$ cargo serve
+```
+
+This will start a local HTTP server providing access to the project directory. It also watches the
+filesystem for changes to files it has served, delivering notifications when any of them
+change. The examples include `tools/project-server/reloadOnChanges.js` which opens a websocket and 
+reloads the page when changes to the examples are detected.
 
 #### Releases
 
-##### topo
+During development all non-tool crate versions should be suffixed with `-pre` indicating a
+pre-release of some kind. To release a version of a crate, publish a commit to `origin/master/HEAD`
+without the pre-release suffix. The project's continuous integration ensures that any "release"
+versions (without `-pre`) have been published to crates.io.
 
-`topo` and `topo-macro` must be released in sync.
+After a release, all version numbers should be incremented and have `-pre` re-appended. PRs are
+expected to bump the version number of the crate they're modifying behind the `-pre` suffix.
 
 #### New crates
 
@@ -41,5 +64,6 @@ Things to update:
 
 * `Cargo.toml`
 * `.cargo/config`
-* `.dependabot/config.yml`
 * `.github/workflows/main.yml`
+
+(Dependabot discovers the workspace members from the root manifest.)
