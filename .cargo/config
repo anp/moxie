@@ -9,9 +9,9 @@ core-flow = """
 watch --clear
     -x fmt
     -x check-core
-    -x clippy-core
     -x test-core
     -x docs-all
+    -x clippy-core
 """
 
 bench-core = "bench --package moxie --package topo --package topo-macro"
@@ -65,9 +65,9 @@ tools-flow = """
 watch --clear
     -x fmt-tools
     -x check-tools
-    -x clippy-tools
-    -x docs-tools
     -x test-tools
+    -x docs-tools
+    -x clippy-tools
 """
 
 check-tools = "check --manifest-path tools/Cargo.toml --all"
