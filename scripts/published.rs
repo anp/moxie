@@ -14,7 +14,7 @@
 //! ```
 
 use {
-    cargo_metadata::{Metadata, PackageId},
+    cargo_metadata::{Metadata, Package, PackageId},
     crates_io_api as crates,
     failure::{bail, Error},
     gumdrop::Options,
@@ -47,71 +47,79 @@ fn inputs() -> Result<(Config, Metadata), Error> {
 
 fn main() -> Result<(), Error> {
     const RUST_LOG: &str = "debug";
-    let subscriber = FmtSubscriber::builder()
-        .with_filter(EnvFilter::new(RUST_LOG))
-        .finish();
-    tracing::subscriber::with_default(subscriber, || -> Result<(), Error> {
-        debug!("logging init'd");
 
-        let (config, metadata) = inputs()?;
-        if config.dry_run {
-            info!("dry run beginning");
-        } else {
-            warn!("LIVE");
-        }
-
-        let members = workspace_members_reverse_topo_sorted(&metadata);
-
-        let mut pre_release = vec![];
-        let mut release_published = vec![];
-        let mut to_publish = vec![];
-
-        for member in members {
-            let package = &metadata[&member];
-
-            if package.version.to_string().ends_with("-pre") {
-                pre_release.push(member);
-            } else if crates_io_has(&package.name, &package.version)? {
-                release_published.push(member);
-            } else {
-                to_publish.push(member);
-            }
-        }
-
-        let ids_to_names =
-            |ids: &[PackageId]| ids.iter().map(|id| &metadata[id].name).collect::<Vec<_>>();
-
-        let pre_release = ids_to_names(&pre_release);
-        let release_published = ids_to_names(&release_published);
-        let to_publish = ids_to_names(&to_publish);
-
-        info!({ ?pre_release, ?release_published }, "skipping");
-
-        info!("will publish: {:#?}", &to_publish);
-
-        for name in &to_publish {
-            info!({ %name }, "prepublish verification");
-            prepublish(name)?;
-        }
-
-        if config.dry_run {
-            info!("just kidding, it's a dry run");
-        } else {
-            warn!("PUBLISHING");
-            bail!("TODO");
-        }
-
-        Ok(())
-    })
+    tracing::subscriber::with_default(
+        FmtSubscriber::builder()
+            .with_filter(EnvFilter::new(RUST_LOG))
+            .finish(),
+        || {
+            debug!("logging init'd");
+            ensure_published()
+        },
+    )
 }
 
-#[instrument]
-fn prepublish(crate_name: &str) -> Result<(), Error> {
+fn ensure_published() -> Result<(), Error> {
+    let (config, metadata) = inputs()?;
+    if config.dry_run {
+        info!("dry run beginning");
+    } else {
+        warn!("LIVE");
+    }
+
+    let members = workspace_members_reverse_topo_sorted(&metadata);
+
+    let mut pre_release_ids = vec![];
+    let mut release_published_ids = vec![];
+    let mut to_publish_ids = vec![];
+
+    for member in members {
+        let package = &metadata[&member];
+
+        if package.version.to_string().ends_with("-pre") {
+            pre_release_ids.push(member);
+        } else if crates_io_has(&package.name, &package.version)? {
+            release_published_ids.push(member);
+        } else {
+            to_publish_ids.push(member);
+        }
+    }
+
+    let ids_to_names =
+        |ids: &[PackageId]| ids.iter().map(|id| &metadata[id].name).collect::<Vec<_>>();
+
+    let pre_release = ids_to_names(&pre_release_ids);
+    let release_published = ids_to_names(&release_published_ids);
+    let to_publish = ids_to_names(&to_publish_ids);
+
+    info!({ ?pre_release, ?release_published }, "skipping");
+
+    info!("will publish: {:#?}", &to_publish);
+
+    to_publish_ids
+        .iter()
+        .map(|id| &metadata[id])
+        .map(prepublish)
+        .collect::<Result<Vec<()>, Error>>()?;
+
+    if config.dry_run {
+        info!("just kidding, it's a dry run");
+    } else {
+        warn!("PUBLISHING");
+        bail!("TODO");
+    }
+
     Ok(())
 }
 
-#[instrument]
+fn prepublish(package: &Package) -> Result<(), Error> {
+    info!({ %package.name }, "prepublish verification");
+    Ok(())
+}
+
 fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
+    info!({ %name, %version }, "checking crates.io for");
+
     let client = crates::SyncClient::new();
     let krate = client.full_crate(name, true /* all_versions */)?;
     let versions = &krate.versions;
