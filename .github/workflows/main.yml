@@ -29,11 +29,11 @@ jobs:
     - name: core
       run: cargo test-core
 
-    # - name: dom
-    #   run: |
-    #     cargo check-dom-lib
-    #     cargo build-dom-hacking
-    #     cargo build-dom-todo
+    - name: dom
+      run: |
+        cargo check-dom-lib
+        cargo build-dom-hacking
+        cargo build-dom-todo
 
     - name: formatting
       run: |
