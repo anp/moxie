@@ -1,5 +1,4 @@
 //! Serve the project directory from a local HTTP server.
-#![feature(async_await)]
 
 use {
     actix::prelude::*,
