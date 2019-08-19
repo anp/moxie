@@ -1,0 +1,16 @@
+[package]
+name = "moxie-glutin"
+version = "0.0.1-alpha.0-pre"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+description = "experimental glutin-based runtime for moxie"
+repository = "https://github.com/anp/moxie"
+publish = false
+
+[dependencies]
+futures-preview = "0.3.0-alpha.18"
+glutin = "0.22.0-alpha3"
+moxie = { path = "../.." }
+parking_lot = "0.9"
+tracing = "0.1"

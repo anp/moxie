@@ -50,6 +50,23 @@ clippy-dom = """clippy
 """
 
 ####################################################################################################
+# guin
+
+guin-flow = """
+    watch --clear
+    -x check-guin
+    -x test-guin
+    -x clippy-guin
+    -x run-guin-hacking
+"""
+
+check-guin = "check --all-targets --package guin"
+clippy-guin = "clippy --package guin"
+test-guin = "test --all-targets --package guin"
+run-guin-hacking = "run --package guin --example hacking"
+
+
+####################################################################################################
 # tools
 
 published = "run --manifest-path tools/ensure-published/Cargo.toml --bin ensure-published --"

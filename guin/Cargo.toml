@@ -1,0 +1,23 @@
+[package]
+name = "guin"
+version = "0.0.1-alpha.0-pre"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+description = "experimental pathfinder-based ui built with moxie"
+repository = "https://github.com/anp/moxie"
+publish = false
+
+[dependencies]
+futures-preview = "0.3.0-alpha.18"
+moxie = { path = ".." }
+moxie-glutin = { path = "glutin" }
+
+[dependencies.pathfinder_renderer]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
+
+[dev-dependencies]
+failure = "0.1"
+tracing = "0.1"
+tracing-fmt = "0.0.1-alpha.3"

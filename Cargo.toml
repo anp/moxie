@@ -26,6 +26,7 @@ members = [
     "dom",
     "dom/examples/hacking",
     "dom/examples/todo",
+    "guin",
     "topo",
     "topo/macro",
 ]
