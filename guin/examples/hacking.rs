@@ -26,5 +26,7 @@ impl guin::App for HackingApp {
 
 impl moxie::Component for HackingApp {
     #[tracing::instrument]
-    fn contents(self) {}
+    fn contents(self) {
+        unimplemented!()
+    }
 }
