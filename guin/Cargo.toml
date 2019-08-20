@@ -12,6 +12,27 @@ publish = false
 futures-preview = "0.3.0-alpha.18"
 moxie = { path = ".." }
 moxie-glutin = { path = "glutin" }
+tracing = "0.1"
+
+[dependencies.pathfinder_canvas]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
+
+[dependencies.pathfinder_content]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
+
+[dependencies.pathfinder_geometry]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
+
+[dependencies.pathfinder_gl]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
+
+[dependencies.pathfinder_gpu]
+git = "https://github.com/servo/pathfinder.git"
+rev = "f89ed900a3887a867308adbbd20cedba9bd2975b"
 
 [dependencies.pathfinder_renderer]
 git = "https://github.com/servo/pathfinder.git"
