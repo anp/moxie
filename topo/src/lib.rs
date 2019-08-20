@@ -254,7 +254,11 @@ impl Point {
 
             let child = if reset_on_drop {
                 let mut root = Point::default();
-                root.state = root.state.child(Callsite::new(callsite_ty, &None), add_env);
+                // by getting a child of the state instead of the point, we skip creating
+                // a dep on the IDs of the parent, but still pass an Env through
+                root.state = parent
+                    .state
+                    .child(Callsite::new(callsite_ty, &None), add_env);
                 root
             } else {
                 parent.child(callsite_ty, add_env)
@@ -371,7 +375,51 @@ pub struct Env {
     inner: Rc<EnvInner>,
 }
 
-type EnvInner = Map<TypeId, Rc<dyn Any>>;
+#[doc(hidden)]
+#[derive(Clone, Debug)]
+pub struct AnonRc {
+    name: &'static str,
+    id: TypeId,
+    inner: Rc<dyn Any>,
+}
+
+impl AnonRc {
+    #[doc(hidden)]
+    pub fn unstable_new<T: 'static>(inner: T) -> Self {
+        Self {
+            name: "TODO",
+            id: TypeId::of::<T>(),
+            inner: Rc::new(inner),
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn unstable_insert_into(self, env: &mut EnvInner) {
+        env.insert(self.id, self);
+    }
+
+    #[doc(hidden)]
+    // FIXME this should probably expose a fallible api somehow?
+    pub fn unstable_deref<T: 'static>(self) -> impl Deref<Target = T> + 'static {
+        OwningRef::new(self.inner).map(|anon| {
+            anon.downcast_ref().unwrap_or_else(|| {
+                panic!("asked {:?} to cast to {:?}", anon, TypeId::of::<T>(),);
+            })
+        })
+    }
+}
+
+impl Deref for AnonRc {
+    type Target = dyn Any;
+    fn deref(&self) -> &Self::Target {
+        &*self.inner
+    }
+}
+
+unsafe impl stable_deref_trait::StableDeref for AnonRc {}
+unsafe impl stable_deref_trait::CloneStableDeref for AnonRc {}
+
+type EnvInner = Map<TypeId, AnonRc>;
 
 impl Env {
     /// Returns a reference to a value in the current environment if it has been added to the
@@ -380,16 +428,14 @@ impl Env {
     where
         E: Any + 'static,
     {
-        Point::with_current(|current| {
-            current
-                .state
-                .env
-                .inner
-                .get(&TypeId::of::<E>())
-                .map(|guard| {
-                    OwningRef::new(guard.to_owned()).map(|anon| anon.downcast_ref().unwrap())
-                })
-        })
+        let key = TypeId::of::<E>();
+        let anon = Point::with_current(|current| current.state.env.inner.get(&key).cloned());
+
+        if let Some(anon) = anon {
+            Some(anon.unstable_deref())
+        } else {
+            None
+        }
     }
 
     /// Returns a reference to a value in the current environment, as [`Env::get`] does, but panics
@@ -403,9 +449,8 @@ impl Env {
     }
 
     fn child(&self, additional: EnvInner) -> Env {
-        let mut new: EnvInner = (*self.inner).to_owned();
-
-        new.extend(additional.iter().map(|(t, v)| (*t, v.clone())));
+        let mut new: EnvInner = (*self.inner).clone();
+        new.extend(additional.into_iter());
 
         Env {
             inner: Rc::new(new),
@@ -445,20 +490,9 @@ macro_rules! unstable_make_topo_macro {
 #[macro_export]
 macro_rules! env {
     ($($env_item_ty:ty => $env_item:expr,)*) => {{
-        use std::collections::HashMap;
-
         #[allow(unused_mut)]
-        let mut new_env = HashMap::new();
-        $({
-            use std::{
-                any::{Any, TypeId},
-                rc::Rc,
-            };
-            new_env.insert(
-                TypeId::of::<$env_item_ty>(),
-                Rc::new($env_item) as Rc<dyn Any>,
-            );
-        })*
+        let mut new_env = std::collections::HashMap::new();
+        $( $crate::AnonRc::unstable_new($env_item).unstable_insert_into(&mut new_env); )*
         new_env
     }}
 }
@@ -497,13 +531,13 @@ mod tests {
 
         call!(
             {
-                let curr_byte: u8 = *Env::get::<u8>().unwrap();
+                let curr_byte = *Env::expect::<u8>();
                 assert_eq!(curr_byte, first_byte);
                 first_called = true;
 
                 call!(
                     {
-                        let curr_byte: u8 = *Env::get::<u8>().unwrap();
+                        let curr_byte = *Env::expect::<u8>();
                         assert_eq!(curr_byte, second_byte);
                         second_called = true;
                     },
@@ -520,6 +554,34 @@ mod tests {
             }
         );
         assert!(first_called);
+        assert!(Env::get::<u8>().is_none());
+    }
+
+    #[test]
+    fn root_sees_parent_env() {
+        let first_byte = 0u8;
+
+        call!(
+            {
+                let curr_byte = *Env::expect::<u8>();
+                assert_eq!(curr_byte, first_byte);
+
+                root!(
+                    {
+                        let curr_byte = *Env::expect::<u8>();
+                        assert_eq!(curr_byte, first_byte);
+                    },
+                    env! {
+                        u16 => 1,
+                    }
+                );
+
+                assert_eq!(curr_byte, first_byte);
+            },
+            env! {
+                u8 => first_byte,
+            }
+        );
         assert!(Env::get::<u8>().is_none());
     }
 }

@@ -136,3 +136,29 @@ impl RunLoopWaker {
         self.0.wake_by_ref();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn propagating_env_to_runtime() {
+        let first_byte = 0u8;
+
+        let mut runtime = Runtime::new(|| {
+            let from_env: u8 = *topo::Env::expect();
+            assert_eq!(from_env, first_byte);
+        });
+
+        assert!(topo::Env::get::<u8>().is_none());
+        topo::call!(
+            {
+                runtime.run_once();
+            },
+            env! {
+                u8 => first_byte,
+            }
+        );
+        assert!(topo::Env::get::<u8>().is_none());
+    }
+}
