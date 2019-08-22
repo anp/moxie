@@ -37,18 +37,17 @@ impl Visibility {
     }
 }
 
-#[derive(Debug)]
-pub struct Filter {
-    pub visibility: Key<Visibility>,
-}
+#[derive(Debug, Default)]
+pub struct Filter;
 
 impl Component for Filter {
     fn contents(self) {
+        let visibility = topo::Env::expect::<Key<Visibility>>();
         show!(element("ul").attr("class", "filters").inner(|| {
             for &to_set in [All, Active, Completed].iter() {
                 show!(FilterLink {
                     to_set,
-                    key: self.visibility.clone(),
+                    key: visibility.clone(),
                 });
             }
         }));

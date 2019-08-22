@@ -1,53 +1,47 @@
 use {
-    crate::{
-        filter::{Filter, Visibility},
-        Todo,
-    },
+    crate::{filter::Filter, Todo},
     moxie_dom::prelude::*,
 };
 
 #[derive(Debug)]
 pub struct Footer {
-    pub completed_count: usize,
-    pub active_count: usize,
-    pub todos: Key<Vec<Todo>>,
-    pub visibility: Key<Visibility>,
+    pub num_complete: usize,
+    pub num_active: usize,
 }
 
 impl Component for Footer {
     fn contents(self) {
         let Self {
-            completed_count,
-            active_count,
-            todos,
-            visibility,
+            num_complete,
+            num_active,
         } = self;
+        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
 
         show!(element("footer").attr("class", "footer").inner(|| {
             show!(
                 element("span")
                     .attr("class", "todo-count")
                     // lol this is awful
-                    .child(element("strong").child(if active_count == 0 {
+                    .child(element("strong").child(if num_active == 0 {
                         text!("No")
                     } else {
-                        text!(active_count)
+                        text!(num_active)
                     }))
                     .child(text!(
                         " {} left",
-                        if active_count == 1 { "item" } else { "items" }
+                        if num_active == 1 { "item" } else { "items" }
                     )),
-                Filter { visibility }
+                Filter
             );
 
-            if completed_count > 0 {
+            if num_complete > 0 {
                 show!(element("button")
                     .attr("class", "clear-completed")
                     .on(
                         |_: ClickEvent, todos| {
                             Some(todos.iter().filter(|t| !t.completed).cloned().collect())
                         },
-                        todos
+                        todos.clone()
                     )
                     .child(text!("Clear completed")));
             }

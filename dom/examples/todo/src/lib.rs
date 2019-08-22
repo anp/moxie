@@ -4,8 +4,6 @@ use {
     main_section::MainSection,
     moxie_dom::prelude::*,
     std::sync::atomic::{AtomicU32, Ordering},
-    tracing::{error, log},
-    wasm_bindgen::prelude::*,
 };
 
 pub mod filter;
@@ -22,10 +20,18 @@ impl Component for TodoApp {
         let visibility: Key<Visibility> = state!();
         let todos = state!(|| vec![Todo::new("whoaaa")]);
 
-        show!(element("div")
-            .attr("class", "todoapp")
-            .child(Header::new(todos.clone()))
-            .child(MainSection::new(todos, visibility)));
+        topo::call!(
+            {
+                show!(element("div")
+                    .attr("class", "todoapp")
+                    .child(Header)
+                    .child(MainSection));
+            },
+            env! {
+                Key<Vec<Todo>> => todos,
+                Key<Visibility> => visibility,
+            }
+        )
     }
 }
 
@@ -49,9 +55,9 @@ impl Todo {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    console_log::init_with_level(log::Level::Debug).unwrap();
+    console_log::init_with_level(tracing::log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
-        error!("{:#?}", info);
+        tracing::error!("{:#?}", info);
     }));
     moxie_dom::mount!(document().body().unwrap(), TodoApp);
 }

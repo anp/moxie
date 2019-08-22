@@ -3,62 +3,44 @@ use {
     moxie_dom::prelude::*,
 };
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct MainSection {
-    todos: Key<Vec<Todo>>,
-    visibility: Key<Visibility>,
-}
-
-impl MainSection {
-    pub fn new(todos: Key<Vec<Todo>>, visibility: Key<Visibility>) -> Self {
-        Self { todos, visibility }
-    }
-}
+#[derive(Clone, Debug)]
+pub struct MainSection;
 
 impl Component for MainSection {
     fn contents(self) {
-        let todos_empty = self.todos.is_empty();
-        let todos_count = self.todos.len();
-        let completed_count = self.todos.iter().filter(|t| t.completed).count();
+        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
+        let num_complete = todos.iter().filter(|t| t.completed).count();
 
         show!(element("section").attr("class", "main").inner(move || {
-            if !todos_empty {
+            if !todos.is_empty() {
                 show!(Toggle {
-                    default_checked: completed_count == todos_count,
-                    todos: self.todos.clone(),
+                    default_checked: num_complete == todos.len(),
                 })
             }
 
-            show!(TodoList {
-                todos: self.todos.clone(),
-                visibility: self.visibility.clone(),
-            });
+            show!(TodoList);
 
-            if !todos_empty {
+            if !todos.is_empty() {
                 show!(Footer {
-                    completed_count,
-                    active_count: todos_count - completed_count,
-                    todos: self.todos,
-                    visibility: self.visibility,
+                    num_complete,
+                    num_active: todos.len() - num_complete,
                 });
             }
         }));
     }
 }
 
-#[derive(Debug)]
-struct TodoList {
-    todos: Key<Vec<Todo>>,
-    visibility: Key<Visibility>,
-}
+#[derive(Debug, Default)]
+struct TodoList;
 
 impl Component for TodoList {
     fn contents(self) {
+        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
+        let visibility = topo::Env::expect::<Key<Visibility>>();
         show!(element("ul").attr("class", "todo-list").inner(|| {
-            for todo in self.todos.iter().filter(|t| self.visibility.should_show(t)) {
+            for todo in todos.iter().filter(|t| visibility.should_show(t)) {
                 show!(TodoItem {
                     todo: todo.to_owned(),
-                    todos: self.todos.clone(),
                 });
             }
         }))
@@ -68,11 +50,11 @@ impl Component for TodoList {
 #[derive(Debug)]
 struct TodoItem {
     todo: Todo,
-    todos: Key<Vec<Todo>>,
 }
 
 impl Component for TodoItem {
     fn contents(self) {
+        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
         let editing = state!(|| false);
 
         let mut classes = String::new();
@@ -87,25 +69,24 @@ impl Component for TodoItem {
 
         show!(element("li").attr("class", classes).inner(|| {
             if *editing {
-                let todos = self.todos;
+                let todos = todos;
                 let this_todo = self.todo;
                 let placeholder = this_todo.text.clone();
-
-                let on_save: Box<dyn Fn(String)> = Box::new(move |value: String| {
-                    editing.set(false);
-                    todos.update(|todos| {
-                        let mut todos = todos.to_vec();
-                        if let Some(mut todo) = todos.iter_mut().find(|t| t.id == this_todo.id) {
-                            todo.text = value;
-                        }
-                        Some(todos)
-                    });
-                });
 
                 show!(TextInput {
                     placeholder,
                     editing: true,
-                    on_save,
+                    on_save: move |value: String| {
+                        editing.set(false);
+                        todos.update(|todos| {
+                            let mut todos = todos.to_vec();
+                            if let Some(mut todo) = todos.iter_mut().find(|t| t.id == this_todo.id)
+                            {
+                                todo.text = value;
+                            }
+                            Some(todos)
+                        });
+                    },
                 });
             } else {
                 show!(element("div")
@@ -132,7 +113,7 @@ impl Component for TodoItem {
                                             .collect(),
                                     )
                                 },
-                                self.todos.clone()
+                                todos.clone()
                             )
                     )
                     .child(
@@ -144,7 +125,7 @@ impl Component for TodoItem {
                         move |_: ClickEvent, todos| {
                             Some(todos.iter().filter(|t| t.id != id).cloned().collect())
                         },
-                        self.todos
+                        todos.clone()
                     )))
             }
         }))
@@ -154,11 +135,11 @@ impl Component for TodoItem {
 #[derive(Debug)]
 struct Toggle {
     default_checked: bool,
-    todos: Key<Vec<Todo>>,
 }
 
 impl Component for Toggle {
     fn contents(self) {
+        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
         let toggle_to = !self.default_checked;
         show!(element("span")
             .child(
@@ -179,7 +160,7 @@ impl Component for Toggle {
                         .collect::<Vec<_>>()
                         .into()
                 },
-                self.todos
+                todos.clone(),
             )));
     }
 }
