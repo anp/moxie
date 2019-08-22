@@ -1,10 +1,6 @@
-use {
-    moxie_dom::{elements::*, events::*, *},
-    tracing::*,
-    wasm_bindgen::prelude::*,
-};
+use moxie_dom::prelude::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct HackedApp;
 
 impl Component for HackedApp {
@@ -23,11 +19,11 @@ impl Component for HackedApp {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    console_log::init_with_level(log::Level::Debug).unwrap();
+    console_log::init_with_level(tracing::log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
-        error!("{:#?}", info);
+        tracing::error!("{:#?}", info);
     }));
 
-    info!("mounting moxie-dom to root");
+    tracing::info!("mounting moxie-dom to root");
     mount!(document().body().unwrap(), HackedApp);
 }
