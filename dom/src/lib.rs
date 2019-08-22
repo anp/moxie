@@ -33,6 +33,7 @@ pub mod prelude {
         window,
     };
     pub use moxie::*;
+    pub use wasm_bindgen::prelude::*;
 }
 
 pub use web_sys as sys;
