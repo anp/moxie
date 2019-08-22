@@ -25,5 +25,5 @@ pub fn main() {
     }));
 
     tracing::info!("mounting moxie-dom to root");
-    mount!(document().body().unwrap(), HackedApp);
+    moxie_dom::mount!(document().body().unwrap(), HackedApp);
 }
