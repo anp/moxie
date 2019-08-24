@@ -1948,7 +1948,6 @@ dependencies = [
  "notify 5.0.0-pre.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "opener 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "reqwest 0.9.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
