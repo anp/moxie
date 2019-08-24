@@ -47,6 +47,8 @@ fn main() {
     let (session_tx, session_rx) = chan();
     let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
 
+    spawn_opener(&config);
+
     HttpServer::new(move || {
         let session_tx = session_tx.clone();
         let watcher_middleware = watcher.clone();
@@ -72,6 +74,21 @@ fn main() {
     .unwrap()
     .run()
     .unwrap();
+}
+
+fn spawn_opener(config: &Config) {
+    let root_url = format!("http://[{}]:{}/index.html", &config.addr, &config.port);
+    std::thread::spawn(move || {
+        loop {
+            info!({ %root_url }, "testing for web server before opening");
+            if reqwest::get(&root_url).is_ok() {
+                opener::open(&root_url).unwrap();
+                break;
+            } else {
+                std::thread::sleep(Duration::from_millis(100));
+            }
+        }
+    });
 }
 
 fn pump_channels(

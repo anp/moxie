@@ -1,6 +1,25 @@
-# moxie 
+# moxie
 
 ![Crates.io](https://img.shields.io/crates/l/moxie.svg)
+
+## Hands On
+
+Want to try things out? Run these commands in two terminals:
+
+```
+$ cargo dom-flow
+```
+
+This will build all of the web examples and watch for local changes.
+
+```
+$ cargo server
+```
+
+This will start an HTTP server for the static files in the repo, and opens the repo directory in a
+browser.
+
+## About
 
 `moxie` (<small>/ˈmäksē/</small>) is a lightweight platform-agnostic UI runtime written in Rust, powering a strongly-typed declarative programming style with minimal interaction latency.
 
@@ -24,5 +43,5 @@ Licensed under either of
 
   * [Apache License, Version 2.0](LICENSE-APACHE)
   * [MIT license](LICENSE-MIT)
- 
+
 at your option.
