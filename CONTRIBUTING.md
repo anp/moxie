@@ -1,13 +1,12 @@
 # Contributing to moxie
 
-## Bottom line: not yet
-
-This is a placeholder for if/when the project is ready to onboard more contributors.
+Hello! The project is still very early and it's a really good idea to hop in the
+[Discord](https://discord.gg/vTAzk3d).
 
 ## Continuous Integration
 
-CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and 
-[configured in-tree](.github/workflows/main.yml). 
+CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and
+[configured in-tree](.github/workflows/main.yml).
 
 ## Development environment
 
@@ -45,7 +44,7 @@ $ cargo serve
 
 This will start a local HTTP server providing access to the project directory. It also watches the
 filesystem for changes to files it has served, delivering notifications when any of them
-change. The examples include `tools/project-server/reloadOnChanges.js` which opens a websocket and 
+change. The examples include `tools/project-server/reloadOnChanges.js` which opens a websocket and
 reloads the page when changes to the examples are detected.
 
 #### Releases
