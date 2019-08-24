@@ -1,3 +1,5 @@
+<img src="assets/logo.png" alt="moxie logo" width="175"/>
+
 # moxie
 
 ![Crates.io](https://img.shields.io/crates/l/moxie.svg)
@@ -19,6 +21,8 @@ $ cargo server
 This will start an HTTP server for the static files in the repo, and opens the repo directory in a
 browser.
 
+Take a look at [`.cargo/config`](.cargo/config) for other subcommand aliases used in the project.
+
 ## About
 
 `moxie` (<small>/ˈmäksē/</small>) is a lightweight platform-agnostic UI runtime written in Rust, powering a strongly-typed declarative programming style with minimal interaction latency.
@@ -31,11 +35,11 @@ browser.
 [swiftui]: https://developer.apple.com/xcode/swiftui/
 [compose]: https://developer.android.com/jetpack/compose
 
-## Contributing
+## Contributing and Code of Conduct
 
-The project is not yet ready for external contributions, although I hope to change this message before RustConf 2019 (we'll see!). In the meantime, I'm currently trying out a [Discord server](https://discord.gg/vTAzk3d) for chat and will continue working towards the project's maturity enough to onboard!
-
-See [CONDUCT.md](CONDUCT.md) for the project's Code of Conduct.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for overall contributing info and [CONDUCT.md](CONDUCT.md)
+for the project's Code of Conduct. The project is still very early in its lifecycle but we welcome
+anyone interested in getting involved.
 
 ## License
 

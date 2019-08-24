@@ -2,8 +2,9 @@
 
 scratch space for standing up web/dom bindings
 
+in two terminals:
+
 ```
-cargo serve
-cargo core-flow
-open 'http://[::1]:8000/dom/examples/hacking/index.html'
+$ cargo dom-flow
+$ cargo server
 ```

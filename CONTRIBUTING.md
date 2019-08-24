@@ -1,7 +1,16 @@
 # Contributing to moxie
 
-Hello! The project is still very early and it's a really good idea to hop in the
-[Discord](https://discord.gg/vTAzk3d).
+Hello! The project is still very early but we're so excited to see you here!
+
+The core bits have only recently stabilized enough to invite contribution, and we're still working
+on a body of starter issues and docs that can enable more participation. If this doesn't scare you
+away, then read on.
+
+The project currently uses a [Discord server](https://discord.gg/vTAzk3d) for chat and we
+recommend joining if you're interested in contributing at this phase. If you would be interested in
+contributing but prefer other communications media, please let us know! It's certainly not
+required to contribute, but GitHub issues are a bit constraining for the level of ambiguity in the
+project today.
 
 ## Continuous Integration
 
@@ -39,7 +48,7 @@ $ cargo dom-flow
 To view examples, in a separate terminal:
 
 ```shell
-$ cargo serve
+$ cargo server
 ```
 
 This will start a local HTTP server providing access to the project directory. It also watches the
