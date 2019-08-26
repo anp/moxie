@@ -11,19 +11,19 @@ impl Website {
     pub fn run(self, root_path: &Path) -> Result<(), Error> {
         let operation = self.op.unwrap_or_default();
         match operation {
-            Operation::Dist(opts) => opts.copy_to_target_dir(root_path),
+            Operation::Build(opts) => opts.copy_to_target_dir(root_path),
         }
     }
 }
 
 #[derive(Debug, Options)]
 enum Operation {
-    Dist(DistOpts),
+    Build(DistOpts),
 }
 
 impl Default for Operation {
     fn default() -> Self {
-        Operation::Dist(DistOpts { help: false })
+        Operation::Build(DistOpts { help: false })
     }
 }
 
