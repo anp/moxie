@@ -29,4 +29,8 @@ members = [
     "topo",
     "topo/macro",
 ]
-exclude = ["tools"]
+exclude = [
+    "project-tools",
+    "project-tools/ensure-published",
+    "project-tools/local-wasm-pack",
+]
