@@ -52,14 +52,15 @@ clippy-dom = """clippy
 ####################################################################################################
 # tools
 
-published = "run --manifest-path project-tools/ensure-published/Cargo.toml --bin ensure-published --"
-serve_once = "run --manifest-path project-project/Cargo.toml --release --"
+tool = "run --manifest-path project-tools/Cargo.toml --bin"
+published = "tool published --"
+serve_once = "tool main --release --"
+server = "watch -w project-tools -x serve_once"
+
 wa-pack-build = """
 run --manifest-path project-tools/local-wasm-pack/Cargo.toml
     -- build --target web --out-name index
 """
-
-server = "watch -w tools -x serve_once"
 
 tools-flow = """
 watch --clear -w tools

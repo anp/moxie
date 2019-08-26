@@ -5,7 +5,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - uses: actions/checkout@master
     - run: cargo test-core
@@ -15,14 +15,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - uses: actions/checkout@master
     - run: rustup target add wasm32-unknown-unknown
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
-  
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +31,7 @@ jobs:
     - run: cargo fmt -- --check
     # FIXME https://github.com/anp/moxie/issues/27
     # - run: cargo fmt-tools -- --check
-  
+
   clippy:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +39,7 @@ jobs:
     - run: rustup component add clippy
     - run: cargo clippy-core
     - run: cargo clippy-dom
-  
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +50,7 @@ jobs:
   published:
     needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
-    steps: 
+    steps:
     - uses: actions/bin/filter@master
       with:
         args: branch master

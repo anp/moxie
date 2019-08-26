@@ -40,8 +40,6 @@ fn main() {
 
     let root_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .unwrap()
-        .parent()
         .unwrap();
     let config = Config::parse_args_default_or_exit();
     let (session_tx, session_rx) = chan();
