@@ -57,3 +57,4 @@ jobs:
     - uses: actions/checkout@master
     - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
     - run: cargo ofl published
+    - run: cargo ofl website
