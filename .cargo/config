@@ -38,6 +38,11 @@ check-dom-lib = "check --package moxie-dom"
 check-dom-hacking = "check --package dom-hacking"
 check-dom-todo = "check --package todomvc-moxie"
 
+wa-pack-build = """
+run --manifest-path dom/local-wasm-pack/Cargo.toml
+    -- build --target web --out-name index
+"""
+
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
@@ -50,27 +55,22 @@ clippy-dom = """clippy
 """
 
 ####################################################################################################
-# tools
+# ofl
 
-tool = "run --manifest-path project-tools/Cargo.toml --bin"
-published = "tool published --"
-serve_once = "tool main --release --"
-server = "watch -w project-tools -x serve_once"
+ofl = "run --manifest-path ofl/Cargo.toml --"
+server = "watch -w ofl/src/main.rs -x ofl"
 
-wa-pack-build = """
-run --manifest-path project-tools/local-wasm-pack/Cargo.toml
-    -- build --target web --out-name index
+ofl-dev = """
+watch --clear -w ofl
+    -x fmt-ofl
+    -x check-ofl
+    -x test-ofl
+    -x docs-ofl
+    -x clippy-ofl
 """
 
-tools-flow = """
-watch --clear -w tools
-    -x check-tools
-    -x test-tools
-    -x docs-tools
-    -x clippy-tools
-"""
-
-check-tools = "check --manifest-path project-tools/Cargo.toml --all"
-clippy-tools = "clippy --manifest-path project-tools/Cargo.toml --all"
-test-tools = "test --manifest-path project-tools/Cargo.toml --all"
-docs-tools = "doc --manifest-path project-tools/Cargo.toml --all --no-deps"
+check-ofl = "check --manifest-path ofl/Cargo.toml --all"
+clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --all"
+fmt-ofl = "fmt -- ofl/src/main.rs"
+test-ofl = "test --manifest-path ofl/Cargo.toml --all"
+docs-ofl = "doc --manifest-path ofl/Cargo.toml --all --no-deps"

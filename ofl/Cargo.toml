@@ -1,11 +1,11 @@
 [package]
-name = "project"
-version = "0.1.0-alpha-pre"
+name = "ofl"
+version = "0.2.0-alpha.0-pre"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
-description = "Declarative, asynchronous, incremental UI runtime."
-repository = "https://github.com/anp/moxie/tree/master/project-tools"
+description = "outcome-oriented project task tool, as in 'all task runners are...'"
+repository = "https://github.com/anp/moxie/tree/master/ofl"
 
 [dependencies]
 actix = "0.8"
@@ -32,8 +32,3 @@ walkdir = "2.2.9"
 package = "futures-preview"
 version = "0.3.0-alpha.18"
 features = [ "compat" ]
-
-[workspace]
-members = [
-    "local-wasm-pack",
-]

@@ -26,10 +26,8 @@ members = [
     "dom",
     "dom/examples/hacking",
     "dom/examples/todo",
+    "dom/local-wasm-pack",
     "topo",
     "topo/macro",
 ]
-exclude = [
-    "project-tools",
-    "project-tools/local-wasm-pack",
-]
+exclude = [ "ofl" ]

@@ -1,5 +1,3 @@
-//! Serve the project directory from a local HTTP server.
-
 use {
     actix::prelude::*,
     actix_web::{
@@ -9,6 +7,7 @@ use {
     },
     actix_web_actors::ws,
     crossbeam::channel::{select, unbounded as chan, Receiver, Sender},
+    failure::Error,
     futures::{compat::Compat, future::Ready, TryFutureExt},
     futures01::{Async, Future as OldFuture},
     gumdrop::Options,
@@ -23,63 +22,64 @@ use {
 };
 
 #[derive(Debug, Options)]
-struct Config {
-    help: bool,
+pub struct ServerOpts {
     #[options(default = "::1")]
     addr: IpAddr,
     #[options(default = "8000")]
     port: u16,
 }
 
-fn main() {
-    pretty_env_logger::formatted_timed_builder()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module(module_path!(), log::LevelFilter::Debug)
-        .init();
-    debug!("logging init'd");
-
-    let root_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap();
-    let config = Config::parse_args_default_or_exit();
-    let (session_tx, session_rx) = chan();
-    let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
-
-    spawn_opener(&config);
-
-    HttpServer::new(move || {
-        let session_tx = session_tx.clone();
-        let watcher_middleware = watcher.clone();
-        App::new()
-            .wrap(middleware::Logger::default())
-            .service(web::resource("/ch-ch-ch-changes").route(web::get().to(
-                move |req, stream: web::Payload| {
-                    let session_tx = session_tx.clone();
-                    ws::start(
-                        ChangeWatchSession {
-                            last_heartbeat: Instant::now(),
-                            session_tx,
-                        },
-                        &req,
-                        stream,
-                    )
-                },
-            )))
-            .wrap(watcher_middleware)
-            .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
-    })
-    .bind((config.addr, config.port))
-    .unwrap()
-    .run()
-    .unwrap();
+impl Default for ServerOpts {
+    fn default() -> Self {
+        Self {
+            // this is so annoying. different cli parsing option maybe?
+            addr: "::1".parse().unwrap(),
+            port: 8000,
+        }
+    }
 }
 
-fn spawn_opener(config: &Config) {
-    let root_url = format!("http://[{}]:{}/index.html", &config.addr, &config.port);
-    std::thread::spawn(move || {
-                opener::open(&root_url).unwrap();
-            }
-    );
+impl ServerOpts {
+    pub fn run_server(self, root_path: PathBuf) -> Result<(), Error> {
+        let (session_tx, session_rx) = chan();
+        let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
+
+        self.spawn_opener();
+
+        HttpServer::new(move || {
+            let session_tx = session_tx.clone();
+            let watcher_middleware = watcher.clone();
+            App::new()
+                .wrap(middleware::Logger::default())
+                .service(web::resource("/ch-ch-ch-changes").route(web::get().to(
+                    move |req, stream: web::Payload| {
+                        let session_tx = session_tx.clone();
+                        ws::start(
+                            ChangeWatchSession {
+                                last_heartbeat: Instant::now(),
+                                session_tx,
+                            },
+                            &req,
+                            stream,
+                        )
+                    },
+                )))
+                .wrap(watcher_middleware)
+                .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
+        })
+        .bind((self.addr, self.port))
+        .unwrap()
+        .run()
+        .unwrap();
+        Ok(())
+    }
+
+    fn spawn_opener(&self) {
+        let root_url = format!("http://[{}]:{}/index.html", &self.addr, &self.port);
+        std::thread::spawn(move || {
+            opener::open(&root_url).unwrap();
+        });
+    }
 }
 
 fn pump_channels(
