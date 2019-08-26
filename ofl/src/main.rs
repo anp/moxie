@@ -8,6 +8,7 @@ use {
 
 mod published;
 mod server;
+mod website;
 
 #[derive(Debug, Options)]
 struct Config {
@@ -20,6 +21,7 @@ struct Config {
 enum Command {
     Published(published::EnsurePublished),
     Serve(server::ServerOpts),
+    Website(website::Website),
 }
 
 impl Default for Command {
@@ -49,6 +51,7 @@ fn main() -> Result<(), Error> {
                     opts.run(metadata)
                 }
                 Command::Serve(opts) => opts.run_server(root_path.to_path_buf()),
+                Command::Website(opts) => opts.run(root_path),
             }
         },
     )
