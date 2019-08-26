@@ -22,6 +22,7 @@ jobs:
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
+    - run: cargo ofl website build
 
   fmt:
     runs-on: ubuntu-latest
@@ -50,11 +51,8 @@ jobs:
   published:
     needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/bin/filter@master
-      with:
-        args: branch master
     - uses: actions/checkout@master
-    - run: cargo login ${{ secrets.CARGO_API_TOKEN }}
-    - run: cargo ofl published
-    - run: cargo ofl website
+    - if: github.ref == 'origin/master'
+      run: |
+        cargo login ${{ secrets.CARGO_API_TOKEN }}
+        cargo ofl published
