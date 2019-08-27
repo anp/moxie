@@ -56,11 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Dump GitHub context
-      env:
-        GITHUB_CONTEXT: ${{ toJson(github) }}
-      run: echo "$GITHUB_CONTEXT"
-    - if: github.ref == 'origin/master'
+    - if: github.ref == 'ref/heads/master'
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
