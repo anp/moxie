@@ -1,4 +1,9 @@
-use {failure::Error, gumdrop::Options, std::path::Path, tracing::*};
+use {
+    failure::Error,
+    gumdrop::Options,
+    std::path::{Path, PathBuf},
+    tracing::*,
+};
 
 #[derive(Debug, Options)]
 pub struct Website {
@@ -8,10 +13,12 @@ pub struct Website {
 }
 
 impl Website {
-    pub fn run(self, root_path: &Path) -> Result<(), Error> {
-        let operation = self.op.unwrap_or_default();
+    pub fn run(self, root_path: PathBuf) -> Result<(), Error> {
+        let operation = self
+            .op
+            .unwrap_or_else(|| Operation::Build(DistOpts::default(&root_path)));
         match operation {
-            Operation::Build(opts) => opts.copy_to_target_dir(root_path),
+            Operation::Build(opts) => opts.copy_to_target_dir(&root_path),
         }
     }
 }
@@ -21,24 +28,27 @@ enum Operation {
     Build(DistOpts),
 }
 
-impl Default for Operation {
-    fn default() -> Self {
-        Operation::Build(DistOpts { help: false })
-    }
-}
-
 #[derive(Debug, Options)]
 struct DistOpts {
     help: bool,
+    #[options(free, required)]
+    output_dir: PathBuf,
 }
 
 impl DistOpts {
+    fn default(root_path: &Path) -> Self {
+        Self {
+            help: false,
+            output_dir: root_path.join("target").join("website"),
+        }
+    }
+
     fn copy_to_target_dir(self, root_path: &Path) -> Result<(), Error> {
         let tools_path = root_path.join("ofl");
 
         let root_target_dir = root_path.join("target");
         let tools_target_dir = tools_path.join("target");
-        let output_path = root_target_dir.join("website");
+        let output_path = self.output_dir;
         let output = output_path.display();
 
         let skip_prefixes = vec![
@@ -51,7 +61,8 @@ impl DistOpts {
         let exts = vec!["css", "html", "js", "png", "svg", "wasm"];
 
         info!({ %output }, "cleaning, copying files");
-        let _ = std::fs::remove_dir_all(&output_path);
+        // TODO clean up output path, but don't remove .git
+        // let _ = std::fs::remove_dir_all(&output_path);
         std::fs::create_dir_all(&output_path)?;
 
         'entries: for entry in walkdir::WalkDir::new(root_path) {

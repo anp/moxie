@@ -1,7 +1,7 @@
 use {
     failure::Error,
     gumdrop::Options,
-    std::path::Path,
+    std::path::{Path, PathBuf},
     tracing::*,
     tracing_fmt::{filter::EnvFilter, FmtSubscriber},
 };
@@ -13,6 +13,10 @@ mod website;
 #[derive(Debug, Options)]
 struct Config {
     help: bool,
+    #[options(
+        default_expr = r#"Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap().to_owned()"#
+    )]
+    project_root: PathBuf,
     #[options(command)]
     command: Option<Command>,
 }
@@ -38,20 +42,19 @@ fn main() -> Result<(), Error> {
         || {
             debug!("logging init'd");
 
-            let root_path = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
             let config = Config::parse_args_default_or_exit();
             let command = config.command.unwrap_or_default();
 
             match command {
                 Command::Published(opts) => {
                     let metadata = cargo_metadata::MetadataCommand::new()
-                        .manifest_path(root_path.join("Cargo.toml"))
-                        .current_dir(root_path)
+                        .manifest_path(config.project_root.join("Cargo.toml"))
+                        .current_dir(config.project_root)
                         .exec()?;
                     opts.run(metadata)
                 }
-                Command::Serve(opts) => opts.run_server(root_path.to_path_buf()),
-                Command::Website(opts) => opts.run(root_path),
+                Command::Serve(opts) => opts.run_server(config.project_root),
+                Command::Website(opts) => opts.run(config.project_root),
             }
         },
     )
