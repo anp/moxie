@@ -33,8 +33,7 @@ jobs:
     - uses: actions/checkout@master
     - run: rustup component add rustfmt
     - run: cargo fmt -- --check
-    # FIXME https://github.com/anp/moxie/issues/27
-    # - run: cargo fmt-tools -- --check
+    - run: cargo fmt-ofl -- --check
 
   clippy:
     runs-on: ubuntu-latest
