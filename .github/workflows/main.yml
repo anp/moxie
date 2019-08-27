@@ -75,30 +75,13 @@ jobs:
         name: docs
         path: main/target/doc
 
-    - name: checkout gh-pages branch
-      uses: actions/checkout@master
-      with:
-        ref: gh-pages
-        path: website
-
-    - name: clean website directory
-      # https://stackoverflow.com/questions/22339837/linux-command-to-delete-all-files-except-git-folder
-      run: |
-        git rm -rf .
-        git clean -fxd
-      working-directory: website
-
     - name: build website
-      run: cargo ofl website build ../website
-      working-directory: main
+      run: cargo ofl website build target/website
 
-    - name: push website to gh pages
-      if: github.ref == 'refs/heads/master'
-      run: |
-        git add -a
-        git commit -m $GITHUB_SHA
-        git push origin gh-pages
-      working-directory: website
+    - uses: actions/upload-artifact@master
+      with:
+        name: website
+        path: target/website
 
   published:
     needs: [website]
@@ -111,3 +94,26 @@ jobs:
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
+
+    - name: checkout docs
+      uses: actions/checkout@master
+      with:
+        ref: gh-pages
+
+    - name: prepare repo for unpacking website
+      run: |
+        git rm -rf .
+        git clean -fxd
+
+    - name: download website
+      uses: actions/download-artifact@master
+      with:
+        name: website
+
+    - name: commit website updates and push
+      if: github.ref == 'refs/heads/master'
+      run: |
+        git add -a
+        git commit -m $GITHUB_SHA
+        git push origin gh-pages
+
