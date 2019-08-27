@@ -19,22 +19,17 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup target add wasm32-unknown-unknown
-    - name: Dump runner context
-      env:
-        RUNNER_CONTEXT: ${{ toJson(runner) }}
-      run: echo "$RUNNER_CONTEXT"
-    - name: Dump GitHub context
-      env:
-        GITHUB_CONTEXT: ${{ toJson(github) }}
-      run: echo "$GITHUB_CONTEXT"
-    - name: Dump job context
-      env:
-        JOB_CONTEXT: ${{ toJson(job) }}
-      run: echo "$JOB_CONTEXT"
     - run: cargo check-dom-lib
-    - run: cargo build-dom-hacking
-    - run: cargo build-dom-todo
-    - uses: actions/upload-artifact@master
+
+    - name: build dom examples
+      if: runner.os == 'Linux'
+      run: |
+        cargo build-dom-hacking
+        cargo build-dom-todo
+
+    - name: upload dom examples
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@master
       with:
         name: dom-examples
         path: dom/examples
