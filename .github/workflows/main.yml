@@ -86,7 +86,7 @@ jobs:
     - run: cargo ofl website build ../website
 
     # publish it if we're on master
-    - if: github.ref == 'ref/heads/master'
+    - if: github.ref == 'refs/heads/master'
       working-directory: ../website
       run: |
         git add -a
@@ -98,8 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: echo ${{ github.ref }}
-    - if: github.ref == 'ref/heads/master'
+    - if: github.ref == 'refs/heads/master'
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
