@@ -78,7 +78,8 @@ jobs:
     - name: build website
       run: cargo ofl website build target/website
 
-    - uses: actions/upload-artifact@master
+    - name: make archive
+      uses: actions/upload-artifact@master
       with:
         name: website
         path: target/website
@@ -89,13 +90,13 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: ensure all crates published
+    - name: ensure crates published
       if: github.ref == 'refs/heads/master'
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
 
-    - name: checkout docs
+    - name: checkout gh-pages branch
       uses: actions/checkout@master
       with:
         ref: gh-pages
