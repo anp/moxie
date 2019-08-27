@@ -51,6 +51,7 @@ jobs:
   published:
     needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
+    steps:
     - uses: actions/checkout@master
     - if: github.ref == 'origin/master'
       run: |
