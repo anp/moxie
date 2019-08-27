@@ -50,19 +50,13 @@ jobs:
     - uses: actions/checkout@master
     - run: cargo docs-all
     - run: cargo docs-ofl
-
-  published:
-    needs: [core, dom, fmt, clippy, docs]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - if: github.ref == 'ref/heads/master'
-      run: |
-        cargo login ${{ secrets.CARGO_API_TOKEN }}
-        cargo ofl published
+    - uses: actions/upload-artifact@master
+      with:
+        name: docs
+        path: target/doc
 
   website:
-    needs: [published]
+    needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -70,4 +64,18 @@ jobs:
       with:
         name: dom-examples
         path: dom/examples
+    - uses: actions/download-artifact@master
+      with:
+        name: docs
+        path: target/doc
     - run: cargo ofl website build
+
+  published:
+    needs: [website]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - if: github.ref == 'ref/heads/master'
+      run: |
+        cargo login ${{ secrets.CARGO_API_TOKEN }}
+        cargo ofl published

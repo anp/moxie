@@ -58,7 +58,9 @@ impl DistOpts {
             root_path.join(".vscode"),
         ];
 
-        let exts = vec!["css", "html", "js", "png", "svg", "wasm"];
+        let exts = vec![
+            "css", "html", "ico", "js", "png", "svg", "txt", "wasm", "woff",
+        ];
 
         info!({ %output }, "cleaning, copying files");
         // TODO clean up output path, but don't remove .git
