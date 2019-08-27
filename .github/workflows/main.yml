@@ -128,3 +128,5 @@ jobs:
     - name: push website
       if: github.ref == 'refs/heads/master'
       run: git push origin gh-pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
