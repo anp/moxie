@@ -43,6 +43,7 @@ run --manifest-path dom/local-wasm-pack/Cargo.toml
     -- build --target web --out-name index
 """
 
+build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 

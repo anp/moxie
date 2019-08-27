@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup target add wasm32-unknown-unknown
-    - run: cargo check-dom-lib
+    - run: cargo build-dom-lib
 
     - name: build dom examples
       if: runner.os == 'Linux'

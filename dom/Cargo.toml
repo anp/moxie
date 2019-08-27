@@ -7,6 +7,9 @@ license = "MIT/Apache-2.0"
 description = "TBA"
 repository = "https://github.com/anp/moxie"
 
+[lib]
+crate-type = [ "cdylib", "rlib", ]
+
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
 
