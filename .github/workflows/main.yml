@@ -22,15 +22,15 @@ jobs:
     - name: Dump runner context
       env:
         RUNNER_CONTEXT: ${{ toJson(runner) }}
-              - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
+      run: echo "$RUNNER_CONTEXT"
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
     - name: Dump job context
       env:
         JOB_CONTEXT: ${{ toJson(job) }}
       run: echo "$JOB_CONTEXT"
-      run: echo "$RUNNER_CONTEXT"
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
