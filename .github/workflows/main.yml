@@ -110,9 +110,11 @@ jobs:
       with:
         name: website
 
-    - name: commit website updates and push
-      if: github.ref == 'refs/heads/master'
+    - name: commit website updates
       run: |
         git add --all .
         git commit -m $GITHUB_SHA
-        git push origin gh-pages
+
+    - name: push website
+      if: github.ref == 'refs/heads/master'
+      run: git push origin gh-pages
