@@ -120,6 +120,8 @@ jobs:
 
     - name: commit website updates
       run: |
+        git config --global user.name "docs builder"
+        git config --global user.email "adam.n.perry+moxie@gmail.com"
         git add --all .
         git commit -m $GITHUB_SHA
 
