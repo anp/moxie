@@ -68,7 +68,7 @@ jobs:
       with:
         name: docs
         path: target/doc
-    - run: cargo ofl website build
+    - run: cargo ofl website build target/website
 
   published:
     needs: [website]
