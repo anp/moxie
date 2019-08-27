@@ -22,7 +22,6 @@ jobs:
     - run: cargo check-dom-lib
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
-    - run: cargo ofl website build
 
   fmt:
     runs-on: ubuntu-latest
@@ -46,7 +45,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: cargo docs-all
-    - run: cargo docs-tools
+    - run: cargo docs-ofl
 
   published:
     needs: [core, dom, fmt, clippy, docs]
@@ -57,3 +56,10 @@ jobs:
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
+
+  website:
+    needs: [published]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: cargo ofl website build
