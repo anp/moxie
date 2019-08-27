@@ -59,46 +59,55 @@ jobs:
     needs: [core, dom, fmt, clippy, docs]
     runs-on: ubuntu-latest
     steps:
-
-    # get the code and the output of examples and docs
     - uses: actions/checkout@master
-    - uses: actions/download-artifact@master
+      with:
+        path: main
+
+    - name: download dom examples
+      uses: actions/download-artifact@master
       with:
         name: dom-examples
-        path: dom/examples
-    - uses: actions/download-artifact@master
+        path: main/dom/examples
+
+    - name: download docs
+      uses: actions/download-artifact@master
       with:
         name: docs
-        path: target/doc
+        path: main/target/doc
 
-    # clone the website branch into a separate folder, clean it for build output
-    - uses: actions/checkout@master
+    - name: checkout gh-pages branch
+      uses: actions/checkout@master
       with:
         ref: gh-pages
-        path: ../website
-    - working-directory: ../website
+        path: website
+
+    - name: clean website directory
       # https://stackoverflow.com/questions/22339837/linux-command-to-delete-all-files-except-git-folder
       run: |
         git rm -rf .
         git clean -fxd
+      working-directory: website
 
-    # build it
-    - run: cargo ofl website build ../website
+    - name: build website
+      run: cargo ofl website build ../website
+      working-directory: main
 
-    # publish it if we're on master
-    - if: github.ref == 'refs/heads/master'
-      working-directory: ../website
+    - name: push website to gh pages
+      if: github.ref == 'refs/heads/master'
       run: |
         git add -a
         git commit -m $GITHUB_SHA
         git push origin gh-pages
+      working-directory: website
 
   published:
     needs: [website]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - if: github.ref == 'refs/heads/master'
+
+    - name: ensure all crates published
+      if: github.ref == 'refs/heads/master'
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
