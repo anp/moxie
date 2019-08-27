@@ -75,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: echo ${{ github.ref }}
     - if: github.ref == 'ref/heads/master'
       run: |
         cargo login ${{ secrets.CARGO_API_TOKEN }}
