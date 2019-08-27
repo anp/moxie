@@ -16,7 +16,7 @@ stable_deref_trait = "1.1.1"
 topo-macro = { path = "macro", version = "0.8.1" }
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
 
 [[bench]]
 name = "simple"
