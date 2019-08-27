@@ -113,7 +113,6 @@ jobs:
     - name: commit website updates and push
       if: github.ref == 'refs/heads/master'
       run: |
-        git add -a
+        git add --all .
         git commit -m $GITHUB_SHA
         git push origin gh-pages
-
