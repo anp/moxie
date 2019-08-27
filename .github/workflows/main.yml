@@ -72,8 +72,9 @@ jobs:
         path: target/doc
 
     # clone the website branch into a separate folder, clean it for build output
-    - uses: actions/checkout@gh-pages
+    - uses: actions/checkout@master
       with:
+        ref: gh-pages
         path: ../website
     - working-directory: ../website
       # https://stackoverflow.com/questions/22339837/linux-command-to-delete-all-files-except-git-folder
