@@ -1,7 +1,4 @@
-on: 
-  push:
-    branches:
-      - '!*.tmp'
+on: push
 jobs:
   core:
     strategy:
