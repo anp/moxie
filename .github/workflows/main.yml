@@ -110,6 +110,7 @@ jobs:
       uses: actions/download-artifact@master
       with:
         name: website
+        path: ../
 
     - name: commit website updates
       run: |
