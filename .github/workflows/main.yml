@@ -119,7 +119,7 @@ jobs:
         mv website/* ./
         git config --global user.name "docs builder"
         git config --global user.email "adam.n.perry+moxie@gmail.com"
-        git commit -a --allow-empty -m $GITHUB_SHA .
+        git commit --allow-empty -m $GITHUB_SHA .
 
     - name: push website
       if: github.ref == 'refs/heads/master'
