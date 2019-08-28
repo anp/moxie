@@ -1,12 +1,18 @@
 #![deny(missing_docs, intra_doc_link_resolution_failure)]
 
-//! Topological functions execute within a context unique to the path in the runtime call
+//! `topo` provides tools for describing trees based on their runtime callgraph. Because normal 
+//! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.
+//!
+//! Topologically-bound functions run within a context unique to the path in the runtime call
 //! graph of other topological functions preceding the current activation record.
 //!
-//! Defining a topological function results in a macro definition for binding the topological
+//! By running the same topologically-bound functions in a loop, we can observe changes to the
+//! structure over time.
+//!
+//! Defining a topological function results in a macro definition for binding the 
 //! function to each callsite where it is invoked.
 //!
-//! Define a topological function with the `topo::bound` attribute:
+//! Define a topologically-bound function with the `topo::bound` attribute:
 //!
 //! ```
 //! #[topo::bound]
@@ -60,7 +66,7 @@ use {
 };
 
 /// Calls the provided expression within an [`Env`] bound to the callsite, optionally passing
-/// an environment to the child scope.
+/// additional environment values to the child scope.
 ///
 /// ```
 /// let prev = topo::Id::current();
