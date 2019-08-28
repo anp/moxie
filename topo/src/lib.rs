@@ -1,6 +1,6 @@
 #![deny(missing_docs, intra_doc_link_resolution_failure)]
 
-//! `topo` provides tools for describing trees based on their runtime callgraph. Because normal 
+//! `topo` provides tools for describing trees based on their runtime callgraph. Because normal
 //! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.
 //!
 //! Topologically-bound functions run within a context unique to the path in the runtime call
@@ -9,7 +9,7 @@
 //! By running the same topologically-bound functions in a loop, we can observe changes to the
 //! structure over time.
 //!
-//! Defining a topological function results in a macro definition for binding the 
+//! Defining a topological function results in a macro definition for binding the
 //! function to each callsite where it is invoked.
 //!
 //! Define a topologically-bound function with the `topo::bound` attribute:
