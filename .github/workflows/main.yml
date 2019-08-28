@@ -80,7 +80,9 @@ jobs:
         path: target/doc
 
     - name: build website
-      run: cargo ofl website build target/website
+      run: |
+        cargo ofl website build target/website
+        echo 'moxie.rs' > target/website/CNAME
 
     - name: make archive
       uses: actions/upload-artifact@master
