@@ -101,6 +101,7 @@ jobs:
 
     - name: prepare repo for unpacking website
       run: |
+        rm ./**/.gitignore
         git rm -rf .
         git clean -fxd
 
