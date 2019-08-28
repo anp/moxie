@@ -6,7 +6,9 @@
 
 ## Hands On
 
-Want to try things out? Run these commands in two terminals:
+Want to try things out? Check out 
+[the development requirements](CONTRIBUTING.md#development-environment), and run 
+these commands in two terminals:
 
 ```
 $ cargo dom-flow
