@@ -116,8 +116,7 @@ jobs:
         mv website/* ./
         git config --global user.name "docs builder"
         git config --global user.email "adam.n.perry+moxie@gmail.com"
-        git add --all .
-        git commit -m $GITHUB_SHA
+        git commit -a --allow-empty -m $GITHUB_SHA .
 
     - name: push website
       if: github.ref == 'refs/heads/master'
@@ -126,4 +125,4 @@ jobs:
         git remote add origin https://anp:$GITHUB_TOKEN@github.com/anp/moxie.git
         git push origin gh-pages
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
