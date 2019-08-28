@@ -66,20 +66,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-      with:
-        path: main
 
     - name: download dom examples
       uses: actions/download-artifact@master
       with:
         name: dom-examples
-        path: main/dom/examples
+        path: dom/examples
 
     - name: download docs
       uses: actions/download-artifact@master
       with:
         name: docs
-        path: main/target/doc
+        path: target/doc
 
     - name: build website
       run: cargo ofl website build target/website
