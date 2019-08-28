@@ -101,8 +101,7 @@ jobs:
 
     - name: prepare repo for unpacking website
       run: |
-        rm ./**/.gitignore
-        git rm -rf .
+        GLOBIGNORE='.git' git rm -rf *
         git clean -fxd
 
     - name: download website
