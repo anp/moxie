@@ -84,7 +84,7 @@ jobs:
         cargo ofl website build target/website
         echo 'moxie.rs' > target/website/CNAME
 
-    - name: make archive
+    - name: upload website archive
       uses: actions/upload-artifact@master
       with:
         name: website
@@ -102,9 +102,13 @@ jobs:
         ref: gh-pages
 
     - name: prepare repo for unpacking website
+      env:
+        GLOBIGNORE: .git
       run: |
-        GLOBIGNORE='.git' git rm -rf *
+        git rm -rf *
         git clean -fxd
+        git config --global user.name "docs builder"
+        git config --global user.email "adam.n.perry+moxie@gmail.com"
 
     - name: download website
       uses: actions/download-artifact@master
@@ -112,11 +116,12 @@ jobs:
         name: website
 
     - name: commit website updates
+      env:
+        GLOBIGNORE: .git
       run: |
         mv website/* ./
-        git config --global user.name "docs builder"
-        git config --global user.email "adam.n.perry+moxie@gmail.com"
-        git commit --allow-empty -m $GITHUB_SHA .
+        git add --force --all
+        git commit --allow-empty --message $GITHUB_SHA .
 
     - name: push website
       if: github.ref == 'refs/heads/master'
