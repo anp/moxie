@@ -46,27 +46,20 @@ impl DistOpts {
     fn copy_to_target_dir(self, root_path: &Path) -> Result<(), Error> {
         let tools_path = root_path.join("ofl");
 
-        let root_target_dir = root_path.join("target");
-        let tools_target_dir = tools_path.join("target");
-        let output_path = self.output_dir;
+        let _ = std::fs::remove_dir_all(&self.output_dir);
+        std::fs::create_dir_all(&self.output_dir)?;
+        let output_path = self.output_dir.canonicalize()?;
         let output = output_path.display();
 
-        let skip_prefixes = vec![
-            tools_path,
-            tools_target_dir,
-            root_target_dir,
-            root_path.join(".vscode"),
-        ];
+        let skip_prefixes = vec![tools_path, output_path.clone(), root_path.join(".vscode")];
 
         let exts = vec![
             "css", "html", "ico", "js", "png", "svg", "txt", "wasm", "woff",
         ];
 
         info!({ %output }, "cleaning, copying files");
-        // TODO clean up output path, but don't remove .git
-        // let _ = std::fs::remove_dir_all(&output_path);
-        std::fs::create_dir_all(&output_path)?;
 
+        let mut to_copy = vec![];
         'entries: for entry in walkdir::WalkDir::new(root_path) {
             let path = entry?.path().to_owned();
 
@@ -75,17 +68,19 @@ impl DistOpts {
                 _ => continue,
             };
 
-            let relative = path.strip_prefix(root_path)?;
-            let rel_path = relative.display();
-            let destination = output_path.join(relative);
-
             for prefix in &skip_prefixes {
                 if path.starts_with(prefix) {
                     continue 'entries;
                 }
             }
+            to_copy.push(path);
+        }
 
+        for path in to_copy {
+            let relative = path.strip_prefix(root_path)?;
+            let rel_path = relative.display();
             info!({ %rel_path }, "copying path");
+            let destination = output_path.join(relative);
             std::fs::create_dir_all(destination.parent().unwrap())?;
             std::fs::copy(path, destination)?;
         }
