@@ -6,44 +6,54 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1" name="viewport" />
-    <script src="project-tools/reloadOnChanges.js"></script>
+    <script src="ofl/reloadOnChanges.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/normalize.css@8.0.1/normalize.css">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" crossorigin="anonymous">
+    <link rel="stylesheet" href="index.css">
 </head>
 
 <body>
-    <img src="assets/logo.png" alt="moxie logo" width="150" />
-    <h1>moxie</h1>
-    <p>a lightweight platform-agnostic declarative UI runtime, written in rust</p>
+    <div class="content">
+        <header class="header">
+            <img src="assets/logo.png" alt="moxie logo" width="150" />
+            <h1>moxie</h1>
+            <p>a lightweight platform-agnostic declarative UI runtime, written in rust</p>
+        </header>
 
-    <h2>docs (docs.rs)</h2>
-    <ul>
-        <li><a href="https://docs.rs/moxie-dom">moxie-dom</a></li>
-        <li><a href="https://docs.rs/moxie">moxie</a></li>
-        <li><a href="https://docs.rs/topo">topo</a></li>
-    </ul>
+        <h2>moxie-dom wasm examples</h2>
+        <p>a WebAssembly-based library for describing the web's DOM using moxie</p>
+        <ul>
+            <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
+            <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
+        </ul>
 
-    <h2>docs (master branch)</h2>
-    <ul>
-        <li><a href="target/doc/moxie_dom/index.html">moxie-dom</a></li>
-        <li><a href="target/doc/moxie/index.html">moxie</a></li>
-        <li><a href="target/doc/topo/index.html">topo</a></li>
-    </ul>
+        <h2>docs (master branch)</h2>
 
-    <h2>moxie-dom webassembly examples</h2>
-    <p>a WASM-based library for describing the web's DOM using moxie</p>
-    <ul>
-        <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
-        <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
-    </ul>
+        <ul>
+            <li><a href="target/doc/moxie_dom/index.html">moxie-dom</a></li>
+            <li><a href="target/doc/moxie/index.html">moxie</a></li>
+            <li><a href="target/doc/topo/index.html">topo</a></li>
+        </ul>
 
-    <h2>chat</h2>
+        <h2>docs (docs.rs)</h2>
 
-    <iframe 
-        src="https://discordapp.com/widget?id=590930607396093971&theme=dark" 
-        width="350" 
-        height="500" 
-        allowtransparency="true" 
-        frameborder="0">
-    </iframe>
+        <ul>
+            <li><a href="https://docs.rs/moxie-dom">moxie-dom</a></li>
+            <li><a href="https://docs.rs/moxie">moxie</a></li>
+            <li><a href="https://docs.rs/topo">topo</a></li>
+        </ul>
+
+        <h2>repository</h2>
+
+        <a href="https://github.com/anp/moxie">
+            <img alt="github icon" height="32" width="32" src="https://unpkg.com/simple-icons@latest/icons/github.svg" />
+        </a>
+
+        <h2>chat</h2>
+
+        <iframe src="https://discordapp.com/widget?id=590930607396093971&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0">
+        </iframe>
+    </div>
 </body>
 
 </html>
