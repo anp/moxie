@@ -54,7 +54,7 @@ impl DistOpts {
         let skip_prefixes = vec![tools_path, output_path.clone(), root_path.join(".vscode")];
 
         let exts = vec![
-            "css", "html", "ico", "js", "png", "svg", "txt", "wasm", "woff",
+            "css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff",
         ];
 
         info!({ %output }, "cleaning, copying files");
