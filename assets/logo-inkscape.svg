@@ -15,7 +15,7 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="logo.svg">
+   sodipodi:docname="logo-inkscape.svg">
   <defs
      id="defs2">
     <filter
@@ -62,7 +62,7 @@
      inkscape:cx="329.28412"
      inkscape:cy="255.59222"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer6"
+     inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:window-width="1687"
      inkscape:window-height="1408"
@@ -104,17 +104,8 @@
   <g
      inkscape:groupmode="layer"
      id="layer6"
-     inkscape:label="dark bg"
-     sodipodi:insensitive="true"
-     style="display:none">
-    <rect
-       style="opacity:1;fill:#333333;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:4.77299976;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="rect889"
-       width="172.95815"
-       height="157.96178"
-       x="-0.1999516"
-       y="-0.041795842" />
-  </g>
+     inkscape:label="black bg"
+     sodipodi:insensitive="true" />
   <g
      inkscape:groupmode="layer"
      id="layer4"
@@ -148,8 +139,7 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="small red circles"
-     style="display:inline"
-     sodipodi:insensitive="true">
+     style="display:inline">
     <ellipse
        style="opacity:1;fill:#b2282f;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:4.77299976;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path865"
