@@ -14,7 +14,7 @@ scopeguard = "1"
 tracing = "^0.1"
 
 [dependencies.topo]
-version = "0.8.2"
+version = "0.9.0-pre"
 path = "topo"
 
 [features]
