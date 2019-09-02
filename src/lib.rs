@@ -73,9 +73,9 @@ impl std::fmt::Debug for Revision {
 /// ```
 /// let mut rt = moxie::Runtime::new(|| {});
 /// assert_eq!(rt.revision().0, 0);
-/// for i in 0..10 {
+/// for i in 1..10 {
 ///     rt.run_once();
-///     assert_eq!(rt.revision(), moxie::Revision(1));
+///     assert_eq!(rt.revision(), moxie::Revision(i));
 /// }
 /// ```
 pub struct Runtime<Root> {
