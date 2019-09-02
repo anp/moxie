@@ -227,12 +227,12 @@ impl std::fmt::Debug for Id {
 /// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
 /// topological functions.
 ///
-/// The current `Point` contains the local [`Env`], [`Id`], and some additional internal state to
-/// uniquely identify each child topological function invocations.
+/// The current `Point` contains the local [`Env`] and [`Id`].
 #[derive(Debug)]
 pub struct Point {
     id: Id,
-    state: State,
+    /// The current environment.
+    env: Env,
 }
 
 thread_local! {
@@ -256,15 +256,13 @@ impl Point {
             let mut parent = parent.borrow_mut();
 
             // this must be copied *before* creating the child below, which will mutate the state
-            let parent_initial_state = parent.state.clone();
+            let parent_initial_env = parent.env.clone();
 
             let child = if reset_on_drop {
                 let mut root = Point::default();
                 // by getting a child of the state instead of the point, we skip creating
                 // a dep on the IDs of the parent, but still pass an Env through
-                root.state = parent
-                    .state
-                    .child(Callsite::new(callsite_ty, &None), add_env);
+                root.env = parent.env.child(add_env);
                 root
             } else {
                 parent.child(callsite_ty, add_env)
@@ -272,10 +270,10 @@ impl Point {
             let parent = replace(&mut *parent, child);
 
             scopeguard::guard(
-                (parent_initial_state, parent),
-                move |(prev_initial_state, mut prev)| {
+                (parent_initial_env, parent),
+                move |(prev_initial_env, mut prev)| {
                     if reset_on_drop {
-                        prev.state = prev_initial_state;
+                        prev.env = prev_initial_env;
                     }
                     CURRENT_POINT.with(|p| p.replace(prev));
                 },
@@ -285,17 +283,16 @@ impl Point {
 
     /// Mark a child Point in the topology.
     fn child(&mut self, callsite_ty: TypeId, additional: EnvInner) -> Self {
-        let callsite = Callsite::new(callsite_ty, &self.state.last_child);
+        let callsite = Callsite::new(callsite_ty);
 
         let mut hasher = DefaultHasher::new();
         self.id.hash(&mut hasher);
-        self.state.child_count.hash(&mut hasher);
         callsite.hash(&mut hasher);
         let id = Id(hasher.finish());
 
         Self {
             id,
-            state: self.state.child(callsite, additional),
+            env: self.env.child(additional),
         }
     }
 
@@ -309,7 +306,7 @@ impl Default for Point {
     fn default() -> Self {
         Self {
             id: Id(0),
-            state: Default::default(),
+            env: Default::default(),
         }
     }
 }
@@ -320,46 +317,14 @@ impl PartialEq for Point {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-struct State {
-    /// The callsite most recently bound to this one as a child.
-    last_child: Option<Callsite>,
-    /// The number of children currently bound to this `Point`.
-    child_count: u16,
-    /// The current environment.
-    env: Env,
-}
-
-impl State {
-    fn child(&mut self, callsite: Callsite, additional: EnvInner) -> Self {
-        self.last_child = Some(callsite);
-        self.child_count += 1;
-
-        Self {
-            last_child: None,
-            child_count: 0,
-            env: self.env.child(additional),
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Callsite {
     ty: TypeId,
-    count: usize,
 }
 
 impl Callsite {
-    fn new(ty: TypeId, last_child: &Option<Callsite>) -> Self {
-        let prev_count = match last_child {
-            Some(ref prev) if prev.ty == ty => prev.count,
-            _ => 0,
-        };
-
-        Self {
-            ty,
-            count: prev_count + 1,
-        }
+    fn new(ty: TypeId) -> Self {
+        Self { ty }
     }
 }
 
@@ -435,7 +400,7 @@ impl Env {
         E: Any + 'static,
     {
         let key = TypeId::of::<E>();
-        let anon = Point::with_current(|current| current.state.env.inner.get(&key).cloned());
+        let anon = Point::with_current(|current| current.env.inner.get(&key).cloned());
 
         if let Some(anon) = anon {
             Some(anon.unstable_deref())
@@ -514,11 +479,14 @@ mod tests {
 
         let mut prev = root;
 
-        for _ in 0..100 {
+        for i in 0..100 {
             let called;
             call!({
                 let current = Id::current();
-                assert_ne!(prev, current, "each Id in this loop should be unique");
+                if i > 0 {
+                    // prev shouldn't be equal to us right now
+                    assert_eq!(prev, current, "each Id in this loop should be identical");
+                }
                 prev = current;
                 called = true;
             });
