@@ -1,8 +1,5 @@
 use {
-    crate::{
-        memo::*,
-        runtime::{Revision, RunLoopWaker},
-    },
+    crate::{memo::*, Revision, RunLoopWaker},
     parking_lot::Mutex,
     std::{
         cell::Cell,
