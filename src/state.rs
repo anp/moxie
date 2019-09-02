@@ -5,78 +5,17 @@ use {
         cell::Cell,
         fmt::{Debug, Display, Formatter, Result as FmtResult},
         ops::Deref,
-        rc::Rc,
         sync::Arc,
     },
     topo::bound,
     tracing::*,
 };
 
-/// The current revision of state in this component subtree. Set to the last ran [`Revision`] when
-/// state receives commits in the subtree of [`crate::Component`]s called by the `Component` to
-/// which this chain corresponds.
-///
-/// We store a chain of [`RevisionNode`]s so that we can notify parent Components that they may
-/// need to run. Without building out a nice system for re-running specific component subtrees
-/// on state changes, this is the cleanest way of ensuring we call the path from the root to the
-/// `Component` which needs to be called.
-#[derive(Clone)]
-pub(super) struct RevisionChain(Rc<RevisionNode>);
-
-/// A link in the [`RevisionChain`].
-struct RevisionNode {
-    current: Cell<u64>,
-    parent: std::rc::Weak<Self>,
-}
-
-impl RevisionChain {
-    pub(super) fn new() -> Self {
-        let parent = if let Some(parent_state) = topo::Env::get::<Self>() {
-            Rc::downgrade(&parent_state.0)
-        } else {
-            std::rc::Weak::new()
-        };
-
-        RevisionChain(Rc::new(RevisionNode {
-            parent,
-            current: Cell::new(Revision::current().0),
-        }))
-    }
-
-    pub(super) fn current(&self) -> u64 {
-        self.0.current.get()
-    }
-
-    fn increment(&self) -> u64 {
-        self.0.current.set(self.current() + 1);
-        if let Some(parent) = self.0.parent.upgrade() {
-            RevisionChain(parent).increment();
-        }
-        self.current()
-    }
-}
-
-impl Debug for RevisionChain {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_fmt(format_args!("{:?}", self.0.current.get()))
-    }
-}
-
-impl PartialEq for RevisionChain {
-    fn eq(&self, other: &Self) -> bool {
-        let self_current = self.0.current.get();
-        let other_current = other.0.current.get();
-        trace!({ self_current, other_current }, "comparing revision chains");
-        self_current.eq(&other_current)
-    }
-}
-
 /// The underlying container of state variables. Vends copies of the latest [`Commit`] for reads
 /// and internally [`Weak`] pointers to these structs are used for updating state with a [`Key`].
 struct Var<State> {
     current: Commit<State>,
     point: topo::Id,
-    rev_path: RevisionChain,
     last_rooted: Revision,
     pending: Option<Commit<State>>,
     waker: RunLoopWaker,
@@ -116,7 +55,7 @@ impl<State> Var<State> {
 
         if let Some(pending) = pending {
             trace!("pending commit");
-            let current = Revision(self.rev_path.increment());
+            let current = Revision::current();
             self.pending = Some(Commit {
                 inner: Arc::new(pending),
                 point: self.point,
@@ -139,7 +78,6 @@ impl<State> Var<State> {
 
 /// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
 /// a unique [`Key`] which can be used to commit new values to the variable.
-#[doc(hidden)]
 #[bound]
 pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
@@ -155,7 +93,6 @@ where
         let var = Var {
             point: topo::Id::current(),
             last_rooted: current_revision,
-            rev_path: topo::Env::expect::<RevisionChain>().to_owned(),
             current: Commit {
                 revision: current_revision,
                 point: topo::Id::current(),
