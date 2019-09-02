@@ -38,10 +38,8 @@ check-dom-lib = "check --package moxie-dom"
 check-dom-hacking = "check --package dom-hacking"
 check-dom-todo = "check --package todomvc-moxie"
 
-wa-pack-build = """
-run --manifest-path dom/local-wasm-pack/Cargo.toml
-    -- build --target web --out-name index
-"""
+wa-pack = "run --manifest-path dom/local-wasm-pack/Cargo.toml --"
+wa-pack-build = "wa-pack build --target web --out-name index"
 
 build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
