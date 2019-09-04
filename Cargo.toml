@@ -25,6 +25,9 @@ tracing-fmt = "0.0.1-alpha.3"
 default = ["log"]
 log = ["tracing/log"]
 
+[profile.release]
+lto = true
+
 [workspace]
 members = [
     "dom",

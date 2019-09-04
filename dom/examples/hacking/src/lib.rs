@@ -1,21 +1,4 @@
-use moxie_dom::prelude::*;
-
-#[derive(Clone, Debug)]
-struct HackedApp;
-
-impl Component for HackedApp {
-    fn contents(self) {
-        let count = state!(|| 0);
-        show![
-            text!("hello world from moxie! ({})", &count),
-            element("button")
-                .attr("type", "button")
-                .on(|_: ClickEvent, count| Some(count + 1), count)
-                .child(text!("increment")),
-            vec![text!("first"), text!(" second"), text!(" third"),]
-        ];
-    }
-}
+use moxie_dom::{prelude::*, *};
 
 #[wasm_bindgen(start)]
 pub fn main() {
@@ -25,5 +8,15 @@ pub fn main() {
     }));
 
     tracing::info!("mounting moxie-dom to root");
-    moxie_dom::mount!(document().body().unwrap(), HackedApp);
+    moxie_dom::run_with_parent(document().body().unwrap(), || {
+        let count = state!(|| 0);
+        text!(&format!("hello world from moxie! ({})", &count));
+
+        element!("button")
+            .attr("type", "button")
+            .on(|_: ClickEvent, count| Some(count + 1), count)
+            .inner(|| text!("increment"));
+
+        vec![text!("first"), text!(" second"), text!(" third")];
+    });
 }
