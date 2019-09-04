@@ -39,6 +39,9 @@ features = [
     "Window",
 ]
 
+[dev-dependencies]
+wasm-bindgen-test = "0.2"
+
 [features]
 default = ["log"]
 log = ["tracing/log"]

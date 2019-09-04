@@ -28,11 +28,12 @@ dom-flow = """
 watch --clear
     -x check-dom-lib
     -x check-dom-hacking
-    -x check-dom-todo
     -x build-dom-hacking
-    -x build-dom-todo
-    -x clippy-dom
+    -x test-dom-lib
 """
+    # -x check-dom-todo
+    # -x build-dom-todo
+    # -x clippy-dom
 
 check-dom-lib = "check --package moxie-dom"
 check-dom-hacking = "check --package dom-hacking"
@@ -44,6 +45,8 @@ wa-pack-build = "wa-pack build --target web --out-name index"
 build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
+
+test-dom-lib = "wa-pack test --chrome --headless dom"
 
 # dom utilities
 clippy-dom = """clippy
