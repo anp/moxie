@@ -8,6 +8,8 @@ use {
     moxie::{self, *},
     std::{
         cell::RefCell,
+        collections::HashMap,
+        fmt::{Debug, Formatter, Result as FmtResult},
         rc::Rc,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -19,18 +21,9 @@ use {
     web_sys::Node as DomNode,
 };
 
-pub mod elements;
-pub mod events;
 pub mod prelude {
     pub use crate::{
-        __mount_impl, // impl detail of topo leaking through here FIXME!
-        document,
-        elements::{element, Element},
-        events::{
-            BlurEvent, ChangeEvent, ClickEvent, DoubleClickEvent, Event, EventTarget, KeyDownEvent,
-        },
-        text,
-        window,
+        document, window, BlurEvent, ChangeEvent, ClickEvent, DoubleClickEvent, Event, KeyDownEvent,
     };
     pub use moxie::*;
     pub use wasm_bindgen::prelude::*;
@@ -45,16 +38,14 @@ pub fn window() -> web_sys::Window {
 pub fn document() -> web_sys::Document {
     window()
         .document()
-        .expect("must run from withing a `window` with a valid `document`")
+        .expect("must run from within a `window` with a valid `document`")
 }
 
-#[topo::bound]
-pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Clone + 'static) {
+pub fn run_with_parent(new_parent: impl Into<DomNode> + 'static, mut root: impl FnMut() + 'static) {
     let new_parent = new_parent.into();
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
-        produce_without_attaching!(MountedNode(new_parent.clone(), vec![]), || {
-            show!(root.clone());
-        });
+        // FIXME pass the new_parent as the parent
+        root();
     }));
 
     let wrt = WebRuntime { rt, handle: None };
@@ -73,16 +64,7 @@ pub fn mount(new_parent: impl Into<DomNode> + 'static, root: impl Component + Cl
     waker.wake_by_ref();
 }
 
-#[topo::bound]
-pub fn produce_dom(
-    node: impl Into<DomNode>,
-    event_handles: Vec<events::EventHandle>,
-    children: impl FnOnce(),
-) {
-    produce!(MountedNode(node.into(), event_handles), children);
-}
-
-struct MountedNode(DomNode, Vec<events::EventHandle>);
+struct MountedNode(DomNode, Vec<EventHandle>);
 
 struct UnmountDomNodeOnDrop(DomNode);
 
@@ -95,13 +77,13 @@ impl Drop for UnmountDomNodeOnDrop {
     }
 }
 
-impl Node for MountedNode {
-    type MountHandle = UnmountDomNodeOnDrop;
-    fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
-        self.0.append_child(&child_node.0).unwrap();
-        UnmountDomNodeOnDrop(child_node.0.clone())
-    }
-}
+// impl Node for MountedNode {
+//     type MountHandle = UnmountDomNodeOnDrop;
+//     fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
+//         self.0.append_child(&child_node.0).unwrap();
+//         UnmountDomNodeOnDrop(child_node.0.clone())
+//     }
+// }
 
 struct WebRuntime {
     rt: Runtime<Box<dyn FnMut()>>,
@@ -140,5 +122,176 @@ impl ArcWake for RuntimeWaker {
         } else {
             trace!("skipped scheduling web runtime")
         }
+    }
+}
+
+#[topo::bound]
+pub fn text(s: &str) {
+    // let text_node = memo!(self.0, |text| document().create_text_node(text));
+    unimplemented!()
+}
+
+pub struct MemoElement(sys::Element);
+
+impl MemoElement {
+    pub fn attr(self, name: &str, value: &str) -> Self {
+        // TODO make sure these undo themselves if not called in a revision
+        memo_by_slot!(name.to_string(), value.to_string(), |value| self
+            .0
+            .set_attribute(name, value)
+            .unwrap());
+        self
+    }
+
+    pub fn on<Ev, State, Updater>(mut self, updater: Updater, key: Key<State>) -> Self
+    where
+        Ev: 'static + Event,
+        State: 'static,
+        Updater: 'static + FnMut(Ev, &State) -> Option<State>,
+    {
+        // TODO add the event handler to this type
+        self
+    }
+
+    pub fn inner<Ret>(self, children: impl FnOnce() -> Ret) -> Ret {
+        topo::call!(
+            { children() },
+            env! {
+                MemoElement => MemoElement(self.0.clone()),
+            }
+        )
+    }
+}
+
+#[topo::bound]
+pub fn element(ty: &str) -> MemoElement {
+    unimplemented!()
+}
+
+pub trait Event: AsRef<web_sys::Event> + JsCast {
+    const NAME: &'static str;
+}
+
+struct Callback {
+    cb: Closure<dyn FnMut(JsValue)>,
+}
+
+impl Callback {
+    fn new<Ev, State, Updater>(key: Key<State>, mut updater: Updater) -> Self
+    where
+        Ev: Event,
+        State: 'static,
+        Updater: FnMut(Ev, &State) -> Option<State> + 'static,
+    {
+        let cb = Closure::wrap(Box::new(move |ev: JsValue| {
+            let ev: Ev = ev.dyn_into().unwrap();
+            key.update(|prev| updater(ev, prev));
+        }) as Box<dyn FnMut(JsValue)>);
+        Self { cb }
+    }
+
+    fn as_fn(&self) -> &js_sys::Function {
+        self.cb.as_ref().unchecked_ref()
+    }
+}
+
+#[must_use]
+pub struct EventHandle {
+    target: web_sys::EventTarget,
+    callback: Callback,
+    name: &'static str,
+}
+
+impl EventHandle {
+    fn new<Ev, State, Updater>(
+        target: web_sys::EventTarget,
+        key: Key<State>,
+        updater: Updater,
+    ) -> Self
+    where
+        Ev: Event,
+        State: 'static,
+        Updater: FnMut(Ev, &State) -> Option<State> + 'static,
+    {
+        let callback = Callback::new(key, updater);
+        let name = Ev::NAME;
+        target
+            .add_event_listener_with_callback(name, callback.as_fn())
+            .unwrap();
+        Self {
+            target,
+            callback,
+            name,
+        }
+    }
+}
+
+impl Drop for EventHandle {
+    fn drop(&mut self) {
+        self.target
+            .remove_event_listener_with_callback(self.name, self.callback.as_fn())
+            .unwrap();
+    }
+}
+
+macro_rules! event_ty {
+    ($name:ident, $ty_str:expr, $parent_ty:ty) => {
+        #[wasm_bindgen]
+        pub struct $name($parent_ty);
+
+        impl AsRef<web_sys::Event> for $name {
+            fn as_ref(&self) -> &web_sys::Event {
+                self.0.as_ref()
+            }
+        }
+
+        impl AsRef<JsValue> for $name {
+            fn as_ref(&self) -> &JsValue {
+                self.0.as_ref()
+            }
+        }
+
+        impl std::ops::Deref for $name {
+            type Target = $parent_ty;
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl JsCast for $name {
+            fn instanceof(val: &JsValue) -> bool {
+                <$parent_ty as JsCast>::instanceof(val)
+            }
+
+            fn unchecked_from_js(val: JsValue) -> Self {
+                $name(<$parent_ty as JsCast>::unchecked_from_js(val))
+            }
+
+            fn unchecked_from_js_ref(_val: &JsValue) -> &Self {
+                unimplemented!()
+            }
+        }
+
+        impl Event for $name {
+            const NAME: &'static str = $ty_str;
+        }
+    };
+}
+
+event_ty!(BlurEvent, "blur", web_sys::FocusEvent);
+event_ty!(ChangeEvent, "change", web_sys::Event);
+event_ty!(ClickEvent, "click", web_sys::MouseEvent);
+event_ty!(DoubleClickEvent, "dblclick", web_sys::MouseEvent);
+event_ty!(KeyDownEvent, "keydown", web_sys::KeyboardEvent);
+
+#[cfg(test)]
+pub mod tests {
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn hello_world() {
+        println!("look ma");
     }
 }

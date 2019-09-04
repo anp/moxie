@@ -2,7 +2,6 @@ use {
     crate::{memo::*, Revision, RunLoopWaker},
     parking_lot::Mutex,
     std::{
-        cell::Cell,
         fmt::{Debug, Display, Formatter, Result as FmtResult},
         ops::Deref,
         sync::Arc,
