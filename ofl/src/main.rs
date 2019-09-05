@@ -13,6 +13,7 @@ mod website;
 #[derive(Debug, Options)]
 struct Config {
     help: bool,
+    verbose: bool,
     #[options(
         default_expr = r#"Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap().to_owned()"#
     )]
@@ -35,14 +36,15 @@ impl Default for Command {
 }
 
 fn main() -> Result<(), Error> {
+    let config = Config::parse_args_default_or_exit();
+    let level = if config.verbose { "debug" } else { "info" };
     tracing::subscriber::with_default(
         FmtSubscriber::builder()
-            .with_filter(EnvFilter::new("debug"))
+            .with_filter(EnvFilter::new(level))
             .finish(),
         || {
             debug!("logging init'd");
 
-            let config = Config::parse_args_default_or_exit();
             let command = config.command.unwrap_or_default();
 
             match command {
