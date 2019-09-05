@@ -54,6 +54,12 @@ clippy-dom = """clippy
 """
 
 ####################################################################################################
+# website
+
+site-flow = "watch --clear -x build-website"
+build-website = "ofl website build target/website"
+
+####################################################################################################
 # ofl
 
 ofl = "run --manifest-path ofl/Cargo.toml --"
