@@ -62,7 +62,7 @@ clippy-dom = """clippy
 ofl = "run --manifest-path ofl/Cargo.toml --"
 server = "watch -w ofl/src/main.rs -x ofl"
 
-ofl-dev = """
+ofl-flow = """
 watch --clear -w ofl
     -x fmt-ofl
     -x check-ofl
