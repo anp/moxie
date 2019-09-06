@@ -4,22 +4,22 @@
 //! `topo` provides tools for describing trees based on their runtime callgraph. Because normal
 //! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.
 //!
-//! Topologically-bound functions run within a context unique to the path in the runtime call
+//! Topologically-aware functions run within a context unique to the path in the runtime call
 //! graph of other topological functions preceding the current activation record.
 //!
-//! By running the same topologically-bound functions in a loop, we can observe changes to the
+//! By running the same topologically-aware functions in a loop, we can observe changes to the
 //! structure over time.
 //!
 //! Defining a topological function results in a macro definition for binding the
 //! function to each callsite where it is invoked.
 //!
-//! Define a topologically-bound function with the `topo::bound` attribute:
+//! Define a topologically-aware function with the `topo::aware` attribute:
 //!
 //! ```
-//! #[topo::bound]
+//! #[topo::aware]
 //! fn basic_topo() -> topo::Id { topo::Id::current() }
 //!
-//! #[topo::bound]
+//! #[topo::aware]
 //! fn tier_two() -> topo::Id { basic_topo!() }
 //!
 //! // each of these functions will be run in separately identified
@@ -37,7 +37,7 @@
 //! ```
 //!
 //! Because topological functions must be sensitive to the location at which they're invoked and
-//! bound to their parent, we transform the function definition into a macro so we can link
+//! aware of their parent, we transform the function definition into a macro so we can link
 //! the two activation records inside macro expansion. See the docs for the attribute for more
 //! detail and further discussion of the tradeoffs.
 //!
@@ -51,7 +51,7 @@
 //! TODO show example of a rendering loop
 //!
 
-pub use topo_macro::bound;
+pub use topo_macro::aware;
 
 use {
     owning_ref::OwningRef,
@@ -88,7 +88,7 @@ macro_rules! callsite {
     }};
 }
 
-/// Calls the provided expression within an [`Env`] bound to the callsite, optionally passing
+/// Calls the provided expression within an [`Env`] aware to the callsite, optionally passing
 /// additional environment values to the child scope.
 ///
 /// ```
@@ -146,14 +146,13 @@ macro_rules! call {
 /// Roots a topology at a particular callsite while calling the provided expression with the same
 /// convention as [`call`].
 ///
-/// Normally, when a topological function is repeatedly bound to the same callsite in a loop,
+/// Normally, when a topological function is repeatedly invoked at the same callsite in a loop,
 /// each invocation receives a different [`Id`], as these invocations model siblings in the
 /// topology. The overall goal of this crate, however, is to provide imperative codepaths with
 /// stable identifiers *across* executions at the same callsite. In practice, we must have a root
 /// to the subtopology we are maintaining across these impure calls, and after each execution of the
 /// subtopology it must reset the state at its [`Id`] so that the next execution of the root
-/// is bound to the same point at its parent as its previous execution was. This is...an opaque
-/// explanation at best and TODO revise it.
+/// is invoked at the same point under its parent as its previous execution was.
 ///
 /// In this first example, a scope containing the loop can observe each separate loop
 /// iteration mutating `count` and the root closure mutating `exit`. The variables `root_ids` and

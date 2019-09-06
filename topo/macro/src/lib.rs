@@ -6,7 +6,7 @@ extern crate proc_macro;
 use {proc_macro::TokenStream, syn::export::TokenStream2};
 
 /// Transforms a function declaration into a topological function invoked with macro syntax to
-/// *bind* its call tree's (sub)topology to the parent topology.
+/// attach its call tree's (sub)topology to the parent topology.
 ///
 /// A macro transformation is used to capture unique callsite information from the invoking
 /// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
@@ -37,7 +37,7 @@ use {proc_macro::TokenStream, syn::export::TokenStream2};
 ///
 /// TODO expand
 #[proc_macro_attribute]
-pub fn bound(_attrs: TokenStream, input: TokenStream) -> TokenStream {
+pub fn aware(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
     let tmp = std::mem::replace(&mut input_fn.attrs, Vec::new());

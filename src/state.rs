@@ -6,7 +6,6 @@ use {
         ops::Deref,
         sync::Arc,
     },
-    topo::bound,
     tracing::*,
 };
 
@@ -77,7 +76,7 @@ impl<State> Var<State> {
 
 /// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
 /// a unique [`Key`] which can be used to commit new values to the variable.
-#[bound]
+#[topo::aware]
 pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
