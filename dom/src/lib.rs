@@ -136,10 +136,12 @@ pub struct MemoElement(sys::Element);
 impl MemoElement {
     pub fn attr(self, name: &str, value: &str) -> Self {
         // TODO make sure these undo themselves if not called in a revision
-        memo_by_slot!(name.to_string(), value.to_string(), |value| self
-            .0
-            .set_attribute(name, value)
-            .unwrap());
+        topo::call!(slot: name, {
+            memo!(value.to_string(), |value| self
+                .0
+                .set_attribute(name, value)
+                .unwrap());
+        });
         self
     }
 
@@ -287,7 +289,6 @@ event_ty!(KeyDownEvent, "keydown", web_sys::KeyboardEvent);
 #[cfg(test)]
 pub mod tests {
     use wasm_bindgen_test::*;
-
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]

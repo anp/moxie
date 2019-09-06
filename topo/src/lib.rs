@@ -1,4 +1,4 @@
-#![deny(missing_docs, intra_doc_link_resolution_failure)]
+#![deny(missing_docs, intra_doc_link_resolution_failure, unsafe_code)]
 
 //! `topo` provides tools for describing trees based on their runtime callgraph. Because normal
 //! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.
@@ -56,7 +56,7 @@ use {
     owning_ref::OwningRef,
     std::{
         any::{Any, TypeId},
-        cell::RefCell,
+        cell::{Cell, RefCell},
         collections::{hash_map::DefaultHasher, HashMap as Map},
         hash::{Hash, Hasher},
         mem::replace,
@@ -64,6 +64,28 @@ use {
         rc::Rc,
     },
 };
+
+/// A value unique to the source location where it is created.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Callsite {
+    ty: TypeId,
+}
+
+impl Callsite {
+    #[doc(hidden)]
+    pub fn new(ty: TypeId) -> Self {
+        Self { ty }
+    }
+}
+
+/// Returns a value unique to the point of its invocation.
+#[macro_export]
+macro_rules! callsite {
+    () => {{
+        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
+        $crate::Callsite::new(std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>())
+    }};
+}
 
 /// Calls the provided expression within an [`Env`] bound to the callsite, optionally passing
 /// additional environment values to the child scope.
@@ -101,9 +123,23 @@ use {
 /// ```
 #[macro_export]
 macro_rules! call {
+    (slot: $slot:expr, $($input:tt)*) => {{
+        $crate::unstable_raw_call!(
+            callsite: $crate::callsite!(),
+            slot: $slot,
+            is_root: false,
+            call: $($input)*
+        )
+    }};
     ($($input:tt)*) => {{
-        $crate::unstable_raw_call!(is_root: false, call: $($input)*)
-    }}
+        let callsite = $crate::callsite!();
+        $crate::unstable_raw_call!(
+            callsite: callsite,
+            slot: $crate::next_iter_count(callsite),
+            is_root: false,
+            call: $($input)*
+        )
+    }};
 }
 
 /// Roots a topology at a particular callsite while calling the provided expression with the same
@@ -171,22 +207,32 @@ macro_rules! call {
 #[macro_export]
 macro_rules! root {
     ($($input:tt)*) => {{
-        $crate::unstable_raw_call!(is_root: true, call: $($input)*)
+        $crate::unstable_raw_call!(
+            callsite: $crate::callsite!(),
+            slot: (),
+            is_root: true,
+            call: $($input)*
+        )
     }}
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! unstable_raw_call {
-    (is_root: $is_root:expr, call: $inner:expr $(, env! { $($env:tt)* })?) => {{
-        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
-
+    (
+        callsite: $callsite:expr,
+        slot: $slot:expr,
+        is_root: $is_root:expr,
+        call: $inner:expr
+        $(, env! { $($env:tt)* })?
+    ) => {{
         #[allow(unused_mut)]
         let mut _new_env = Default::default();
         $( _new_env = $crate::env! { $($env)* };  )?
 
-        let _reset_to_parent_on_drop_pls = $crate::Point::unstable_pin_prev_enter_child(
-                std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>(),
+        let _reset_to_parent_on_drop_pls = $crate::Point::unstable_enter_child(
+                $callsite,
+                &$slot,
                 _new_env,
                 $is_root
         );
@@ -238,6 +284,21 @@ pub struct Point {
 thread_local! {
     /// The `Point` representing the current dynamic scope.
     static CURRENT_POINT: RefCell<Point> = Default::default();
+    static LAST_CALLSITE_AND_COUNT: Cell<(Callsite, u32)> = Cell::new((callsite!(), 0));
+}
+
+#[doc(hidden)]
+pub fn next_iter_count(callsite: Callsite) -> u32 {
+    LAST_CALLSITE_AND_COUNT.with(|last| {
+        let previous = last.replace((callsite, 1));
+        if previous.0 == callsite {
+            let new_count = previous.1 + 1;
+            last.set((callsite, new_count));
+            new_count
+        } else {
+            1
+        }
+    })
 }
 
 impl Point {
@@ -247,8 +308,9 @@ impl Point {
     /// correspond to the topological call tree, exiting the child context when the rooted scope
     /// ends.
     #[doc(hidden)]
-    pub fn unstable_pin_prev_enter_child(
-        callsite_ty: TypeId,
+    pub fn unstable_enter_child(
+        callsite: Callsite,
+        slot: &impl Hash,
         add_env: EnvInner,
         reset_on_drop: bool,
     ) -> impl Drop {
@@ -265,7 +327,7 @@ impl Point {
                 root.env = parent.env.child(add_env);
                 root
             } else {
-                parent.child(callsite_ty, add_env)
+                parent.child(callsite, slot, add_env)
             };
             let parent = replace(&mut *parent, child);
 
@@ -274,6 +336,7 @@ impl Point {
                 move |(prev_initial_env, mut prev)| {
                     if reset_on_drop {
                         prev.env = prev_initial_env;
+                        LAST_CALLSITE_AND_COUNT.with(|last| last.set((callsite!(), 1)));
                     }
                     CURRENT_POINT.with(|p| p.replace(prev));
                 },
@@ -282,12 +345,11 @@ impl Point {
     }
 
     /// Mark a child Point in the topology.
-    fn child(&mut self, callsite_ty: TypeId, additional: EnvInner) -> Self {
-        let callsite = Callsite::new(callsite_ty);
-
+    fn child(&mut self, callsite: Callsite, slot: &impl Hash, additional: EnvInner) -> Self {
         let mut hasher = DefaultHasher::new();
         self.id.hash(&mut hasher);
         callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
         let id = Id(hasher.finish());
 
         Self {
@@ -314,17 +376,6 @@ impl Default for Point {
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-struct Callsite {
-    ty: TypeId,
-}
-
-impl Callsite {
-    fn new(ty: TypeId) -> Self {
-        Self { ty }
     }
 }
 
@@ -387,9 +438,6 @@ impl Deref for AnonRc {
     }
 }
 
-unsafe impl stable_deref_trait::StableDeref for AnonRc {}
-unsafe impl stable_deref_trait::CloneStableDeref for AnonRc {}
-
 type EnvInner = Map<TypeId, AnonRc>;
 
 impl Env {
@@ -450,9 +498,14 @@ macro_rules! unstable_make_topo_macro {
         $($docs)*
         #[macro_export]
         macro_rules! $name {
-            $matcher => {
-                topo::unstable_raw_call!(is_root: false, call: $mangled_name $pass)
-            };
+            $matcher => {{
+                let callsite = topo::callsite!();
+                topo::unstable_raw_call!(
+                    callsite: callsite,
+                    slot: topo::next_iter_count(callsite),
+                    is_root: false,
+                    call: $mangled_name $pass)
+            }};
         }
     };
 }
@@ -470,61 +523,90 @@ macro_rules! env {
 
 #[cfg(test)]
 mod tests {
-    use super::{Env, Id};
+    use {
+        super::{Env, Id},
+        std::collections::HashSet,
+    };
 
     #[test]
     fn one_child_in_a_loop() {
         let root = Id::current();
-        assert_eq!(root, Id::current());
+        assert_eq!(root, Id::current(), "Id must be stable across calls");
 
         let mut prev = root;
 
-        for i in 0..100 {
+        for _ in 0..100 {
             let called;
             call!({
                 let current = Id::current();
-                if i > 0 {
-                    // prev shouldn't be equal to us right now
-                    assert_eq!(prev, current, "each Id in this loop should be identical");
-                }
+                assert_ne!(prev, current, "each Id in this loop must be unique");
                 prev = current;
                 called = true;
             });
 
-            // make sure we've returned to an expected baseline
-            assert_eq!(root, Id::current());
-            assert!(called);
+            assert_eq!(
+                root,
+                Id::current(),
+                "outside the call must have the same Id as root"
+            );
+            assert!(called, "the call must be made on each loop iteration");
         }
+    }
+
+    #[test]
+    fn loop_over_map_with_keys_in_slots() {
+        let slots = vec!["first", "second", "third", "fourth", "fifth"];
+
+        let to_call = || {
+            root!({
+                let mut unique_ids = HashSet::new();
+                for s in &slots {
+                    call!(slot: s, {
+                        let current = Id::current();
+                        unique_ids.insert(current);
+                    });
+                }
+                assert_eq!(slots.len(), unique_ids.len(), "must be one Id per slot");
+                unique_ids
+            })
+        };
+
+        let first = to_call();
+        let second = to_call();
+        assert_eq!(
+            first, second,
+            "same Ids must be produced for each slot each time"
+        );
     }
 
     #[test]
     fn call_env() {
         let first_called;
         let second_called;
-        let (first_byte, second_byte) = (0u8, 1u8);
 
+        assert!(Env::get::<u8>().is_none());
         call!(
             {
                 let curr_byte = *Env::expect::<u8>();
-                assert_eq!(curr_byte, first_byte);
+                assert_eq!(curr_byte, 0);
                 first_called = true;
 
                 call!(
                     {
                         let curr_byte = *Env::expect::<u8>();
-                        assert_eq!(curr_byte, second_byte);
+                        assert_eq!(curr_byte, 1);
                         second_called = true;
                     },
                     env! {
-                        u8 => second_byte,
+                        u8 => 1u8,
                     }
                 );
 
                 assert!(second_called);
-                assert_eq!(curr_byte, first_byte);
+                assert_eq!(curr_byte, 0);
             },
             env! {
-                u8 => first_byte,
+                u8 => 0u8,
             }
         );
         assert!(first_called);
@@ -533,27 +615,29 @@ mod tests {
 
     #[test]
     fn root_sees_parent_env() {
-        let first_byte = 0u8;
-
+        assert!(Env::get::<u8>().is_none());
         call!(
             {
                 let curr_byte = *Env::expect::<u8>();
-                assert_eq!(curr_byte, first_byte);
+                assert_eq!(curr_byte, 0);
 
                 root!(
                     {
                         let curr_byte = *Env::expect::<u8>();
-                        assert_eq!(curr_byte, first_byte);
+                        assert_eq!(curr_byte, 0, "must see u8 from enclosing environment");
+
+                        let curr_uh_twobyte = *Env::expect::<u16>();
+                        assert_eq!(curr_uh_twobyte, 1, "must see locally installed u16");
                     },
                     env! {
-                        u16 => 1,
+                        u16 => 1u16,
                     }
                 );
 
-                assert_eq!(curr_byte, first_byte);
+                assert_eq!(curr_byte, 0, "must see 0");
             },
             env! {
-                u8 => first_byte,
+                u8 => 0u8,
             }
         );
         assert!(Env::get::<u8>().is_none());
