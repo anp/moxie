@@ -14,7 +14,6 @@ use {
 struct Var<State> {
     current: Commit<State>,
     point: topo::Id,
-    last_rooted: Revision,
     pending: Option<Commit<State>>,
     waker: RunLoopWaker,
 }
@@ -23,8 +22,6 @@ impl<State> Var<State> {
     /// Attach this `Var` to a specific callsite, performing any pending commit and returning the
     /// resulting latest commit.
     fn root(&mut self) -> Commit<State> {
-        trace!("rooting state var");
-        self.last_rooted = Revision::current();
         self.flush();
         self.peek()
     }
@@ -57,7 +54,6 @@ impl<State> Var<State> {
             self.pending = Some(Commit {
                 inner: Arc::new(pending),
                 point: self.point,
-                revision: current,
             });
             self.waker.wake();
             Some(current)
@@ -83,16 +79,12 @@ where
     Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let current_revision = Revision::current();
-
     let var: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
         trace!("init var");
         let waker = topo::Env::expect::<RunLoopWaker>().to_owned();
         let var = Var {
             point: topo::Id::current(),
-            last_rooted: current_revision,
             current: Commit {
-                revision: current_revision,
                 point: topo::Id::current(),
                 inner: Arc::new(initializer(a)),
             },
@@ -132,14 +124,12 @@ macro_rules! state {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
     point: topo::Id,
-    revision: Revision,
     inner: Arc<State>,
 }
 
 impl<State> Clone for Commit<State> {
     fn clone(&self) -> Self {
         Self {
-            revision: self.revision,
             point: self.point,
             inner: Arc::clone(&self.inner),
         }
