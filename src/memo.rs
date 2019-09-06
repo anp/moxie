@@ -1,11 +1,11 @@
-use {
-    downcast_rs::{impl_downcast, Downcast},
-    std::{any::TypeId, cell::RefCell, collections::HashMap, hash::Hash, rc::Rc},
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    collections::HashMap,
+    rc::Rc,
 };
 
-/// Memoize the provided function at this `topo::id`, using an iteration counter as the
-/// memoization slot (see [`memo_by_slot`] for details). The counter is incremented once
-/// for each call at the same callsite in a given [`state::Revision`].
+/// Memoize the provided function's output at this `topo::id`.
 #[topo::aware]
 pub fn memo<Arg, Out>(arg: Arg, init: impl FnOnce(&Arg) -> Out) -> Out
 where
@@ -13,8 +13,7 @@ where
     Out: Clone + 'static,
 {
     let store = topo::Env::expect::<MemoStore>();
-    let slot = store.next_slot_index::<Arg, Out>(topo::Id::current());
-    store.get_or_init(slot, arg, init)
+    store.get_or_init(arg, init)
 }
 
 /// Runs the provided expression once per [`topo::Id`], repeated calls at the same `Id` are assigned
@@ -39,42 +38,24 @@ impl MemoStore {
         self.0.borrow_mut().gc();
     }
 
-    /// Returns the next iteration-order slot for the passed callsite during this `Revision`.
-    /// Advances the iteration order counter for the passed callsite as well.
-    fn next_slot_index<Arg, Out>(&self, id: topo::Id) -> u32
-    where
-        Arg: PartialEq + 'static,
-        Out: 'static,
-    {
-        self.0.borrow_mut().next_slot_index(id)
-    }
-
     /// Returns a potentially memoized value for the given slot, argument, and initializer.
     ///
     /// This first checks for a matching value in storage, cloning it if available and returning
     /// that. If this callsite and slot haven't been previously initialized or if the argument
     /// previously used to do so is different from the current one, the initializer will be called
     /// again, that return value stored, and a clone returned to the caller.
-    fn get_or_init<Slot, Arg, Out, Init>(&self, slot: Slot, arg: Arg, initializer: Init) -> Out
+    fn get_or_init<Arg, Out, Init>(&self, arg: Arg, initializer: Init) -> Out
     where
-        Slot: Eq + Hash + 'static,
         Arg: PartialEq + 'static,
         Out: Clone + 'static,
         for<'a> Init: FnOnce(&'a Arg) -> Out,
     {
         let id = topo::Id::current();
-        let maybe_memod = self
-            .0
-            .borrow_mut()
-            .with_callsite_storage(id, |storage: &mut CallsiteStorage<Slot, Arg, Out>| {
-                storage.get_if_arg_eq(&slot, &arg)
-            });
+        let maybe_memod = self.0.borrow_mut().get_if_arg_eq(id, &arg);
         // ^ this binding is necessary to keep the below borrow_mut from panicking
         maybe_memod.unwrap_or_else(|| {
             let new_output = initializer(&arg);
-            self.0
-                .borrow_mut()
-                .insert(id, slot, arg, new_output.clone());
+            self.0.borrow_mut().insert(id, arg, new_output.clone());
             new_output
         })
     }
@@ -86,141 +67,63 @@ impl MemoStore {
 /// callsite has been invoked during a given `Revision`, allowing memoization to work without an
 /// explicit slot.
 pub(crate) struct MemoStorage {
-    memos: HashMap<(topo::Id, TypeId, TypeId, TypeId), Box<dyn Gc>>,
-    default_slots: HashMap<topo::Id, u32>,
+    memos: HashMap<(topo::Id, TypeId, TypeId), (Liveness, Box<dyn Any>)>,
 }
 
 impl Default for MemoStorage {
     fn default() -> Self {
         MemoStorage {
             memos: HashMap::new(),
-            default_slots: HashMap::new(),
         }
     }
 }
 
 impl MemoStorage {
-    /// Insert a new value into the memoization store for a callsite under the given slot.
-    fn insert<Slot: Eq + Hash, Arg: 'static, Out: 'static>(
-        &mut self,
-        id: topo::Id,
-        slot: Slot,
-        arg: Arg,
-        val: Out,
-    ) where
-        Slot: Eq + Hash + 'static,
-        Arg: PartialEq + 'static,
-        Out: Clone + 'static,
-    {
-        self.with_callsite_storage(id, move |storage| {
-            storage.inner.insert(slot, (Liveness::Live, arg, val))
-        });
-    }
-
-    /// Called to provide unique slot values when e.g. loop iteration order is the only slot
-    /// available.
-    fn next_slot_index(&mut self, id: topo::Id) -> u32 {
-        let current = self.default_slots.entry(id).or_default();
-        *current += 1;
-        *current
-    }
-
-    /// Erases the previous tick's callsite iteration counts and removes all `Dead` storage values.
-    fn gc(&mut self) {
-        self.default_slots.clear();
-        self.memos.values_mut().for_each(|store| store.gc());
-    }
-
-    /// Runs the provided closure with typed mutable access to the [`CallsiteStorage`] for the
-    /// passed [`topo::Id`].
-    fn with_callsite_storage<Slot, Arg, Out, Ret>(
-        &mut self,
-        id: topo::Id,
-        op: impl FnOnce(&mut CallsiteStorage<Slot, Arg, Out>) -> Ret,
-    ) -> Ret
+    /// Retrieves a previously-initialized output for the requested callsite if the arguments
+    /// are compatible. If a matching output is found, cloned, and returned, the value is marked
+    /// as `Liveness::Live`.
+    fn get_if_arg_eq<Arg, Out>(&mut self, id: topo::Id, arg: &Arg) -> Option<Out>
     where
-        Slot: Eq + Hash + 'static,
         Arg: PartialEq + 'static,
         Out: Clone + 'static,
     {
-        #[allow(clippy::borrowed_box)]
-        let storage: &mut Box<dyn Gc> = self
-            .memos
-            .entry((
-                id,
-                TypeId::of::<Slot>(),
-                TypeId::of::<Arg>(),
-                TypeId::of::<Out>(),
-            ))
-            .or_insert_with(CallsiteStorage::<Slot, Arg, Out>::boxed);
-        let storage: &mut CallsiteStorage<Slot, Arg, Out> = storage.downcast_mut().unwrap();
-        op(storage)
-    }
-}
-
-/// Stores memoized values and their arguments for a given [`topo::Id`]. Storage is indexed by
-/// the memoization slot, allowing multiple memoization values to reside under the same callsite's
-/// storage, e.g. for values memoized in a loop.
-struct CallsiteStorage<Slot, Arg, Out>
-where
-    Slot: Eq + Hash,
-{
-    inner: HashMap<Slot, (Liveness, Arg, Out)>,
-}
-
-impl<Slot, Arg, Out> CallsiteStorage<Slot, Arg, Out>
-where
-    Slot: Eq + Hash + 'static,
-    Arg: PartialEq + 'static,
-    Out: Clone + 'static,
-{
-    fn boxed() -> Box<dyn Gc> {
-        Box::new(Self {
-            inner: Default::default(),
-        })
-    }
-
-    /// Returns an owned copy of the previously-initialized output if it exists under the provided
-    /// slot and the argument used to initialize it is the same as current one.
-    fn get_if_arg_eq(&mut self, slot: &Slot, arg: &Arg) -> Option<Out> {
-        if let Some((liveness, prev_arg, prev_output)) = self.inner.get_mut(slot) {
-            if arg == prev_arg {
+        if let Some((liveness, boxed)) =
+            self.memos
+                .get_mut(&(id, TypeId::of::<Arg>(), TypeId::of::<Out>()))
+        {
+            let (prev_arg, prev_out): &(Arg, Out) =
+                boxed.downcast_ref().expect("looked up by type");
+            if prev_arg == arg {
                 *liveness = Liveness::Live;
-                return Some(prev_output.clone());
+                return Some(prev_out.clone());
             }
         }
+
         None
     }
-}
 
-impl<Slot, Arg, Out> Gc for CallsiteStorage<Slot, Arg, Out>
-where
-    Slot: Eq + Hash + 'static,
-    Arg: 'static,
-    Out: 'static,
-{
-    /// The garbage collection scheme implemented here has roughly three phases:
-    ///
-    /// 1. Before this method is called, memoized values are marked as `Live` when read or created.
-    /// 2. This method is called and only `Live` values are retained, droppping `Dead` values.
-    /// 3. All remaining `Live` values are marked `Dead`. This method exits.
+    /// Insert a new value into the memoization store for a callsite under the given slot.
+    fn insert<Arg, Out>(&mut self, id: topo::Id, arg: Arg, val: Out)
+    where
+        Arg: PartialEq + 'static,
+        Out: Clone + 'static,
+    {
+        self.memos.insert(
+            (id, TypeId::of::<Arg>(), TypeId::of::<Out>()),
+            (Liveness::Live, Box::new((arg, val))),
+        );
+    }
+
+    /// Drops memoized values that were not referenced during the last tick, removing all `Dead`
+    /// storage values and sets all remaining values to `Dead` for the next mark.
     fn gc(&mut self) {
-        self.inner
-            .retain(|_, (liveness, _, _)| liveness == &Liveness::Live);
-        self.inner
+        self.memos
+            .retain(|_, (liveness, _)| liveness == &Liveness::Live);
+        self.memos
             .values_mut()
-            .for_each(|(liveness, _, _)| *liveness = Liveness::Dead);
+            .for_each(|(liveness, _)| *liveness = Liveness::Dead);
     }
 }
-
-/// An object-safe trait that allows us to store disjoint types for many callsites while also
-/// running a single GC pass at the end of a `Revision`, while also safely casting the boxed
-/// storage to the underlying concrete type during a `Revision`.
-trait Gc: Downcast {
-    /// Drop any unreferenced values.
-    fn gc(&mut self);
-}
-impl_downcast!(Gc);
 
 /// Describes the outcome for a memoization value if a garbage collection were to occur when
 /// observed. During the run of a `Revision` any memoized values which are initialized or read are
