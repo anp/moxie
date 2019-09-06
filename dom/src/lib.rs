@@ -125,7 +125,7 @@ impl ArcWake for RuntimeWaker {
     }
 }
 
-#[topo::bound]
+#[topo::aware]
 pub fn text(s: &str) {
     // let text_node = memo!(self.0, |text| document().create_text_node(text));
     unimplemented!()
@@ -165,7 +165,7 @@ impl MemoElement {
     }
 }
 
-#[topo::bound]
+#[topo::aware]
 pub fn element(ty: &str) -> MemoElement {
     unimplemented!()
 }
