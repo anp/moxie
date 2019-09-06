@@ -143,6 +143,7 @@ impl MemoStorage {
         Arg: PartialEq + 'static,
         Out: Clone + 'static,
     {
+        #[allow(clippy::borrowed_box)]
         let storage: &mut Box<dyn Gc> = self
             .memos
             .entry((
@@ -151,7 +152,7 @@ impl MemoStorage {
                 TypeId::of::<Arg>(),
                 TypeId::of::<Out>(),
             ))
-            .or_insert_with(CallsiteStorage::<Slot, Arg, Out>::new);
+            .or_insert_with(CallsiteStorage::<Slot, Arg, Out>::boxed);
         let storage: &mut CallsiteStorage<Slot, Arg, Out> = storage.downcast_mut().unwrap();
         op(storage)
     }
@@ -173,7 +174,7 @@ where
     Arg: PartialEq + 'static,
     Out: Clone + 'static,
 {
-    fn new() -> Box<dyn Gc> {
+    fn boxed() -> Box<dyn Gc> {
         Box::new(Self {
             inner: Default::default(),
         })
