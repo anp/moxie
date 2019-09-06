@@ -3,25 +3,6 @@ use {
     std::{any::TypeId, cell::RefCell, collections::HashMap, hash::Hash, rc::Rc},
 };
 
-/// Memoize the provided function at this [`topo::id`] under the passed memoization `slot`. On
-/// subsequent calls with the same `slot` and `arg`, the previous `Out` value is cloned. The passed
-/// `init` function will be called if `slot` has not already been recorded or if it has but the
-/// previous argument does not equal the current one.
-///
-/// A slot is "anything that can be a `HashMap` key." It allows a single topological callsite to
-/// handle multiple inputs in a given tick of the runtime, separating their memoization and storage
-/// by an arbitrary user-provided type's value.
-#[topo::bound]
-pub fn memo_by_slot<Slot, Arg, Init, Out>(slot: Slot, arg: Arg, init: Init) -> Out
-where
-    Slot: Eq + Hash + 'static,
-    Arg: PartialEq + 'static,
-    Out: Clone + 'static,
-    for<'a> Init: FnOnce(&'a Arg) -> Out,
-{
-    topo::Env::expect::<MemoStore>().get_or_init(slot, arg, init)
-}
-
 /// Memoize the provided function at this `topo::id`, using an iteration counter as the
 /// memoization slot (see [`memo_by_slot`] for details). The counter is incremented once
 /// for each call at the same callsite in a given [`state::Revision`].
