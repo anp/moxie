@@ -30,10 +30,10 @@ watch --clear
     -x check-dom-hacking
     -x build-dom-hacking
     -x test-dom-lib
+    -x check-dom-todo
+    -x build-dom-todo
+    -x clippy-dom
 """
-    # -x check-dom-todo
-    # -x build-dom-todo
-    # -x clippy-dom
 
 check-dom-lib = "check --package moxie-dom"
 check-dom-hacking = "check --package dom-hacking"
