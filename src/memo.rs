@@ -6,7 +6,7 @@ use {
 /// Memoize the provided function at this `topo::id`, using an iteration counter as the
 /// memoization slot (see [`memo_by_slot`] for details). The counter is incremented once
 /// for each call at the same callsite in a given [`state::Revision`].
-#[topo::bound]
+#[topo::aware]
 pub fn memo<Arg, Out>(arg: Arg, init: impl FnOnce(&Arg) -> Out) -> Out
 where
     Arg: PartialEq + 'static,
@@ -20,7 +20,7 @@ where
 /// Runs the provided expression once per [`topo::Id`], repeated calls at the same `Id` are assigned
 /// adjacent slots. The provided value will always be cloned on subsequent calls unless dropped
 /// from storage.
-#[topo::bound]
+#[topo::aware]
 pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
