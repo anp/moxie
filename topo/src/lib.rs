@@ -1,4 +1,5 @@
-#![deny(missing_docs, intra_doc_link_resolution_failure, unsafe_code)]
+#![forbid(unsafe_code)]
+#![deny(missing_docs, intra_doc_link_resolution_failure)]
 
 //! `topo` provides tools for describing trees based on their runtime callgraph. Because normal
 //! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.

@@ -17,6 +17,7 @@
 //!
 //! TODO
 
+#![forbid(unsafe_code)]
 #![deny(clippy::all, intra_doc_link_resolution_failure)]
 #![warn(missing_docs)]
 
