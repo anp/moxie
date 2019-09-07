@@ -60,5 +60,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    moxie_dom::run_with_parent(document().body().unwrap(), || todo_app!());
+    moxie_dom::boot(document().body().unwrap(), || todo_app!());
 }

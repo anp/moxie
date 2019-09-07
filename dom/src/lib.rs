@@ -1,13 +1,34 @@
-#![allow(missing_docs)]
+//! ## Lifecycle
+//!
+//! ```text
+//!                    +------+
+//!                    | boot |
+//!                    +---+--+
+//!                        |
+//!              +---------v------+
+//!              | calling root() |
+//!              +--+---------^---+
+//!              |            |
+//!  +--------------v----+    | next
+//!  | awaiting state 🛆 |    | frame
+//!  +------------+------+    |
+//! event occurs, |           |
+//! updates state |           |
+//!       +-------v-----------+---+
+//!       | requestAnimationFrame |
+//!       +-----------------------+
+//! ```
+//!
+#![warn(missing_docs)]
 
 #[doc(hidden)]
 pub use moxie::*;
 
 use {
     futures::task::{waker, ArcWake},
-    moxie::{self, *},
+    moxie,
     std::{
-        cell::RefCell,
+        cell::{Cell, RefCell},
         collections::HashMap,
         fmt::{Debug, Formatter, Result as FmtResult},
         rc::Rc,
@@ -32,21 +53,32 @@ pub mod prelude {
 
 pub use web_sys as sys;
 
-pub fn window() -> web_sys::Window {
-    web_sys::window().expect("must run from within a `window`")
+/// Returns the current window. Panics if no window is available.
+pub fn window() -> sys::Window {
+    sys::window().expect("must run from within a `window`")
 }
 
-pub fn document() -> web_sys::Document {
+/// Returns the current document. Panics if called outside a web document context.
+pub fn document() -> sys::Document {
     window()
         .document()
         .expect("must run from within a `window` with a valid `document`")
 }
 
-pub fn run_with_parent(new_parent: impl Into<DomNode> + 'static, mut root: impl FnMut() + 'static) {
-    let new_parent = new_parent.into();
+/// The "boot sequence" for a moxie-dom instance creates a [moxie::Runtime] with the provided
+/// arguments and begins scheduling its execution.
+///
+/// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
+/// of `new_parent`'s children.
+pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut() + 'static) {
+    let new_parent = new_parent.as_ref().to_owned();
     let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
-        // FIXME pass the new_parent as the parent
-        root();
+        topo::call!(
+            { root() },
+            env! {
+                MemoElement => MemoElement::new(&new_parent),
+            }
+        )
     }));
 
     let wrt = WebRuntime { rt, handle: None };
@@ -64,27 +96,6 @@ pub fn run_with_parent(new_parent: impl Into<DomNode> + 'static, mut root: impl 
 
     waker.wake_by_ref();
 }
-
-struct MountedNode(DomNode, Vec<EventHandle>);
-
-struct UnmountDomNodeOnDrop(DomNode);
-
-impl Drop for UnmountDomNodeOnDrop {
-    fn drop(&mut self) {
-        if let Some(parent) = self.0.parent_node() {
-            trace!("unmounting node from parent");
-            let _dont_care = parent.remove_child(&self.0);
-        }
-    }
-}
-
-// impl Node for MountedNode {
-//     type MountHandle = UnmountDomNodeOnDrop;
-//     fn child(&mut self, child_node: &MountedNode) -> Self::MountHandle {
-//         self.0.append_child(&child_node.0).unwrap();
-//         UnmountDomNodeOnDrop(child_node.0.clone())
-//     }
-// }
 
 struct WebRuntime {
     rt: Runtime<Box<dyn FnMut()>>,
@@ -121,54 +132,107 @@ impl ArcWake for RuntimeWaker {
 
             arc_self.wrt.1.borrow_mut().handle = Some((handle, closure));
         } else {
-            trace!("skipped scheduling web runtime")
+            trace!("web runtime already scheduled");
         }
     }
 }
 
 #[topo::aware]
 pub fn text(s: impl ToString) {
-    // let text_node = memo!(self.0, |text| document().create_text_node(text));
-    unimplemented!()
+    let parent: &MemoElement = &*topo::Env::expect();
+    // TODO consider a ToOwned-based memoization API that's lower level?
+    // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
+    // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
+    let text_node = memo!(s.to_string(), |text| document().create_text_node(text));
+    parent.ensure_child_attached(&text_node);
 }
 
-pub struct MemoElement(sys::Element);
+#[topo::aware]
+pub fn element(ty: &str) -> MemoElement {
+    let parent: &MemoElement = &*topo::Env::expect();
+    let elem = memo!(ty.to_string(), |ty| document().create_element(ty).unwrap());
+    parent.ensure_child_attached(&elem);
+    MemoElement {
+        elem,
+        curr: Cell::new(None),
+    }
+}
+
+pub struct MemoElement {
+    curr: Cell<Option<sys::Node>>,
+    elem: sys::Element,
+}
 
 impl MemoElement {
+    fn new(elem: &sys::Element) -> Self {
+        Self {
+            curr: Cell::new(elem.first_child()),
+            elem: elem.clone(),
+        }
+    }
+
+    // FIXME this should be topo-aware
+    // TODO and it should be able to express its slot as an annotation
     pub fn attr(self, name: &str, value: impl ToString) -> Self {
         // TODO make sure these undo themselves if not called in a revision
         topo::call!(slot: name, {
             memo!(value.to_string(), |value| self
-                .0
+                .elem
                 .set_attribute(name, value)
                 .unwrap());
         });
         self
     }
 
-    pub fn on<Ev, State, Updater>(mut self, updater: Updater, key: Key<State>) -> Self
+    // FIXME this should be topo-aware
+    pub fn on<Ev, State, Updater>(self, updater: Updater, key: Key<State>) -> Self
     where
         Ev: 'static + Event,
         State: 'static,
         Updater: 'static + FnMut(Ev, &State) -> Option<State>,
     {
-        // TODO add the event handler to this type
+        // FIXME add the event handler to this type
         self
     }
 
-    pub fn inner<Ret>(self, children: impl FnOnce() -> Ret) -> Ret {
-        topo::call!(
-            { children() },
-            env! {
-                MemoElement => MemoElement(self.0.clone()),
-            }
-        )
-    }
-}
+    fn ensure_child_attached(&self, node: &sys::Node) {
+        let prev = self.curr.replace(Some(node.clone()));
 
-#[topo::aware]
-pub fn element(ty: &str) -> MemoElement {
-    unimplemented!()
+        if let Some(curr) = prev.and_then(|p| p.next_sibling()) {
+            if !curr.is_same_node(Some(node)) {
+                self.elem.replace_child(node, &curr).unwrap();
+            }
+        } else {
+            self.elem.append_child(node).unwrap();
+        }
+    }
+
+    // FIXME this should be topo-aware
+    pub fn inner<Ret>(self, children: impl FnOnce() -> Ret) -> Ret {
+        let elem = self.elem.clone();
+        let last_desired_child;
+        let ret;
+        topo::call!(
+            {
+                ret = children();
+
+                // before this melement is dropped when the environment goes out of scope,
+                // we need to get the last recorded child from this revision
+                last_desired_child = topo::Env::expect::<MemoElement>().curr.replace(None);
+            },
+            env! {
+                MemoElement => self,
+            }
+        );
+
+        let mut next_to_remove = last_desired_child.and_then(|c| c.next_sibling());
+        while let Some(to_remove) = next_to_remove {
+            next_to_remove = to_remove.next_sibling();
+            elem.remove_child(&to_remove).unwrap();
+        }
+
+        ret
+    }
 }
 
 pub trait Event: AsRef<web_sys::Event> + JsCast {

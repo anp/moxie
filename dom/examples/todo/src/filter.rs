@@ -39,23 +39,28 @@ impl Visibility {
 
 #[topo::aware]
 pub fn filter_link(to_set: Visibility) {
-    let visibility = topo::Env::expect::<Key<Visibility>>();
-
-    let mut link = element!("a").attr("style", "cursor: pointer;");
-    if **visibility == to_set {
-        link = link.attr("class", "selected");
-    }
+    tracing::info!({ id = ?topo::Id::current(), ?to_set }, "filter_link");
+    let visibility = topo::Env::expect::<Key<Visibility>>().clone();
 
     element!("li").inner(|| {
-        link.on(move |_: ClickEvent, _| Some(to_set), visibility.clone())
+        tracing::info!({ id = ?topo::Id::current() }, "inside li");
+        let mut link = element!("a").attr("style", "cursor: pointer;");
+        if *visibility == to_set {
+            link = link.attr("class", "selected");
+        }
+
+        link.on(move |_: ClickEvent, _| Some(to_set), visibility)
             .inner(|| text!(to_set))
     });
 }
 
 #[topo::aware]
 pub fn filter() {
+    tracing::info!({ id = ?topo::Id::current() }, "filter");
     element!("ul").attr("class", "filters").inner(|| {
-        for &to_set in [All, Active, Completed].iter() {
+        tracing::info!({ id = ?topo::Id::current() }, "list inner");
+        for &to_set in &[All, Active, Completed] {
+            tracing::info!({ id = ?topo::Id::current(), ?to_set }, "filter loop");
             filter_link!(to_set)
         }
     });
