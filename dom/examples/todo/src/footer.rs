@@ -12,12 +12,17 @@ pub fn footer(num_complete: usize, num_active: usize) {
             .attr("class", "todo-count")
             // lol this is awful
             .inner(|| {
-                element!("strong").child(if num_active == 0 {
-                    text!("No")
-                } else {
-                    text!(num_active)
+                element!("strong").inner(|| {
+                    if num_active == 0 {
+                        text!("No")
+                    } else {
+                        text!(num_active)
+                    }
                 });
-                text!(" {} left", if num_active == 1 { "item" } else { "items" })
+                text!(format!(
+                    " {} left",
+                    if num_active == 1 { "item" } else { "items" }
+                ))
             });
         filter!();
 

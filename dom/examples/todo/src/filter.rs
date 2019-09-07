@@ -41,21 +41,19 @@ impl Visibility {
 pub fn filter_link(to_set: Visibility) {
     let visibility = topo::Env::expect::<Key<Visibility>>();
 
-    let mut link = element("a").attr("style", "cursor: pointer;");
-
-    if *key == to_set {
+    let mut link = element!("a").attr("style", "cursor: pointer;");
+    if **visibility == to_set {
         link = link.attr("class", "selected");
     }
 
     element!("li").inner(|| {
-        link.on(move |_: ClickEvent, _| Some(to_set), key)
-            .child(text!(to_set.to_string()))
+        link.on(move |_: ClickEvent, _| Some(to_set), visibility.clone())
+            .inner(|| text!(to_set))
     });
 }
 
 #[topo::aware]
 pub fn filter() {
-    let visibility = topo::Env::expect::<Key<Visibility>>();
     element!("ul").attr("class", "filters").inner(|| {
         for &to_set in [All, Active, Completed].iter() {
             filter_link!(to_set)
