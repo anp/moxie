@@ -127,7 +127,7 @@ impl ArcWake for RuntimeWaker {
 }
 
 #[topo::aware]
-pub fn text(s: &str) {
+pub fn text(s: impl ToString) {
     // let text_node = memo!(self.0, |text| document().create_text_node(text));
     unimplemented!()
 }
@@ -135,7 +135,7 @@ pub fn text(s: &str) {
 pub struct MemoElement(sys::Element);
 
 impl MemoElement {
-    pub fn attr(self, name: &str, value: &str) -> Self {
+    pub fn attr(self, name: &str, value: impl ToString) -> Self {
         // TODO make sure these undo themselves if not called in a revision
         topo::call!(slot: name, {
             memo!(value.to_string(), |value| self
