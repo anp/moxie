@@ -4,9 +4,9 @@ use {
 };
 
 #[topo::aware]
-pub fn text_input(placeholder: &str, editing: bool, on_save: impl FnOnce(String) + 'static) {
+pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(String) + 'static) {
     let text = state!(|| if editing {
-        placeholder.clone()
+        placeholder.to_string()
     } else {
         String::new()
     });
@@ -20,7 +20,7 @@ pub fn text_input(placeholder: &str, editing: bool, on_save: impl FnOnce(String)
         val
     }
 
-    let mut elem = element!("input")
+    let elem = element!("input")
         .attr("autoFocus", "true")
         .attr("class", "new-todo")
         .attr("placeholder", placeholder)
@@ -46,6 +46,6 @@ pub fn text_input(placeholder: &str, editing: bool, on_save: impl FnOnce(String)
         );
 
     if editing {
-        elem = elem.attr("class", "edit");
+        elem.attr("class", "edit");
     }
 }
