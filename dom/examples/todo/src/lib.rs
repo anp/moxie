@@ -1,38 +1,39 @@
 use {
     filter::Visibility,
-    header::Header,
-    main_section::MainSection,
-    moxie_dom::prelude::*,
+    header::*,
+    main_section::*,
+    moxie_dom::{element, prelude::*},
     std::sync::atomic::{AtomicU32, Ordering},
 };
 
+#[macro_use]
 pub mod filter;
+#[macro_use]
 pub mod footer;
+#[macro_use]
+pub mod input; // goes before header for macro imports ugh
+#[macro_use]
 pub mod header;
-pub mod input;
+#[macro_use]
 pub mod main_section;
 
-#[derive(Clone, Debug, PartialEq)]
-struct TodoApp;
+#[topo::aware]
+fn todo_app() {
+    let visibility: Key<Visibility> = state!();
+    let todos = state!(|| vec![Todo::new("whoaaa")]);
 
-impl Component for TodoApp {
-    fn contents(self) {
-        let visibility: Key<Visibility> = state!();
-        let todos = state!(|| vec![Todo::new("whoaaa")]);
-
-        topo::call!(
-            {
-                show!(element("div")
-                    .attr("class", "todoapp")
-                    .child(Header)
-                    .child(MainSection));
-            },
-            env! {
-                Key<Vec<Todo>> => todos,
-                Key<Visibility> => visibility,
-            }
-        )
-    }
+    topo::call!(
+        {
+            element!("div").attr("class", "todoapp").inner(|| {
+                header!();
+                main_section!();
+            });
+        },
+        env! {
+            Key<Vec<Todo>> => todos,
+            Key<Visibility> => visibility,
+        }
+    );
 }
 
 #[derive(Clone, Debug)]
@@ -59,5 +60,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    moxie_dom::mount!(document().body().unwrap(), TodoApp);
+    moxie_dom::run_with_parent(document().body().unwrap(), || todo_app!());
 }
