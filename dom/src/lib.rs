@@ -23,7 +23,8 @@ use {
 
 pub mod prelude {
     pub use crate::{
-        document, window, BlurEvent, ChangeEvent, ClickEvent, DoubleClickEvent, Event, KeyDownEvent,
+        __element_impl, __text_impl, document, window, BlurEvent, ChangeEvent, ClickEvent,
+        DoubleClickEvent, Event, KeyDownEvent,
     };
     pub use moxie::*;
     pub use wasm_bindgen::prelude::*;
