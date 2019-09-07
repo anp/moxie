@@ -1,50 +1,36 @@
 use {
-    crate::{filter::Filter, Todo},
-    moxie_dom::prelude::*,
+    crate::{filter::*, Todo},
+    moxie_dom::{element, prelude::*, text},
 };
 
-#[derive(Debug)]
-pub struct Footer {
-    pub num_complete: usize,
-    pub num_active: usize,
-}
+#[topo::aware]
+pub fn footer(num_complete: usize, num_active: usize) {
+    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
 
-impl Component for Footer {
-    fn contents(self) {
-        let Self {
-            num_complete,
-            num_active,
-        } = self;
-        let todos = topo::Env::expect::<Key<Vec<Todo>>>();
+    element!("footer").attr("class", "footer").inner(|| {
+        element!("span")
+            .attr("class", "todo-count")
+            // lol this is awful
+            .inner(|| {
+                element!("strong").child(if num_active == 0 {
+                    text!("No")
+                } else {
+                    text!(num_active)
+                });
+                text!(" {} left", if num_active == 1 { "item" } else { "items" })
+            });
+        filter!();
 
-        show!(element("footer").attr("class", "footer").inner(|| {
-            show!(
-                element("span")
-                    .attr("class", "todo-count")
-                    // lol this is awful
-                    .child(element("strong").child(if num_active == 0 {
-                        text!("No")
-                    } else {
-                        text!(num_active)
-                    }))
-                    .child(text!(
-                        " {} left",
-                        if num_active == 1 { "item" } else { "items" }
-                    )),
-                Filter
-            );
-
-            if num_complete > 0 {
-                show!(element("button")
-                    .attr("class", "clear-completed")
-                    .on(
-                        |_: ClickEvent, todos| {
-                            Some(todos.iter().filter(|t| !t.completed).cloned().collect())
-                        },
-                        todos.clone()
-                    )
-                    .child(text!("Clear completed")));
-            }
-        }));
-    }
+        if num_complete > 0 {
+            element!("button")
+                .attr("class", "clear-completed")
+                .on(
+                    |_: ClickEvent, todos| {
+                        Some(todos.iter().filter(|t| !t.completed).cloned().collect())
+                    },
+                    todos.clone(),
+                )
+                .inner(|| text!("Clear completed"));
+        }
+    });
 }
