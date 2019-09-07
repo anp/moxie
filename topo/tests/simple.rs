@@ -3,10 +3,14 @@ use topo::*;
 #[test]
 fn invoke_test_topo() {
     #[topo::aware]
-    fn topo_test(prev: Id) {
-        assert_ne!(prev, Id::current());
+    fn unique_id() -> Id {
+        Id::current()
     }
 
-    let prev = Id::current();
-    topo_test!(prev);
+    let mut prev = Id::current();
+    for _ in 0..10 {
+        let current = unique_id!();
+        assert_ne!(prev, current, "each Id must be unique");
+        prev = current;
+    }
 }
