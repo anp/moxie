@@ -1,6 +1,6 @@
 use {
     crate::Todo,
-    moxie_dom::prelude::*,
+    moxie_dom::{element, prelude::*, text},
     Visibility::{Active, All, Completed},
 };
 
@@ -37,42 +37,28 @@ impl Visibility {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct Filter;
+#[topo::aware]
+pub fn filter_link(to_set: Visibility) {
+    let visibility = topo::Env::expect::<Key<Visibility>>();
 
-impl Component for Filter {
-    fn contents(self) {
-        let visibility = topo::Env::expect::<Key<Visibility>>();
-        show!(element("ul").attr("class", "filters").inner(|| {
-            for &to_set in [All, Active, Completed].iter() {
-                show!(FilterLink {
-                    to_set,
-                    key: visibility.clone(),
-                });
-            }
-        }));
+    let mut link = element("a").attr("style", "cursor: pointer;");
+
+    if *key == to_set {
+        link = link.attr("class", "selected");
     }
+
+    element!("li").inner(|| {
+        link.on(move |_: ClickEvent, _| Some(to_set), key)
+            .child(text!(to_set.to_string()))
+    });
 }
 
-#[derive(Debug)]
-struct FilterLink {
-    key: Key<Visibility>,
-    to_set: Visibility,
-}
-
-impl Component for FilterLink {
-    fn contents(self) {
-        let Self { to_set, key } = self;
-
-        let mut link = element("a").attr("style", "cursor: pointer;");
-
-        if *key == to_set {
-            link = link.attr("class", "selected");
+#[topo::aware]
+pub fn filter() {
+    let visibility = topo::Env::expect::<Key<Visibility>>();
+    element!("ul").attr("class", "filters").inner(|| {
+        for &to_set in [All, Active, Completed].iter() {
+            filter_link!(to_set)
         }
-
-        show!(element("li").child(
-            link.on(move |_: ClickEvent, _| Some(to_set), key)
-                .child(text!(to_set.to_string()))
-        ));
-    }
+    });
 }
