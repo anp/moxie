@@ -8,7 +8,7 @@ pub fn main() {
     }));
 
     tracing::info!("mounting moxie-dom to root");
-    moxie_dom::run_with_parent(document().body().unwrap(), || {
+    moxie_dom::boot(document().body().unwrap(), || {
         let count = state!(|| 0);
         text!(&format!("hello world from moxie! ({})", &count));
 
