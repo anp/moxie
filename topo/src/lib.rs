@@ -498,14 +498,7 @@ macro_rules! unstable_make_topo_macro {
         $($docs)*
         #[macro_export]
         macro_rules! $name {
-            $matcher => {{
-                let callsite = topo::callsite!();
-                topo::unstable_raw_call!(
-                    callsite: callsite,
-                    slot: topo::next_iter_count(callsite),
-                    is_root: false,
-                    call: $mangled_name $pass)
-            }};
+            $matcher => { topo::call!({ $mangled_name $pass }) };
         }
     };
 }
@@ -531,7 +524,11 @@ mod tests {
     #[test]
     fn one_child_in_a_loop() {
         let root = Id::current();
-        assert_eq!(root, Id::current(), "Id must be stable across calls");
+        assert_eq!(
+            root,
+            Id::current(),
+            "Id must be stable across calls within the same scope"
+        );
 
         let mut prev = root;
 
