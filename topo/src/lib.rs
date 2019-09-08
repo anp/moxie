@@ -57,8 +57,8 @@ use {
     owning_ref::OwningRef,
     std::{
         any::{Any, TypeId},
-        cell::{Cell, RefCell},
-        collections::{hash_map::DefaultHasher, HashMap as Map},
+        cell::RefCell,
+        collections::{hash_map::DefaultHasher, HashMap},
         hash::{Hash, Hasher},
         mem::replace,
         ops::Deref,
@@ -136,11 +136,22 @@ macro_rules! call {
         let callsite = $crate::callsite!();
         $crate::unstable_raw_call!(
             callsite: callsite,
-            slot: $crate::next_iter_count(callsite),
+            slot: $crate::current_callsite_count(callsite),
             is_root: false,
             call: $($input)*
         )
     }};
+}
+
+/// Returns the number of times this callsite has been seen as a child of the current Point.
+pub fn current_callsite_count(callsite: Callsite) -> u32 {
+    Point::with_current(|point| {
+        if let Some(c) = point.state.callsite_counts.get(&callsite) {
+            *c
+        } else {
+            0
+        }
+    })
 }
 
 /// Roots a topology at a particular callsite while calling the provided expression with the same
@@ -277,28 +288,14 @@ impl std::fmt::Debug for Id {
 #[derive(Debug)]
 pub struct Point {
     id: Id,
+    callsite: Callsite,
     /// The current environment.
-    env: Env,
+    state: State,
 }
 
 thread_local! {
     /// The `Point` representing the current dynamic scope.
     static CURRENT_POINT: RefCell<Point> = Default::default();
-    static LAST_CALLSITE_AND_COUNT: Cell<(Callsite, u32)> = Cell::new((callsite!(), 0));
-}
-
-#[doc(hidden)]
-pub fn next_iter_count(callsite: Callsite) -> u32 {
-    LAST_CALLSITE_AND_COUNT.with(|last| {
-        let previous = last.replace((callsite, 1));
-        if previous.0 == callsite {
-            let new_count = previous.1 + 1;
-            last.set((callsite, new_count));
-            new_count
-        } else {
-            1
-        }
-    })
 }
 
 impl Point {
@@ -318,25 +315,25 @@ impl Point {
             let mut parent = parent.borrow_mut();
 
             // this must be copied *before* creating the child below, which will mutate the state
-            let parent_initial_env = parent.env.clone();
+            let parent_initial_state = parent.state.clone();
 
             let child = if reset_on_drop {
                 let mut root = Point::default();
                 // by getting a child of the state instead of the point, we skip creating
                 // a dep on the IDs of the parent, but still pass an Env through
-                root.env = parent.env.child(add_env);
+                root.state = parent.state.child(callsite, add_env);
                 root
             } else {
                 parent.child(callsite, slot, add_env)
             };
             let parent = replace(&mut *parent, child);
 
+            // returned by this function, will fire when the current borrows have ended
             scopeguard::guard(
-                (parent_initial_env, parent),
-                move |(prev_initial_env, mut prev)| {
+                (parent_initial_state, parent),
+                move |(prev_initial_state, mut prev)| {
                     if reset_on_drop {
-                        prev.env = prev_initial_env;
-                        LAST_CALLSITE_AND_COUNT.with(|last| last.set((callsite!(), 1)));
+                        prev.state = prev_initial_state;
                     }
                     CURRENT_POINT.with(|p| p.replace(prev));
                 },
@@ -354,7 +351,8 @@ impl Point {
 
         Self {
             id,
-            env: self.env.child(additional),
+            callsite,
+            state: self.state.child(callsite, additional),
         }
     }
 
@@ -368,7 +366,8 @@ impl Default for Point {
     fn default() -> Self {
         Self {
             id: Id(0),
-            env: Default::default(),
+            callsite: callsite!(),
+            state: Default::default(),
         }
     }
 }
@@ -376,6 +375,25 @@ impl Default for Point {
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct State {
+    /// Number of times each callsite's type has been observed during this Point.
+    callsite_counts: HashMap<Callsite, u32>,
+    /// The current environment.
+    env: Env,
+}
+
+impl State {
+    fn child(&mut self, callsite: Callsite, additional: EnvInner) -> Self {
+        *self.callsite_counts.entry(callsite).or_default() += 1;
+
+        Self {
+            callsite_counts: HashMap::new(),
+            env: self.env.child(additional),
+        }
     }
 }
 
@@ -438,7 +456,7 @@ impl Deref for AnonRc {
     }
 }
 
-type EnvInner = Map<TypeId, AnonRc>;
+type EnvInner = HashMap<TypeId, AnonRc>;
 
 impl Env {
     /// Returns a reference to a value in the current environment if it has been added to the
@@ -448,7 +466,7 @@ impl Env {
         E: Any + 'static,
     {
         let key = TypeId::of::<E>();
-        let anon = Point::with_current(|current| current.env.inner.get(&key).cloned());
+        let anon = Point::with_current(|current| current.state.env.inner.get(&key).cloned());
 
         if let Some(anon) = anon {
             Some(anon.unstable_deref())
@@ -520,6 +538,21 @@ mod tests {
         super::{Env, Id},
         std::collections::HashSet,
     };
+
+    #[test]
+    fn alternating_in_a_loop() {
+        let mut ids = HashSet::new();
+
+        for i in 0..4 {
+            if i % 2 == 0 {
+                call!(ids.insert(Id::current()));
+            } else {
+                call!(ids.insert(Id::current()));
+            }
+        }
+
+        assert_eq!(ids.len(), 4, "each callsite must produce multiple IDs");
+    }
 
     #[test]
     fn one_child_in_a_loop() {
