@@ -140,7 +140,7 @@ enum Liveness {
 mod tests {
     use {
         crate::{memo::*, Revision},
-        std::cell::Cell,
+        std::{cell::Cell, collections::HashSet},
     };
 
     fn with_test_logs(test: impl FnOnce()) {
@@ -191,6 +191,54 @@ mod tests {
                 assert_eq!(rt.revision().0, i + 1);
             }
             assert_eq!(call_count, 1);
+        })
+    }
+
+    #[test]
+    fn id_in_loop() {
+        with_test_logs(|| {
+            let mut ids = HashSet::new();
+            for _ in 0..10 {
+                topo::call!(ids.insert(topo::Id::current()));
+            }
+            assert_eq!(ids.len(), 10);
+
+            let mut rt = crate::Runtime::new(|| {
+                let mut ids = HashSet::new();
+                for i in 0..10 {
+                    memo!(i, |_| ids.insert(topo::Id::current()));
+                }
+                assert_eq!(ids.len(), 10);
+            });
+            rt.run_once();
+        });
+    }
+
+    #[test]
+    fn memo_in_a_loop() {
+        with_test_logs(|| {
+            let num_iters = 10;
+            let mut rt = crate::Runtime::new(|| {
+                let mut counts = vec![];
+                for i in 0..num_iters {
+                    topo::call!(once!(|| counts.push(i)));
+                }
+                counts
+            });
+
+            let first_counts = rt.run_once();
+            assert_eq!(
+                first_counts.len(),
+                num_iters,
+                "each mutation must be called exactly once"
+            );
+
+            let second_counts = rt.run_once();
+            assert_eq!(
+                second_counts.len(),
+                0,
+                "each mutation was already called in the previous revision"
+            );
         })
     }
 
