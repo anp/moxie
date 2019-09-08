@@ -9,9 +9,9 @@ core-flow = """
 watch --clear
     -x fmt
     -x check-core
-    -x test-core
-    -x docs-all
     -x clippy-core
+    -x docs-all
+    -x test-core
 """
 
 bench-core = "bench --package moxie --package topo --package topo-macro"
