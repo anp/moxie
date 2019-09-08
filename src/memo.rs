@@ -67,8 +67,9 @@ impl MemoStore {
 /// callsite has been invoked during a given `Revision`, allowing memoization to work without an
 /// explicit slot.
 pub(crate) struct MemoStorage {
-    memos: HashMap<(topo::Id, TypeId, TypeId), (Liveness, Box<dyn Any>)>,
+    memos: HashMap<MemoIndex, (Liveness, Box<dyn Any>)>,
 }
+type MemoIndex = (topo::Id, TypeId, TypeId);
 
 impl Default for MemoStorage {
     fn default() -> Self {
