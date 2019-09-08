@@ -79,7 +79,10 @@ impl std::fmt::Debug for Revision {
 ///     assert_eq!(rt.revision(), moxie::Revision(i));
 /// }
 /// ```
-pub struct Runtime<Root> {
+pub struct Runtime<Root, Out>
+where
+    Root: FnMut() -> Out,
+{
     revision: Revision,
     store: MemoStore,
     root: Root,
@@ -87,9 +90,9 @@ pub struct Runtime<Root> {
     span: Span,
 }
 
-impl<Root> Runtime<Root>
+impl<Root, Out> Runtime<Root, Out>
 where
-    Root: FnMut(),
+    Root: FnMut() -> Out,
 {
     /// Construct a new Runtime at revision 0 and blank storage.
     pub fn new(root: Root) -> Self {
@@ -110,12 +113,12 @@ where
 
     /// Run a single iteration of the root closure with access to the [`topo::Env`] provided by the
     /// [`Runtime`] . Increments the [`Revision`] counter of this [`Runtime`] by one.
-    pub fn run_once(&mut self) {
+    pub fn run_once(&mut self) -> Out {
         self.revision.0 += 1;
         self.span.record("rev", &self.revision.0);
         let _entered = self.span.enter();
 
-        topo::root!(
+        let ret = topo::root!(
             (self.root)(),
             env! {
                 MemoStore => self.store.clone(),
@@ -124,6 +127,7 @@ where
             }
         );
         self.store.gc();
+        ret
     }
 
     /// Sets the [`std::task::Waker`] which will be called when state variables receive commits. By

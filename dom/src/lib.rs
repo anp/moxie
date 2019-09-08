@@ -72,7 +72,7 @@ pub fn document() -> sys::Document {
 /// of `new_parent`'s children.
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut() + 'static) {
     let new_parent = new_parent.as_ref().to_owned();
-    let rt: Runtime<Box<dyn FnMut()>> = Runtime::new(Box::new(move || {
+    let rt: Runtime<Box<dyn FnMut()>, ()> = Runtime::new(Box::new(move || {
         topo::call!(
             { root() },
             env! {
@@ -98,7 +98,7 @@ pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut
 }
 
 struct WebRuntime {
-    rt: Runtime<Box<dyn FnMut()>>,
+    rt: Runtime<Box<dyn FnMut()>, ()>,
     handle: Option<(i32, Closure<dyn FnMut()>)>,
 }
 
