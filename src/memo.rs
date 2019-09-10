@@ -5,6 +5,35 @@ use std::{
     rc::Rc,
 };
 
+/// Memoizes the provided function, storing the intermediate `Init` value in memoization storage
+/// and running `ret` with a reference to it, skipping the initialization on subsequent executions.
+///
+/// Marks the memoized value as `Live` in the current `Revision`.
+#[topo::aware]
+pub fn memo_with<Arg, Init, Ret>(
+    arg: Arg,
+    init: impl FnOnce(&Arg) -> Init,
+    to_ret: impl FnOnce(&Init) -> Ret,
+) -> Ret
+where
+    Arg: PartialEq + 'static,
+    Init: 'static,
+    Ret: 'static,
+{
+    let id = topo::Id::current();
+    let store = topo::Env::expect::<MemoStore>();
+    let mut store = store.0.borrow_mut();
+
+    if let Some(memod) = store.get_if_arg_eq(id, &arg) {
+        to_ret(memod)
+    } else {
+        let val = init(&arg);
+        let returned = to_ret(&val);
+        store.insert(id, arg, val);
+        returned
+    }
+}
+
 /// Memoize the provided function's output at this `topo::id`.
 #[topo::aware]
 pub fn memo<Arg, Out>(arg: Arg, init: impl FnOnce(&Arg) -> Out) -> Out
@@ -12,8 +41,7 @@ where
     Arg: PartialEq + 'static,
     Out: Clone + 'static,
 {
-    let store = topo::Env::expect::<MemoStore>();
-    store.get_or_init(arg, init)
+    memo_with!(arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`], repeated calls at the same `Id` are assigned
@@ -37,28 +65,6 @@ impl MemoStore {
     pub fn gc(&self) {
         self.0.borrow_mut().gc();
     }
-
-    /// Returns a potentially memoized value for the given slot, argument, and initializer.
-    ///
-    /// This first checks for a matching value in storage, cloning it if available and returning
-    /// that. If this callsite and slot haven't been previously initialized or if the argument
-    /// previously used to do so is different from the current one, the initializer will be called
-    /// again, that return value stored, and a clone returned to the caller.
-    fn get_or_init<Arg, Out, Init>(&self, arg: Arg, initializer: Init) -> Out
-    where
-        Arg: PartialEq + 'static,
-        Out: Clone + 'static,
-        for<'a> Init: FnOnce(&'a Arg) -> Out,
-    {
-        let id = topo::Id::current();
-        let maybe_memod = self.0.borrow_mut().get_if_arg_eq(id, &arg);
-        // ^ this binding is necessary to keep the below borrow_mut from panicking
-        maybe_memod.unwrap_or_else(|| {
-            let new_output = initializer(&arg);
-            self.0.borrow_mut().insert(id, arg, new_output.clone());
-            new_output
-        })
-    }
 }
 
 /// The memoization storage for a `Runtime`. Stores memoized values by callsite, type, and a caller-
@@ -81,12 +87,11 @@ impl Default for MemoStorage {
 
 impl MemoStorage {
     /// Retrieves a previously-initialized output for the requested callsite if the arguments
-    /// are compatible. If a matching output is found, cloned, and returned, the value is marked
-    /// as `Liveness::Live`.
-    fn get_if_arg_eq<Arg, Out>(&mut self, id: topo::Id, arg: &Arg) -> Option<Out>
+    /// are compatible. If a matching output is found the value is marked `Liveness::Live`.
+    fn get_if_arg_eq<Arg, Out>(&mut self, id: topo::Id, arg: &Arg) -> Option<&Out>
     where
         Arg: PartialEq + 'static,
-        Out: Clone + 'static,
+        Out: 'static,
     {
         if let Some((liveness, boxed)) =
             self.memos
@@ -96,18 +101,18 @@ impl MemoStorage {
                 boxed.downcast_ref().expect("looked up by type");
             if prev_arg == arg {
                 *liveness = Liveness::Live;
-                return Some(prev_out.clone());
+                return Some(prev_out);
             }
         }
 
         None
     }
 
-    /// Insert a new value into the memoization store for a callsite under the given slot.
+    /// Insert a new value into the memoization store.
     fn insert<Arg, Out>(&mut self, id: topo::Id, arg: Arg, val: Out)
     where
         Arg: PartialEq + 'static,
-        Out: Clone + 'static,
+        Out: 'static,
     {
         self.memos.insert(
             (id, TypeId::of::<Arg>(), TypeId::of::<Out>()),
