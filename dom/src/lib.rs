@@ -174,12 +174,26 @@ impl MemoElement {
     // FIXME this should be topo-aware
     // TODO and it should be able to express its slot as an annotation
     pub fn attr(self, name: &str, value: impl ToString) -> Self {
-        // TODO make sure these undo themselves if not called in a revision
+        // all memoizations in this scope will be keyed by attribute name
         topo::call!(slot: name, {
-            memo!(value.to_string(), |value| self
-                .elem
-                .set_attribute(name, value)
-                .unwrap());
+            // we initialize the scopeguard once per attribute, keeping it from being GC'd while
+            // still active in the most recent revision. once it's no longer referenced, it will
+            // undo the attribute binding on the element
+            once_with!(
+                || {
+                    let name = name.to_string();
+                    scopeguard::guard(self.elem.clone(), move |elem| {
+                        elem.remove_attribute(&name).unwrap()
+                    })
+                },
+                |binding| {
+                    // now that we have the scopeguard with the dom element and name in it, actually
+                    // set the correct value every time it changes
+                    memo!(value.to_string(), |value| binding
+                        .set_attribute(name, value)
+                        .unwrap());
+                }
+            );
         });
         self
     }
