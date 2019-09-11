@@ -6,14 +6,14 @@ use std::{
 };
 
 /// Memoizes the provided function, storing the intermediate `Init` value in memoization storage
-/// and running `ret` with a reference to it, skipping the initialization on subsequent executions.
+/// and calling `with` with a reference to it, skipping the initialization on subsequent executions.
 ///
 /// Marks the memoized value as `Live` in the current `Revision`.
 #[topo::aware]
 pub fn memo_with<Arg, Init, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Init,
-    to_ret: impl FnOnce(&Init) -> Ret,
+    with: impl FnOnce(&Init) -> Ret,
 ) -> Ret
 where
     Arg: PartialEq + 'static,
@@ -25,11 +25,11 @@ where
     let mut store = store.0.borrow_mut();
 
     if let Some(memod) = store.get_if_arg_eq(id, &arg) {
-        to_ret(memod)
+        with(memod)
     } else {
-        let val = init(&arg);
-        let returned = to_ret(&val);
-        store.insert(id, arg, val);
+        let fresh = init(&arg);
+        let returned = with(&fresh);
+        store.insert(id, arg, fresh);
         returned
     }
 }
