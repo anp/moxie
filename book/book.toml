@@ -1,0 +1,12 @@
+[book]
+title = "the moxie project"
+author = "the moxie developers"
+description = "prose related to the moxie project, for publication to the website"
+
+[build]
+build-dir = "."
+create-missing = false
+
+[preprocessor.index]
+
+[preprocessor.links]
