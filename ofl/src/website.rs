@@ -46,6 +46,7 @@ impl DistOpts {
     }
 
     fn build_website_dist(self, root_path: &Path) -> Result<(), Error> {
+        book::build_book(&root_path.join("book"))?;
         self.copy_to_target_dir(root_path)
     }
 
