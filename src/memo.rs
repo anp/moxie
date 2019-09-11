@@ -34,6 +34,16 @@ where
     }
 }
 
+/// Memoizes the provided function once at the callsite. Runs `with` on every iteration.
+#[topo::aware]
+pub fn once_with<Out, Ret>(expr: impl FnOnce() -> Out, with: impl FnOnce(&Out) -> Ret) -> Ret
+where
+    Out: 'static,
+    Ret: 'static,
+{
+    memo_with!((), |&()| expr(), with)
+}
+
 /// Memoize the provided function's output at this `topo::id`.
 #[topo::aware]
 pub fn memo<Arg, Out>(arg: Arg, init: impl FnOnce(&Arg) -> Out) -> Out
