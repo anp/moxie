@@ -26,11 +26,11 @@ fn mini_list() {
     );
 
     boot(root.clone(), move || {
-        element!("ul").inner(|| {
+        element!("ul", |e| e.inner(|| {
             for item in &["first", "second", "third"] {
-                element!("li").inner(|| text!(item));
+                element!("li", |e| e.inner(|| text!(item)));
             }
-        });
+        }));
 
         assert_vnode_matches_element(&expected.vnode(), &root);
     });

@@ -12,10 +12,10 @@ pub fn main() {
         let count = state!(|| 0);
         text!(&format!("hello world from moxie! ({})", &count));
 
-        element!("button")
+        element!("button", |e| e
             .attr("type", "button")
             .on(|_: ClickEvent, count| Some(count + 1), count)
-            .inner(|| text!("increment"));
+            .inner(|| text!("increment")));
 
         vec![text!("first"), text!(" second"), text!(" third")];
     });
