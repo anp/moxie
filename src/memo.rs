@@ -7,6 +7,7 @@ use std::{
 
 /// Memoizes the provided function, storing the intermediate `Init` value in memoization storage
 /// and calling `with` with a reference to it, skipping the initialization on subsequent executions.
+/// Returns whatever `with` returns.
 ///
 /// Marks the memoized value as `Live` in the current `Revision`.
 #[topo::aware]
@@ -20,18 +21,47 @@ where
     Init: 'static,
     Ret: 'static,
 {
-    let id = topo::Id::current();
     let store = topo::Env::expect::<MemoStore>();
-    let mut store = store.0.borrow_mut();
+    let key = (
+        topo::Id::current(),
+        TypeId::of::<Arg>(),
+        TypeId::of::<Init>(),
+    );
 
-    if let Some(memod) = store.get_if_arg_eq(id, &arg) {
-        with(memod)
-    } else {
+    // to allow nested memo_with calls, we separate mutable borrows of `store` from the callbacks:
+    //
+    // * with &mut store
+    //   * remove optionally-cached value from storage
+    // * call functions producing cached and returned values
+    // * with &mut store
+    //   * store cached value as Live, return returned value
+
+    let stored = { store.0.borrow_mut().memos.remove(&key) };
+    let mut with = Some(with); // wrapping in an option dodges the borrow checker for closures
+
+    let mut cached = None;
+    if let Some((_, boxed)) = stored {
+        let boxed: Box<(Arg, Init)> = boxed.downcast().unwrap();
+
+        if boxed.0 == arg {
+            let with = with.take().unwrap();
+            cached = Some((with(&boxed.1), boxed));
+        }
+    };
+
+    let (returned, boxed) = cached.unwrap_or_else(|| {
+        let with = with.take().unwrap();
         let fresh = init(&arg);
-        let returned = with(&fresh);
-        store.insert(id, arg, fresh);
-        returned
-    }
+        (with(&fresh), Box::new((arg, fresh)))
+    });
+
+    store
+        .0
+        .borrow_mut()
+        .memos
+        .insert(key, (Liveness::Live, boxed as _));
+
+    returned
 }
 
 /// Memoizes the provided function once at the callsite. Runs `with` on every iteration.
@@ -96,40 +126,6 @@ impl Default for MemoStorage {
 }
 
 impl MemoStorage {
-    /// Retrieves a previously-initialized output for the requested callsite if the arguments
-    /// are compatible. If a matching output is found the value is marked `Liveness::Live`.
-    fn get_if_arg_eq<Arg, Out>(&mut self, id: topo::Id, arg: &Arg) -> Option<&Out>
-    where
-        Arg: PartialEq + 'static,
-        Out: 'static,
-    {
-        if let Some((liveness, boxed)) =
-            self.memos
-                .get_mut(&(id, TypeId::of::<Arg>(), TypeId::of::<Out>()))
-        {
-            let (prev_arg, prev_out): &(Arg, Out) =
-                boxed.downcast_ref().expect("looked up by type");
-            if prev_arg == arg {
-                *liveness = Liveness::Live;
-                return Some(prev_out);
-            }
-        }
-
-        None
-    }
-
-    /// Insert a new value into the memoization store.
-    fn insert<Arg, Out>(&mut self, id: topo::Id, arg: Arg, val: Out)
-    where
-        Arg: PartialEq + 'static,
-        Out: 'static,
-    {
-        self.memos.insert(
-            (id, TypeId::of::<Arg>(), TypeId::of::<Out>()),
-            (Liveness::Live, Box::new((arg, val))),
-        );
-    }
-
     /// Drops memoized values that were not referenced during the last tick, removing all `Dead`
     /// storage values and sets all remaining values to `Dead` for the next mark.
     fn gc(&mut self) {
