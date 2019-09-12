@@ -21,9 +21,9 @@ struct Var<State> {
 impl<State> Var<State> {
     /// Attach this `Var` to a specific callsite, performing any pending commit and returning the
     /// resulting latest commit.
-    fn root(&mut self) -> Commit<State> {
+    fn root(&mut self) -> (topo::Id, Commit<State>) {
         self.flush();
-        self.peek()
+        (self.point, self.peek())
     }
 
     /// Finishes the pending comment if one exists.
@@ -95,9 +95,10 @@ where
         Arc::new(Mutex::new(var))
     });
 
-    let commit_at_root = var.lock().root();
+    let (id, commit_at_root) = var.lock().root();
 
     Key {
+        id,
         commit_at_root,
         var,
     }
@@ -156,11 +157,17 @@ where
 /// to prevent cycles, which means that all operations called against them are fallible -- we cannot
 /// know before calling a method that the state variable is still live.
 pub struct Key<State> {
+    id: topo::Id,
     commit_at_root: Commit<State>,
     var: Arc<Mutex<Var<State>>>,
 }
 
 impl<State> Key<State> {
+    /// Returns the `topo::Id` at which the state variable is bound.
+    pub fn id(&self) -> topo::Id {
+        self.id
+    }
+
     /// Returns the current commit of the state variable if it is live.
     pub fn read(&self) -> Commit<State> {
         self.var.lock().peek()
@@ -191,6 +198,7 @@ where
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
         Self {
+            id: self.id,
             commit_at_root: self.commit_at_root.clone(),
             var: self.var.clone(),
         }
