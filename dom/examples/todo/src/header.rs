@@ -8,8 +8,8 @@ use {
 pub fn header() {
     let todos = topo::Env::expect::<Key<Vec<Todo>>>();
 
-    element!("header").attr("class", "header").inner(|| {
-        element!("h1").inner(|| text!("todos"));
+    element!("header", |e| e.attr("class", "header").inner(|| {
+        element!("h1", |e| e.inner(|| text!("todos")));
         text_input!("What needs to be done?", false, move |value: String| {
             todos.update(|prev| {
                 let mut todos: Vec<Todo> = prev.to_vec();
@@ -18,5 +18,5 @@ pub fn header() {
                 Some(todos)
             });
         });
-    });
+    }));
 }

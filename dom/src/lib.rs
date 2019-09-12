@@ -148,15 +148,16 @@ pub fn text(s: impl ToString) {
 }
 
 #[topo::aware]
-pub fn element(ty: &str) -> MemoElement {
+pub fn element<ChildRet>(ty: &str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
     let parent: &MemoElement = &*topo::Env::expect();
-    let elem = memo!(ty.to_string(), |ty| document().create_element(ty).unwrap());
+    let elem = once!(|| document().create_element(ty).unwrap());
     parent.ensure_child_attached(&elem);
-    MemoElement {
+    let elem = MemoElement {
         elem,
         curr: Cell::new(None),
+    };
+    with_elem(&elem);
     }
-}
 
 pub struct MemoElement {
     curr: Cell<Option<sys::Node>>,
@@ -173,7 +174,7 @@ impl MemoElement {
 
     // FIXME this should be topo-aware
     // TODO and it should be able to express its slot as an annotation
-    pub fn attr(self, name: &str, value: impl ToString) -> Self {
+    pub fn attr(&self, name: &str, value: impl ToString) -> &Self {
         // all memoizations in this scope will be keyed by attribute name
         topo::call!(slot: name, {
             // we initialize the scopeguard once per attribute, keeping it from being GC'd while
@@ -199,7 +200,7 @@ impl MemoElement {
     }
 
     // FIXME this should be topo-aware
-    pub fn on<Ev, State, Updater>(self, updater: Updater, key: Key<State>) -> Self
+    pub fn on<Ev, State, Updater>(&self, updater: Updater, key: Key<State>) -> &Self
     where
         Ev: 'static + Event,
         State: 'static,
@@ -222,7 +223,7 @@ impl MemoElement {
     }
 
     // FIXME this should be topo-aware
-    pub fn inner<Ret>(self, children: impl FnOnce() -> Ret) -> Ret {
+    pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
         let elem = self.elem.clone();
         let last_desired_child;
         let ret;
@@ -235,7 +236,7 @@ impl MemoElement {
                 last_desired_child = topo::Env::expect::<MemoElement>().curr.replace(None);
             },
             env! {
-                MemoElement => self,
+                MemoElement => self.cloned(),
             }
         );
 
@@ -246,6 +247,15 @@ impl MemoElement {
         }
 
         ret
+    }
+
+    fn cloned(&self) -> Self {
+        let curr = self.curr.replace(None);
+        self.curr.replace(curr.clone());
+        Self {
+            elem: self.elem.clone(),
+            curr: Cell::new(curr),
+        }
     }
 }
 

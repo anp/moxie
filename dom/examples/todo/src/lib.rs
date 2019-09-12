@@ -24,10 +24,10 @@ fn todo_app() {
 
     topo::call!(
         {
-            element!("div").attr("class", "todoapp").inner(|| {
+            element!("div", |e| e.attr("class", "todoapp").inner(|| {
                 header!();
                 main_section!();
-            });
+            }));
         },
         env! {
             Key<Vec<Todo>> => todos,
