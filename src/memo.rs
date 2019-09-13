@@ -5,27 +5,27 @@ use std::{
     rc::Rc,
 };
 
-/// Memoizes the provided function, storing the intermediate `Init` value in memoization storage
+/// Memoizes the provided function, storing the intermediate `Stored` value in memoization storage
 /// and calling `with` with a reference to it, skipping the initialization on subsequent executions.
 /// Returns whatever `with` returns.
 ///
 /// Marks the memoized value as `Live` in the current `Revision`.
 #[topo::aware]
-pub fn memo_with<Arg, Init, Ret>(
+pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
-    init: impl FnOnce(&Arg) -> Init,
-    with: impl FnOnce(&Init) -> Ret,
+    init: impl FnOnce(&Arg) -> Stored,
+    with: impl FnOnce(&Stored) -> Ret,
 ) -> Ret
 where
     Arg: PartialEq + 'static,
-    Init: 'static,
+    Stored: 'static,
     Ret: 'static,
 {
     let store = topo::Env::expect::<MemoStore>();
     let key = (
         topo::Id::current(),
         TypeId::of::<Arg>(),
-        TypeId::of::<Init>(),
+        TypeId::of::<Stored>(),
     );
 
     // to allow nested memo_with calls, we separate mutable borrows of `store` from the callbacks:
@@ -41,7 +41,7 @@ where
 
     let mut cached = None;
     if let Some((_, boxed)) = stored {
-        let boxed: Box<(Arg, Init)> = boxed.downcast().unwrap();
+        let boxed: Box<(Arg, Stored)> = boxed.downcast().unwrap();
 
         if boxed.0 == arg {
             let with = with.take().unwrap();
@@ -64,11 +64,14 @@ where
     returned
 }
 
-/// Memoizes the provided function once at the callsite. Runs `with` on every iteration.
+/// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
 #[topo::aware]
-pub fn once_with<Out, Ret>(expr: impl FnOnce() -> Out, with: impl FnOnce(&Out) -> Ret) -> Ret
+pub fn once_with<Stored, Ret>(
+    expr: impl FnOnce() -> Stored,
+    with: impl FnOnce(&Stored) -> Ret,
+) -> Ret
 where
-    Out: 'static,
+    Stored: 'static,
     Ret: 'static,
 {
     memo_with!((), |&()| expr(), with)
@@ -76,10 +79,10 @@ where
 
 /// Memoize the provided function's output at this `topo::id`.
 #[topo::aware]
-pub fn memo<Arg, Out>(arg: Arg, init: impl FnOnce(&Arg) -> Out) -> Out
+pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
     Arg: PartialEq + 'static,
-    Out: Clone + 'static,
+    Stored: Clone + 'static,
 {
     memo_with!(arg, init, Clone::clone)
 }
@@ -88,9 +91,9 @@ where
 /// adjacent slots. The provided value will always be cloned on subsequent calls unless dropped
 /// from storage.
 #[topo::aware]
-pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
+pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
-    Output: Clone + 'static,
+    Stored: Clone + 'static,
 {
     memo!((), |()| expr())
 }
