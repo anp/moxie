@@ -29,8 +29,6 @@ use {
     moxie,
     std::{
         cell::{Cell, RefCell},
-        collections::HashMap,
-        fmt::{Debug, Formatter, Result as FmtResult},
         rc::Rc,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -39,7 +37,6 @@ use {
     },
     tracing::*,
     wasm_bindgen::{prelude::*, JsCast},
-    web_sys::Node as DomNode,
 };
 
 pub mod prelude {
@@ -143,21 +140,21 @@ pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
     // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
-    let text_node = memo!(s.to_string(), |text| document().create_text_node(text));
+    let text_node = document().create_text_node(&s.to_string());
     parent.ensure_child_attached(&text_node);
 }
 
 #[topo::aware]
 pub fn element<ChildRet>(ty: &str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
     let parent: &MemoElement = &*topo::Env::expect();
-    let elem = once!(|| document().create_element(ty).unwrap());
+    let elem = document().create_element(ty).unwrap();
     parent.ensure_child_attached(&elem);
     let elem = MemoElement {
         elem,
         curr: Cell::new(None),
     };
     with_elem(&elem);
-    }
+}
 
 pub struct MemoElement {
     curr: Cell<Option<sys::Node>>,
@@ -175,27 +172,7 @@ impl MemoElement {
     // FIXME this should be topo-aware
     // TODO and it should be able to express its slot as an annotation
     pub fn attr(&self, name: &str, value: impl ToString) -> &Self {
-        // all memoizations in this scope will be keyed by attribute name
-        topo::call!(slot: name, {
-            // we initialize the scopeguard once per attribute, keeping it from being GC'd while
-            // still active in the most recent revision. once it's no longer referenced, it will
-            // undo the attribute binding on the element
-            once_with!(
-                || {
-                    let name = name.to_string();
-                    scopeguard::guard(self.elem.clone(), move |elem| {
-                        elem.remove_attribute(&name).unwrap()
-                    })
-                },
-                |binding| {
-                    // now that we have the scopeguard with the dom element and name in it, actually
-                    // set the correct value every time it changes
-                    memo!(value.to_string(), |value| binding
-                        .set_attribute(name, value)
-                        .unwrap());
-                }
-            );
-        });
+        self.elem.set_attribute(name, &value.to_string()).unwrap();
         self
     }
 
@@ -206,7 +183,16 @@ impl MemoElement {
         State: 'static,
         Updater: 'static + FnMut(Ev, &State) -> Option<State>,
     {
-        // FIXME add the event handler to this type
+        topo::call!(slot: Ev::NAME, {
+            memo_with!(
+                *topo::Env::expect::<Revision>(),
+                |_| {
+                    let target: &sys::EventTarget = self.elem.as_ref();
+                    EventHandle::new(target.clone(), key, updater)
+                },
+                |_| {}
+            );
+        });
         self
     }
 
