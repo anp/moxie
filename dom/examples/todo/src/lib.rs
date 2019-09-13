@@ -15,6 +15,8 @@ pub mod input; // goes before header for macro imports ugh
 #[macro_use]
 pub mod header;
 #[macro_use]
+pub mod item;
+#[macro_use]
 pub mod main_section;
 
 #[topo::aware]
