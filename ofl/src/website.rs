@@ -1,11 +1,10 @@
 use {
-    failure::Error,
+    failure::{Error, SyncFailure},
     gumdrop::Options,
+    mdbook::MDBook,
     std::path::{Path, PathBuf},
     tracing::*,
 };
-
-mod book;
 
 #[derive(Debug, Options)]
 pub struct Website {
@@ -46,7 +45,8 @@ impl DistOpts {
     }
 
     fn build_website_dist(self, root_path: &Path) -> Result<(), Error> {
-        book::build_book(&root_path.join("book"), &self.output_dir.join("book"))?;
+        let md = MDBook::load(&root_path.join("book")).map_err(SyncFailure::new)?;
+        md.build().map_err(SyncFailure::new)?;
         self.copy_to_target_dir(root_path)
     }
 
