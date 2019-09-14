@@ -13,6 +13,9 @@ name = "wasm-pack"
 [dependencies]
 pretty_env_logger = "0.3"
 structopt = "0.2"
-wasm-pack = "0.8"
+
+[dependencies.wasm-pack]
+git = "https://github.com/rustwasm/wasm-pack.git"
+rev = "15e354f19ccef26cb7baca5dacda1bcd2f9904a2"
 
 [workspace]
