@@ -24,16 +24,6 @@ jobs:
     - name: build dom examples
       if: runner.os == 'Linux'
       run: |
-        # install binaryen with it's wasm-opt
-        pushd ../
-          git clone https://github.com/emscripten-core/emsdk.git
-          pushd emsdk/
-            ./emsdk install --build=Release sdk-incoming-64bit binaryen-master-64bit
-            ./emsdk activate --build=Release sdk-incoming-64bit binaryen-master-64bit
-            source ./emsdk_env.sh --build=Release
-          popd
-        popd
-
         cargo build-dom-hacking
         cargo build-dom-todo
 
