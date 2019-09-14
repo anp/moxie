@@ -1,0 +1,3 @@
+[submodule "vendor/wasm-pack"]
+	path = vendor/wasm-pack
+	url = git@github.com:anp/wasm-pack.git
