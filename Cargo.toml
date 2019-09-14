@@ -36,6 +36,6 @@ members = [
     "topo/macro",
 ]
 exclude = [
-    "dom/local-wasm-pack",
+    "vendor/wasm-pack",
     "ofl",
 ]
