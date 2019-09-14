@@ -1,4 +1,7 @@
-on: push
+on:
+  push:
+    branches:
+      - '!refs/heads/*.tmp'
 jobs:
   core:
     strategy:
