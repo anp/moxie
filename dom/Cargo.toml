@@ -13,6 +13,16 @@ crate-type = [ "cdylib", "rlib", ]
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
 
+# TODO(https://github.com/rustwasm/wasm-pack/issues/696)
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.profiling]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [dependencies]
 futures-preview = "0.3.0-alpha.18"
 js-sys = "0.3.25"
