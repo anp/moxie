@@ -18,11 +18,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+    # TODO(https://github.com/anp/moxie/issues/37)
     # - run: cargo test-dom-lib
 
     - name: build dom examples
       if: runner.os == 'Linux'
       run: |
+        sudo apt-get install binaryen
         cargo build-dom-hacking
         cargo build-dom-todo
 
