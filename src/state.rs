@@ -41,26 +41,14 @@ impl<State> Var<State> {
     /// Initiate a commit to the state variable. The commit will actually complete asynchronously
     /// when the state variable is next rooted in a topological function, flushing the pending
     /// commit.
-    fn enqueue_commit(
-        &mut self,
-        updater: impl FnOnce(&State) -> Option<State>,
-    ) -> Option<Revision> {
-        trace!("run updater");
-        let pending = updater(&self.pending.as_ref().unwrap_or(&self.current));
-
-        if let Some(pending) = pending {
-            trace!("pending commit");
-            let current = Revision::current();
-            self.pending = Some(Commit {
-                inner: Arc::new(pending),
-                point: self.point,
-            });
-            self.waker.wake();
-            Some(current)
-        } else {
-            trace!("skipped commit");
-            None
-        }
+    fn enqueue_commit(&mut self, state: State) -> Option<Revision> {
+        let current = Revision::current();
+        self.pending = Some(Commit {
+            inner: Arc::new(state),
+            point: self.point,
+        });
+        self.waker.wake();
+        Some(current)
     }
 }
 
@@ -180,7 +168,17 @@ impl<State> Key<State> {
     /// Returns the [`Revision`] at which the state variable was last rooted if the variable is
     /// live, otherwise returns `None`.
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
-        self.var.lock().enqueue_commit(updater)
+        let mut var = self.var.lock();
+        trace!("run updater");
+        let pending = updater(&var.pending.as_ref().unwrap_or(&var.current));
+
+        if let Some(pending) = pending {
+            trace!("pending commit");
+            var.enqueue_commit(pending)
+        } else {
+            trace!("skipped commit");
+            None
+        }
     }
 }
 
