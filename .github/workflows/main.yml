@@ -18,7 +18,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-    - run: cargo test-dom-lib
+    # - run: cargo test-dom-lib
 
     - name: build dom examples
       if: runner.os == 'Linux'
