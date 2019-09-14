@@ -38,6 +38,10 @@ impl<State> Var<State> {
         self.current.clone()
     }
 
+    fn latest(&self) -> &State {
+        &self.pending.as_ref().unwrap_or(&self.current)
+    }
+
     /// Initiate a commit to the state variable. The commit will actually complete asynchronously
     /// when the state variable is next rooted in a topological function, flushing the pending
     /// commit.
@@ -169,16 +173,7 @@ impl<State> Key<State> {
     /// live, otherwise returns `None`.
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
         let mut var = self.var.lock();
-        trace!("run updater");
-        let pending = updater(&var.pending.as_ref().unwrap_or(&var.current));
-
-        if let Some(pending) = pending {
-            trace!("pending commit");
-            var.enqueue_commit(pending)
-        } else {
-            trace!("skipped commit");
-            None
-        }
+        updater(var.latest()).and_then(|p| var.enqueue_commit(p))
     }
 }
 
