@@ -12,6 +12,10 @@ contributing but prefer other communications media, please let us know! It's cer
 required to contribute, but GitHub issues are a bit constraining for the level of ambiguity in the
 project today.
 
+## Code of Conduct
+
+See the [project's Code of Conduct](./CODE_OF_CONDUCT.md) for more details.
+
 ## Continuous Integration
 
 CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and

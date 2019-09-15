@@ -1,6 +1,7 @@
 use {
-    failure::Error,
+    failure::{Error, SyncFailure},
     gumdrop::Options,
+    mdbook::MDBook,
     std::path::{Path, PathBuf},
     tracing::*,
 };
@@ -18,7 +19,7 @@ impl Website {
             .op
             .unwrap_or_else(|| Operation::Build(DistOpts::default(&root_path)));
         match operation {
-            Operation::Build(opts) => opts.copy_to_target_dir(&root_path),
+            Operation::Build(opts) => opts.build_website_dist(&root_path),
         }
     }
 }
@@ -43,6 +44,12 @@ impl DistOpts {
         }
     }
 
+    fn build_website_dist(self, root_path: &Path) -> Result<(), Error> {
+        let md = MDBook::load(&root_path.join("book")).map_err(SyncFailure::new)?;
+        md.build().map_err(SyncFailure::new)?;
+        self.copy_to_target_dir(root_path)
+    }
+
     fn copy_to_target_dir(self, root_path: &Path) -> Result<(), Error> {
         let tools_path = root_path.join("ofl");
 
@@ -57,8 +64,9 @@ impl DistOpts {
             "css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff",
         ];
 
-        info!({ %output }, "cleaning, copying files");
+        info!({ %output }, "cleaning");
 
+        info!("discovering files to copy");
         let mut to_copy = vec![];
         'entries: for entry in walkdir::WalkDir::new(root_path) {
             let path = entry?.path().to_owned();
@@ -76,10 +84,12 @@ impl DistOpts {
             to_copy.push(path);
         }
 
+        info!({ num_files = to_copy.len() }, "discovered");
+
         for path in to_copy {
             let relative = path.strip_prefix(root_path)?;
             let rel_path = relative.display();
-            info!({ %rel_path }, "copying path");
+            debug!({ %rel_path }, "copying path");
             let destination = output_path.join(relative);
             std::fs::create_dir_all(destination.parent().unwrap())?;
             std::fs::copy(path, destination)?;
