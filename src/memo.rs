@@ -5,11 +5,19 @@ use std::{
     rc::Rc,
 };
 
-/// Memoizes the provided function, storing the intermediate `Stored` value in memoization storage
-/// and calling `with` with a reference to it, skipping the initialization on subsequent executions.
-/// Returns whatever `with` returns.
+/// Memoizes the provided function, caching the intermediate `Stored` value in memoization storage
+/// and only re-initializing it if `Arg` has changed since the cached value was created. Regardless
+/// of prior cached results, `with` is then called in to produce a return value.
 ///
-/// Marks the memoized value as `Live` in the current `Revision`.
+/// Marks the memoized value as `Live` in the current `Revision`, preventing the value from being
+/// garbage collected during at the end of the current `Revision`.
+///
+/// If a previous value was cached for this callsite but the argument has changed and it must be
+/// re-initialized, the previous value will be dropped before the new one is initialized.
+///
+/// It is currently possible to nest calls to `memo_with` and other functions in this module, but
+/// the values they store won't be correctly retained across `Revision`s until we track
+/// dependency information. As a result, it's not recommended to nest calls to `memo_with!`.
 #[topo::aware]
 #[topo::from_env(store: MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
@@ -40,12 +48,14 @@ where
     let mut with = Some(with); // wrapping in an option dodges the borrow checker for closures
 
     let mut cached = None;
-    if let Some((_, boxed)) = stored {
+    if let Some((_liveness, boxed)) = stored {
         let boxed: Box<(Arg, Stored)> = boxed.downcast().unwrap();
 
         if boxed.0 == arg {
             let with = with.take().unwrap();
             cached = Some((with(&boxed.1), boxed));
+        } else {
+            drop(boxed); // ensure that previous value is destroyed before init'ing another
         }
     };
 
@@ -65,6 +75,9 @@ where
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
+/// Runs the provided expression once per [`topo::Id`]. The provided value will never be
+/// reinitialized and will be passed to `with` on every call unless the value is dropped from
+/// storage and reinitialized in a later `Revision`.
 #[topo::aware]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
@@ -77,7 +90,8 @@ where
     memo_with!((), |&()| expr(), with)
 }
 
-/// Memoize the provided function's output at this `topo::id`.
+/// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and `Arg` is the same
+/// as when the stored value was created.
 #[topo::aware]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
@@ -87,9 +101,8 @@ where
     memo_with!(arg, init, Clone::clone)
 }
 
-/// Runs the provided expression once per [`topo::Id`], repeated calls at the same `Id` are assigned
-/// adjacent slots. The provided value will always be cloned on subsequent calls unless dropped
-/// from storage.
+/// Runs the provided expression once per [`topo::Id`]. The provided value will always be cloned on
+/// subsequent calls unless dropped from storage and reinitialized in a later `Revision`.
 #[topo::aware]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
@@ -103,18 +116,14 @@ where
 pub(crate) struct MemoStore(Rc<RefCell<MemoStorage>>);
 
 impl MemoStore {
-    /// Drops memoized values that were not referenced during the last tick and resets callsite
-    /// repetition counts to 0.
+    /// Drops memoized values that were not referenced during the last `Revision`.
     pub fn gc(&self) {
         self.0.borrow_mut().gc();
     }
 }
 
-/// The memoization storage for a `Runtime`. Stores memoized values by callsite, type, and a caller-
-/// provided slot (a key for an internal hashmap)
-/// exposing a garbage collection API to the embedding `Runtime`. Also tracks the number of times a
-/// callsite has been invoked during a given `Revision`, allowing memoization to work without an
-/// explicit slot.
+/// The memoization storage for a `Runtime`. Stores memoized values by a `MemoIndex`,
+/// exposing a garbage collection API to the embedding `Runtime`.
 pub(crate) struct MemoStorage {
     memos: HashMap<MemoIndex, (Liveness, Box<dyn Any>)>,
 }
@@ -130,7 +139,7 @@ impl Default for MemoStorage {
 
 impl MemoStorage {
     /// Drops memoized values that were not referenced during the last tick, removing all `Dead`
-    /// storage values and sets all remaining values to `Dead` for the next mark.
+    /// storage values and sets all remaining values to `Dead` for the next GC execution.
     fn gc(&mut self) {
         self.memos
             .retain(|_, (liveness, _)| liveness == &Liveness::Live);
@@ -154,14 +163,17 @@ enum Liveness {
 #[cfg(test)]
 mod tests {
     use {
-        crate::{memo::*, Revision},
+        crate::{
+            embed::{Revision, Runtime},
+            memo::*,
+        },
         std::{cell::Cell, collections::HashSet},
     };
 
     fn with_test_logs(test: impl FnOnce()) {
         tracing::subscriber::with_default(
-            tracing_fmt::FmtSubscriber::builder()
-                .with_env_filter(tracing_fmt::filter::EnvFilter::new("warn"))
+            tracing_subscriber::FmtSubscriber::builder()
+                .with_env_filter(tracing_subscriber::filter::EnvFilter::new("warn"))
                 .finish(),
             || {
                 tracing::debug!("logging init'd");
@@ -177,7 +189,7 @@ mod tests {
 
             let mut prev_revision = None;
             let mut comp_skipped_count = 0;
-            let mut rt = crate::Runtime::new(|| {
+            let mut rt = Runtime::new(|| {
                 let revision = Revision::current();
 
                 if let Some(pr) = prev_revision {
@@ -218,7 +230,7 @@ mod tests {
             }
             assert_eq!(ids.len(), 10);
 
-            let mut rt = crate::Runtime::new(|| {
+            let mut rt = Runtime::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
                     memo!(i, |_| ids.insert(topo::Id::current()));
@@ -233,7 +245,7 @@ mod tests {
     fn memo_in_a_loop() {
         with_test_logs(|| {
             let num_iters = 10;
-            let mut rt = crate::Runtime::new(|| {
+            let mut rt = Runtime::new(|| {
                 let mut counts = vec![];
                 for i in 0..num_iters {
                     topo::call!(once!(|| counts.push(i)));
@@ -263,7 +275,7 @@ mod tests {
             let loop_ct = Cell::new(0);
             let raw_exec = Cell::new(0);
             let memo_exec = Cell::new(0);
-            let mut rt = crate::Runtime::new(|| {
+            let mut rt = Runtime::new(|| {
                 raw_exec.set(raw_exec.get() + 1);
                 memo!(loop_ct.get(), |_| {
                     memo_exec.set(memo_exec.get() + 1);

@@ -62,14 +62,14 @@ pub fn document() -> sys::Document {
         .expect("must run from within a `window` with a valid `document`")
 }
 
-/// The "boot sequence" for a moxie-dom instance creates a [moxie::Runtime] with the provided
-/// arguments and begins scheduling its execution.
+/// The "boot sequence" for a moxie-dom instance creates a [moxie::embed::Runtime] with the
+/// provided arguments and begins scheduling its execution.
 ///
 /// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
 /// of `new_parent`'s children.
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut() + 'static) {
     let new_parent = new_parent.as_ref().to_owned();
-    let rt: Runtime<Box<dyn FnMut()>, ()> = Runtime::new(Box::new(move || {
+    let rt: embed::Runtime<Box<dyn FnMut()>, ()> = embed::Runtime::new(Box::new(move || {
         topo::call!(
             { root() },
             env! {
@@ -95,7 +95,7 @@ pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut
 }
 
 struct WebRuntime {
-    rt: Runtime<Box<dyn FnMut()>, ()>,
+    rt: embed::Runtime<Box<dyn FnMut()>, ()>,
     handle: Option<(i32, Closure<dyn FnMut()>)>,
 }
 
@@ -185,7 +185,7 @@ impl MemoElement {
     {
         topo::call!(slot: Ev::NAME, {
             memo_with!(
-                Revision::current(),
+                embed::Revision::current(),
                 |_| {
                     let target: &sys::EventTarget = self.elem.as_ref();
                     EventHandle::new(target.clone(), key, updater)

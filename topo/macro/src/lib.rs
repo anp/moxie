@@ -17,31 +17,6 @@ use {
 /// A macro transformation is used to capture unique callsite information from the invoking
 /// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
 /// callsite which can be used to identify the chain of topological invocations.
-///
-/// ## Implications of using macros
-///
-/// Upside: Because topological function calls are a bit more expensive than normal function calls,
-/// it makes sense to call them out as different invocations than typical functions, in particular
-/// because they literally bind to the source location at which they're invoked.
-///
-/// However, it is not currently feasible to abstract over topological functions, visibility rules
-/// are less granular, autocomplete doesn't show types, and error messages are generally worse.
-///
-/// ## Macro alternatives
-///
-/// ### React: runtime-only tracking, forces hooks to only be used at the top-level
-///
-/// TODO explain more
-///
-/// ### Compose: uses nifty compiler transform on each callsite
-///
-/// TODO
-///
-/// ### Rust #\[track_caller\] attribute
-///
-/// Not yet implemented, not clear it'll offer same guarantees as chained TypeIds.
-///
-/// TODO expand
 #[proc_macro_attribute]
 pub fn aware(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);

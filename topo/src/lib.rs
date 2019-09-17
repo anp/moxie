@@ -1,19 +1,26 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs, intra_doc_link_resolution_failure)]
 
-//! `topo` provides tools for describing trees based on their runtime callgraph. Because normal
-//! synchronous control flow has a tree(ish)-shaped callgraph, this can be quite natural.
+//! `topo` creates a hierarchy of scoped, nested [environments][topo::Env] whose shape matches the
+//! function callgraph. These environments store singletons indexed by their type, and references to
+//! environmental values are available only to an enclosed call scope. When a `#![topo::aware]`
+//! function is called, its parent environment is cheaply propagated along with any additional
+//! values added at appropriate callsites.
 //!
-//! Topologically-aware functions run within a context unique to the path in the runtime call
-//! graph of other topological functions preceding the current activation record.
+//! Each environment in this hierarchy has a unique and deterministic [`topo::Id`] describing that
+//! environment and the path taken to arrive at its stack frame. These identifiers are derived from
+//! the path taken through the callgraph to the current location, and are stable across repeated
+//! invocations of the same execution paths.
 //!
 //! By running the same topologically-aware functions in a loop, we can observe changes to the
-//! structure over time.
+//! structure over time. The [moxie](https://docs.rs/moxie) crate uses these identifiers and
+//! environments to create persistent trees for rendering human interfaces.
+//!
+//! # Making functions aware of the call topology
 //!
 //! Defining a topological function results in a macro definition for binding the
-//! function to each callsite where it is invoked.
-//!
-//! Define a topologically-aware function with the `topo::aware` attribute:
+//! function to each callsite where it is invoked. Define a topologically-aware function with the
+//! `topo::aware` attribute:
 //!
 //! ```
 //! #[topo::aware]
@@ -37,19 +44,9 @@
 //! ```
 //!
 //! Because topological functions must be sensitive to the location at which they're invoked and
-//! aware of their parent, we transform the function definition into a macro so we can link
-//! the two activation records inside macro expansion. See the docs for the attribute for more
-//! detail and further discussion of the tradeoffs.
-//!
-//! TODO include diagram of topology
-//!
-//! TODO discuss creation of tree from "abstract stack frames" represented by topological
-//! invocations
-//!
-//! TODO discuss propagating environment values down the topological call tree
-//!
-//! TODO show example of a rendering loop
-//!
+//! aware of their parent, we transform the function definition into a macro to track the source
+//! location at which it is called. Future language features may make it possible to call topo-aware
+//! functions without any special syntax.
 
 pub use topo_macro::{aware, from_env};
 
@@ -252,13 +249,21 @@ macro_rules! unstable_raw_call {
     }};
 }
 
-/// Identifies an activation record in the call topology. This is implemented approximately similar
-/// to the [hash cons][cons] of preceding topological function invocations' `Id`s.
+/// Identifies an activation record in the current call topology.
 ///
-/// TODO explore analogies to instruction and stack pointers?
-/// TODO explore more efficient implementations by piggybacking on those?
+/// The `Id` for the execution of a stack frame is the combined product of:
 ///
-/// [cons]: https://en.wikipedia.org/wiki/Hash_consing
+/// * a callsite: lexical source location at which the topologically-aware function was invoked
+/// * parent `Id`: the identifier which was active when entering the current topo-aware function
+/// * a "slot": runtime value indicating the call's "logical index" within the parent call
+///
+/// By default, the slot used is a count of the number of times that particular callsite has been
+/// executed within the parent `Id`'s enclosing scope. This means that when creating an `Id` in a
+/// loop the identifier will be unique for each "index" of the loop iteration and will be stable if
+/// the same loop is invoked again. Changing the value used for the slot allows us to have stable
+/// `Id`s across multiple executions when iterating over elements of a collection that itself has
+/// unstable iteration order.
+
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Id(u64);
 
