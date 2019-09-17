@@ -1,16 +1,14 @@
 use {
-    crate::{memo::*, Revision, RunLoopWaker},
+    crate::{embed::RunLoopWaker, memo::*},
     parking_lot::Mutex,
     std::{
         fmt::{Debug, Display, Formatter, Result as FmtResult},
         ops::Deref,
         sync::Arc,
     },
-    tracing::*,
 };
 
-/// The underlying container of state variables. Vends copies of the latest [`Commit`] for reads
-/// and internally [`Weak`] pointers to these structs are used for updating state with a [`Key`].
+/// The underlying container of state variables. Vends copies of the latest [`Commit`] for [`Key`]s.
 struct Var<State> {
     current: Commit<State>,
     point: topo::Id,
@@ -19,25 +17,16 @@ struct Var<State> {
 }
 
 impl<State> Var<State> {
-    /// Attach this `Var` to a specific callsite, performing any pending commit and returning the
+    /// Attach this `Var` to its callsite, performing any pending commit and returning the
     /// resulting latest commit.
     fn root(&mut self) -> (topo::Id, Commit<State>) {
-        self.flush();
-        (self.point, self.peek())
-    }
-
-    /// Finishes the pending comment if one exists.
-    fn flush(&mut self) {
         if let Some(pending) = self.pending.take() {
             self.current = pending;
         }
+        (self.point, self.current.clone())
     }
 
-    /// Snapshots the current commit.
-    fn peek(&self) -> Commit<State> {
-        self.current.clone()
-    }
-
+    /// Returns a reference to the latest value, pending or committed.
     fn latest(&self) -> &State {
         &self.pending.as_ref().unwrap_or(&self.current)
     }
@@ -45,35 +34,26 @@ impl<State> Var<State> {
     /// Initiate a commit to the state variable. The commit will actually complete asynchronously
     /// when the state variable is next rooted in a topological function, flushing the pending
     /// commit.
-    fn enqueue_commit(&mut self, state: State) -> Option<Revision> {
-        let current = Revision::current();
+    fn enqueue_commit(&mut self, state: State) {
         self.pending = Some(Commit {
             inner: Arc::new(state),
             point: self.point,
         });
         self.waker.wake();
-        Some(current)
     }
 }
 
-// TODO state tests
-
-// TODO: proc macro should allow topo functions to declare `arg` optional with a default to
-// which the macro can desugar invocations, so you can pass a init closure only.
-// TODO: move arg after initializer
-
-/// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
-/// a unique [`Key`] which can be used to commit new values to the variable.
+/// Root a state variable at this callsite, returning a [`Key`] to the state variable.
+/// Re-initializes the state variable if the capture argument changes.
 #[topo::aware]
 #[topo::from_env(waker: RunLoopWaker)]
-pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
+pub fn memo_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
     Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let var: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
-        trace!("init var");
+    let var = memo!(arg, |a| {
         let var = Var {
             point: topo::Id::current(),
             current: Commit {
@@ -96,26 +76,27 @@ where
     }
 }
 
+/// Convenience wrapper around [`memo_state`].
 #[macro_export]
 macro_rules! state {
     ($arg:expr, $init:expr) => {
-        $crate::make_state!($arg, $init)
+        $crate::memo_state!($arg, $init)
     };
     (|| $init:expr) => {
-        $crate::make_state!((), |()| $init)
+        $crate::memo_state!((), |()| $init)
     };
     () => {
-        $crate::make_state!((), |()| Default::default())
+        $crate::memo_state!((), |()| Default::default())
     };
 }
 
 /// A read-only pointer to the value of a state variable *at a particular revision*.
 ///
-/// Reads through a commit are not guaranteed to be the latest value visible to the runloop. Commits
+/// Reads through a commit are not guaranteed to be the latest value visible to the runtime. Commits
 /// should be shared and used within the context of a single [`Revision`], being re-loaded from
-/// the state variable on each fresh iteration.
+/// the state variable each time.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Commit<State> {
+struct Commit<State> {
     point: topo::Id,
     inner: Arc<State>,
 }
@@ -145,9 +126,11 @@ where
     }
 }
 
-/// A Key commits new values to a state variable. Keys carry a weak reference to the state variable
-/// to prevent cycles, which means that all operations called against them are fallible -- we cannot
-/// know before calling a method that the state variable is still live.
+/// A `Key` offers access to a state variable. The key allows reads of the state variable through
+/// a snapshot taken when the `Key` was created. Writes are supported with [Key::update] and
+/// [Key::set].
+///
+/// They are created with the [`memo_state`] and [`state`] macros.
 pub struct Key<State> {
     id: topo::Id,
     commit_at_root: Commit<State>,
@@ -160,20 +143,23 @@ impl<State> Key<State> {
         self.id
     }
 
-    /// Returns the current commit of the state variable if it is live.
-    pub fn read(&self) -> Commit<State> {
-        self.var.lock().peek()
-    }
-
-    /// Enqueues a new commit to the state variable if it is still live. Accepts an `updater` to
-    /// which the current value is passed by reference. If `updater` returns `None` then no commit
-    /// is enqueued and the runloop is not woken.
+    /// Runs `updater` with a reference to the state variable's latest value, and enqueues a commit
+    /// to the variable if `updater` returns `Some`. Returns the [`Revision`] at which the state
+    /// variable was last rooted if the variable is live, otherwise returns `None`.
     ///
-    /// Returns the [`Revision`] at which the state variable was last rooted if the variable is
-    /// live, otherwise returns `None`.
-    pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) -> Option<Revision> {
+    /// Enqueuing the commit invokes the state change waker registered with the [Runtime] (if any)
+    /// to ensure that the code embedding the runtime schedules another call of [run_once].
+    ///
+    /// This should be called during event handlers or other code which executes outside of a
+    /// `Revision`'s execution, otherwise unpredictable waker behavior may be obtained.
+    ///
+    /// [Runtime]: crate::embed::Runtime
+    /// [run_once]: crate::embed::Runtime::run_once
+    pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) {
         let mut var = self.var.lock();
-        updater(var.latest()).and_then(|p| var.enqueue_commit(p))
+        if let Some(new) = updater(var.latest()) {
+            var.enqueue_commit(new);
+        }
     }
 }
 
@@ -182,9 +168,10 @@ where
     State: PartialEq,
 {
     /// Commits a new state value if it is unequal to the current value and the state variable is
-    /// still live.
-    pub fn set(&self, new: State) -> Option<Revision> {
-        self.update(|prev| if prev == &new { None } else { Some(new) })
+    /// still live. Has the same properties as [update](crate::state::Key::update) regarding waking
+    /// the runtime.
+    pub fn set(&self, new: State) {
+        self.update(|prev| if prev == &new { None } else { Some(new) });
     }
 }
 
@@ -224,6 +211,9 @@ where
 }
 
 impl<State> PartialEq for Key<State> {
+    /// Keys are considered equal if they point to the same state variable. Importantly, they will
+    /// compare as equal even if they contain different snapshots of the state variable due to
+    /// having been initialized in different revisions.
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.var, &other.var)
     }
