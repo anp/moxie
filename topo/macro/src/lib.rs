@@ -3,7 +3,13 @@
 #![deny(missing_docs)]
 
 extern crate proc_macro;
-use {proc_macro::TokenStream, syn::export::TokenStream2};
+use {
+    proc_macro::TokenStream,
+    syn::{
+        export::TokenStream2, parse::Parser, punctuated::Punctuated, spanned::Spanned, FnArg,
+        Local, PatType, Stmt, Token,
+    },
+};
 
 /// Transforms a function declaration into a topological function invoked with macro syntax to
 /// attach its call tree's (sub)topology to the parent topology.
@@ -124,4 +130,57 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
         .iter()
         .map(|&l| quote::quote!(#[doc = #l]))
         .fold(quote::quote!(), |a, b| quote::quote!(#a #b))
+}
+
+/// Defines required [topo::Env] values for a function. Binds the provided types as if references to
+/// them were implicit function arguments.
+///
+/// # Examples
+///
+/// TODO
+///
+/// # Panics
+///
+/// Will cause the annotated function to panic if it is invoked without the requested type in its
+/// `topo::Env`.
+#[proc_macro_attribute]
+pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
+    let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
+
+    let args = Punctuated::<FnArg, Token![,]>::parse_terminated
+        .parse(args)
+        .unwrap();
+
+    let binding_statements = args
+        .into_iter()
+        .map(|arg| match arg {
+            FnArg::Receiver(_) => panic!("can't receive self by-environment"),
+            FnArg::Typed(pt) => pt,
+        })
+        .map(bind_env_reference)
+        .map(Stmt::Local)
+        .collect();
+
+    let mut previous_statements = std::mem::replace(&mut input_fn.block.stmts, binding_statements);
+    input_fn.block.stmts.append(&mut previous_statements);
+
+    quote::quote!(#input_fn).into()
+}
+
+/// Create a local Env::expect assignment expression from the `pattern: type` pair which is passed.
+fn bind_env_reference(arg: PatType) -> Local {
+    let let_token = Token![let](arg.span());
+    let equals = Token![=](arg.span());
+    let semi_token = Token![;](arg.span());
+
+    let ty = arg.ty;
+    let init = syn::parse_quote!(&*topo::Env::expect::<#ty>());
+
+    Local {
+        pat: *arg.pat,
+        init: Some((equals, Box::new(init))),
+        attrs: vec![],
+        let_token,
+        semi_token,
+    }
 }
