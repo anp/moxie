@@ -4,8 +4,8 @@ use {
 };
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
     element!("span", |e| e.inner(|| {
         element!("input", |e| {
             e.attr("class", "toggle-all")
@@ -33,9 +33,8 @@ pub fn toggle(default_checked: bool) {
 }
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>, visibility: Key<Visibility>)]
 pub fn todo_list() {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
-    let visibility = topo::Env::expect::<Key<Visibility>>();
     element!("ul", |e| e.attr("class", "todo-list").inner(|| {
         for todo in todos.iter() {
             if visibility.should_show(todo) {
@@ -46,8 +45,8 @@ pub fn todo_list() {
 }
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn main_section() {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
     element!("section", |e| e.attr("class", "main").inner(move || {

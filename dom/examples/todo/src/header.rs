@@ -5,9 +5,9 @@ use {
 };
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn header() {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
-
+    let todos = todos.clone();
     element!("header", |e| e.attr("class", "header").inner(|| {
         element!("h1", |e| e.inner(|| text!("todos")));
         text_input!("What needs to be done?", false, move |value: String| {

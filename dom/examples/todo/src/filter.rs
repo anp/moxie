@@ -38,19 +38,19 @@ impl Visibility {
 }
 
 #[topo::aware]
+#[topo::from_env(visibility: Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) {
     tracing::info!({ id = ?topo::Id::current(), ?to_set }, "filter_link");
-    let visibility = topo::Env::expect::<Key<Visibility>>().clone();
 
     element!("li", |e| e.inner(|| {
         tracing::info!({ id = ?topo::Id::current() }, "inside li");
         element!("a", |link| {
             link.attr("style", "cursor: pointer;");
-            if *visibility == to_set {
+            if **visibility == to_set {
                 link.attr("class", "selected");
             }
 
-            link.on(move |_: ClickEvent, _| Some(to_set), visibility)
+            link.on(move |_: ClickEvent, _| Some(to_set), visibility.clone())
                 .inner(|| text!(to_set));
         });
     }));

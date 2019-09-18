@@ -135,6 +135,10 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
 /// Defines required [topo::Env] values for a function. Binds the provided types as if references to
 /// them were implicit function arguments.
 ///
+/// TODO this should allow for binding optionally and non-optionally (panicking), and also
+/// allow the default of binding by reference and allow attempting to clone something to receive it
+/// by value
+///
 /// # Examples
 ///
 /// TODO

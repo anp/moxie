@@ -11,6 +11,7 @@ use std::{
 ///
 /// Marks the memoized value as `Live` in the current `Revision`.
 #[topo::aware]
+#[topo::from_env(store: MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,
@@ -21,7 +22,6 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    let store = topo::Env::expect::<MemoStore>();
     let key = (
         topo::Id::current(),
         TypeId::of::<Arg>(),
