@@ -135,8 +135,8 @@ impl ArcWake for RuntimeWaker {
 }
 
 #[topo::aware]
+#[topo::from_env(parent: MemoElement)]
 pub fn text(s: impl ToString) {
-    let parent: &MemoElement = &*topo::Env::expect();
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
     // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
@@ -145,8 +145,8 @@ pub fn text(s: impl ToString) {
 }
 
 #[topo::aware]
+#[topo::from_env(parent: MemoElement)]
 pub fn element<ChildRet>(ty: &str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
-    let parent: &MemoElement = &*topo::Env::expect();
     let elem = document().create_element(ty).unwrap();
     parent.ensure_child_attached(&elem);
     let elem = MemoElement {
@@ -185,7 +185,7 @@ impl MemoElement {
     {
         topo::call!(slot: Ev::NAME, {
             memo_with!(
-                *topo::Env::expect::<Revision>(),
+                Revision::current(),
                 |_| {
                     let target: &sys::EventTarget = self.elem.as_ref();
                     EventHandle::new(target.clone(), key, updater)

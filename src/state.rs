@@ -65,6 +65,7 @@ impl<State> Var<State> {
 /// Root a state [`Var`] at this callsite, returning an up-to-date [`Commit`] of its value and
 /// a unique [`Key`] which can be used to commit new values to the variable.
 #[topo::aware]
+#[topo::from_env(waker: RunLoopWaker)]
 pub fn make_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
@@ -73,7 +74,6 @@ where
 {
     let var: Arc<Mutex<Var<Output>>> = memo!(arg, |a| {
         trace!("init var");
-        let waker = topo::Env::expect::<RunLoopWaker>().to_owned();
         let var = Var {
             point: topo::Id::current(),
             current: Commit {
@@ -81,7 +81,7 @@ where
                 inner: Arc::new(initializer(a)),
             },
             pending: None,
-            waker,
+            waker: waker.to_owned(),
         };
 
         Arc::new(Mutex::new(var))

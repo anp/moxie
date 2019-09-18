@@ -4,9 +4,9 @@ use {
 };
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
-
+    let todos = todos.clone();
     text_input!(&todo.text.clone(), true, move |value: String| {
         editing.set(false);
         todos.update(|todos| {
@@ -20,8 +20,8 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) {
 }
 
 #[topo::aware]
+#[topo::from_env(todos: Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) {
-    let todos = topo::Env::expect::<Key<Vec<Todo>>>();
     let id = todo.id;
 
     element!("div", |e| e.attr("class", "view").inner(|| {
