@@ -51,7 +51,7 @@
 //! TODO show example of a rendering loop
 //!
 
-pub use topo_macro::aware;
+pub use topo_macro::{aware, from_env};
 
 use {
     owning_ref::OwningRef,
