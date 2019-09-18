@@ -45,8 +45,12 @@ pub fn aware(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
     for attr in tmp {
         match attr.parse_meta() {
-            Ok(syn::Meta::NameValue(syn::MetaNameValue { ref ident, .. })) if *ident == "doc" => {
-                doc_attrs.push(attr);
+            Ok(syn::Meta::NameValue(syn::MetaNameValue { ref path, .. })) => {
+                if let Some(id) = path.get_ident() {
+                    if *id == "doc" {
+                        doc_attrs.push(attr);
+                    }
+                }
             }
             _ => input_fn.attrs.push(attr),
         }
@@ -55,11 +59,11 @@ pub fn aware(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let docs_fn_sig = docs_fn_signature(&input_fn);
 
     let mangled_name = syn::Ident::new(
-        &format!("__{}_impl", &input_fn.ident),
-        input_fn.ident.span(),
+        &format!("__{}_impl", &input_fn.sig.ident),
+        input_fn.sig.ident.span(),
     );
 
-    let macro_name = std::mem::replace(&mut input_fn.ident, mangled_name.clone());
+    let macro_name = std::mem::replace(&mut input_fn.sig.ident, mangled_name.clone());
 
     quote::quote!(
         topo::unstable_make_topo_macro!(
@@ -85,12 +89,7 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
     let doc_fn_sig = syn::ItemFn {
         attrs: vec![],
         vis: syn::Visibility::Inherited,
-        constness: input_fn.constness,
-        asyncness: input_fn.asyncness,
-        unsafety: input_fn.unsafety,
-        abi: input_fn.abi.clone(),
-        ident: input_fn.ident.clone(),
-        decl: input_fn.decl.clone(),
+        sig: input_fn.sig.clone(),
         block: Box::new(syn::Block {
             brace_token: syn::token::Brace {
                 span: proc_macro::Span::call_site().into(),
