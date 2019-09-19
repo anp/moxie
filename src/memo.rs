@@ -161,7 +161,7 @@ mod tests {
     fn with_test_logs(test: impl FnOnce()) {
         tracing::subscriber::with_default(
             tracing_fmt::FmtSubscriber::builder()
-                .with_filter(tracing_fmt::filter::EnvFilter::new("warn"))
+                .with_env_filter(tracing_fmt::filter::EnvFilter::new("warn"))
                 .finish(),
             || {
                 tracing::debug!("logging init'd");
