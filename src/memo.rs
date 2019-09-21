@@ -75,9 +75,6 @@ where
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
-/// Runs the provided expression once per [`topo::Id`]. The provided value will never be
-/// reinitialized and will be passed to `with` on every call unless the value is dropped from
-/// storage and reinitialized in a later `Revision`.
 #[topo::aware]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
