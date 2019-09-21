@@ -25,20 +25,14 @@
 pub use moxie::*;
 
 use {
-    futures::task::{waker, ArcWake},
+    crate::embed::WebRuntime,
     moxie,
-    std::{
-        cell::{Cell, RefCell},
-        rc::Rc,
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Arc,
-        },
-    },
+    std::cell::Cell,
     tracing::*,
     wasm_bindgen::{prelude::*, JsCast},
 };
 
+pub mod embed;
 pub mod prelude {
     pub use crate::{
         __element_impl, __text_impl, document, window, BlurEvent, ChangeEvent, ClickEvent,
@@ -50,6 +44,17 @@ pub mod prelude {
 
 pub use web_sys as sys;
 
+/// The "boot sequence" for a moxie-dom instance creates a [moxie::embed::Runtime] with the
+/// provided arguments and begins scheduling its execution.
+///
+/// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
+/// of `new_parent`'s children.
+pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, root: impl FnMut() + 'static) {
+    WebRuntime::new(new_parent.as_ref().to_owned(), root)
+        .animation_frame_scheduler()
+        .run_on_state_changes();
+}
+
 /// Returns the current window. Panics if no window is available.
 pub fn window() -> sys::Window {
     sys::window().expect("must run from within a `window`")
@@ -60,80 +65,6 @@ pub fn document() -> sys::Document {
     window()
         .document()
         .expect("must run from within a `window` with a valid `document`")
-}
-
-/// The "boot sequence" for a moxie-dom instance creates a [moxie::embed::Runtime] with the
-/// provided arguments and begins scheduling its execution.
-///
-/// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
-/// of `new_parent`'s children.
-///
-/// TODO make this either event driven or browser-driven?
-pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut() + 'static) {
-    let new_parent = new_parent.as_ref().to_owned();
-    let rt: embed::Runtime<Box<dyn FnMut()>, ()> = embed::Runtime::new(Box::new(move || {
-        topo::call!(
-            { root() },
-            env! {
-                MemoElement => MemoElement::new(&new_parent),
-            }
-        )
-    }));
-
-    let wrt = WebRuntime { rt, handle: None };
-
-    let wrt = Rc::new((AtomicBool::new(false), RefCell::new(wrt)));
-    let wrt2 = Rc::clone(&wrt);
-
-    let arc_waker = Arc::new(RuntimeWaker { wrt });
-    let waker = waker(arc_waker);
-
-    {
-        // ensure we've released our mutable borrow by running it in a separate block
-        wrt2.1.borrow_mut().rt.set_state_change_waker(waker.clone());
-    }
-
-    waker.wake_by_ref();
-}
-
-struct WebRuntime {
-    rt: embed::Runtime<Box<dyn FnMut()>, ()>,
-    handle: Option<(i32, Closure<dyn FnMut()>)>,
-}
-
-struct RuntimeWaker {
-    wrt: Rc<(AtomicBool, RefCell<WebRuntime>)>,
-}
-
-// don't send these to workers until have a fix :P
-unsafe impl Send for RuntimeWaker {}
-unsafe impl Sync for RuntimeWaker {}
-
-impl ArcWake for RuntimeWaker {
-    fn wake_by_ref(arc_self: &Arc<RuntimeWaker>) {
-        let scheduled: &AtomicBool = &arc_self.wrt.0;
-        if !scheduled.load(Ordering::SeqCst) {
-            trace!("wake web runtime, scheduling");
-            let wrt = Rc::clone(&arc_self.wrt);
-
-            let closure = Closure::once(Box::new(move || {
-                let scheduled = &wrt.0;
-                let mut wrt = wrt.1.borrow_mut();
-                wrt.handle = None;
-                scopeguard::defer!(scheduled.store(false, Ordering::SeqCst));
-
-                wrt.rt.run_once();
-            }));
-            let handle = window()
-                .request_animation_frame(closure.as_ref().unchecked_ref())
-                .unwrap();
-            scheduled.store(true, Ordering::SeqCst);
-
-            arc_self.wrt.1.borrow_mut().handle = Some((handle, closure));
-        } else {
-            trace!("web runtime already scheduled");
-        }
-    }
 }
 
 #[topo::aware]
@@ -187,7 +118,7 @@ impl MemoElement {
     {
         topo::call!(slot: Ev::NAME, {
             memo_with!(
-                embed::Revision::current(),
+                moxie::embed::Revision::current(),
                 |_| {
                     let target: &sys::EventTarget = self.elem.as_ref();
                     EventHandle::new(target.clone(), key, updater)
