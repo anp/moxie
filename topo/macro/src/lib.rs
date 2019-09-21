@@ -122,6 +122,9 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
 ///
 /// Will cause the annotated function to panic if it is invoked without the requested type in its
 /// `topo::Env`.
+///
+/// It is **strongly recommended** that functions using this attribute document this contract
+/// clearly with examples demonstrating the production of a compatible environment.
 #[proc_macro_attribute]
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);

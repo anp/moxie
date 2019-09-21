@@ -67,6 +67,8 @@ pub fn document() -> sys::Document {
 ///
 /// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
 /// of `new_parent`'s children.
+///
+/// TODO make this either event driven or browser-driven?
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, mut root: impl FnMut() + 'static) {
     let new_parent = new_parent.as_ref().to_owned();
     let rt: embed::Runtime<Box<dyn FnMut()>, ()> = embed::Runtime::new(Box::new(move || {

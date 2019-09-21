@@ -2,14 +2,20 @@
 //! implements a lightweight & platform-agnostic UI runtime which powers a declarative style for
 //! creating interfaces and attempts to minimize latency and general overhead.
 //!
+//! TODO simple snippet
+//!
 //! # Declarative style
 //!
 //! TODO "imperative but idempotent"
 //!
 //! "describe the UI *right now*"
+//!
 //! partition the render space using function calls
+//!
 //! while managing persistent stateful elements
+//!
 //! with minimal incremental updates
+//!
 //! in order to achieve minimal latency and consistent responsiveness
 //!
 //! # Memoization
