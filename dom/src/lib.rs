@@ -1,24 +1,3 @@
-//! ## Lifecycle
-//!
-//! ```text
-//!                    +------+
-//!                    | boot |
-//!                    +---+--+
-//!                        |
-//!              +---------v------+
-//!              | calling root() |
-//!              +--+---------^---+
-//!                 |         |
-//!  +--------------v----+    | next
-//!  | awaiting state 🛆 |    | frame
-//!  +------------+------+    |
-//! event occurs, |           |
-//! updates state |           |
-//!       +-------v-----------+---+
-//!       | requestAnimationFrame |
-//!       +-----------------------+
-//! ```
-//!
 #![warn(missing_docs)]
 
 #[doc(hidden)]
@@ -44,11 +23,17 @@ pub mod prelude {
 
 pub use web_sys as sys;
 
-/// The "boot sequence" for a moxie-dom instance creates a [moxie::embed::Runtime] with the
-/// provided arguments and begins scheduling its execution.
+/// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the
+/// provided arguments and begins scheduling its execution with `requestAnimationFrame` on state
+/// changes.
 ///
-/// The instance created here is scoped to `new_parent` and assumes that it "owns" the mutation
-/// of `new_parent`'s children.
+/// If you need to schedule your root function more or less frequently then when state variables are
+/// updated, see the [embed](crate::embed) module for granular control over scheduling.
+///
+/// In terms of the embed module's APIs, this function constructs a new
+/// [`WebRuntime`](crate::embed::WebRuntime) and begins scheduling it with an
+/// [`AnimationFrameScheduler`](crate::embed::AnimationFrameScheduler) which requests an animation
+/// frame only when there are updates to state variables.
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, root: impl FnMut() + 'static) {
     WebRuntime::new(new_parent.as_ref().to_owned(), root)
         .animation_frame_scheduler()

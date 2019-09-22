@@ -1,3 +1,5 @@
+//! Embedding APIs offering finer-grained control over execution of the runtime.
+
 use {
     crate::{sys, window, MemoElement},
     futures::task::{waker, ArcWake},
@@ -10,24 +12,33 @@ use {
     wasm_bindgen::{prelude::*, JsCast},
 };
 
+/// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building trees of DOM nodes.
+#[must_use]
 pub struct WebRuntime(Runtime<Box<dyn FnMut()>, ()>);
 
 impl WebRuntime {
-    pub fn new(new_parent: sys::Element, mut root: impl FnMut() + 'static) -> Self {
+    /// Construct a new `WebRuntime` which will maintain the children of the provided `parent`.
+    ///
+    /// On its own, a `WebRuntime` is inert and must either have its `run_once` method called when
+    /// a re-render is needed, or be scheduled with [`WebRuntime::animation_frame_scheduler`].
+    pub fn new(parent: sys::Element, mut root: impl FnMut() + 'static) -> Self {
         WebRuntime(Runtime::new(Box::new(move || {
             topo::call!(
                 { root() },
                 env! {
-                    MemoElement => MemoElement::new(&new_parent),
+                    MemoElement => MemoElement::new(&parent),
                 }
             )
         })))
     }
 
+    /// Run the root function in a fresh [moxie::Revision]. See [moxie::embed::Runtime::run_once]
+    /// for details.
     pub fn run_once(&mut self) {
         self.0.run_once();
     }
 
+    /// Pass ownership of this runtime to a "loop" which runs with `requestAnimationFrame`.
     pub fn animation_frame_scheduler(self) -> AnimationFrameScheduler {
         AnimationFrameScheduler(Rc::new(AnimationFrameState {
             wrt: RefCell::new(self),
@@ -36,6 +47,8 @@ impl WebRuntime {
     }
 }
 
+/// Owns a `WebRuntime` and schedules its execution using `requestAnimationFrame`.
+#[must_use]
 pub struct AnimationFrameScheduler(Rc<AnimationFrameState>);
 
 struct AnimationFrameState {
@@ -44,6 +57,9 @@ struct AnimationFrameState {
 }
 
 impl AnimationFrameScheduler {
+    /// Consumes the scheduler to initiate a requestAnimationFrame callback loop where new
+    /// animation frames are requested when state variables change. `WebRuntime::run_once` is called
+    /// once per requested animation frame.
     pub fn run_on_state_changes(self) {
         let wrt2 = Rc::clone(&self.0);
         let waker = waker(Arc::new(self));
@@ -58,11 +74,9 @@ impl AnimationFrameScheduler {
     }
 
     fn ensure_scheduled(&self) {
-        let handle = self
-            .0
-            .handle
-            .replace(None)
-            .unwrap_or_else(|| AnimationFrameHandle::request(self.create_callback()));
+        let existing = self.0.handle.replace(None);
+        let handle =
+            existing.unwrap_or_else(|| AnimationFrameHandle::request(self.create_callback()));
         self.0.handle.set(Some(handle));
     }
 
