@@ -27,7 +27,7 @@ pub use web_sys as sys;
 /// provided arguments and begins scheduling its execution with `requestAnimationFrame` on state
 /// changes.
 ///
-/// If you need to schedule your root function more or less frequently then when state variables are
+/// If you need to schedule your root function more or less frequently than when state variables are
 /// updated, see the [embed](crate::embed) module for granular control over scheduling.
 ///
 /// In terms of the embed module's APIs, this function constructs a new
