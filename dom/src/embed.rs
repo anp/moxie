@@ -56,6 +56,12 @@ struct AnimationFrameState {
     handle: Cell<Option<AnimationFrameHandle>>,
 }
 
+impl ArcWake for AnimationFrameScheduler {
+    fn wake_by_ref(arc_self: &Arc<AnimationFrameScheduler>) {
+        arc_self.ensure_scheduled(false);
+    }
+}
+
 impl AnimationFrameScheduler {
     /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
     /// animation frames are requested when state variables change. `WebRuntime::run_once` is called
@@ -99,12 +105,6 @@ impl AnimationFrameScheduler {
             AnimationFrameHandle::request(callback)
         });
         self.0.handle.set(Some(handle));
-    }
-}
-
-impl ArcWake for AnimationFrameScheduler {
-    fn wake_by_ref(arc_self: &Arc<AnimationFrameScheduler>) {
-        arc_self.ensure_scheduled(false);
     }
 }
 
