@@ -57,7 +57,7 @@ struct AnimationFrameState {
 }
 
 impl AnimationFrameScheduler {
-    /// Consumes the scheduler to initiate a requestAnimationFrame callback loop where new
+    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
     /// animation frames are requested when state variables change. `WebRuntime::run_once` is called
     /// once per requested animation frame.
     pub fn run_on_state_changes(self) {
@@ -73,25 +73,38 @@ impl AnimationFrameScheduler {
         waker.wake_by_ref();
     }
 
-    fn ensure_scheduled(&self) {
-        let existing = self.0.handle.replace(None);
-        let handle =
-            existing.unwrap_or_else(|| AnimationFrameHandle::request(self.create_callback()));
-        self.0.handle.set(Some(handle));
+    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
+    /// animation frames are requested immmediately after the last `moxie::Revision` is completed.
+    /// `WebRuntime::run_once` is called once per requested animation frame.
+    ///
+    /// **WARNING**: until proper memoization of DOM nodes lands and is stable, there's a good
+    /// chance that this will make your application unresponsive.
+    pub fn run_on_every_frame(self) {
+        self.ensure_scheduled(true);
     }
 
-    fn create_callback(&self) -> Closure<dyn FnMut()> {
-        let state = Rc::clone(&self.0);
-        Closure::once(Box::new(move || {
-            state.handle.set(None);
-            state.wrt.borrow_mut().run_once();
-        }))
+    fn ensure_scheduled(&self, immediately_again: bool) {
+        let existing = self.0.handle.replace(None);
+        let handle = existing.unwrap_or_else(|| {
+            let self2 = AnimationFrameScheduler(Rc::clone(&self.0));
+            let callback = Closure::once(Box::new(move || {
+                self2.0.handle.set(None);
+                self2.0.wrt.borrow_mut().run_once();
+
+                if immediately_again {
+                    self2.ensure_scheduled(true);
+                }
+            }));
+
+            AnimationFrameHandle::request(callback)
+        });
+        self.0.handle.set(Some(handle));
     }
 }
 
 impl ArcWake for AnimationFrameScheduler {
     fn wake_by_ref(arc_self: &Arc<AnimationFrameScheduler>) {
-        arc_self.ensure_scheduled();
+        arc_self.ensure_scheduled(false);
     }
 }
 
