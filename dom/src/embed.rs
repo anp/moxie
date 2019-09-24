@@ -26,7 +26,7 @@ impl WebRuntime {
             topo::call!(
                 { root() },
                 env! {
-                    MemoElement => MemoElement::new(&parent),
+                    MemoElement => MemoElement::new(parent.clone()),
                 }
             )
         })))

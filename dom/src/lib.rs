@@ -58,14 +58,14 @@ pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
     // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
-    let text_node = document().create_text_node(&s.to_string());
+    let text_node = memo!(s.to_string(), |s| document().create_text_node(s));
     parent.ensure_child_attached(&text_node);
 }
 
 #[topo::aware]
 #[topo::from_env(parent: MemoElement)]
-pub fn element<ChildRet>(ty: &str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
-    let elem = document().create_element(ty).unwrap();
+pub fn element<ChildRet>(ty: &'static str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
+    let elem = memo!(ty, |ty| document().create_element(ty).unwrap());
     parent.ensure_child_attached(&elem);
     let elem = MemoElement::new(elem);
     with_elem(&elem);
@@ -77,17 +77,28 @@ pub struct MemoElement {
 }
 
 impl MemoElement {
-    fn new(elem: &sys::Element) -> Self {
+    fn new(elem: sys::Element) -> Self {
         Self {
-            curr: Cell::new(elem.first_child()),
-            elem: elem.clone(),
+            curr: Cell::new(None),
+            elem,
         }
     }
 
     // FIXME this should be topo-aware
     // TODO and it should be able to express its slot as an annotation
-    pub fn attr(&self, name: &str, value: impl ToString) -> &Self {
-        self.elem.set_attribute(name, &value.to_string()).unwrap();
+    pub fn attr(&self, name: &'static str, value: impl ToString) -> &Self {
+        topo::call!(slot: name, {
+            memo_with!(
+                value.to_string(),
+                |v| {
+                    self.elem.set_attribute(name, v).unwrap();
+                    scopeguard::guard(self.elem.clone(), move |elem| {
+                        elem.remove_attribute(name).unwrap()
+                    })
+                },
+                |_| {}
+            )
+        });
         self
     }
 
@@ -111,15 +122,21 @@ impl MemoElement {
         self
     }
 
-    fn ensure_child_attached(&self, node: &sys::Node) {
-        let prev = self.curr.replace(Some(node.clone()));
+    fn ensure_child_attached(&self, new_child: &sys::Node) {
+        let prev_sibling = self.curr.replace(Some(new_child.clone()));
 
-        if let Some(curr) = prev.and_then(|p| p.next_sibling()) {
-            if !curr.is_same_node(Some(node)) {
-                self.elem.replace_child(node, &curr).unwrap();
+        let existing = if prev_sibling.is_none() {
+            self.elem.first_child()
+        } else {
+            prev_sibling.and_then(|p| p.next_sibling())
+        };
+
+        if let Some(existing) = existing {
+            if !existing.is_same_node(Some(new_child)) {
+                self.elem.replace_child(new_child, &existing).unwrap();
             }
         } else {
-            self.elem.append_child(node).unwrap();
+            self.elem.append_child(new_child).unwrap();
         }
     }
 
@@ -137,26 +154,22 @@ impl MemoElement {
                 last_desired_child = topo::Env::expect::<MemoElement>().curr.replace(None);
             },
             env! {
-                MemoElement => self.cloned(),
+                MemoElement => MemoElement::new(self.elem.clone()),
             }
         );
 
-        let mut next_to_remove = last_desired_child.and_then(|c| c.next_sibling());
+        let mut next_to_remove = if let Some(c) = last_desired_child {
+            c.next_sibling()
+        } else {
+            elem.first_child()
+        };
+
         while let Some(to_remove) = next_to_remove {
             next_to_remove = to_remove.next_sibling();
             elem.remove_child(&to_remove).unwrap();
         }
 
         ret
-    }
-
-    fn cloned(&self) -> Self {
-        let curr = self.curr.replace(None);
-        self.curr.replace(curr.clone());
-        Self {
-            elem: self.elem.clone(),
-            curr: Cell::new(curr),
-        }
     }
 }
 
