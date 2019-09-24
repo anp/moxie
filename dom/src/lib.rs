@@ -67,10 +67,7 @@ pub fn text(s: impl ToString) {
 pub fn element<ChildRet>(ty: &str, with_elem: impl FnOnce(&MemoElement) -> ChildRet) {
     let elem = document().create_element(ty).unwrap();
     parent.ensure_child_attached(&elem);
-    let elem = MemoElement {
-        elem,
-        curr: Cell::new(None),
-    };
+    let elem = MemoElement::new(elem);
     with_elem(&elem);
 }
 
