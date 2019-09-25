@@ -1,0 +1,14 @@
+[package]
+name = "mox"
+version = "0.1.0-pre"
+edition = "2018"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+license = "MIT/Apache-2.0"
+description = "Mockery Of X(ML): a JSX-like macro for moxie-dom."
+repository = "https://github.com/anp/moxie"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+snax = "0.2.0"
