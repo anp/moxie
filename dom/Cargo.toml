@@ -27,6 +27,8 @@ wasm-opt = false
 futures-preview = "0.3.0-alpha.18"
 js-sys = "0.3.25"
 moxie = { path = "../", version = "0.1.1-alpha.0" }
+proc-macro-hack = "0.5"
+proc-macro-nested = "0.1.3"
 scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = "0.2.48"

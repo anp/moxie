@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-#[proc_macro]
+#[proc_macro_hack::proc_macro_hack]
 pub fn moxml(input: TokenStream) -> TokenStream {
     let item = snax::parse(input.into()).unwrap();
 
