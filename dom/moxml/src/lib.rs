@@ -26,10 +26,12 @@ fn expand_item(item: SnaxItem) -> Result<TokenStream, Error> {
 }
 
 fn expand_element(name: Ident) -> TokenStream {
+    // TODO call a custom component function instead of making an element with a name
     quote!(moxie_dom::element!(stringify!(#name)))
 }
 
 fn expand_attribute(attr: SnaxAttribute) -> Result<TokenStream, Error> {
+    // TODO call .attr unless the name starts with `on`, then do event dispatch
     panic!("expand_attribute")
 }
 
