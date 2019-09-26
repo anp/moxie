@@ -3,8 +3,9 @@ extern crate proc_macro;
 use {
     proc_macro2::{Ident, TokenStream, TokenTree},
     proc_macro_error::{filter_macro_errors, MacroError, ResultExt},
-    quote::quote,
+    quote::{quote, ToTokens},
     snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
+    syn::parse::{Parse, ParseStream, Result as ParseResult},
 };
 
 #[proc_macro_hack::proc_macro_hack]
@@ -32,12 +33,36 @@ fn expand_element(name: Ident) -> TokenStream {
 
 fn expand_attribute(attr: SnaxAttribute) -> Result<TokenStream, Error> {
     // TODO call .attr unless the name starts with `on`, then do event dispatch
-    panic!("expand_attribute")
+    Ok(quote!())
 }
 
 fn expand_content(content: TokenTree) -> Result<TokenStream, Error> {
-    // TODO detect whether this is a formatting block or not?
-    panic!("expand_content")
+    Ok(match content {
+        TokenTree::Ident(i) => quote!(#i),
+        TokenTree::Punct(p) => quote!(#p),
+        TokenTree::Literal(l) => quote!(#l),
+        TokenTree::Group(g) => {
+            let braced: BracedExpr = syn::parse2(g.stream()).map_err(Error::SynError)?;
+            quote!(#braced)
+        }
+    })
+}
+
+enum BracedExpr {
+    Format(TokenTree),
+    Expr(TokenTree),
+}
+
+impl Parse for BracedExpr {
+    fn parse(input: ParseStream) -> ParseResult<Self> {
+        unimplemented!("parsing")
+    }
+}
+
+impl ToTokens for BracedExpr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        unimplemented!("expansion")
+    }
 }
 
 fn expand_tag(
@@ -85,6 +110,7 @@ fn cons(mut l: TokenStream, r: TokenStream) -> TokenStream {
 
 enum Error {
     SnaxError(ParseError),
+    SynError(syn::Error),
 }
 
 impl Into<MacroError> for Error {
@@ -100,6 +126,7 @@ impl Into<MacroError> for Error {
             Error::SnaxError(ParseError::UnexpectedToken(token)) => {
                 MacroError::new(token.span(), format!("did not expect '{}'", token))
             }
+            Error::SynError(e) => MacroError::new(e.span(), format!("{}", e)),
         }
     }
 }
