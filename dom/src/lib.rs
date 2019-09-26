@@ -21,6 +21,7 @@ pub mod prelude {
     pub use wasm_bindgen::prelude::*;
 }
 
+#[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use moxml::moxml;
 pub use web_sys as sys;
 

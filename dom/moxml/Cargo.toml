@@ -11,4 +11,5 @@ repository = "https://github.com/anp/moxie"
 proc-macro = true
 
 [dependencies]
+proc-macro-hack = "0.5"
 snax = "0.2.0"
