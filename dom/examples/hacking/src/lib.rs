@@ -10,13 +10,17 @@ pub fn main() {
     tracing::info!("mounting moxie-dom to root");
     moxie_dom::boot(document().body().unwrap(), || {
         let count = state!(|| 0);
-        text!(&format!("hello world from moxie! ({})", &count));
 
-        element!("button", |e| e
-            .attr("type", "button")
-            .on(move |_: ClickEvent| count.update(|c| Some(c + 1)))
-            .inner(|| text!("increment")));
+        moxml! {<>
+            <div>{% "hello world from moxie! ({})", &count %}</div>
 
-        vec![text!("first"), text!(" second"), text!(" third")];
+            <button type="button" onclick={|ev, count| Some(count + 1)}>
+                "increment"
+            </button>
+        </>};
+
+        for t in &["first ", "second ", "third"] {
+            moxml! { <div>{% "{}", t %}</div> };
+        }
     });
 }

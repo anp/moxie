@@ -21,6 +21,7 @@ pub mod prelude {
     pub use wasm_bindgen::prelude::*;
 }
 
+pub use moxml::moxml;
 pub use web_sys as sys;
 
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the

@@ -32,7 +32,7 @@ members = [
     "dom",
     "dom/examples/hacking",
     "dom/examples/todo",
-    "mox",
+    "dom/moxml",
     "topo",
     "topo/macro",
 ]
