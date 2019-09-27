@@ -1,6 +1,6 @@
 use {
     crate::{input::*, Todo},
-    moxie_dom::{moxml, prelude::*},
+    moxie_dom::{h1, header as html_header, moxml, prelude::*},
     tracing::info,
 };
 
@@ -9,7 +9,7 @@ use {
 pub fn header() {
     let todos = todos.clone();
     moxml! {
-        <header class="header">
+        <html_header class="header">
             <h1>"todos"</h1>
             {
                 text_input!("What needs to be done?", false, move |value: String| {
@@ -21,6 +21,6 @@ pub fn header() {
                     });
                 });
             }
-        </header>
+        </html_header>
     };
 }

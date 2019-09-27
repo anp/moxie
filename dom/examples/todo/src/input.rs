@@ -1,5 +1,5 @@
 use {
-    moxie_dom::{moxml, prelude::*, sys},
+    moxie_dom::{input, moxml, prelude::*, sys},
     wasm_bindgen::JsCast,
 };
 

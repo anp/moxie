@@ -81,8 +81,7 @@ struct MoxTag {
 
 impl ToTokens for MoxTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let name = self.name.to_string();
-
+        let name = &self.name;
         let mut attrs = quote!();
         self.attributes
             .iter()
@@ -97,7 +96,7 @@ impl ToTokens for MoxTag {
 
         tokens.extend(quote!(
             // TODO this needs to be any topologically-aware function, not just an html element
-            moxie_dom::element!(#name, |e| e
+            #name!(|e| e
                 #attrs
                 .inner(|| {
                     #children

@@ -2,7 +2,7 @@ use {
     filter::Visibility,
     header::*,
     main_section::*,
-    moxie_dom::{moxml, prelude::*},
+    moxie_dom::{div, moxml, prelude::*},
     std::sync::atomic::{AtomicU32, Ordering},
 };
 
