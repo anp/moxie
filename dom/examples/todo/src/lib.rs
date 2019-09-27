@@ -2,7 +2,7 @@ use {
     filter::Visibility,
     header::*,
     main_section::*,
-    moxie_dom::{element, prelude::*},
+    moxie_dom::{moxml, prelude::*},
     std::sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -26,10 +26,14 @@ fn todo_app() {
 
     topo::call!(
         {
-            element!("div", |e| e.attr("class", "todoapp").inner(|| {
-                header!();
-                main_section!();
-            }));
+            moxml! {
+                <div class="todoapp">
+                {
+                    header!();
+                    main_section!();
+                }
+                </div>
+            }
         },
         env! {
             Key<Vec<Todo>> => todos,

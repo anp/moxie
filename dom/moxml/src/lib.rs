@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use {
     proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree},
-    proc_macro_error::{filter_macro_errors, MacroError, ResultExt},
+    proc_macro_error::{call_site_error, filter_macro_errors, span_error, MacroError, ResultExt},
     quote::{quote, ToTokens},
     snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
 };
@@ -37,21 +37,26 @@ impl From<SnaxItem> for MoxItem {
 
 fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
     let mut new_stream = quote!(#tt);
-    if let TokenTree::Group(g) = tt {
-        let mut tokens = g.stream().into_iter();
-        if let Some(TokenTree::Punct(p)) = tokens.next() {
-            if p.as_char() == '%' {
-                // strip the percent sign off the front
-                new_stream = TokenStream::new();
-                new_stream.extend(tokens);
+    match tt {
+        TokenTree::Group(g) => {
+            let mut tokens = g.stream().into_iter();
+            if let Some(TokenTree::Punct(p)) = tokens.next() {
+                if p.as_char() == '%' {
+                    // strip the percent sign off the front
+                    new_stream = TokenStream::new();
+                    new_stream.extend(tokens);
 
-                // TODO get all but the last element here too if its a %
-                new_stream = quote!(format!(#new_stream));
+                    // TODO get all but the last element here too if its a %
+                    new_stream = quote!(moxie_dom::text!(format!(#new_stream)));
+                }
             }
         }
+        tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) => {
+            new_stream = quote!(moxie_dom::text!(#tt));
+        }
+        TokenTree::Punct(p) => span_error!(p.span(), "'{}' not valid in item position", p),
     }
-
-    Group::new(Delimiter::Brace, quote!(moxie_dom::text!(#new_stream))).into()
+    Group::new(Delimiter::Brace, new_stream).into()
 }
 
 impl ToTokens for MoxItem {
@@ -147,7 +152,7 @@ impl ToTokens for MoxAttr {
                 let value = g.stream();
                 quote!(.on(#value))
             }
-            _ => proc_macro_error::call_site_error!("event handlers must be surrounded in braces"),
+            _ => call_site_error!("event handlers must be surrounded in braces"),
         };
 
         tokens.extend(stream);

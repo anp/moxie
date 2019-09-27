@@ -1,6 +1,6 @@
 use {
     crate::Todo,
-    moxie_dom::{element, prelude::*, text},
+    moxie_dom::{moxml, prelude::*},
     Visibility::{Active, All, Completed},
 };
 
@@ -41,28 +41,26 @@ impl Visibility {
 #[topo::from_env(visibility: Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) {
     let visibility = visibility.clone();
-
-    element!("li", |e| e.inner(|| {
-        element!("a", |link| {
-            link.attr("style", "cursor: pointer;");
-            if *visibility == to_set {
-                link.attr("class", "selected");
-            }
-
-            link.on(move |_: ClickEvent| visibility.set(to_set))
-                .inner(|| text!(to_set));
-        });
-    }));
+    moxml! {
+        <li>
+            <a style="cursor: pointer;"
+             class={if *visibility == to_set { "selected" } else { "" }}
+             on={move |_: ClickEvent| visibility.set(to_set)}>
+                {% "{}", to_set }
+            </a>
+        </li>
+    }
 }
 
 #[topo::aware]
 pub fn filter() {
-    tracing::info!({ id = ?topo::Id::current() }, "filter");
-    element!("ul", |e| e.attr("class", "filters").inner(|| {
-        tracing::info!({ id = ?topo::Id::current() }, "list inner");
-        for &to_set in &[All, Active, Completed] {
-            tracing::info!({ id = ?topo::Id::current(), ?to_set }, "filter loop");
-            filter_link!(to_set)
+    moxml! {
+        <ul class="filters">
+        {
+            for &to_set in &[All, Active, Completed] {
+                filter_link!(to_set);
+            }
         }
-    }));
+        </ul>
+    };
 }
