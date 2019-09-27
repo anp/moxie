@@ -14,7 +14,8 @@ pub fn main() {
         moxml! {<>
             <div>{% "hello world from moxie! ({})", &count }</div>
 
-            <button type="button" onclick={|ev, count| Some(count + 1)}>
+            // TODO figure out how this could be `onclick` and still be nice
+            <button type="button" on={|_: ClickEvent, c| Some(c + 1), count}>
                 "increment"
             </button>
         </>};
