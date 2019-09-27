@@ -84,6 +84,15 @@ impl MemoElement {
         }
     }
 
+    /// Retrieves access to the raw HTML element underlying the `MemoElement`.
+    ///
+    /// Because this offers an escape hatch around the memoized mutations, it should be used with
+    /// caution. Also because of this, it has a silly name intended to loudly announce that
+    /// care must be taken.
+    pub fn raw_element_that_has_sharp_edges_please_be_careful(&self) -> sys::Element {
+        self.elem.clone()
+    }
+
     // FIXME this should be topo-aware
     // TODO and it should be able to express its slot as an annotation
     pub fn attr(&self, name: &'static str, value: impl ToString) -> &Self {
