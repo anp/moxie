@@ -12,7 +12,7 @@ pub fn main() {
         let count = state!(|| 0);
 
         moxml! {<>
-            <div>{% "hello world from moxie! ({})", &count %}</div>
+            <div>{% "hello world from moxie! ({})", &count }</div>
 
             <button type="button" onclick={|ev, count| Some(count + 1)}>
                 "increment"
@@ -20,7 +20,7 @@ pub fn main() {
         </>};
 
         for t in &["first ", "second ", "third"] {
-            moxml! { <div>{% "{}", t %}</div> };
+            moxml! { <div>{% "{}", t }</div> };
         }
     });
 }
