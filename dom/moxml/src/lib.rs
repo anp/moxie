@@ -42,13 +42,51 @@ impl TryFrom<SnaxItem> for MoxItem {
 }
 
 impl ToTokens for MoxItem {
-    fn to_tokens(&self, tokens: &mut TokenStream) {}
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            MoxItem::Tag(tag) => tag.to_tokens(tokens),
+            MoxItem::Fragment(children) => {
+                for c in children {
+                    c.to_tokens(tokens);
+                }
+            }
+            MoxItem::Content(content) => content.to_tokens(tokens),
+        }
+    }
 }
 
 struct MoxTag {
     name: Ident,
     attributes: Vec<MoxAttr>,
     children: Vec<MoxItem>,
+}
+
+impl ToTokens for MoxTag {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let name = self.name.to_string();
+
+        let mut attrs = quote!();
+        self.attributes
+            .iter()
+            .map(ToTokens::to_token_stream)
+            .for_each(|ts| attrs.extend(ts));
+
+        let mut children = quote!();
+        self.children
+            .iter()
+            .map(ToTokens::to_token_stream)
+            .for_each(|ts| children.extend(ts));
+
+        tokens.extend(quote!(
+            // TODO this needs to be any topologically-aware function, not just an html element
+            moxie_dom::element!(#name, |e| e.
+                #attrs
+                .inner(|| {
+                    #children
+                })
+            );
+        ))
+    }
 }
 
 impl TryFrom<SnaxTag> for MoxTag {
@@ -89,6 +127,12 @@ enum MoxAttr {
     Handler { name: Ident, value: TokenTree },
 }
 
+impl ToTokens for MoxAttr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        unimplemented!("attr to tokens")
+    }
+}
+
 impl From<SnaxAttribute> for MoxAttr {
     fn from(attr: SnaxAttribute) -> Self {
         match attr {
@@ -102,6 +146,12 @@ enum Content {
     RustExpr(TokenTree),
 }
 
+impl ToTokens for Content {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        unimplemented!("content to tokens")
+    }
+}
+
 impl TryFrom<TokenTree> for Content {
     type Error = Error;
     fn try_from(tt: TokenTree) -> Result<Self, Self::Error> {
@@ -109,7 +159,7 @@ impl TryFrom<TokenTree> for Content {
             tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) | tt @ TokenTree::Punct(_) => {
                 Content::RustExpr(tt)
             }
-            TokenTree::Group(mut g) => {
+            TokenTree::Group(g) => {
                 let mut tokens = g.stream().into_iter().peekable();
                 if let Some(TokenTree::Punct(p)) = tokens.next() {
                     if p.as_char() == '%' {
