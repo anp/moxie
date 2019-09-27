@@ -1,5 +1,5 @@
 use {
-    moxie_dom::{element, prelude::*, sys},
+    moxie_dom::{moxml, prelude::*, sys},
     wasm_bindgen::JsCast,
 };
 
@@ -21,26 +21,22 @@ pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(Stri
     }
 
     let change_text = text.clone();
+    let on_change = move |change: ChangeEvent| change_text.set(input_value(change));
 
-    element!("input", |e| {
-        e.attr("autoFocus", "true")
-            .attr("class", "new-todo")
-            .attr("placeholder", placeholder)
-            .attr("type", "text")
-            .attr("value", &*text)
-            .on(move |change: ChangeEvent| change_text.set(input_value(change)))
-            .on(move |keypress: KeyDownEvent| {
-                if keypress.key() == "Enter" {
-                    let value = input_value(keypress);
-                    if !value.is_empty() {
-                        on_save(value);
-                    }
-                    text.set("".into());
-                }
-            });
-
-        if editing {
-            e.attr("class", "edit");
+    let clear_text = text.clone();
+    let on_keydown = move |keypress: KeyDownEvent| {
+        if keypress.key() == "Enter" {
+            let value = input_value(keypress);
+            if !value.is_empty() {
+                on_save(value);
+            }
+            clear_text.set("".into());
         }
-    });
+    };
+
+    moxml! {
+        <input type="text" placeholder={placeholder} value={&*text} autoFocus="true"
+            class={if editing { "edit new-todo" } else { "new-todo"}}
+            on={on_change} on={on_keydown} />
+    };
 }

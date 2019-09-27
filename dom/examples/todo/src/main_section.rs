@@ -1,48 +1,49 @@
 use {
     crate::{filter::*, footer::*, item::*, Todo},
-    moxie_dom::{element, prelude::*},
+    moxie_dom::{moxml, prelude::*},
 };
 
 #[topo::aware]
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
     let todos = todos.clone();
-    element!("span", |e| e.inner(|| {
-        element!("input", |e| {
-            e.attr("class", "toggle-all")
-                .attr("type", "checkbox")
-                .attr("defaultChecked", default_checked);
-        });
+    let on_click = move |_: ClickEvent| {
+        todos.update(|t| {
+            Some(
+                t.iter()
+                    .map(|t| {
+                        let mut new = t.clone();
+                        new.completed = !default_checked;
+                        new
+                    })
+                    .collect::<Vec<_>>()
+                    .into(),
+            )
+        })
+    };
 
-        element!("label", |e| {
-            e.on(move |_: ClickEvent| {
-                todos.update(|t| {
-                    Some(
-                        t.iter()
-                            .map(|t| {
-                                let mut new = t.clone();
-                                new.completed = !default_checked;
-                                new
-                            })
-                            .collect::<Vec<_>>()
-                            .into(),
-                    )
-                })
-            });
-        });
-    }));
+    moxml! {
+        <span>
+            <input class="toggle-all" type="checkbox" defaultChecked={default_checked} />
+            <label on={on_click}/>
+        </span>
+    };
 }
 
 #[topo::aware]
 #[topo::from_env(todos: Key<Vec<Todo>>, visibility: Key<Visibility>)]
 pub fn todo_list() {
-    element!("ul", |e| e.attr("class", "todo-list").inner(|| {
-        for todo in todos.iter() {
-            if visibility.should_show(todo) {
-                todo_item!(todo);
+    moxml! {
+        <ul class="todo-list">
+        {
+            for todo in todos.iter() {
+                if visibility.should_show(todo) {
+                    todo_item!(todo);
+                }
             }
         }
-    }));
+        </ul>
+    };
 }
 
 #[topo::aware]
@@ -50,17 +51,21 @@ pub fn todo_list() {
 pub fn main_section() {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
-    element!("section", |e| e.attr("class", "main").inner(move || {
-        if !todos.is_empty() {
-            toggle!(num_complete == todos.len());
-        }
+    moxml! {
+        <section class="main">
+        {
+            if !todos.is_empty() {
+                toggle!(num_complete == todos.len());
+            }
 
-        todo_list!();
+            todo_list!();
 
-        if !todos.is_empty() {
-            footer!(num_complete, todos.len() - num_complete);
+            if !todos.is_empty() {
+                footer!(num_complete, todos.len() - num_complete);
+            }
         }
-    }));
+        </section>
+    }
 }
 
 // TODO test where:
