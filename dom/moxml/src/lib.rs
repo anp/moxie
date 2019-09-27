@@ -12,7 +12,7 @@ use {
 pub fn moxml(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     filter_macro_errors! {
         let item = snax::parse(input.into()).map_err(Error::SnaxError).unwrap_or_exit();
-        let item = MoxItem::try_from(item).unwrap_or_exit();
+        let item = MoxItem::from(item);
         quote!(#item).into()
     }
 }
@@ -23,21 +23,16 @@ enum MoxItem {
     Content(Content),
 }
 
-impl TryFrom<SnaxItem> for MoxItem {
-    type Error = Error;
-
-    fn try_from(item: SnaxItem) -> Result<Self, Self::Error> {
-        Ok(match item {
-            SnaxItem::Tag(t) => MoxItem::Tag(MoxTag::try_from(t)?),
-            SnaxItem::SelfClosingTag(t) => MoxItem::Tag(MoxTag::try_from(t)?),
-            SnaxItem::Fragment(SnaxFragment { children }) => MoxItem::Fragment(
-                children
-                    .into_iter()
-                    .map(MoxItem::try_from)
-                    .collect::<Result<_, _>>()?,
-            ),
-            SnaxItem::Content(atom) => MoxItem::Content(Content::try_from(atom)?),
-        })
+impl From<SnaxItem> for MoxItem {
+    fn from(item: SnaxItem) -> Self {
+        match item {
+            SnaxItem::Tag(t) => MoxItem::Tag(MoxTag::from(t)),
+            SnaxItem::SelfClosingTag(t) => MoxItem::Tag(MoxTag::from(t)),
+            SnaxItem::Fragment(SnaxFragment { children }) => {
+                MoxItem::Fragment(children.into_iter().map(MoxItem::from).collect())
+            }
+            SnaxItem::Content(atom) => MoxItem::Content(Content::from(atom)),
+        }
     }
 }
 
@@ -89,36 +84,29 @@ impl ToTokens for MoxTag {
     }
 }
 
-impl TryFrom<SnaxTag> for MoxTag {
-    type Error = Error;
-    fn try_from(
+impl From<SnaxTag> for MoxTag {
+    fn from(
         SnaxTag {
             name,
             attributes,
             children,
         }: SnaxTag,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             name,
             attributes: attributes.into_iter().map(MoxAttr::from).collect(),
-            children: children
-                .into_iter()
-                .map(MoxItem::try_from)
-                .collect::<Result<_, _>>()?,
-        })
+            children: children.into_iter().map(MoxItem::from).collect(),
+        }
     }
 }
 
-impl TryFrom<SnaxSelfClosingTag> for MoxTag {
-    type Error = Error;
-    fn try_from(
-        SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+impl From<SnaxSelfClosingTag> for MoxTag {
+    fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
+        Self {
             name,
             attributes: attributes.into_iter().map(MoxAttr::from).collect(),
             children: vec![],
-        })
+        }
     }
 }
 
@@ -154,10 +142,9 @@ impl ToTokens for Content {
     }
 }
 
-impl TryFrom<TokenTree> for Content {
-    type Error = Error;
-    fn try_from(tt: TokenTree) -> Result<Self, Self::Error> {
-        Ok(match tt {
+impl From<TokenTree> for Content {
+    fn from(tt: TokenTree) -> Self {
+        match tt {
             tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) | tt @ TokenTree::Punct(_) => {
                 Content::RustExpr(tt)
             }
@@ -168,10 +155,13 @@ impl TryFrom<TokenTree> for Content {
                         let mut new_stream = quote!();
                         // TODO get all but the last element here too if its a %
                         new_stream.extend(tokens);
-                        Content::FormatExpr(TokenTree::Group(Group::new(
-                            g.delimiter(),
-                            quote!(moxie_dom::text!(format!(#new_stream))),
-                        )))
+                        Content::FormatExpr(
+                            Group::new(
+                                g.delimiter(),
+                                quote!(moxie_dom::text!(format!(#new_stream))),
+                            )
+                            .into(),
+                        )
                     } else {
                         Content::RustExpr(g.into())
                     }
@@ -179,13 +169,12 @@ impl TryFrom<TokenTree> for Content {
                     Content::RustExpr(g.into())
                 }
             }
-        })
+        }
     }
 }
 
 enum Error {
     SnaxError(ParseError),
-    SynError(syn::Error),
 }
 
 impl Into<MacroError> for Error {
@@ -201,7 +190,6 @@ impl Into<MacroError> for Error {
             Error::SnaxError(ParseError::UnexpectedToken(token)) => {
                 MacroError::new(token.span(), format!("did not expect '{}'", token))
             }
-            Error::SynError(e) => MacroError::new(e.span(), format!("{}", e)),
         }
     }
 }
