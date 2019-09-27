@@ -6,6 +6,7 @@ use {
 #[topo::aware]
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
+    let todos = todos.clone();
     element!("span", |e| e.inner(|| {
         element!("input", |e| {
             e.attr("class", "toggle-all")
@@ -14,20 +15,20 @@ pub fn toggle(default_checked: bool) {
         });
 
         element!("label", |e| {
-            e.on(
-                move |_: ClickEvent, todos| -> Option<Vec<Todo>> {
-                    todos
-                        .iter()
-                        .map(|t| {
-                            let mut new = t.clone();
-                            new.completed = !default_checked;
-                            new
-                        })
-                        .collect::<Vec<_>>()
-                        .into()
-                },
-                todos.clone(),
-            );
+            e.on(move |_: ClickEvent| {
+                todos.update(|t| {
+                    Some(
+                        t.iter()
+                            .map(|t| {
+                                let mut new = t.clone();
+                                new.completed = !default_checked;
+                                new
+                            })
+                            .collect::<Vec<_>>()
+                            .into(),
+                    )
+                })
+            });
         });
     }));
 }

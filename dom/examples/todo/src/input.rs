@@ -20,30 +20,24 @@ pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(Stri
         val
     }
 
+    let change_text = text.clone();
+
     element!("input", |e| {
         e.attr("autoFocus", "true")
             .attr("class", "new-todo")
             .attr("placeholder", placeholder)
             .attr("type", "text")
             .attr("value", &*text)
-            .on(
-                |change: ChangeEvent, _| Some(input_value(change)),
-                text.clone(),
-            )
-            .on(
-                move |keypress: KeyDownEvent, _| {
-                    if keypress.key() == "Enter" {
-                        let value = input_value(keypress);
-                        if !value.is_empty() {
-                            on_save(value);
-                        }
-                        Some("".into())
-                    } else {
-                        None
+            .on(move |change: ChangeEvent| change_text.set(input_value(change)))
+            .on(move |keypress: KeyDownEvent| {
+                if keypress.key() == "Enter" {
+                    let value = input_value(keypress);
+                    if !value.is_empty() {
+                        on_save(value);
                     }
-                },
-                text,
-            );
+                    text.set("".into());
+                }
+            });
 
         if editing {
             e.attr("class", "edit");

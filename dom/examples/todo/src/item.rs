@@ -23,17 +23,18 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) {
     let id = todo.id;
+    let todos = todos.clone();
+    let toggle_todos = todos.clone();
 
     element!("div", |e| e.attr("class", "view").inner(|| {
         element!("input", |e| {
             e.attr("class", "toggle")
                 .attr("type", "checkbox")
                 .attr("checked", todo.completed)
-                .on(
-                    move |_: ChangeEvent, todos| {
+                .on(move |_: ChangeEvent| {
+                    toggle_todos.update(|t| {
                         Some(
-                            todos
-                                .iter()
+                            t.iter()
                                 .cloned()
                                 .map(move |mut t| {
                                     if t.id == id {
@@ -45,22 +46,18 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
                                 })
                                 .collect(),
                         )
-                    },
-                    todos.clone(),
-                );
+                    })
+                });
         });
 
         element!("label", |e| e
-            .on(|_: DoubleClickEvent, _editing| Some(true), editing)
+            .on(move |_: DoubleClickEvent| editing.set(true))
             .inner(|| text!(&todo.text)));
 
         element!("button", |e| {
-            e.attr("class", "destroy").on(
-                move |_: ClickEvent, todos| {
-                    Some(todos.iter().filter(|t| t.id != id).cloned().collect())
-                },
-                todos.clone(),
-            );
+            e.attr("class", "destroy").on(move |_: ClickEvent| {
+                todos.update(|t| Some(t.iter().filter(|t| t.id != id).cloned().collect()));
+            });
         });
     }));
 }
