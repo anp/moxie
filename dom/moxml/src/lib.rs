@@ -1,11 +1,10 @@
 extern crate proc_macro;
 
 use {
-    proc_macro2::{Group, Ident, TokenStream, TokenTree},
+    proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree},
     proc_macro_error::{filter_macro_errors, MacroError, ResultExt},
     quote::{quote, ToTokens},
     snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
-    std::convert::TryFrom,
 };
 
 #[proc_macro_hack::proc_macro_hack]
@@ -20,7 +19,7 @@ pub fn moxml(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 enum MoxItem {
     Tag(MoxTag),
     Fragment(Vec<MoxItem>),
-    Content(Content),
+    Content(TokenTree),
 }
 
 impl From<SnaxItem> for MoxItem {
@@ -31,9 +30,28 @@ impl From<SnaxItem> for MoxItem {
             SnaxItem::Fragment(SnaxFragment { children }) => {
                 MoxItem::Fragment(children.into_iter().map(MoxItem::from).collect())
             }
-            SnaxItem::Content(atom) => MoxItem::Content(Content::from(atom)),
+            SnaxItem::Content(atom) => MoxItem::Content(wrap_content_tokens(atom)),
         }
     }
+}
+
+fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
+    let mut new_stream = quote!(#tt);
+    if let TokenTree::Group(g) = tt {
+        let mut tokens = g.stream().into_iter();
+        if let Some(TokenTree::Punct(p)) = tokens.next() {
+            if p.as_char() == '%' {
+                // strip the percent sign off the front
+                new_stream = TokenStream::new();
+                new_stream.extend(tokens);
+
+                // TODO get all but the last element here too if its a %
+                new_stream = quote!(format!(#new_stream));
+            }
+        }
+    }
+
+    Group::new(Delimiter::Brace, quote!(moxie_dom::text!(#new_stream))).into()
 }
 
 impl ToTokens for MoxItem {
@@ -125,50 +143,6 @@ impl From<SnaxAttribute> for MoxAttr {
     fn from(attr: SnaxAttribute) -> Self {
         match attr {
             SnaxAttribute::Simple { name, value } => MoxAttr::Simple { name, value },
-        }
-    }
-}
-
-enum Content {
-    FormatExpr(TokenTree),
-    RustExpr(TokenTree),
-}
-
-impl ToTokens for Content {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Content::FormatExpr(tt) | Content::RustExpr(tt) => tokens.extend(quote!(#tt)),
-        }
-    }
-}
-
-impl From<TokenTree> for Content {
-    fn from(tt: TokenTree) -> Self {
-        match tt {
-            tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) | tt @ TokenTree::Punct(_) => {
-                Content::RustExpr(tt)
-            }
-            TokenTree::Group(g) => {
-                let mut tokens = g.stream().into_iter().peekable();
-                if let Some(TokenTree::Punct(p)) = tokens.next() {
-                    if p.as_char() == '%' {
-                        let mut new_stream = quote!();
-                        // TODO get all but the last element here too if its a %
-                        new_stream.extend(tokens);
-                        Content::FormatExpr(
-                            Group::new(
-                                g.delimiter(),
-                                quote!(moxie_dom::text!(format!(#new_stream))),
-                            )
-                            .into(),
-                        )
-                    } else {
-                        Content::RustExpr(g.into())
-                    }
-                } else {
-                    Content::RustExpr(g.into())
-                }
-            }
         }
     }
 }
