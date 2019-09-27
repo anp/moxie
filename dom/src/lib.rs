@@ -11,6 +11,7 @@ use {
     wasm_bindgen::{prelude::*, JsCast},
 };
 
+pub mod elements;
 pub mod embed;
 pub mod prelude {
     pub use crate::{

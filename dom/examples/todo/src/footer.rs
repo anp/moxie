@@ -1,6 +1,6 @@
 use {
     crate::{filter::*, Todo},
-    moxie_dom::{moxml, prelude::*, text},
+    moxie_dom::{button, footer as html_footer, moxml, prelude::*, span, strong, text},
 };
 
 #[topo::aware]
@@ -38,7 +38,7 @@ pub fn clear_completed_button() {
 #[topo::aware]
 pub fn footer(num_complete: usize, num_active: usize) {
     moxml! {
-        <footer class="footer">
+        <html_footer class="footer">
         {
             items_remaining!(num_active);
             filter!();
@@ -47,6 +47,6 @@ pub fn footer(num_complete: usize, num_active: usize) {
                 clear_completed_button!();
             }
         }
-        </footer>
+        </html_footer>
     }
 }
