@@ -103,18 +103,16 @@ impl MemoElement {
     }
 
     // FIXME this should be topo-aware
-    pub fn on<Ev, State, Updater>(&self, updater: Updater, key: Key<State>) -> &Self
+    pub fn on<Ev>(&self, callback: impl FnMut(Ev) + 'static) -> &Self
     where
         Ev: 'static + Event,
-        State: 'static,
-        Updater: 'static + FnMut(Ev, &State) -> Option<State>,
     {
         topo::call!(slot: Ev::NAME, {
             memo_with!(
                 moxie::embed::Revision::current(),
                 |_| {
                     let target: &sys::EventTarget = self.elem.as_ref();
-                    EventHandle::new(target.clone(), key, updater)
+                    EventHandle::new(target.clone(), callback)
                 },
                 |_| {}
             );
@@ -182,15 +180,13 @@ struct Callback {
 }
 
 impl Callback {
-    fn new<Ev, State, Updater>(key: Key<State>, mut updater: Updater) -> Self
+    fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
-        State: 'static,
-        Updater: FnMut(Ev, &State) -> Option<State> + 'static,
     {
         let cb = Closure::wrap(Box::new(move |ev: JsValue| {
             let ev: Ev = ev.dyn_into().unwrap();
-            key.update(|prev| updater(ev, prev));
+            cb(ev);
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
@@ -208,17 +204,11 @@ pub struct EventHandle {
 }
 
 impl EventHandle {
-    fn new<Ev, State, Updater>(
-        target: web_sys::EventTarget,
-        key: Key<State>,
-        updater: Updater,
-    ) -> Self
+    fn new<Ev>(target: web_sys::EventTarget, callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
-        State: 'static,
-        Updater: FnMut(Ev, &State) -> Option<State> + 'static,
     {
-        let callback = Callback::new(key, updater);
+        let callback = Callback::new(callback);
         let name = Ev::NAME;
         target
             .add_event_listener_with_callback(name, callback.as_fn())

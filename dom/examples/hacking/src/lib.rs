@@ -14,7 +14,7 @@ pub fn main() {
 
         element!("button", |e| e
             .attr("type", "button")
-            .on(|_: ClickEvent, count| Some(count + 1), count)
+            .on(move |_: ClickEvent| count.update(|c| Some(c + 1)))
             .inner(|| text!("increment")));
 
         vec![text!("first"), text!(" second"), text!(" third")];
