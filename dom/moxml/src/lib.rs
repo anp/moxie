@@ -79,7 +79,7 @@ impl ToTokens for MoxTag {
 
         tokens.extend(quote!(
             // TODO this needs to be any topologically-aware function, not just an html element
-            moxie_dom::element!(#name, |e| e.
+            moxie_dom::element!(#name, |e| e
                 #attrs
                 .inner(|| {
                     #children
@@ -129,7 +129,7 @@ enum MoxAttr {
 
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        unimplemented!("attr to tokens")
+        // unimplemented!("attr to tokens")
     }
 }
 
@@ -148,7 +148,9 @@ enum Content {
 
 impl ToTokens for Content {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        unimplemented!("content to tokens")
+        match self {
+            Content::FormatExpr(tt) | Content::RustExpr(tt) => tokens.extend(quote!(#tt)),
+        }
     }
 }
 
@@ -166,7 +168,10 @@ impl TryFrom<TokenTree> for Content {
                         let mut new_stream = quote!();
                         // TODO get all but the last element here too if its a %
                         new_stream.extend(tokens);
-                        Content::FormatExpr(TokenTree::Group(Group::new(g.delimiter(), new_stream)))
+                        Content::FormatExpr(TokenTree::Group(Group::new(
+                            g.delimiter(),
+                            quote!(moxie_dom::text!(format!(#new_stream))),
+                        )))
                     } else {
                         Content::RustExpr(g.into())
                     }
