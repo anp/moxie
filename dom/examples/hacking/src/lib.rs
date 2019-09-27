@@ -19,7 +19,7 @@ pub fn main() {
             </button>
         </>};
 
-        for t in &["first ", "second ", "third"] {
+        for t in &["first", "second", "third"] {
             moxml! { <div>{% "{}", t }</div> };
         }
     });
