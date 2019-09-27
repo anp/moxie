@@ -130,19 +130,40 @@ impl From<SnaxSelfClosingTag> for MoxTag {
 
 enum MoxAttr {
     Simple { name: Ident, value: TokenTree },
-    Handler { name: Ident, value: TokenTree },
+    Handler { value: TokenTree },
 }
 
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        // unimplemented!("attr to tokens")
+        let stream = match self {
+            MoxAttr::Simple { name, value } => {
+                let name = name.to_string();
+                quote!(.attr(#name, #value))
+            }
+            MoxAttr::Handler {
+                value: TokenTree::Group(g),
+            } => {
+                // remove the braces from the event handler args, these need to "splat" into a call
+                let value = g.stream();
+                quote!(.on(#value))
+            }
+            _ => proc_macro_error::call_site_error!("event handlers must be surrounded in braces"),
+        };
+
+        tokens.extend(stream);
     }
 }
 
 impl From<SnaxAttribute> for MoxAttr {
     fn from(attr: SnaxAttribute) -> Self {
         match attr {
-            SnaxAttribute::Simple { name, value } => MoxAttr::Simple { name, value },
+            SnaxAttribute::Simple { name, value } => {
+                if name.to_string() == "on" {
+                    MoxAttr::Handler { value }
+                } else {
+                    MoxAttr::Simple { name, value }
+                }
+            }
         }
     }
 }
