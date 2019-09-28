@@ -152,14 +152,21 @@ fn tag_to_tokens(
     let fn_args = fn_args.as_ref().map(|args| {
         match &args.value {
             TokenTree::Group(g) => quote!(#g), // FIXME strip the parens from around args
-            tt @ _ => quote!(#tt),
+            tt @ _ => unimplemented!(
+                "bare function args (without a paired delimiter) aren't supported yet"
+            ),
         }
     });
 
     let invocation = if contents.is_empty() {
         quote!(#name!(#fn_args);)
     } else {
-        quote!(#name!(#fn_args |_e| { _e #contents });)
+        if fn_args.is_some() {
+            unimplemented!(
+                "can't emit function arguments at the same time as attributes or children yet"
+            )
+        }
+        quote!(#name!(|_e| { _e #contents });)
     };
 
     stream.extend(invocation);
