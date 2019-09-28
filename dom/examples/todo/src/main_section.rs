@@ -57,9 +57,11 @@ pub fn main_section() {
             if !todos.is_empty() {
                 toggle!(num_complete == todos.len());
             }
+        }
 
-            todo_list!();
+        <todo_list/>
 
+        {
             if !todos.is_empty() {
                 footer!(num_complete, todos.len() - num_complete);
             }
