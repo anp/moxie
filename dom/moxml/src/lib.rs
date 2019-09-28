@@ -149,12 +149,13 @@ fn tag_to_tokens(
         contents.extend(quote!(;));
     }
 
-    let fn_args = fn_args.as_ref().map(|args| {
-        match &args.value {
-            TokenTree::Group(g) => quote!(#g), // FIXME strip the parens from around args
-            tt @ _ => unimplemented!(
-                "bare function args (without a paired delimiter) aren't supported yet"
-            ),
+    let fn_args = fn_args.as_ref().map(|args| match &args.value {
+        TokenTree::Group(g) => {
+            let without_delim = g.stream();
+            quote!(#without_delim)
+        }
+        tt @ _ => {
+            unimplemented!("bare function args (without a paired delimiter) aren't supported yet")
         }
     });
 
