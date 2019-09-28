@@ -58,7 +58,7 @@ pub fn filter() {
         <ul class="filters">
         {
             for &to_set in &[All, Active, Completed] {
-                filter_link!(to_set);
+                moxml! { <filter_link _=(to_set) /> };
             }
         }
         </ul>
