@@ -11,16 +11,18 @@ pub fn header() {
     moxml! {
         <html_header class="header">
             <h1>"todos"</h1>
-            {
-                text_input!("What needs to be done?", false, move |value: String| {
+            <text_input _=(
+                "What needs to be done?",
+                false,
+                move |value: String| {
                     todos.update(|prev| {
                         let mut todos: Vec<Todo> = prev.to_vec();
                         todos.push(Todo::new(value));
                         info!({ ?todos }, "added new todo");
                         Some(todos)
                     });
-                });
-            }
+                },
+            )/>
         </html_header>
     };
 }

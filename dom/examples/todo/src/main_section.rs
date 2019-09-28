@@ -38,7 +38,7 @@ pub fn todo_list() {
         {
             for todo in todos.iter() {
                 if visibility.should_show(todo) {
-                    todo_item!(todo);
+                    moxml! { <todo_item _=(todo)/> };
                 }
             }
         }
@@ -55,7 +55,9 @@ pub fn main_section() {
         <section class="main">
         {
             if !todos.is_empty() {
-                toggle!(num_complete == todos.len());
+                moxml! {
+                    <toggle _=(num_complete == todos.len())/>
+                };
             }
         }
 
@@ -63,7 +65,9 @@ pub fn main_section() {
 
         {
             if !todos.is_empty() {
-                footer!(num_complete, todos.len() - num_complete);
+                moxml! {
+                    <footer _=(num_complete, todos.len() - num_complete)/>
+                };
             }
         }
         </section>

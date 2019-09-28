@@ -7,16 +7,22 @@ use {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) {
     let todos = todos.clone();
-    text_input!(&todo.text.clone(), true, move |value: String| {
-        editing.set(false);
-        todos.update(|todos| {
-            let mut todos = todos.to_vec();
-            if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
-                todo.text = value;
-            }
-            Some(todos)
-        });
-    });
+    moxml! {
+        <text_input _=(
+            &todo.text.clone(),
+            true,
+            move |value: String| {
+                editing.set(false);
+                todos.update(|todos| {
+                    let mut todos = todos.to_vec();
+                    if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
+                        todo.text = value;
+                    }
+                    Some(todos)
+                });
+            },
+        )/>
+    };
 }
 
 #[topo::aware]
@@ -75,9 +81,13 @@ pub fn todo_item(todo: &Todo) {
         <li class={classes}>
         {
             if *editing {
-                item_edit_input!(todo.clone(), editing);
+                moxml! {
+                    <item_edit_input _=(todo.clone(), editing) />
+                };
             } else {
-                item_with_buttons!(todo.clone(), editing);
+                moxml! {
+                    <item_with_buttons _=(todo.clone(), editing)/>
+                };
             }
         }
         </li>
