@@ -21,17 +21,15 @@ pub mod main_section;
 
 #[topo::aware]
 fn todo_app() {
-    let visibility: Key<Visibility> = state!();
+    let visibility = state!(|| Visibility::default());
     let todos = state!(|| vec![Todo::new("whoaaa")]);
 
     topo::call!(
         {
             moxml! {
                 <div class="todoapp">
-                {
-                    header!();
-                    main_section!();
-                }
+                    <header/>
+                    <main_section/>
                 </div>
             }
         },

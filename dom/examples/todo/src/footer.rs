@@ -39,14 +39,13 @@ pub fn clear_completed_button() {
 pub fn footer(num_complete: usize, num_active: usize) {
     moxml! {
         <html_footer class="footer">
-        {
-            items_remaining!(num_active);
-            filter!();
-
-            if num_complete > 0 {
-                clear_completed_button!();
+            { items_remaining!(num_active); }
+            <filter/>
+            {
+                if num_complete > 0 {
+                    clear_completed_button!();
+                }
             }
-        }
         </html_footer>
     }
 }

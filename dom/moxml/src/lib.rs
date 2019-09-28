@@ -18,6 +18,7 @@ pub fn moxml(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 enum MoxItem {
     Tag(MoxTag),
+    TagNoChildren(MoxTagNoChildren),
     Fragment(Vec<MoxItem>),
     Content(TokenTree),
 }
@@ -26,7 +27,7 @@ impl From<SnaxItem> for MoxItem {
     fn from(item: SnaxItem) -> Self {
         match item {
             SnaxItem::Tag(t) => MoxItem::Tag(MoxTag::from(t)),
-            SnaxItem::SelfClosingTag(t) => MoxItem::Tag(MoxTag::from(t)),
+            SnaxItem::SelfClosingTag(t) => MoxItem::TagNoChildren(MoxTagNoChildren::from(t)),
             SnaxItem::Fragment(SnaxFragment { children }) => {
                 MoxItem::Fragment(children.into_iter().map(MoxItem::from).collect())
             }
@@ -63,6 +64,7 @@ impl ToTokens for MoxItem {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             MoxItem::Tag(tag) => tag.to_tokens(tokens),
+            MoxItem::TagNoChildren(tag) => tag.to_tokens(tokens),
             MoxItem::Fragment(children) => {
                 for c in children {
                     c.to_tokens(tokens);
@@ -81,29 +83,49 @@ struct MoxTag {
 
 impl ToTokens for MoxTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let name = &self.name;
-        let mut attrs = quote!();
-        self.attributes
-            .iter()
-            .map(ToTokens::to_token_stream)
-            .for_each(|ts| attrs.extend(ts));
+        tag_to_tokens(&self.name, &self.attributes, Some(&self.children), tokens);
+    }
+}
 
+fn tag_to_tokens(
+    name: &Ident,
+    attributes: &[MoxAttr],
+    children: Option<&[MoxItem]>,
+    stream: &mut TokenStream,
+) {
+    // this needs to be nested within other token groups, must be accumulated separately from stream
+    let mut contents = quote!();
+
+    attributes
+        .iter()
+        .map(ToTokens::to_token_stream)
+        .for_each(|ts| contents.extend(ts));
+
+    if let Some(items) = children {
         let mut children = quote!();
-        self.children
+        items
             .iter()
             .map(ToTokens::to_token_stream)
             .for_each(|ts| children.extend(ts));
 
-        tokens.extend(quote!(
-            // TODO this needs to be any topologically-aware function, not just an html element
-            #name!(|e| e
-                #attrs
-                .inner(|| {
-                    #children
-                })
-            );
-        ))
+        contents.extend(quote!(
+            .inner(|| {
+                #children
+            })
+        ));
+    } else if !contents.is_empty() {
+        // if there were attributes or handlers installed but there isn't an inner function to call
+        // with its own return type, the previous calls probably return references that can't return
+        contents.extend(quote!(;));
     }
+
+    let invocation = if contents.is_empty() {
+        quote!(#name!();)
+    } else {
+        quote!(#name!(|_e| { _e #contents });)
+    };
+
+    stream.extend(invocation);
 }
 
 impl From<SnaxTag> for MoxTag {
@@ -122,12 +144,22 @@ impl From<SnaxTag> for MoxTag {
     }
 }
 
-impl From<SnaxSelfClosingTag> for MoxTag {
+struct MoxTagNoChildren {
+    name: Ident,
+    attributes: Vec<MoxAttr>,
+}
+
+impl ToTokens for MoxTagNoChildren {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tag_to_tokens(&self.name, &self.attributes, None, tokens);
+    }
+}
+
+impl From<SnaxSelfClosingTag> for MoxTagNoChildren {
     fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
         Self {
             name,
             attributes: attributes.into_iter().map(MoxAttr::from).collect(),
-            children: vec![],
         }
     }
 }
