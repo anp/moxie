@@ -77,18 +77,48 @@ impl ToTokens for MoxItem {
 
 struct MoxTag {
     name: Ident,
+    fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
     children: Vec<MoxItem>,
 }
 
 impl ToTokens for MoxTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tag_to_tokens(&self.name, &self.attributes, Some(&self.children), tokens);
+        tag_to_tokens(
+            &self.name,
+            &self.fn_args,
+            &self.attributes,
+            Some(&self.children),
+            tokens,
+        );
     }
+}
+
+fn args_and_attrs(snaxttrs: Vec<SnaxAttribute>) -> (Option<MoxArgs>, Vec<MoxAttr>) {
+    let mut snaxs = snaxttrs.into_iter().peekable();
+    let mut args = None;
+
+    if let Some(first) = snaxs.peek() {
+        let name = match first {
+            SnaxAttribute::Simple { name, .. } => name,
+        };
+
+        if name == "_" {
+            let first = snaxs.next().unwrap();
+            args = Some(MoxArgs {
+                value: match first {
+                    SnaxAttribute::Simple { value, .. } => value,
+                },
+            });
+        }
+    }
+
+    (args, snaxs.map(MoxAttr::from).collect())
 }
 
 fn tag_to_tokens(
     name: &Ident,
+    fn_args: &Option<MoxArgs>,
     attributes: &[MoxAttr],
     children: Option<&[MoxItem]>,
     stream: &mut TokenStream,
@@ -119,10 +149,17 @@ fn tag_to_tokens(
         contents.extend(quote!(;));
     }
 
+    let fn_args = fn_args.as_ref().map(|args| {
+        match &args.value {
+            TokenTree::Group(g) => quote!(#g), // FIXME strip the parens from around args
+            tt @ _ => quote!(#tt),
+        }
+    });
+
     let invocation = if contents.is_empty() {
-        quote!(#name!();)
+        quote!(#name!(#fn_args);)
     } else {
-        quote!(#name!(|_e| { _e #contents });)
+        quote!(#name!(#fn_args |_e| { _e #contents });)
     };
 
     stream.extend(invocation);
@@ -136,9 +173,11 @@ impl From<SnaxTag> for MoxTag {
             children,
         }: SnaxTag,
     ) -> Self {
+        let (fn_args, attributes) = args_and_attrs(attributes);
         Self {
             name,
-            attributes: attributes.into_iter().map(MoxAttr::from).collect(),
+            fn_args,
+            attributes,
             children: children.into_iter().map(MoxItem::from).collect(),
         }
     }
@@ -146,22 +185,29 @@ impl From<SnaxTag> for MoxTag {
 
 struct MoxTagNoChildren {
     name: Ident,
+    fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
 }
 
 impl ToTokens for MoxTagNoChildren {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tag_to_tokens(&self.name, &self.attributes, None, tokens);
+        tag_to_tokens(&self.name, &self.fn_args, &self.attributes, None, tokens);
     }
 }
 
 impl From<SnaxSelfClosingTag> for MoxTagNoChildren {
     fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
+        let (fn_args, attributes) = args_and_attrs(attributes);
         Self {
             name,
-            attributes: attributes.into_iter().map(MoxAttr::from).collect(),
+            fn_args,
+            attributes,
         }
     }
+}
+
+struct MoxArgs {
+    value: TokenTree,
 }
 
 enum MoxAttr {
@@ -194,7 +240,13 @@ impl From<SnaxAttribute> for MoxAttr {
     fn from(attr: SnaxAttribute) -> Self {
         match attr {
             SnaxAttribute::Simple { name, value } => {
-                if name.to_string() == "on" {
+                let name_str = name.to_string();
+                if name_str == "_" {
+                    span_error!(
+                        name.span(),
+                        "anonymous attributes are only allowed in the first position"
+                    );
+                } else if name_str == "on" {
                     MoxAttr::Handler { value }
                 } else {
                     MoxAttr::Simple { name, value }
