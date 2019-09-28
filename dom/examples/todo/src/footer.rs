@@ -43,7 +43,7 @@ pub fn footer(num_complete: usize, num_active: usize) {
             <filter/>
             {
                 if num_complete > 0 {
-                    clear_completed_button!();
+                    moxml! { <clear_completed_button/> };
                 }
             }
         </html_footer>
