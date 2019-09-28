@@ -151,7 +151,19 @@ fn tag_to_tokens(
 
     let fn_args = fn_args.as_ref().map(|args| match &args.value {
         TokenTree::Group(g) => {
-            let without_delim = g.stream();
+            // strip trailing commas that would bork macro parsing
+            let mut tokens: Vec<TokenTree> = g.stream().into_iter().collect();
+
+            let last = tokens
+                .get(tokens.len() - 1)
+                .expect("function argument delimiters must contain some tokens");
+
+            if last.to_string() == "," {
+                tokens.truncate(tokens.len() - 1);
+            }
+
+            let mut without_delim = TokenStream::new();
+            without_delim.extend(tokens);
             quote!(#without_delim)
         }
         tt @ _ => {
