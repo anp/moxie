@@ -13,14 +13,9 @@ use {
 
 pub mod elements;
 pub mod embed;
-pub mod prelude {
-    pub use crate::{
-        __element_impl, __text_impl, document, window, BlurEvent, ChangeEvent, ClickEvent,
-        DoubleClickEvent, Event, KeyDownEvent,
-    };
-    pub use moxie::*;
-    pub use wasm_bindgen::prelude::*;
-}
+
+pub use moxie::*;
+pub use wasm_bindgen::prelude::*;
 
 #[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use moxml::moxml;

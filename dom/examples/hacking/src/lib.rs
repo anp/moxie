@@ -1,4 +1,4 @@
-use moxie_dom::{prelude::*, *};
+use moxie_dom::*;
 
 #[wasm_bindgen(start)]
 pub fn main() {

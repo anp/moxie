@@ -1,6 +1,6 @@
 use {
     crate::{filter::*, footer::*, item::*, Todo},
-    moxie_dom::{input, label, moxml, prelude::*, section, span, ul},
+    moxie_dom::*,
 };
 
 #[topo::aware]
@@ -66,7 +66,7 @@ pub fn main_section() {
         {
             if !todos.is_empty() {
                 moxml! {
-                    <footer _=(num_complete, todos.len() - num_complete)/>
+                    <filter_footer _=(num_complete, todos.len() - num_complete)/>
                 };
             }
         }

@@ -2,7 +2,7 @@ use {
     filter::Visibility,
     header::*,
     main_section::*,
-    moxie_dom::{div, moxml, prelude::*},
+    moxie_dom::*,
     std::sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -28,7 +28,7 @@ fn todo_app() {
         {
             moxml! {
                 <div class="todoapp">
-                    <header/>
+                    <input_header/>
                     <main_section/>
                 </div>
             }

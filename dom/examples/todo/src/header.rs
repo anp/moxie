@@ -1,15 +1,15 @@
 use {
     crate::{input::*, Todo},
-    moxie_dom::{h1, header as html_header, moxml, prelude::*},
+    moxie_dom::*,
     tracing::info,
 };
 
 #[topo::aware]
 #[topo::from_env(todos: Key<Vec<Todo>>)]
-pub fn header() {
+pub fn input_header() {
     let todos = todos.clone();
     moxml! {
-        <html_header class="header">
+        <header class="header">
             <h1>"todos"</h1>
             <text_input _=(
                 "What needs to be done?",
@@ -23,6 +23,6 @@ pub fn header() {
                     });
                 },
             )/>
-        </html_header>
+        </header>
     };
 }
