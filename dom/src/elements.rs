@@ -781,72 +781,92 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML Table Caption element (`<caption>`) specifies the caption (or title) of a table, and if used is *always* the first child of a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>.
+    /// The [HTML Table Caption element (`<caption>`)][mdn] specifies the caption (or title) of a
+    /// table, and if used is *always* the first child of a [`<table>`][table].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
+    /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     caption
 }
 
 element_macro! {
-    /// The HTML `<col>` element defines a column within a table and is used for defining common semantics on all common cells. It is generally found within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup" title="The HTML <colgroup> element defines a group of columns within a table.">`<colgroup>`</a> element.
+    /// The [HTML `<col>` element][mdn] defines a column within a table and is used for defining
+    /// common semantics on all common cells. It is generally found within a [`<colgroup>`][cg]
+    /// element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
+    /// [cg]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     col
 }
 
 element_macro! {
-    /// The HTML `<colgroup>` element defines a group of columns within a table.
+    /// The [HTML `<colgroup>` element][mdn] defines a group of columns within a table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     colgroup
 }
 
 element_macro! {
-    /// The HTML `<table>` element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.
+    /// The [HTML `<table>` element][mdn] represents tabular data — that is, information presented
+    /// in a two-dimensional table comprised of rows and columns of cells containing data.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     table
 }
 
 element_macro! {
-    /// The HTML Table Body element (`<tbody>`) encapsulates a set of table rows (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr" title="The HTML <tr> element defines a row of cells in a table. The row's cells can then be established using a mix of  (data cell) and <th> (header cell) elements.">`<tr>`</a> elements), indicating that they comprise the body of the table (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>).
+    /// The [HTML Table Body element (`<tbody>`)][mdn] encapsulates a set of table rows
+    /// ([`<tr>`][tr] elements), indicating that they comprise the body of the table
+    /// ([`<table>`][table]).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
+    /// [tr]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
+    /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     tbody
 }
 
 element_macro! {
-    /// The HTML `<td>` element defines a cell of a table that contains data. It participates in the *table model*.
+    /// The [HTML `<td>` element][mdn] defines a cell of a table that contains data. It participates
+    /// in the *table model*.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     td
 }
 
 element_macro! {
-    /// The HTML `<tfoot>` element defines a set of rows summarizing the columns of the table.
+    /// The [HTML `<tfoot>` element][mdn] defines a set of rows summarizing the columns of the
+    /// table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
     tfoot
 }
 
 element_macro! {
-    /// The HTML `<th>` element defines a cell as header of a group of table cells. The exact nature of this group is defined by the `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope">scope</a>` and `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers">headers</a>` attributes.
+    /// The [HTML `<th>` element][mdn] defines a cell as header of a group of table cells. The exact
+    /// nature of this group is defined by the [`scope`][scope] and [`headers`][headers] attributes.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
+    /// [scope]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope
+    /// [headers]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers
     th
 }
 
 element_macro! {
-    /// The HTML `<thead>` element defines a set of rows defining the head of the columns of the table.
+    /// The [HTML `<thead>` element][mdn] defines a set of rows defining the head of the columns of
+    /// the table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
     thead
 }
 
 element_macro! {
-    /// The HTML `<tr>` element defines a row of cells in a table. The row's cells can then be established using a mix of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td" title="The HTML  element defines a cell of a table that contains data. It participates in the table model.">`<td>`</a> (data cell) and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th" title="The HTML <th> element defines a cell as header of a group of table cells. The exact nature of this group is defined by the scope and headers attributes.">`<th>`</a> (header cell) elements.
+    /// The [HTML `<tr>` element][mdn] defines a row of cells in a table. The row's cells can then
+    /// be established using a mix of [`<td>`][td] (data cell) and [`<th>`][th] (header cell)
+    /// elements.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
+    /// [td]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
+    /// [th]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
     tr
 }
 
