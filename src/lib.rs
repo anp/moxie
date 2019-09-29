@@ -65,6 +65,10 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, intra_doc_link_resolution_failure, missing_docs)]
 
+/// TODO figure out where this is actually documented
+#[proc_macro_hack::proc_macro_hack(support_nested)]
+pub use mox::mox;
+
 pub mod embed;
 #[macro_use]
 mod memo;
