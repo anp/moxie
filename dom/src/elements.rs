@@ -353,219 +353,281 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML Abbreviation element (`<abbr>`) represents an abbreviation or acronym; the optional `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-title">title</a>` attribute can provide an expansion or description for the abbreviation.
+    /// The [HTML Abbreviation element (`<abbr>`)][mdn] represents an abbreviation or acronym; the
+    /// optional [`title`][title] attribute can provide an expansion or description for the
+    /// abbreviation.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
+    /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-title
     abbr
 }
 
 element_macro! {
-    /// The HTML Bring Attention To element (`<b>`)&nbsp; is used to draw the reader's attention to the element's contents, which are not otherwise granted special importance.
+    /// The [HTML Bring Attention To element (`<b>`)][mdn] is used to draw the reader's attention to
+    /// the element's contents, which are not otherwise granted special importance.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
     b
 }
 
 element_macro! {
-    /// The HTML Bidirectional Isolate element (`<bdi>`)&nbsp; tells the browser's bidirectional algorithm to treat the text it contains in isolation from its surrounding text.
+    /// The [HTML Bidirectional Isolate element (`<bdi>`)][mdn] tells the browser's bidirectional
+    /// algorithm to treat the text it contains in isolation from its surrounding text.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
     bdi
 }
 
 element_macro! {
-    /// The HTML Bidirectional Text Override element (`<bdo>`) overrides the current directionality of text, so that the text within is rendered in a different direction.
+    /// The [HTML Bidirectional Text Override element (`<bdo>`)][mdn] overrides the current
+    /// directionality of text, so that the text within is rendered in a different direction.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
     bdo
 }
 
 element_macro! {
-    /// The HTML `<br>` element produces a line break in text (carriage-return). It is useful for writing a poem or an address, where the division of lines is significant.
+    /// The [HTML `<br>` element][mdn] produces a line break in text (carriage-return). It is useful
+    /// for writing a poem or an address, where the division of lines is significant.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
     br
 }
 
 element_macro! {
-    /// The HTML Citation element (`<cite>`) is used to describe a reference to a cited creative work, and must include the title of that work.
+    /// The [HTML Citation element (`<cite>`)][mdn] is used to describe a reference to a cited
+    /// creative work, and must include the title of that work.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     cite
 }
 
 element_macro! {
-    /// The HTML ``` element displays its contents styled in a fashion intended to indicate that the text is a short fragment of computer code.
+    /// The [HTML `<code>` element][mdn] displays its contents styled in a fashion intended to
+    /// indicate that the text is a short fragment of computer code.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
     code
 }
 
 element_macro! {
-    /// The HTML `<data>` element links a given content with a machine-readable translation. If the content is time- or date-related, the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time" title="The HTML <time> element represents a specific period in time.">`<time>`</a> element must be used.
+    /// The [HTML `<data>` element][mdn] links a given content with a machine-readable translation.
+    /// If the content is time- or date-related, the [`<time>`][time] element must be used.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
+    /// [time]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     data
 }
 
 element_macro! {
-    /// The HTML Definition element (<dfn><dfn></dfn>) is used to indicate the term being defined within the context of a definition phrase or sentence.
+    /// The [HTML Definition element (`<dfn>`)][mdn] is used to indicate the term being defined
+    /// within the context of a definition phrase or sentence.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
     dfn
 }
 
 element_macro! {
-    /// The HTML `*` element marks text that has stress emphasis. The `*` element can be nested, with each level of nesting indicating a greater degree of emphasis.
+    /// The [HTML `<em>` element][mdn] marks text that has stress emphasis. The `<em>` element can
+    /// be nested, with each level of nesting indicating a greater degree of emphasis.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     em
 }
 
 element_macro! {
-    /// The HTML `<i>` element represents a range of text that is set off from the normal text for some reason. Some examples include technical terms, foreign language phrases, or fictional character thoughts. It is typically displayed in italic type.
+    /// The [HTML `<i>` element][mdn] represents a range of text that is set off from the normal
+    /// text for some reason. Some examples include technical terms, foreign language phrases, or
+    /// fictional character thoughts. It is typically displayed in italic type.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
     i
 }
 
 element_macro! {
-    /// The HTML Keyboard Input element (`<kbd>`) represents a span of inline text denoting textual user input from a keyboard, voice input, or any other text entry device.
+    /// The [HTML Keyboard Input element (`<kbd>`)][mdn] represents a span of inline text denoting
+    /// textual user input from a keyboard, voice input, or any other text entry device.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
     kbd
 }
 
 element_macro! {
-    /// The HTML Mark Text element (`<mark>`) represents text which is marked or highlighted for reference or notation purposes, due to the marked passage's relevance or importance in the enclosing context.
+    /// The [HTML Mark Text element (`<mark>`)][mdn] represents text which is marked or highlighted
+    /// for reference or notation purposes, due to the marked passage's relevance or importance in
+    /// the enclosing context.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
     mark
 }
 
 element_macro! {
-    /// The HTML `<q>` element  indicates that the enclosed text is a short inline quotation. Most modern browsers implement this by surrounding the text in quotation marks.
+    /// The [HTML `<q>` element][mdn]  indicates that the enclosed text is a short inline quotation.
+    /// Most modern browsers implement this by surrounding the text in quotation marks.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
     q
 }
 
 element_macro! {
-    /// The HTML Ruby Base (`<rb>`) element is used to delimit the base text component of a&nbsp; <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> annotation, i.e. the text that is being annotated.
+    /// The [HTML Ruby Base (`<rb>`) element][mdn] is used to delimit the base text component of
+    /// a [`<ruby>`][ruby] annotation, i.e. the text that is being annotated.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb
+    /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     rb
 }
 
 element_macro! {
-    /// The HTML Ruby Fallback Parenthesis (`<rp>`) element is used to provide fall-back parentheses for browsers that do not support display of ruby annotations using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element.
+    /// The [HTML Ruby Fallback Parenthesis (`<rp>`) element][mdn] is used to provide fall-back
+    /// parentheses for browsers that do not support display of ruby annotations using the
+    /// [`<ruby>`][ruby] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
+    /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     rp
 }
 
 element_macro! {
-    /// The HTML Ruby Text (`<rt>`) element specifies the ruby text component of a ruby annotation, which is used to provide pronunciation, translation, or transliteration information for East Asian typography. The `<rt>` element must always be contained within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element.
+    /// The [HTML Ruby Text (`<rt>`) element][mdn] specifies the ruby text component of a ruby
+    /// annotation, which is used to provide pronunciation, translation, or transliteration
+    /// information for East Asian typography. The `<rt>` element must always be contained within a
+    /// [`<ruby>`][ruby] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
+    /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     rt
 }
 
 element_macro! {
-    /// The HTML Ruby Text Container (`<rtc>`) element embraces semantic annotations of characters presented in a ruby of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb" title="The HTML Ruby Base (<rb>) element is used to delimit the base text component of a&nbsp; <ruby> annotation, i.e. the text that is being annotated.">`<rb>`</a> elements used inside of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element. <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb" title="The HTML Ruby Base (<rb>) element is used to delimit the base text component of a&nbsp; <ruby> annotation, i.e. the text that is being annotated.">`<rb>`</a> elements can have both pronunciation (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt" title="The HTML Ruby Text (<rt>) element specifies the ruby text component of a ruby annotation, which is used to provide pronunciation, translation, or transliteration information for East Asian typography. The <rt> element must always be contained within a <ruby> element.">`<rt>`</a>) and semantic (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc" title="The HTML Ruby Text Container (<rtc>) element embraces semantic annotations of characters presented in a ruby of <rb> elements used inside of <ruby> element. <rb> elements can have both pronunciation (<rt>) and semantic (<rtc>) annotations.">`<rtc>`</a>) annotations.
+    /// The [HTML Ruby Text Container (`<rtc>`) element][mdn] embraces semantic annotations of
+    /// characters presented in a ruby of [`<rb>`][rb] elements used inside of [`<ruby>`][ruby]
+    /// element. [`<rb>`][rb] elements can have both pronunciation ([`<rt>`][rt]) and semantic
+    /// ([`<rtc>`][rtc]) annotations.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
+    /// [rb]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb
+    /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
+    /// [rt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
+    /// [rtc]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
     rtc
 }
 
 element_macro! {
-    /// The HTML `<ruby>` element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.
+    /// The [HTML `<ruby>` element][mdn] represents a ruby annotation. Ruby annotations are for
+    /// showing pronunciation of East Asian characters.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     ruby
 }
 
 element_macro! {
-    /// The HTML `<s>` element renders text with a strikethrough, or a line through it. Use the `<s>` element to represent things that are no longer relevant or no longer accurate. However, `<s>` is not appropriate when indicating document edits; for that, use the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del" title="The HTML <del> element represents a range of text that has been deleted from a document.">`<del>`</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins" title="The HTML <ins> element represents a range of text that has been added to a document.">`<ins>`</a> elements, as appropriate.
+    /// The [HTML `<s>` element][mdn] renders text with a strikethrough, or a line through it. Use
+    /// the `<s>` element to represent things that are no longer relevant or no longer accurate.
+    /// However, `<s>` is not appropriate when indicating document edits; for that, use the
+    /// [`<del>`][del] and [`<ins>`][ins] elements, as appropriate.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
+    /// [del]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
+    /// [ins]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     s
 }
 
 element_macro! {
-    /// The HTML Sample Element (`<samp>`) is used to enclose inline text which represents sample (or quoted) output from a computer program.
+    /// The [HTML Sample Element (`<samp>`)][mdn] is used to enclose inline text which represents
+    /// sample (or quoted) output from a computer program.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
     samp
 }
 
 element_macro! {
-    /// The HTML `<small>` element represents side-comments and small print, like copyright and legal text, independent of its styled presentation. By default, it renders text within it one font-size small, such as from `small` to `x-small`.
+    /// The [HTML `<small>` element][mdn] represents side-comments and small print, like copyright
+    /// and legal text, independent of its styled presentation. By default, it renders text within
+    /// it one font-size small, such as from `small` to `x-small`.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
     small
 }
 
 element_macro! {
-    /// The HTML `<span>` element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-class">class</a>` or `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-id">id</a>` attributes), or because they share attribute values, such as `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-lang">lang</a>`.
+    /// The [HTML `<span>` element][mdn] is a generic inline container for phrasing content, which
+    /// does not inherently represent anything. It can be used to group elements for styling
+    /// purposes (using the [`class`][class] or [`id`][id] attributes), or because they share
+    /// attribute values, such as [`lang`][lang].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
+    /// [class]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-class
+    /// [id]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-id
+    /// [lang]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-lang
     span
 }
 
 element_macro! {
-    /// The HTML Strong Importance Element (`<strong>`) indicates that its contents have strong importance, seriousness, or urgency. Browsers typically render the contents in bold type.
+    /// The [HTML Strong Importance Element (`<strong>`)][mdn] indicates that its contents have
+    /// strong importance, seriousness, or urgency. Browsers typically render the contents in bold
+    /// type.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
     strong
 }
 
 element_macro! {
-    /// The HTML Subscript element (`<sub>`) specifies inline text which should be displayed as subscript for solely typographical reasons.
+    /// The [HTML Subscript element (`<sub>`)][mdn] specifies inline text which should be displayed
+    /// as subscript for solely typographical reasons.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
     sub
 }
 
 element_macro! {
-    /// The HTML Superscript element (`<sup>`) specifies inline text which is to be displayed as superscript for solely typographical reasons.
+    /// The [HTML Superscript element (`<sup>`)][mdn] specifies inline text which is to be displayed
+    /// as superscript for solely typographical reasons.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
     sup
 }
 
 element_macro! {
-    /// The HTML `<time>` element represents a specific period in time.
+    /// The [HTML `<time>` element][mdn] represents a specific period in time.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     time
 }
 
 element_macro! {
-    /// The HTML Unarticulated Annotation Element (`<u>`) represents a span of inline text which should be rendered in a way that indicates that it has a non-textual annotation.
+    /// The [HTML Unarticulated Annotation Element (`<u>`)][mdn] represents a span of inline text
+    /// which should be rendered in a way that indicates that it has a non-textual annotation.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
     u
 }
 
 element_macro! {
-    /// The HTML Variable element (`<var>`) represents the name of a variable in a mathematical expression or a programming context.
+    /// The [HTML Variable element (`<var>`)][mdn] represents the name of a variable in a
+    /// mathematical expression or a programming context.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
     var
 }
 
 element_macro! {
-    /// The HTML `<wbr>` element represents a word break opportunity—a position within text where the browser may optionally break a line, though its line-breaking rules would not otherwise create a break at that location.
+    /// The [HTML `<wbr>` element][mdn] represents a word break opportunity—a position within text
+    /// where the browser may optionally break a line, though its line-breaking rules would not
+    /// otherwise create a break at that location.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
     wbr
 }
 
 element_macro! {
-    /// The HTML `<area>` element defines a hot-spot region on an image, and optionally associates it with a <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Hyperlink" title="hypertext link: Hyperlinks connect webpages or data items to one another. In HTML, <a> elements define hyperlinks from a spot on a webpage (like a text string or image) to another spot on some other webpage (or even on the same page).">hypertext link</a>. This element is used only within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map" title="The HTML <map> element is used with <area> elements to define an image map (a clickable link area).">`<map>`</a> element.
+    /// The [HTML `<area>` element][mdn] defines a hot-spot region on an image, and optionally
+    /// associates it with a [hypertext link]. This element is used only within a [`<map>`][map]
+    /// element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
+    /// [hypertext link]: https://developer.mozilla.org/en-US/docs/Glossary/Hyperlink
+    /// [map]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
     area
 }
 
