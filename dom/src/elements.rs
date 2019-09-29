@@ -18,7 +18,7 @@ macro_rules! element_macro {
 }
 
 element_macro! {
-    /// The [`<html>` element](mdn) represents the root (top-level element) of an HTML document,
+    /// The [`<html>` element][mdn] represents the root (top-level element) of an HTML document,
     /// so it is also referred to as the *root element*. All other elements must be descendants of
     /// this element.
     ///
@@ -27,45 +27,65 @@ element_macro! {
 }
 
 element_macro! {
-    /// The [`<base> element`](mdn) specifies the base URL to use for all relative URLs contained
-    /// within a document. There can be only one `<base>` element in a document.
+    /// The [HTML `<base> element`][mdn] specifies the base URL to use for all relative URLs
+    /// contained within a document. There can be only one `<base>` element in a document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
     base
 }
 
 element_macro! {
-    /// The HTML `<head>` element contains machine-readable information (<a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/metadata" title="metadata: Metadata is — in its very simplest definition — data that describes data. For example, an HTML document is data, but HTML can also contain metadata in its <head> element that describes the document — for example who wrote it, and its summary.">metadata</a>) about the document, like its <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title">title</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script">scripts</a>, and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style">style sheets</a>.
+    /// The [HTML `<head>` element][mdn] contains machine-readable information ([metadata]) about
+    /// the document, like its [title], [scripts], and [style sheets].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head
+    /// [metadata]: https://developer.mozilla.org/en-US/docs/Glossary/metadata
+    /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
+    /// [scripts]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+    /// [style sheets]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     head
 }
 
 element_macro! {
-    /// The HTML External Resource Link element (`<link>`) specifies relationships between the current document and an external resource. This element is most commonly used to link to <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/CSS" title="stylesheets: CSS (Cascading Style Sheets) is a declarative language that controls how webpages look in the browser.">stylesheets</a>, but is also used to establish site icons (both "favicon" style icons and icons for the home screen and apps on mobile devices) among other things.
+    /// The [HTML External Resource Link element (`<link>`)][mdn] specifies relationships between
+    /// the current document and an external resource. This element is most commonly used to link to
+    /// [stylesheets], but is also used to establish site icons (both "favicon" style icons and
+    /// icons for the home screen and apps on mobile devices) among other things.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+    /// [stylesheets]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
     link
 }
 
 element_macro! {
-    /// The HTML `<meta>` element represents <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Metadata" title="metadata: Metadata is — in its very simplest definition — data that describes data. For example, an HTML document is data, but HTML can also contain metadata in its <head> element that describes the document — for example who wrote it, and its summary.">metadata</a> that cannot be represented by other HTML meta-related elements, like <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base" title="The HTML <base> element specifies the base URL to use for all relative URLs contained within a document. There can be only one <base> element in a document.">`<base>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link" title="The HTML External Resource Link element (&amp;lt;link&amp;gt;) specifies relationships between the current document and an external resource. This element is most commonly used to link to stylesheets, but is also used to establish site icons (both &quot;favicon&quot; style icons and icons for the home screen and apps on mobile devices) among other things.">`<link>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script" title="The HTML <script> element is used to embed or reference executable code; this is typically used to embed or refer to JavaScript code.">`<script>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style" title="The HTML <style> element contains style information for a document, or part of a document.">`<style>`</a> or <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title" title="The HTML Title element (<title>) defines the document's title that is shown in a browser's title bar or a page's tab.">`<title>`</a>.
+    /// The [HTML `<meta>` element][mdn] represents [metadata] that cannot be represented by other
+    /// HTML meta-related elements, like [`<base>`], [`<link>`], [`<script>`], [`<style>`] or
+    /// [`<title>`].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+    /// [metadata]: https://developer.mozilla.org/en-US/docs/Glossary/Metadata
+    /// [base]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    /// [link]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+    /// [script]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+    /// [style]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+    /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     meta
 }
 
 element_macro! {
-    /// The HTML `<style>` element contains style information for a document, or part of a document.
+    /// The [HTML `<style>` element][mdn] contains style information for a document, or part of a
+    /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     style
 }
 
 element_macro! {
-    /// The HTML Title element (`<title>`) defines the document's title that is shown in a <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Browser" title="browser: A Web browser or browser is a program that retrieves and displays pages from&nbsp;the Web, and lets users access further pages through hyperlinks. A browser is the most familiar type of user agent.">browser</a>'s title bar or a page's tab.
+    /// The [HTML Title element (`<title>`)][mdn] defines the document's title that is shown in a
+    /// [browser]'s title bar or a page's tab.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
+    /// [browser]: https://developer.mozilla.org/en-US/docs/Glossary/Browser
     title
 }
 
@@ -140,7 +160,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<blockquote>` Element (or <em>HTML Block Quotation Element</em>) indicates that the enclosed text is an extended quotation. Usually, this is rendered visually by indentation (see <a href="#Usage_notes" rel="internal">Notes</a> for how to change it). A URL for the source of the quotation may be given using the cite attribute, while a text representation of the source can be given using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite" title="The HTML Citation element (<cite>) is used to describe a reference to a cited creative work, and must include the title of that work.">`<cite>`</a> element.
+    /// The HTML `<blockquote>` Element (or *HTML Block Quotation Element*) indicates that the enclosed text is an extended quotation. Usually, this is rendered visually by indentation (see <a href="#Usage_notes" rel="internal">Notes</a> for how to change it). A URL for the source of the quotation may be given using the cite attribute, while a text representation of the source can be given using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite" title="The HTML Citation element (<cite>) is used to describe a reference to a cited creative work, and must include the title of that work.">`<cite>`</a> element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
     blockquote
@@ -239,7 +259,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<a>` element (or <em>anchor</em> element), along with its <a href="#href">href</a> attribute, creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
+    /// The HTML `<a>` element (or *anchor* element), along with its <a href="#href">href</a> attribute, creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
     a
@@ -309,7 +329,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<em>` element marks text that has stress emphasis. The `<em>` element can be nested, with each level of nesting indicating a greater degree of emphasis.
+    /// The HTML `*` element marks text that has stress emphasis. The `*` element can be nested, with each level of nesting indicating a greater degree of emphasis.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     em
@@ -451,7 +471,6 @@ element_macro! {
 element_macro! {
     /// The HTML `<wbr>` element represents a word break opportunity—a position within text where the browser may optionally break a line, though its line-breaking rules would not otherwise create a break at that location.
     ///
-///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
     wbr
 }
@@ -576,7 +595,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML Table Caption element (`<caption>`) specifies the caption (or title) of a table, and if used is <em>always</em> the first child of a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>.
+    /// The HTML Table Caption element (`<caption>`) specifies the caption (or title) of a table, and if used is *always* the first child of a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
     caption
@@ -611,7 +630,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<td>` element defines a cell of a table that contains data. It participates in the <em>table model</em>.
+    /// The HTML `<td>` element defines a cell of a table that contains data. It participates in the *table model*.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     td
@@ -807,7 +826,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The <em>HTML Font Element</em> (`<font>`) defines the font size, color and face for its content.
+    /// The *HTML Font Element* (`<font>`) defines the font size, color and face for its content.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/font
     font
@@ -818,11 +837,4 @@ element_macro! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frame
     frame
-}
-
-element_macro! {
-    /// The HTML `<frameset>` element is used to contain <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frame" title="<frame> is an HTML element which defines a particular area in which another HTML document can be displayed. A frame should be used within a <frameset>.">`<frame>`</a> elements.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frameset
-    frameset
 }
