@@ -21,139 +21,162 @@ element_macro! {
     /// The [`<html>` element](mdn) represents the root (top-level element) of an HTML document,
     /// so it is also referred to as the *root element*. All other elements must be descendants of
     /// this element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
     html
 }
 
 element_macro! {
-    /// The [`<base> element](mdn) specifies the base URL to use for all relative URLs contained
+    /// The [`<base> element`](mdn) specifies the base URL to use for all relative URLs contained
     /// within a document. There can be only one `<base>` element in a document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
     base
 }
 
 element_macro! {
     /// The HTML `<head>` element contains machine-readable information (<a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/metadata" title="metadata: Metadata is — in its very simplest definition — data that describes data. For example, an HTML document is data, but HTML can also contain metadata in its <head> element that describes the document — for example who wrote it, and its summary.">metadata</a>) about the document, like its <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title">title</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script">scripts</a>, and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style">style sheets</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head
     head
 }
 
 element_macro! {
     /// The HTML External Resource Link element (`<link>`) specifies relationships between the current document and an external resource. This element is most commonly used to link to <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/CSS" title="stylesheets: CSS (Cascading Style Sheets) is a declarative language that controls how webpages look in the browser.">stylesheets</a>, but is also used to establish site icons (both "favicon" style icons and icons for the home screen and apps on mobile devices) among other things.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
     link
 }
 
 element_macro! {
     /// The HTML `<meta>` element represents <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Metadata" title="metadata: Metadata is — in its very simplest definition — data that describes data. For example, an HTML document is data, but HTML can also contain metadata in its <head> element that describes the document — for example who wrote it, and its summary.">metadata</a> that cannot be represented by other HTML meta-related elements, like <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base" title="The HTML <base> element specifies the base URL to use for all relative URLs contained within a document. There can be only one <base> element in a document.">`<base>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link" title="The HTML External Resource Link element (&amp;lt;link&amp;gt;) specifies relationships between the current document and an external resource. This element is most commonly used to link to stylesheets, but is also used to establish site icons (both &quot;favicon&quot; style icons and icons for the home screen and apps on mobile devices) among other things.">`<link>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script" title="The HTML <script> element is used to embed or reference executable code; this is typically used to embed or refer to JavaScript code.">`<script>`</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style" title="The HTML <style> element contains style information for a document, or part of a document.">`<style>`</a> or <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title" title="The HTML Title element (<title>) defines the document's title that is shown in a browser's title bar or a page's tab.">`<title>`</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
     meta
 }
 
 element_macro! {
     /// The HTML `<style>` element contains style information for a document, or part of a document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     style
 }
 
 element_macro! {
     /// The HTML Title element (`<title>`) defines the document's title that is shown in a <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Browser" title="browser: A Web browser or browser is a program that retrieves and displays pages from&nbsp;the Web, and lets users access further pages through hyperlinks. A browser is the most familiar type of user agent.">browser</a>'s title bar or a page's tab.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     title
 }
 
 element_macro! {
     /// The HTML `<body>` Element represents the content of an HTML&nbsp;document. There can be only one `<body>` element in a document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
     body
 }
 
 element_macro! {
     /// The HTML `<address>` element indicates that the enclosed HTML provides contact information for a person or people, or for an organization.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
     address
 }
 
 element_macro! {
     /// The HTML `<article>` element represents a self-contained composition in a document, page, application, or site, which is intended to be independently distributable or reusable (e.g., in syndication).
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
     article
 }
 
 element_macro! {
     /// The HTML `<aside>` element represents a portion of a document whose content is only indirectly related to the document's main content.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
     aside
 }
 
 element_macro! {
     /// The HTML `<footer>` element represents a footer for its nearest <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content">sectioning content</a> or <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots">sectioning root</a> element. A footer typically contains information about the author of the section, copyright data or links to related documents.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
     footer
 }
 
 element_macro! {
     /// The HTML `<header>` element represents introductory content, typically a group of introductory or navigational aids. It may contain some heading elements but also a logo, a search form, an author name, and other elements.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
     header
 }
 
 element_macro! {
     /// The HTML `<h1>`–`<h6>` elements represent six levels of section headings. `<h1>` is the highest section level and `<h6>` is the lowest.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
     h1
 }
 
 element_macro! {
     /// The HTML `<hgroup>` element represents a multi-level heading for a section of a document. It groups a set of `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements"><h1>–<h6></a>` elements.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
     hgroup
 }
 
 element_macro! {
     /// The HTML `<nav>` element represents a section of a page whose purpose is to provide navigation links, either within the current document or to other documents. Common examples of navigation sections are menus, tables of contents, and indexes.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
     nav
 }
 
 element_macro! {
     /// The HTML `<section>` element represents a standalone section — which doesn't have a more specific semantic element to represent it — contained within an HTML document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
     section
 }
 
 element_macro! {
     /// The HTML `<blockquote>` Element (or <em>HTML Block Quotation Element</em>) indicates that the enclosed text is an extended quotation. Usually, this is rendered visually by indentation (see <a href="#Usage_notes" rel="internal">Notes</a> for how to change it). A URL for the source of the quotation may be given using the cite attribute, while a text representation of the source can be given using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite" title="The HTML Citation element (<cite>) is used to describe a reference to a cited creative work, and must include the title of that work.">`<cite>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
     blockquote
 }
 
 element_macro! {
     /// The HTML `<dd>` element provides the description, definition, or value for the preceding term (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt" title="The HTML <dt> element specifies a term in a description or definition list, and as such must be used inside a <dl> element.">`<dt>`</a>) in a description list (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl" title="The HTML <dl> element represents a description list. The element encloses a list of groups of terms (specified using the <dt> element) and descriptions (provided by <dd> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).">`<dl>`</a>).
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
     dd
 }
 
 element_macro! {
     /// The HTML Content Division element (`<div>`) is the generic container for flow content. It has no effect on the content or layout until styled using <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/CSS" title="CSS: CSS (Cascading Style Sheets) is a declarative language that controls how webpages look in the browser.">CSS</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
     div
 }
 
 element_macro! {
     /// The HTML `<dl>` element represents a description list. The element encloses a list of groups of terms (specified using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt" title="The HTML <dt> element specifies a term in a description or definition list, and as such must be used inside a <dl> element.">`<dt>`</a> element) and descriptions (provided by <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd" title="The HTML <dd> element provides the description, definition, or value for the preceding term (<dt>) in a description list (<dl>).">`<dd>`</a> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     dl
 }
 
 element_macro! {
     /// The HTML `<dt>` element specifies a term in a description or definition list, and as such must be used inside a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl" title="The HTML <dl> element represents a description list. The element encloses a list of groups of terms (specified using the <dt> element) and descriptions (provided by <dd> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).">`<dl>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     dt
 }
 
 element_macro! {
     /// The HTML `<figcaption>` or Figure Caption element represents a caption or legend describing the rest of the contents of its parent [`<figure>`][figure] element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     /// [figure]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
     figcaption
@@ -161,552 +184,645 @@ element_macro! {
 
 element_macro! {
     /// The HTML `<figure>` (Figure With Optional Caption) element represents self-contained content, potentially with an optional caption, which is specified using the (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption" title="The HTML <figcaption> or Figure Caption element represents a caption or legend describing the rest of the contents of its parent <figure> element.">`<figcaption>`</a>) element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
     figure
 }
 
 element_macro! {
     /// The HTML `<hr>` element represents a thematic break between paragraph-level elements: for example, a change of scene in a story, or a shift of topic within a section.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
     hr
 }
 
 element_macro! {
     /// The HTML `<li>` element is used to represent an item in a list.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
     li
 }
 
 element_macro! {
     /// The HTML `<main>` element represents the dominant content of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body" title="The HTML <body> Element represents the content of an HTML&nbsp;document. There can be only one <body> element in a document.">`<body>`</a> of a document. The main content area consists of content that is directly related to or expands upon the central topic of a document, or the central functionality of an application.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
     main
 }
 
 element_macro! {
     /// The HTML `<ol>` element represents an ordered list of items, typically rendered as a numbered list.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
     ol
 }
 
 element_macro! {
     /// The HTML `<p>` element represents a paragraph.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
     p
 }
 
 element_macro! {
     /// The HTML `<pre>` element represents preformatted text which is to be presented exactly as written in the HTML file.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
     pre
 }
 
 element_macro! {
     /// The HTML `<ul>` element represents an unordered list of items, typically rendered as a bulleted list.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
     ul
 }
 
 element_macro! {
     /// The HTML `<a>` element (or <em>anchor</em> element), along with its <a href="#href">href</a> attribute, creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
     a
 }
 
 element_macro! {
     /// The HTML Abbreviation element (`<abbr>`) represents an abbreviation or acronym; the optional `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-title">title</a>` attribute can provide an expansion or description for the abbreviation.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
     abbr
 }
 
 element_macro! {
     /// The HTML Bring Attention To element (`<b>`)&nbsp; is used to draw the reader's attention to the element's contents, which are not otherwise granted special importance.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
     b
 }
 
 element_macro! {
     /// The HTML Bidirectional Isolate element (`<bdi>`)&nbsp; tells the browser's bidirectional algorithm to treat the text it contains in isolation from its surrounding text.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
     bdi
 }
 
 element_macro! {
     /// The HTML Bidirectional Text Override element (`<bdo>`) overrides the current directionality of text, so that the text within is rendered in a different direction.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
     bdo
 }
 
 element_macro! {
     /// The HTML `<br>` element produces a line break in text (carriage-return). It is useful for writing a poem or an address, where the division of lines is significant.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
     br
 }
 
 element_macro! {
     /// The HTML Citation element (`<cite>`) is used to describe a reference to a cited creative work, and must include the title of that work.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     cite
 }
 
 element_macro! {
     /// The HTML ``` element displays its contents styled in a fashion intended to indicate that the text is a short fragment of computer code.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
     code
 }
 
 element_macro! {
     /// The HTML `<data>` element links a given content with a machine-readable translation. If the content is time- or date-related, the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time" title="The HTML <time> element represents a specific period in time.">`<time>`</a> element must be used.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
     data
 }
 
 element_macro! {
     /// The HTML Definition element (<dfn><dfn></dfn>) is used to indicate the term being defined within the context of a definition phrase or sentence.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
     dfn
 }
 
 element_macro! {
     /// The HTML `<em>` element marks text that has stress emphasis. The `<em>` element can be nested, with each level of nesting indicating a greater degree of emphasis.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     em
 }
 
 element_macro! {
     /// The HTML `<i>` element represents a range of text that is set off from the normal text for some reason. Some examples include technical terms, foreign language phrases, or fictional character thoughts. It is typically displayed in italic type.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
     i
 }
 
 element_macro! {
     /// The HTML Keyboard Input element (`<kbd>`) represents a span of inline text denoting textual user input from a keyboard, voice input, or any other text entry device.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
     kbd
 }
 
 element_macro! {
     /// The HTML Mark Text element (`<mark>`) represents text which is marked or highlighted for reference or notation purposes, due to the marked passage's relevance or importance in the enclosing context.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
     mark
 }
 
 element_macro! {
     /// The HTML `<q>` element  indicates that the enclosed text is a short inline quotation. Most modern browsers implement this by surrounding the text in quotation marks.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
     q
 }
 
 element_macro! {
     /// The HTML Ruby Base (`<rb>`) element is used to delimit the base text component of a&nbsp; <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> annotation, i.e. the text that is being annotated.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb
     rb
 }
 
 element_macro! {
     /// The HTML Ruby Fallback Parenthesis (`<rp>`) element is used to provide fall-back parentheses for browsers that do not support display of ruby annotations using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
     rp
 }
 
 element_macro! {
     /// The HTML Ruby Text (`<rt>`) element specifies the ruby text component of a ruby annotation, which is used to provide pronunciation, translation, or transliteration information for East Asian typography. The `<rt>` element must always be contained within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
     rt
 }
 
 element_macro! {
     /// The HTML Ruby Text Container (`<rtc>`) element embraces semantic annotations of characters presented in a ruby of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb" title="The HTML Ruby Base (<rb>) element is used to delimit the base text component of a&nbsp; <ruby> annotation, i.e. the text that is being annotated.">`<rb>`</a> elements used inside of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby" title="The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.">`<ruby>`</a> element. <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb" title="The HTML Ruby Base (<rb>) element is used to delimit the base text component of a&nbsp; <ruby> annotation, i.e. the text that is being annotated.">`<rb>`</a> elements can have both pronunciation (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt" title="The HTML Ruby Text (<rt>) element specifies the ruby text component of a ruby annotation, which is used to provide pronunciation, translation, or transliteration information for East Asian typography. The <rt> element must always be contained within a <ruby> element.">`<rt>`</a>) and semantic (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc" title="The HTML Ruby Text Container (<rtc>) element embraces semantic annotations of characters presented in a ruby of <rb> elements used inside of <ruby> element. <rb> elements can have both pronunciation (<rt>) and semantic (<rtc>) annotations.">`<rtc>`</a>) annotations.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
     rtc
 }
 
 element_macro! {
     /// The HTML `<ruby>` element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     ruby
 }
 
 element_macro! {
     /// The HTML `<s>` element renders text with a strikethrough, or a line through it. Use the `<s>` element to represent things that are no longer relevant or no longer accurate. However, `<s>` is not appropriate when indicating document edits; for that, use the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del" title="The HTML <del> element represents a range of text that has been deleted from a document.">`<del>`</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins" title="The HTML <ins> element represents a range of text that has been added to a document.">`<ins>`</a> elements, as appropriate.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
     s
 }
 
 element_macro! {
     /// The HTML Sample Element (`<samp>`) is used to enclose inline text which represents sample (or quoted) output from a computer program.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
     samp
 }
 
 element_macro! {
     /// The HTML `<small>` element represents side-comments and small print, like copyright and legal text, independent of its styled presentation. By default, it renders text within it one font-size small, such as from `small` to `x-small`.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
     small
 }
 
 element_macro! {
     /// The HTML `<span>` element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-class">class</a>` or `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-id">id</a>` attributes), or because they share attribute values, such as `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-lang">lang</a>`.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
     span
 }
 
 element_macro! {
     /// The HTML Strong Importance Element (`<strong>`) indicates that its contents have strong importance, seriousness, or urgency. Browsers typically render the contents in bold type.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
     strong
 }
 
 element_macro! {
     /// The HTML Subscript element (`<sub>`) specifies inline text which should be displayed as subscript for solely typographical reasons.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
     sub
 }
 
 element_macro! {
     /// The HTML Superscript element (`<sup>`) specifies inline text which is to be displayed as superscript for solely typographical reasons.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
     sup
 }
 
 element_macro! {
     /// The HTML `<time>` element represents a specific period in time.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     time
 }
 
 element_macro! {
     /// The HTML Unarticulated Annotation Element (`<u>`) represents a span of inline text which should be rendered in a way that indicates that it has a non-textual annotation.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
     u
 }
 
 element_macro! {
     /// The HTML Variable element (`<var>`) represents the name of a variable in a mathematical expression or a programming context.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
     var
 }
 
 element_macro! {
     /// The HTML `<wbr>` element represents a word break opportunity—a position within text where the browser may optionally break a line, though its line-breaking rules would not otherwise create a break at that location.
+    ///
+///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
     wbr
 }
 
 element_macro! {
     /// The HTML `<area>` element defines a hot-spot region on an image, and optionally associates it with a <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/Hyperlink" title="hypertext link: Hyperlinks connect webpages or data items to one another. In HTML, <a> elements define hyperlinks from a spot on a webpage (like a text string or image) to another spot on some other webpage (or even on the same page).">hypertext link</a>. This element is used only within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map" title="The HTML <map> element is used with <area> elements to define an image map (a clickable link area).">`<map>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
     area
 }
 
 element_macro! {
     /// The HTML `<audio>` element is used to embed sound content in documents. It may contain one or more audio sources, represented using the `src` attribute or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source" title="The HTML <source> element specifies multiple media resources for the <picture>, the <audio> element, or the <video> element.">`<source>`</a> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/MediaStream" title="The MediaStream interface represents a stream of media content. A stream consists of several tracks such as&nbsp;video or audio tracks. Each track is specified as an instance of MediaStreamTrack.">`MediaStream`</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
     audio
 }
 
 element_macro! {
     /// The HTML `<img>` element embeds an image into the document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     img
 }
 
 element_macro! {
     /// The HTML `<map>` element is used with <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area" title="The HTML <area> element defines a hot-spot region on an image, and optionally associates it with a hypertext link. This element is used only within a <map> element.">`<area>`</a> elements to define an image map (a clickable link area).
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
     map
 }
 
 element_macro! {
     /// The HTML `<track>` element is used as a child of the media elements <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio" title="The HTML <audio> element is used to embed sound content in documents. It may contain one or more audio sources, represented using the src attribute or the <source> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a MediaStream.">`<audio>`</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" title="The HTML Video element (<video>) embeds a media player which supports video playback into the document.">`<video>`</a>. It lets you specify timed text tracks (or time-based data), for example to automatically handle subtitles. The tracks are formatted in <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/Web_Video_Text_Tracks_Format">WebVTT format</a> (`.vtt` files) — Web Video Text Tracks or&nbsp;<a class="external external-icon" href="https://w3c.github.io/ttml2/index.html" rel="noopener">Timed Text Markup Language (TTML).</a>
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
     track
 }
 
 element_macro! {
     /// The HTML Video element (`<video>`) embeds a media player which supports video playback into the document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     video
 }
 
 element_macro! {
     /// The HTML `<embed>` element embeds external content at the specified point in the document. This content is provided by an external application or other source of interactive content such as a browser plug-in.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
     embed
 }
 
 element_macro! {
     /// The HTML Inline Frame element (`<iframe>`) represents a nested <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/browsing_context" title="browsing context: A browsing context is the environment in which a browser displays a Document (normally a tab nowadays, but possibly also a window or a frame within a page).">browsing context</a>, embedding another HTML page into the current one.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
     iframe
 }
 
 element_macro! {
     /// The HTML `<object>` element represents an external resource, which can be treated as an image, a nested browsing context, or a resource to be handled by a plugin.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
     object
 }
 
 element_macro! {
     /// The HTML `<param>` element defines parameters for an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object" title="The HTML <object> element represents an external resource, which can be treated as an image, a nested browsing context, or a resource to be handled by a plugin.">`<object>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
     param
 }
 
 element_macro! {
     /// The HTML `<picture>` element contains zero or more <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source" title="The HTML <source> element specifies multiple media resources for the <picture>, the <audio> element, or the <video> element.">`<source>`</a> elements and one <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img" title="The HTML <img> element embeds an image into the document.">`<img>`</a> element to provide versions of an image for different display/device scenarios.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
     picture
 }
 
 element_macro! {
     /// The HTML `<source>` element specifies multiple media resources for the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture" title="The HTML <picture> element contains zero or more <source> elements and one <img> element to provide versions of an image for different display/device scenarios.">`<picture>`</a>, the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio" title="The HTML <audio> element is used to embed sound content in documents. It may contain one or more audio sources, represented using the src attribute or the <source> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a MediaStream.">`<audio>`</a> element, or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" title="The HTML Video element (<video>) embeds a media player which supports video playback into the document.">`<video>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
     source
 }
 
 element_macro! {
     /// Use the HTML `<canvas>` element with either the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/Canvas_API">canvas scripting API</a> or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/WebGL_API">WebGL API</a> to draw graphics and animations.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
     canvas
 }
 
 element_macro! {
     /// The HTML `<noscript>` element defines a section of HTML to be inserted if a script type on the page is unsupported or if scripting is currently turned off in the browser.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
     noscript
 }
 
 element_macro! {
     /// The HTML `<script>` element is used to embed or reference executable code; this is typically used to embed or refer to JavaScript code.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     script
 }
 
 element_macro! {
     /// The HTML `<del>` element represents a range of text that has been deleted from a document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     del
 }
 
 element_macro! {
     /// The HTML `<ins>` element represents a range of text that has been added to a document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     ins
 }
 
 element_macro! {
     /// The HTML Table Caption element (`<caption>`) specifies the caption (or title) of a table, and if used is <em>always</em> the first child of a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
     caption
 }
 
 element_macro! {
     /// The HTML `<col>` element defines a column within a table and is used for defining common semantics on all common cells. It is generally found within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup" title="The HTML <colgroup> element defines a group of columns within a table.">`<colgroup>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
     col
 }
 
 element_macro! {
     /// The HTML `<colgroup>` element defines a group of columns within a table.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     colgroup
 }
 
 element_macro! {
     /// The HTML `<table>` element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     table
 }
 
 element_macro! {
     /// The HTML Table Body element (`<tbody>`) encapsulates a set of table rows (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr" title="The HTML <tr> element defines a row of cells in a table. The row's cells can then be established using a mix of  (data cell) and <th> (header cell) elements.">`<tr>`</a> elements), indicating that they comprise the body of the table (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table" title="The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.">`<table>`</a>).
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
     tbody
 }
 
 element_macro! {
     /// The HTML `<td>` element defines a cell of a table that contains data. It participates in the <em>table model</em>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     td
 }
 
 element_macro! {
     /// The HTML `<tfoot>` element defines a set of rows summarizing the columns of the table.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
     tfoot
 }
 
 element_macro! {
     /// The HTML `<th>` element defines a cell as header of a group of table cells. The exact nature of this group is defined by the `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope">scope</a>` and `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers">headers</a>` attributes.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
     th
 }
 
 element_macro! {
     /// The HTML `<thead>` element defines a set of rows defining the head of the columns of the table.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
     thead
 }
 
 element_macro! {
     /// The HTML `<tr>` element defines a row of cells in a table. The row's cells can then be established using a mix of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td" title="The HTML  element defines a cell of a table that contains data. It participates in the table model.">`<td>`</a> (data cell) and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th" title="The HTML <th> element defines a cell as header of a group of table cells. The exact nature of this group is defined by the scope and headers attributes.">`<th>`</a> (header cell) elements.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
     tr
 }
 
 element_macro! {
     /// The HTML `<button>` element represents a clickable button, which can be used in <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Learn/HTML/Forms">forms</a> or anywhere in a document that needs simple, standard button functionality.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
     button
 }
 
 element_macro! {
     /// The HTML `<datalist>` element contains a set of <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option" title="The HTML <option> element is used to define an item contained in a <select>, an <optgroup>, or a <datalist>&nbsp;element. As such,&nbsp;<option>&nbsp;can represent menu items in popups and other lists of items in an HTML document.">`<option>`</a> elements that represent the values available for other controls.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
     datalist
 }
 
 element_macro! {
     /// The HTML `<fieldset>` element is used to group several controls as well as labels (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label" title="The HTML <label> element represents a caption for an item in a user interface.">`<label>`</a>) within a web form.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
     fieldset
 }
 
 element_macro! {
     /// The HTML `<form>` element represents a document section that contains interactive controls for submitting information to a web server.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
     form
 }
 
 element_macro! {
     /// The HTML `<input>` element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/user_agent" title="user agent: A user agent is a computer program representing a person, for example, a browser in a Web context.">user agent</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
     input
 }
 
 element_macro! {
     /// The HTML `<label>` element represents a caption for an item in a user interface.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
     label
 }
 
 element_macro! {
     /// The HTML `<legend>` element represents a caption for the content of its parent <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset" title="The HTML <fieldset> element is used to group several controls as well as labels (<label>) within a web form.">`<fieldset>`</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
     legend
 }
 
 element_macro! {
     /// The HTML `<meter>` element represents either a scalar value within a known range or a fractional value.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
     meter
 }
 
 element_macro! {
     /// The HTML `<optgroup>` element creates a grouping of options within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select" title="The HTML <select> element represents a control that provides a menu of options">`<select>`</a> element.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
     optgroup
 }
 
 element_macro! {
     /// The HTML `<option>` element is used to define an item contained in a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select" title="The HTML <select> element represents a control that provides a menu of options">`<select>`</a>, an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup" title="The HTML <optgroup> element creates a grouping of options within a <select> element.">`<optgroup>`</a>, or a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist" title="The HTML <datalist> element contains a set of <option> elements that represent the values available for other controls.">`<datalist>`</a>&nbsp;element. As such,&nbsp;`<option>`&nbsp;can represent menu items in popups and other lists of items in an HTML document.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
     option
 }
 
 element_macro! {
     /// The HTML Output element (`<output>`) is a container element into which a site or app can inject the results of a calculation or the outcome of a user action.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
     output
 }
 
 element_macro! {
     /// The HTML `<progress>` element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
     progress
 }
 
 element_macro! {
     /// The HTML `<select>` element represents a control that provides a menu of options
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     select
 }
 
 element_macro! {
     /// The HTML `<textarea>` element represents a multi-line plain-text editing control, useful when you want to allow users to enter a sizeable amount of free-form text, for example a comment on a review or feedback form.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
     textarea
 }
 
 element_macro! {
     /// The HTML Details Element (`<details>`) creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     details
 }
 
 element_macro! {
     /// The HTML `<dialog>` element represents a dialog box or other interactive component, such as an inspector or window.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
     dialog
 }
 
 element_macro! {
     /// The HTML `<menu>` element represents a group of commands that a user can perform or activate. This includes both list menus, which might appear across the top of a screen, as well as context menus, such as those that might appear underneath a button after it has been clicked.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
     menu
 }
 
 element_macro! {
     /// The HTML `<menuitem>` element represents a command that a user is able to invoke through a popup menu. This includes context menus, as well as menus that might be attached to a menu button.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menuitem
     menuitem
 }
 
 element_macro! {
     /// The HTML Disclosure Summary element (`<summary>`) element specifies a summary, caption, or legend for a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details" title="The HTML Details Element (&amp;lt;details&amp;gt;) creates a disclosure widget in which information is visible only when the widget is toggled into an &quot;open&quot; state.">`<details>`</a> element's disclosure box.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
     summary
 }
 
 element_macro! {
     /// The HTML `<slot>` element—part of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Web_Components">Web Components</a> technology suite—is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
     slot
 }
 
 element_macro! {
     /// The HTML Content Template (`<template>`) element is a mechanism for holding <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/HTML" title="HTML: HTML (HyperText Markup Language) is a descriptive language that specifies webpage structure.">HTML</a> that is not to be rendered immediately when a page is loaded but may be instantiated subsequently during runtime using JavaScript.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
     template
 }
 
 element_macro! {
     /// The HTML Acronym Element (`<acronym>`) allows authors to clearly indicate a sequence of characters that compose an acronym or abbreviation for a word. This element has been removed in HTML5. Use&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr" title="The HTML Abbreviation element (<abbr>) represents an abbreviation or acronym; the optional title attribute can provide an expansion or description for the abbreviation.">`<abbr>`</a> instead.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/acronym
     acronym
 }
 
 element_macro! {
     /// The HTML Command element (`<command>`) represents a command which the user can invoke. Commands are often used as part of a context menu or toolbar.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/command
     command
 }
 
 element_macro! {
     /// The <em>HTML Font Element</em> (`<font>`) defines the font size, color and face for its content.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/font
     font
 }
 
 element_macro! {
     /// `<frame>` is an HTML element which defines a particular area in which another HTML document can be displayed. A frame should be used within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frameset" title="The HTML <frameset> element is used to contain <frame> elements.">`<frameset>`</a>.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frame
     frame
 }
 
 element_macro! {
     /// The HTML `<frameset>` element is used to contain <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frame" title="<frame> is an HTML element which defines a particular area in which another HTML document can be displayed. A frame should be used within a <frameset>.">`<frame>`</a> elements.
+    ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frameset
     frameset
 }
