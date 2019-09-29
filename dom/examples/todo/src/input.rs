@@ -1,7 +1,4 @@
-use {
-    moxie_dom::{input, moxml, prelude::*, sys},
-    wasm_bindgen::JsCast,
-};
+use {moxie_dom::*, wasm_bindgen::JsCast};
 
 #[topo::aware]
 pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(String) + 'static) {

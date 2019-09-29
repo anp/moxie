@@ -1,6 +1,6 @@
 use {
     crate::Todo,
-    moxie_dom::{a, li, moxml, prelude::*, ul},
+    moxie_dom::*,
     Visibility::{Active, All, Completed},
 };
 

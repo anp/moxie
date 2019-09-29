@@ -1,6 +1,6 @@
 use {
     crate::{input::*, Todo},
-    moxie_dom::{button, div, input, label, li, moxml, prelude::*},
+    moxie_dom::*,
 };
 
 #[topo::aware]
