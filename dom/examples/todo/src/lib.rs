@@ -26,7 +26,7 @@ fn todo_app() {
 
     topo::call!(
         {
-            moxml! {
+            mox! {
                 <div class="todoapp">
                     <input_header/>
                     <main_section/>

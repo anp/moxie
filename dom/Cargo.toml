@@ -33,8 +33,8 @@ scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = "0.2.48"
 
-[dependencies.moxml]
-version = "0.1.0-pre"
+[dependencies.mox]
+version = "0.2.0-pre"
 path = "moxml"
 
 [dependencies.web-sys]

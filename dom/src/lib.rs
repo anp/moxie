@@ -18,7 +18,7 @@ pub use moxie::*;
 pub use wasm_bindgen::prelude::*;
 
 #[proc_macro_hack::proc_macro_hack(support_nested)]
-pub use moxml::moxml;
+pub use mox::mox;
 pub use web_sys as sys;
 
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the

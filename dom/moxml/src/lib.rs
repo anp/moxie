@@ -8,7 +8,7 @@ use {
 };
 
 #[proc_macro_hack::proc_macro_hack]
-pub fn moxml(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     filter_macro_errors! {
         let item = snax::parse(input.into()).map_err(Error::SnaxError).unwrap_or_exit();
         let item = MoxItem::from(item);
@@ -48,12 +48,12 @@ fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
                     new_stream.extend(tokens);
 
                     // TODO get all but the last element here too if its a %
-                    new_stream = quote!(moxie_dom::text!(format!(#new_stream)));
+                    new_stream = quote!(text!(format!(#new_stream)));
                 }
             }
         }
         tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) => {
-            new_stream = quote!(moxie_dom::text!(#tt));
+            new_stream = quote!(text!(#tt));
         }
         TokenTree::Punct(p) => span_error!(p.span(), "'{}' not valid in item position", p),
     }

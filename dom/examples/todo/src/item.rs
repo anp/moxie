@@ -7,7 +7,7 @@ use {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) {
     let todos = todos.clone();
-    moxml! {
+    mox! {
         <text_input _=(
             &todo.text.clone(),
             true,
@@ -50,7 +50,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
         })
     };
 
-    moxml! {
+    mox! {
         <div class="view">
             <input class="toggle" type="checkbox" checked={todo.completed} on={on_change} />
 
@@ -77,15 +77,15 @@ pub fn todo_item(todo: &Todo) {
         classes.push_str("editing");
     }
 
-    moxml! {
+    mox! {
         <li class={classes}>
         {
             if *editing {
-                moxml! {
+                mox! {
                     <item_edit_input _=(todo.clone(), editing) />
                 };
             } else {
-                moxml! {
+                mox! {
                     <item_with_buttons _=(todo.clone(), editing)/>
                 };
             }

@@ -41,7 +41,7 @@ impl Visibility {
 #[topo::from_env(visibility: Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) {
     let visibility = visibility.clone();
-    moxml! {
+    mox! {
         <li>
             <a style="cursor: pointer;"
              class={if *visibility == to_set { "selected" } else { "" }}
@@ -54,11 +54,11 @@ pub fn filter_link(to_set: Visibility) {
 
 #[topo::aware]
 pub fn filter() {
-    moxml! {
+    mox! {
         <ul class="filters">
         {
             for &to_set in &[All, Active, Completed] {
-                moxml! { <filter_link _=(to_set) /> };
+                mox! { <filter_link _=(to_set) /> };
             }
         }
         </ul>
