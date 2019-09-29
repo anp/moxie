@@ -739,35 +739,42 @@ element_macro! {
 }
 
 element_macro! {
-    /// Use the HTML `<canvas>` element with either the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API">canvas scripting API</a> or the <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API">WebGL API</a> to draw graphics and animations.
+    /// Use the [HTML `<canvas>` element][mdn] with either the [canvas scripting API][api] or the
+    /// [WebGL API][gl] to draw graphics and animations.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
+    /// [api]: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API
+    /// [gl]: https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API
     canvas
 }
 
 element_macro! {
-    /// The HTML `<noscript>` element defines a section of HTML to be inserted if a script type on the page is unsupported or if scripting is currently turned off in the browser.
+    /// The [HTML `<noscript>` element][mdn] defines a section of HTML to be inserted if a script
+    /// type on the page is unsupported or if scripting is currently turned off in the browser.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
     noscript
 }
 
 element_macro! {
-    /// The HTML `<script>` element is used to embed or reference executable code; this is typically used to embed or refer to JavaScript code.
+    /// The [HTML `<script>` element][mdn] is used to embed or reference executable code; this is
+    /// typically used to embed or refer to JavaScript code.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     script
 }
 
 element_macro! {
-    /// The HTML `<del>` element represents a range of text that has been deleted from a document.
+    /// The [HTML `<del>` element][mdn] represents a range of text that has been deleted from a
+    /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     del
 }
 
 element_macro! {
-    /// The HTML `<ins>` element represents a range of text that has been added to a document.
+    /// The [HTML `<ins>` element][mdn] represents a range of text that has been added to a
+    /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     ins
