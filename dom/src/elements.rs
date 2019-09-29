@@ -1,4 +1,5 @@
-//! Element definitions generated from the listing on [MDN].
+//! Element definitions generated from the listing on [MDN]. Because topologically-aware functions
+//! are called-by-macro today, the element macros generated here appear in the root module.
 //!
 //! [MDN]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 
@@ -90,70 +91,127 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<body>` Element represents the content of an HTML&nbsp;document. There can be only one `<body>` element in a document.
+    /// The [HTML `<body>` element][mdn] represents the content of an HTML document. There can be
+    /// only one `<body>` element in a document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
     body
 }
 
 element_macro! {
-    /// The HTML `<address>` element indicates that the enclosed HTML provides contact information for a person or people, or for an organization.
+    /// The [HTML `<address>` element][mdn] indicates that the enclosed HTML provides contact
+    /// information for a person or people, or for an organization.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
     address
 }
 
 element_macro! {
-    /// The HTML `<article>` element represents a self-contained composition in a document, page, application, or site, which is intended to be independently distributable or reusable (e.g., in syndication).
+    /// The [HTML `<article>` element][mdn] represents a self-contained composition in a document,
+    /// page, application, or site, which is intended to be independently distributable or reusable
+    /// (e.g., in syndication).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
     article
 }
 
 element_macro! {
-    /// The HTML `<aside>` element represents a portion of a document whose content is only indirectly related to the document's main content.
+    /// The [HTML `<aside>` element][mdn] represents a portion of a document whose content is only
+    /// indirectly related to the document's main content.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
     aside
 }
 
 element_macro! {
-    /// The HTML `<footer>` element represents a footer for its nearest <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content">sectioning content</a> or <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots">sectioning root</a> element. A footer typically contains information about the author of the section, copyright data or links to related documents.
+    /// The [HTML `<footer>` element][mdn] represents a footer for its nearest [sectioning content]
+    /// or [sectioning root] element. A footer typically contains information about the author of
+    /// the section, copyright data or links to related documents.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
+    /// [sectioning content]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content
+    /// [sectioning root]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots
     footer
 }
 
 element_macro! {
-    /// The HTML `<header>` element represents introductory content, typically a group of introductory or navigational aids. It may contain some heading elements but also a logo, a search form, an author name, and other elements.
+    /// The [HTML `<header>` element][mdn] represents introductory content, typically a group of
+    /// introductory or navigational aids. It may contain some heading elements but also a logo, a
+    /// search form, an author name, and other elements.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
     header
 }
 
 element_macro! {
-    /// The HTML `<h1>`–`<h6>` elements represent six levels of section headings. `<h1>` is the highest section level and `<h6>` is the lowest.
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
     h1
 }
 
 element_macro! {
-    /// The HTML `<hgroup>` element represents a multi-level heading for a section of a document. It groups a set of `<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements"><h1>–<h6></a>` elements.
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
     ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2
+    h2
+}
+
+element_macro! {
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3
+    h3
+}
+
+element_macro! {
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4
+    h4
+}
+
+element_macro! {
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5
+    h5
+}
+
+element_macro! {
+    /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
+    /// the highest section level and `<h6>` is the lowest.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6
+    h6
+}
+
+element_macro! {
+    /// The [HTML `<hgroup>` element][mdn] represents a multi-level heading for a section of a
+    /// document. It groups a set of [`<h1>–<h6>`][heading] elements.
+    ///
+    /// mdn: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
+    /// heading: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
     hgroup
 }
 
 element_macro! {
-    /// The HTML `<nav>` element represents a section of a page whose purpose is to provide navigation links, either within the current document or to other documents. Common examples of navigation sections are menus, tables of contents, and indexes.
+    /// The [HTML `<nav>` element][mdn] represents a section of a page whose purpose is to provide
+    /// navigation links, either within the current document or to other documents. Common examples
+    /// of navigation sections are menus, tables of contents, and indexes.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
     nav
 }
 
 element_macro! {
-    /// The HTML `<section>` element represents a standalone section — which doesn't have a more specific semantic element to represent it — contained within an HTML document.
+    /// The [HTML `<section>` element][mdn] represents a standalone section — which doesn't have a
+    /// more specific semantic element to represent it — contained within an HTML document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
     section
