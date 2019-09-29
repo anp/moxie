@@ -3,13 +3,7 @@
 #[doc(hidden)]
 pub use moxie::*;
 
-use {
-    crate::embed::WebRuntime,
-    moxie,
-    std::cell::Cell,
-    tracing::*,
-    wasm_bindgen::{prelude::*, JsCast},
-};
+use {crate::embed::WebRuntime, moxie, std::cell::Cell, tracing::*, wasm_bindgen::JsCast};
 
 pub mod elements;
 pub mod embed;
