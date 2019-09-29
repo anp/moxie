@@ -218,42 +218,59 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<blockquote>` Element (or *HTML Block Quotation Element*) indicates that the enclosed text is an extended quotation. Usually, this is rendered visually by indentation (see <a href="#Usage_notes" rel="internal">Notes</a> for how to change it). A URL for the source of the quotation may be given using the cite attribute, while a text representation of the source can be given using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite" title="The HTML Citation element (<cite>) is used to describe a reference to a cited creative work, and must include the title of that work.">`<cite>`</a> element.
+    /// The [HTML `<blockquote>` element][mdn] (or *HTML Block Quotation Element*) indicates that
+    /// the enclosed text is an extended quotation. Usually, this is rendered visually by
+    /// indentation. A URL for the source of the quotation may be given using the `cite` attribute,
+    /// while a text representation of the source can be given using the [`<cite>`][cite] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
+    /// [cite]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     blockquote
 }
 
 element_macro! {
-    /// The HTML `<dd>` element provides the description, definition, or value for the preceding term (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt" title="The HTML <dt> element specifies a term in a description or definition list, and as such must be used inside a <dl> element.">`<dt>`</a>) in a description list (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl" title="The HTML <dl> element represents a description list. The element encloses a list of groups of terms (specified using the <dt> element) and descriptions (provided by <dd> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).">`<dl>`</a>).
+    /// The [HTML `<dd>` element][mdn] provides the description, definition, or value for the
+    /// preceding term ([`<dt>`][dt]) in a description list ([`<dl>`][dl]).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
+    /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+    /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     dd
 }
 
 element_macro! {
-    /// The HTML Content Division element (`<div>`) is the generic container for flow content. It has no effect on the content or layout until styled using <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/CSS" title="CSS: CSS (Cascading Style Sheets) is a declarative language that controls how webpages look in the browser.">CSS</a>.
+    /// The [HTML Content Division element (`<div>`)][mdn] is the generic container for flow
+    /// content. It has no effect on the content or layout until styled using [CSS].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
+    /// [CSS]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
     div
 }
 
 element_macro! {
-    /// The HTML `<dl>` element represents a description list. The element encloses a list of groups of terms (specified using the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt" title="The HTML <dt> element specifies a term in a description or definition list, and as such must be used inside a <dl> element.">`<dt>`</a> element) and descriptions (provided by <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd" title="The HTML <dd> element provides the description, definition, or value for the preceding term (<dt>) in a description list (<dl>).">`<dd>`</a> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).
+    /// The [HTML `<dl>` element][mdn] represents a description list. The element encloses a list of
+    /// groups of terms (specified using the [`<dt>`][dt] element) and descriptions (provided by
+    /// [`<dd>`][dd] elements). Common uses for this element are to implement a glossary or to
+    /// display metadata (a list of key-value pairs).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
+    /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+    /// [dd]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
     dl
 }
 
 element_macro! {
-    /// The HTML `<dt>` element specifies a term in a description or definition list, and as such must be used inside a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl" title="The HTML <dl> element represents a description list. The element encloses a list of groups of terms (specified using the <dt> element) and descriptions (provided by <dd> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).">`<dl>`</a> element.
+    /// The [HTML `<dt>` element][mdn] specifies a term in a description or definition list, and as
+    /// such must be used inside a [`<dl>`][dl] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+    /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     dt
 }
 
 element_macro! {
-    /// The HTML `<figcaption>` or Figure Caption element represents a caption or legend describing the rest of the contents of its parent [`<figure>`][figure] element.
+    /// The [HTML `<figcaption>` or Figure Caption element][mdn] represents a caption or legend
+    /// describing the rest of the contents of its parent [`<figure>`][figure] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     /// [figure]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
@@ -261,63 +278,75 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<figure>` (Figure With Optional Caption) element represents self-contained content, potentially with an optional caption, which is specified using the (<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption" title="The HTML <figcaption> or Figure Caption element represents a caption or legend describing the rest of the contents of its parent <figure> element.">`<figcaption>`</a>) element.
+    /// The [HTML `<figure>` (Figure With Optional Caption) element][mdn] represents self-contained
+    /// content, potentially with an optional caption, which is specified using the
+    /// ([`<figcaption>`][figcaption]) element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
+    /// [figcaption]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     figure
 }
 
 element_macro! {
-    /// The HTML `<hr>` element represents a thematic break between paragraph-level elements: for example, a change of scene in a story, or a shift of topic within a section.
+    /// The [HTML `<hr>` element][mdn] represents a thematic break between paragraph-level elements:
+    /// for example, a change of scene in a story, or a shift of topic within a section.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
     hr
 }
 
 element_macro! {
-    /// The HTML `<li>` element is used to represent an item in a list.
+    /// The [HTML `<li>` element][mdn] is used to represent an item in a list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
     li
 }
 
 element_macro! {
-    /// The HTML `<main>` element represents the dominant content of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body" title="The HTML <body> Element represents the content of an HTML&nbsp;document. There can be only one <body> element in a document.">`<body>`</a> of a document. The main content area consists of content that is directly related to or expands upon the central topic of a document, or the central functionality of an application.
+    /// The [HTML `<main>` element][mdn] represents the dominant content of the [`<body>`][body] of
+    /// a document. The main content area consists of content that is directly related to or expands
+    /// upon the central topic of a document, or the central functionality of an application.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
+    /// [body]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
     main
 }
 
 element_macro! {
-    /// The HTML `<ol>` element represents an ordered list of items, typically rendered as a numbered list.
+    /// The [HTML `<ol>` element][mdn] represents an ordered list of items, typically rendered as a
+    /// numbered list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
     ol
 }
 
 element_macro! {
-    /// The HTML `<p>` element represents a paragraph.
+    /// The [HTML `<p>` element][mdn] represents a paragraph.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
     p
 }
 
 element_macro! {
-    /// The HTML `<pre>` element represents preformatted text which is to be presented exactly as written in the HTML file.
+    /// The [HTML `<pre>` element][mdn] represents preformatted text which is to be presented
+    /// exactly as written in the HTML file.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
     pre
 }
 
 element_macro! {
-    /// The HTML `<ul>` element represents an unordered list of items, typically rendered as a bulleted list.
+    /// The [HTML `<ul>` element][mdn] represents an unordered list of items, typically rendered as
+    /// a bulleted list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
     ul
 }
 
 element_macro! {
-    /// The HTML `<a>` element (or *anchor* element), along with its <a href="#href">href</a> attribute, creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
+    /// The [HTML `<a>` element (or *anchor* element)][mdn], along with its href attribute, creates
+    /// a hyperlink to other web pages, files, locations within the same page, email addresses, or
+    /// any other URL.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
     a
