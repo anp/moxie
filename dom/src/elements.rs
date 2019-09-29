@@ -632,35 +632,51 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<audio>` element is used to embed sound content in documents. It may contain one or more audio sources, represented using the `src` attribute or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source" title="The HTML <source> element specifies multiple media resources for the <picture>, the <audio> element, or the <video> element.">`<source>`</a> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/MediaStream" title="The MediaStream interface represents a stream of media content. A stream consists of several tracks such as&nbsp;video or audio tracks. Each track is specified as an instance of MediaStreamTrack.">`MediaStream`</a>.
+    /// The [HTML `<audio>` element][mdn] is used to embed sound content in documents. It may
+    /// contain one or more audio sources, represented using the `src` attribute or the
+    /// [`<source>`][source] element: the browser will choose the most suitable one. It can also be
+    /// the destination for streamed media, using a [`MediaStream`][stream].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
+    /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
+    /// [stream]: https://developer.mozilla.org/en-US/docs/Web/API/MediaStream
     audio
 }
 
 element_macro! {
-    /// The HTML `<img>` element embeds an image into the document.
+    /// The [HTML `<img>` element][mdn] embeds an image into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     img
 }
 
 element_macro! {
-    /// The HTML `<map>` element is used with <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area" title="The HTML <area> element defines a hot-spot region on an image, and optionally associates it with a hypertext link. This element is used only within a <map> element.">`<area>`</a> elements to define an image map (a clickable link area).
+    /// The [HTML `<map>` element][mdn] is used with [`<area>`][area] elements to define an image
+    /// map (a clickable link area).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
+    /// [area]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
     map
 }
 
 element_macro! {
-    /// The HTML `<track>` element is used as a child of the media elements <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio" title="The HTML <audio> element is used to embed sound content in documents. It may contain one or more audio sources, represented using the src attribute or the <source> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a MediaStream.">`<audio>`</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" title="The HTML Video element (<video>) embeds a media player which supports video playback into the document.">`<video>`</a>. It lets you specify timed text tracks (or time-based data), for example to automatically handle subtitles. The tracks are formatted in <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/Web_Video_Text_Tracks_Format">WebVTT format</a> (`.vtt` files) — Web Video Text Tracks or&nbsp;<a class="external external-icon" href="https://w3c.github.io/ttml2/index.html" rel="noopener">Timed Text Markup Language (TTML).</a>
+    /// The [HTML `<track>` element][mdn] is used as a child of the media elements
+    /// [`<audio>`][audio] and [`<video>`][video]. It lets you specify timed text tracks (or
+    /// time-based data), for example to automatically handle subtitles. The tracks are formatted in
+    /// [WebVTT format][vtt] (`.vtt` files) — Web Video Text Tracks or [Timed Text Markup Language
+    /// (TTML)][ttml].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
+    /// [audio]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
+    /// [video]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
+    /// [vtt]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Video_Text_Tracks_Format
+    /// [ttml]: https://w3c.github.io/ttml2/index.html
     track
 }
 
 element_macro! {
-    /// The HTML Video element (`<video>`) embeds a media player which supports video playback into the document.
+    /// The [HTML Video element (`<video>`)][mdn] embeds a media player which supports video
+    /// playback into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     video
