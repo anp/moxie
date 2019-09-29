@@ -129,8 +129,8 @@ element_macro! {
     /// the section, copyright data or links to related documents.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
-    /// [sectioning content]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content
-    /// [sectioning root]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots
+    /// [sectioning content]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content
+    /// [sectioning root]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots
     footer
 }
 
@@ -557,9 +557,9 @@ element_macro! {
     /// attribute values, such as [`lang`][lang].
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
-    /// [class]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-class
-    /// [id]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-id
-    /// [lang]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/HTML/Global_attributes#attr-lang
+    /// [class]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-class
+    /// [id]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-id
+    /// [lang]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-lang
     span
 }
 
@@ -683,49 +683,63 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<embed>` element embeds external content at the specified point in the document. This content is provided by an external application or other source of interactive content such as a browser plug-in.
+    /// The [HTML `<embed>` element][mdn] embeds external content at the specified point in the
+    /// document. This content is provided by an external application or other source of interactive
+    /// content such as a browser plug-in.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
     embed
 }
 
 element_macro! {
-    /// The HTML Inline Frame element (`<iframe>`) represents a nested <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/browsing_context" title="browsing context: A browsing context is the environment in which a browser displays a Document (normally a tab nowadays, but possibly also a window or a frame within a page).">browsing context</a>, embedding another HTML page into the current one.
+    /// The [HTML Inline Frame element (`<iframe>`)][mdn] represents a nested [browsing context],
+    /// embedding another HTML page into the current one.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
+    /// [browsing context]: https://developer.mozilla.org/en-US/docs/Glossary/browsing_context
     iframe
 }
 
 element_macro! {
-    /// The HTML `<object>` element represents an external resource, which can be treated as an image, a nested browsing context, or a resource to be handled by a plugin.
+    /// The [HTML `<object>` element][mdn] represents an external resource, which can be treated as
+    /// an image, a nested browsing context, or a resource to be handled by a plugin.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
     object
 }
 
 element_macro! {
-    /// The HTML `<param>` element defines parameters for an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object" title="The HTML <object> element represents an external resource, which can be treated as an image, a nested browsing context, or a resource to be handled by a plugin.">`<object>`</a> element.
+    /// The [HTML `<param>` element][param] defines parameters for an [`<object>`][object] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
+    /// [object]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
     param
 }
 
 element_macro! {
-    /// The HTML `<picture>` element contains zero or more <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source" title="The HTML <source> element specifies multiple media resources for the <picture>, the <audio> element, or the <video> element.">`<source>`</a> elements and one <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img" title="The HTML <img> element embeds an image into the document.">`<img>`</a> element to provide versions of an image for different display/device scenarios.
+    /// The [HTML `<picture>` element][mdn] contains zero or more [`<source>`][source] elements and
+    /// one [`<img>`][img] element to provide versions of an image for different display/device
+    /// scenarios.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
+    /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
+    /// [img]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     picture
 }
 
 element_macro! {
-    /// The HTML `<source>` element specifies multiple media resources for the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture" title="The HTML <picture> element contains zero or more <source> elements and one <img> element to provide versions of an image for different display/device scenarios.">`<picture>`</a>, the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio" title="The HTML <audio> element is used to embed sound content in documents. It may contain one or more audio sources, represented using the src attribute or the <source> element:&nbsp;the browser will choose the most suitable one. It can also be the destination for streamed media, using a MediaStream.">`<audio>`</a> element, or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" title="The HTML Video element (<video>) embeds a media player which supports video playback into the document.">`<video>`</a> element.
+    /// The [HTML `<source>` element][source] specifies multiple media resources for the
+    /// [`<picture>`][picture], the [`<audio>`][audio] element, or the [`<video>`][video] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
+    /// [picture]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
+    /// [audio]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
+    /// [video]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     source
 }
 
 element_macro! {
-    /// Use the HTML `<canvas>` element with either the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/Canvas_API">canvas scripting API</a> or the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/API/WebGL_API">WebGL API</a> to draw graphics and animations.
+    /// Use the HTML `<canvas>` element with either the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API">canvas scripting API</a> or the <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API">WebGL API</a> to draw graphics and animations.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
     canvas
@@ -830,7 +844,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<button>` element represents a clickable button, which can be used in <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Learn/HTML/Forms">forms</a> or anywhere in a document that needs simple, standard button functionality.
+    /// The HTML `<button>` element represents a clickable button, which can be used in <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms">forms</a> or anywhere in a document that needs simple, standard button functionality.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
     button
@@ -858,7 +872,7 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<input>` element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/user_agent" title="user agent: A user agent is a computer program representing a person, for example, a browser in a Web context.">user agent</a>.
+    /// The HTML `<input>` element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Glossary/user_agent" title="user agent: A user agent is a computer program representing a person, for example, a browser in a Web context.">user agent</a>.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
     input
@@ -963,14 +977,14 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML `<slot>` element—part of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Web/Web_Components">Web Components</a> technology suite—is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
+    /// The HTML `<slot>` element—part of the <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components">Web Components</a> technology suite—is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
     slot
 }
 
 element_macro! {
-    /// The HTML Content Template (`<template>`) element is a mechanism for holding <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/en-US/docs/Glossary/HTML" title="HTML: HTML (HyperText Markup Language) is a descriptive language that specifies webpage structure.">HTML</a> that is not to be rendered immediately when a page is loaded but may be instantiated subsequently during runtime using JavaScript.
+    /// The HTML Content Template (`<template>`) element is a mechanism for holding <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Glossary/HTML" title="HTML: HTML (HyperText Markup Language) is a descriptive language that specifies webpage structure.">HTML</a> that is not to be rendered immediately when a page is loaded but may be instantiated subsequently during runtime using JavaScript.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
     template
