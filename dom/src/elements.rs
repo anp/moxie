@@ -994,78 +994,56 @@ element_macro! {
 }
 
 element_macro! {
-    /// The HTML Details Element (`<details>`) creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state.
+    /// The [HTML Details Element (`<details>`)][mdn] creates a disclosure widget in which
+    /// information is visible only when the widget is toggled into an "open" state.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     details
 }
 
 element_macro! {
-    /// The HTML `<dialog>` element represents a dialog box or other interactive component, such as an inspector or window.
+    /// The [HTML `<dialog>` element][mdn] represents a dialog box or other interactive component,
+    /// such as an inspector or window.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
     dialog
 }
 
 element_macro! {
-    /// The HTML `<menu>` element represents a group of commands that a user can perform or activate. This includes both list menus, which might appear across the top of a screen, as well as context menus, such as those that might appear underneath a button after it has been clicked.
+    /// The [HTML `<menu>` element][mdn] represents a group of commands that a user can perform or
+    /// activate. This includes both list menus, which might appear across the top of a screen, as
+    /// well as context menus, such as those that might appear underneath a button after it has been
+    /// clicked.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
     menu
 }
 
 element_macro! {
-    /// The HTML `<menuitem>` element represents a command that a user is able to invoke through a popup menu. This includes context menus, as well as menus that might be attached to a menu button.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menuitem
-    menuitem
-}
-
-element_macro! {
-    /// The HTML Disclosure Summary element (`<summary>`) element specifies a summary, caption, or legend for a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details" title="The HTML Details Element (&amp;lt;details&amp;gt;) creates a disclosure widget in which information is visible only when the widget is toggled into an &quot;open&quot; state.">`<details>`</a> element's disclosure box.
+    /// The [HTML Disclosure Summary element (`<summary>`)][mdn] element specifies a summary,
+    /// caption, or legend for a [`<details>`][details] element's disclosure box.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
+    /// [details]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     summary
 }
 
 element_macro! {
-    /// The HTML `<slot>` element—part of the <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components">Web Components</a> technology suite—is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
+    /// The [HTML `<slot>` element][mdn]—part of the [Web Components][wc] technology suite—is a
+    /// placeholder inside a web component that you can fill with your own markup, which lets you
+    /// create separate DOM trees and present them together.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
+    /// [wc]: https://developer.mozilla.org/en-US/docs/Web/Web_Components
     slot
 }
 
 element_macro! {
-    /// The HTML Content Template (`<template>`) element is a mechanism for holding <a class="glossaryLink" href="https://developer.mozilla.org/en-US/docs/Glossary/HTML" title="HTML: HTML (HyperText Markup Language) is a descriptive language that specifies webpage structure.">HTML</a> that is not to be rendered immediately when a page is loaded but may be instantiated subsequently during runtime using JavaScript.
+    /// The [HTML Content Template (`<template>`) element][mdn] is a mechanism for holding [HTML]
+    /// that is not to be rendered immediately when a page is loaded but may be instantiated
+    /// subsequently during runtime using JavaScript.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
+    /// [HTML]: https://developer.mozilla.org/en-US/docs/Glossary/HTML
     template
-}
-
-element_macro! {
-    /// The HTML Acronym Element (`<acronym>`) allows authors to clearly indicate a sequence of characters that compose an acronym or abbreviation for a word. This element has been removed in HTML5. Use&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr" title="The HTML Abbreviation element (<abbr>) represents an abbreviation or acronym; the optional title attribute can provide an expansion or description for the abbreviation.">`<abbr>`</a> instead.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/acronym
-    acronym
-}
-
-element_macro! {
-    /// The HTML Command element (`<command>`) represents a command which the user can invoke. Commands are often used as part of a context menu or toolbar.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/command
-    command
-}
-
-element_macro! {
-    /// The *HTML Font Element* (`<font>`) defines the font size, color and face for its content.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/font
-    font
-}
-
-element_macro! {
-    /// `<frame>` is an HTML element which defines a particular area in which another HTML document can be displayed. A frame should be used within a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frameset" title="The HTML <frameset> element is used to contain <frame> elements.">`<frameset>`</a>.
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/frame
-    frame
 }
