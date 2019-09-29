@@ -5,7 +5,7 @@ use {
 
 #[topo::aware]
 pub fn items_remaining(num_active: usize) {
-    moxml! {
+    mox! {
         <span class="todo-count">
             <strong>
             {
@@ -28,7 +28,7 @@ pub fn clear_completed_button() {
     let on_click = move |_: ClickEvent| {
         todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()))
     };
-    moxml! {
+    mox! {
         <button class="clear-completed" on={on_click}>
             "Clear completed"
         </button>
@@ -37,13 +37,13 @@ pub fn clear_completed_button() {
 
 #[topo::aware]
 pub fn filter_footer(num_complete: usize, num_active: usize) {
-    moxml! {
+    mox! {
         <footer class="footer">
             <items_remaining _=(num_active)/>
             <filter/>
             {
                 if num_complete > 0 {
-                    moxml! { <clear_completed_button/> };
+                    mox! { <clear_completed_button/> };
                 }
             }
         </footer>

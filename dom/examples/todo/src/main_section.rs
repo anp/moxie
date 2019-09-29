@@ -22,7 +22,7 @@ pub fn toggle(default_checked: bool) {
         })
     };
 
-    moxml! {
+    mox! {
         <span>
             <input class="toggle-all" type="checkbox" defaultChecked={default_checked} />
             <label on={on_click}/>
@@ -33,12 +33,12 @@ pub fn toggle(default_checked: bool) {
 #[topo::aware]
 #[topo::from_env(todos: Key<Vec<Todo>>, visibility: Key<Visibility>)]
 pub fn todo_list() {
-    moxml! {
+    mox! {
         <ul class="todo-list">
         {
             for todo in todos.iter() {
                 if visibility.should_show(todo) {
-                    moxml! { <todo_item _=(todo)/> };
+                    mox! { <todo_item _=(todo)/> };
                 }
             }
         }
@@ -51,11 +51,11 @@ pub fn todo_list() {
 pub fn main_section() {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
-    moxml! {
+    mox! {
         <section class="main">
         {
             if !todos.is_empty() {
-                moxml! {
+                mox! {
                     <toggle _=(num_complete == todos.len())/>
                 };
             }
@@ -65,7 +65,7 @@ pub fn main_section() {
 
         {
             if !todos.is_empty() {
-                moxml! {
+                mox! {
                     <filter_footer _=(num_complete, todos.len() - num_complete)/>
                 };
             }

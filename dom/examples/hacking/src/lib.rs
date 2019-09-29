@@ -11,7 +11,7 @@ pub fn main() {
     moxie_dom::boot(document().body().unwrap(), || {
         let count = state!(|| 0);
 
-        moxml! {<>
+        mox! {<>
             <div>{% "hello world from moxie! ({})", &count }</div>
 
             // TODO figure out how this could be `onclick` and still be nice
@@ -21,7 +21,7 @@ pub fn main() {
         </>};
 
         for t in &["first", "second", "third"] {
-            moxml! { <div>{% "{}", t }</div> };
+            mox! { <div>{% "{}", t }</div> };
         }
     });
 }

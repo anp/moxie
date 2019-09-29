@@ -8,7 +8,7 @@ use {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn input_header() {
     let todos = todos.clone();
-    moxml! {
+    mox! {
         <header class="header">
             <h1>"todos"</h1>
             <text_input _=(

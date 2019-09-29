@@ -31,7 +31,7 @@ pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(Stri
         }
     };
 
-    moxml! {
+    mox! {
         <input type="text" placeholder={placeholder} value={&*text} autoFocus="true"
             class={if editing { "edit new-todo" } else { "new-todo"}}
             on={on_change} on={on_keydown} />
