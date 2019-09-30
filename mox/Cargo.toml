@@ -15,7 +15,4 @@ proc-macro2 = "1"
 proc-macro-error = "0.2.6"
 proc-macro-hack = "0.5"
 quote = "1"
-
-[dependencies.snax]
-git = "https://github.com/LPGhatguy/snax.git"
-rev = "e824501bd250eecd292561bb39efcfcfbfaf049d"
+snax = "0.3.0"
