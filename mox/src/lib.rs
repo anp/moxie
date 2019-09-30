@@ -166,9 +166,7 @@ fn tag_to_tokens(
             without_delim.extend(tokens);
             quote!(#without_delim)
         }
-        tt @ _ => {
-            unimplemented!("bare function args (without a paired delimiter) aren't supported yet")
-        }
+        _ => unimplemented!("bare function args (without a paired delimiter) aren't supported yet"),
     });
 
     let invocation = if contents.is_empty() {
