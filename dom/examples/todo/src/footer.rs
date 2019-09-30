@@ -25,7 +25,7 @@ pub fn items_remaining(num_active: usize) {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn clear_completed_button() {
     let todos = todos.clone();
-    let on_click = move |_: ClickEvent| {
+    let on_click = move |_: event::Click| {
         todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()))
     };
     mox! {
