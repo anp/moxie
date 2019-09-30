@@ -105,118 +105,106 @@ macro_rules! event_ty {
     };
 }
 
-/// The loading of a resource has been aborted.
+/// The loading of a resource has been aborted. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/abort
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/UIEvent
 event_ty!(Abort, "abort", sys::UiEvent);
 
-/// Progression has been terminated (not due to an error).
+/// Progression has been terminated (not due to an error). [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/abort_(ProgressEvent)
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent
 event_ty!(AbortProgress, "abort", sys::ProgressEvent);
 
-/// A transaction has been aborted.
+/// A transaction has been aborted. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/abort_indexedDB
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/Event
 event_ty!(AbortTransaction, "abort", sys::Event);
 
 /// The associated document has started printing or the print preview has been closed.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/afterprint
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/Event
 event_ty!(AfterPrint, "afterprint", sys::Event);
 
-/// A [CSS animation] has aborted.
+/// A [CSS animation] has aborted. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/animationcancel
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent
 /// [CSS animation]: https://developer.mozilla.org/en-US/docs/CSS/CSS_animations
-/// [w3css]: http://www.w3.org/TR/css3-animations/#animation-events
 event_ty!(AnimationCancel, "animationcancel", sys::AnimationEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/animationend"></a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/css3-animations/#animation-events">CSS Animations</a>
-/// A <a href="https://developer.mozilla.org/en-US/docs/CSS/CSS_animations">CSS animation</a> has completed.
+/// A [CSS animation] has completed. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/animationend
+/// [CSS animation]: https://developer.mozilla.org/en-US/docs/CSS/CSS_animations
 event_ty!(AnimationEnd, "animationend", sys::AnimationEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/animationiteration"></a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/css3-animations/#animation-events">CSS Animations</a>
-/// A <a href="https://developer.mozilla.org/en-US/docs/CSS/CSS_animations">CSS animation</a> is repeated.
+/// A [CSS animation] is ticked. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/animationiteration
+/// [CSS animation]: https://developer.mozilla.org/en-US/docs/CSS/CSS_animations
 event_ty!(
     AnimationIteration,
     "animationiteration",
     sys::AnimationEvent
 );
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/animationstart"></a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/css3-animations/#animation-events">CSS Animations</a>
-/// A <a href="https://developer.mozilla.org/en-US/docs/CSS/CSS_animations">CSS animation</a> has started.
+/// A [CSS animation] has started. [MDN documentation][mdn]
+///
+/// [mdn]: <a href="https://developer.mozilla.org/en-US/docs/Web/Events/animationstart"></a>
+/// [CSS animation]: https://developer.mozilla.org/en-US/docs/CSS/CSS_animations
 event_ty!(AnimationStart, "animationstart", sys::AnimationEvent);
 
-/// A web application is successfully installed as a <a href="/en-US/Apps/Progressive">progressive web app</a>.
+/// A web application is successfully installed as a progressive web app. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/appinstalled
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/Event
 event_ty!(AppInstalled, "appinstalled", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/audioprocess">audioprocess</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioProcessingEvent"> </i></span>
-/// <a href="https://webaudio.github.io/web-audio-api/#AudioProcessingEvent" hreflang="en" lang="en">The definition of 'audioprocess' in that specification.</small></a>
-/// The input buffer of a <a href="https://developer.mozilla.org/en-US/docs/Web/API/ScriptProcessorNode">ScriptProcessorNode</a> is ready to be processed.
+/// The input buffer of a [ScriptProcessorNode] is ready to be processed. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/audioprocess
+/// [ScriptProcessorNode]: https://developer.mozilla.org/en-US/docs/Web/API/ScriptProcessorNode
 event_ty!(AudioProcess, "audioprocess", sys::AudioProcessingEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/audioend"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event">Event</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The user agent has finished capturing audio for speech recognition.
+/// The user agent has finished capturing audio for speech recognition. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/audioend
 event_ty!(AudioEnd, "audioend", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/audiostart"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event">Event</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The user agent has started to capture audio for speech recognition.
+/// The user agent has started to capture audio for speech recognition. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/audiostart
 event_ty!(AudioStart, "audiostart", sys::Event);
 
-/// The associated document is about to be printed or previewed for printing.
+/// The associated document is about to be printed or previewed for printing. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/beforeprint
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/Event
 event_ty!(BeforePrint, "beforeprint", sys::Event);
 
-/// The window, the document and its resources are about to be unloaded.
+/// The window, the document and its resources are about to be unloaded. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/BeforeUnloadEvent
 event_ty!(BeforeUnload, "beforeunload", sys::BeforeUnloadEvent);
 
-/// A <a href="https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL">SMIL</a> animation element begins.
+/// A [SMIL] animation element begins. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/beginEvent
-/// [mdn2]: https://developer.mozilla.org/en-US/docs/Web/API/TimeEvent
+/// [SMIL]: https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL
 event_ty!(SvgAnimationBegin, "beginEvent", sys::TimeEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Reference/Events/blocked_indexedDB">blocked</a>
-/// &nbsp;
-/// <a href="http://www.w3.org/TR/IndexedDB/#request-api">IndexedDB</a>
 /// An open connection to a database is blocking a versionchange transaction on the same database.
+/// [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/blocked_indexedDB
 event_ty!(ConnectionBlocked, "blocked", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/blur">blur</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/DOM-Level-3-Events/#event-type-blur">DOM L3</a>
-/// An element has lost focus (does not bubble).
+/// An element has lost focus (does not bubble). [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/blur
 event_ty!(Blur, "blur", sys::FocusEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/boundary"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisEvent">SpeechSynthesisEvent</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The spoken utterance reaches a word or sentence boundary
+/// The spoken utterance reaches a word or sentence boundary. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/boundary
 event_ty!(SpeechBoundary, "boundary", sys::SpeechSynthesisEvent);
 
 /// The user agent can play the media, but estimates that not enough data has been loaded to play the media up to its end without having to stop for further buffering of content.
