@@ -5,7 +5,9 @@ use {
     web_sys as sys,
 };
 
+/// An event that can be received as the first argument to a handler callback.
 pub trait Event: AsRef<web_sys::Event> + JsCast {
+    /// The name used to register for this event in `addEventListener`.
     const NAME: &'static str;
 }
 
@@ -31,7 +33,7 @@ impl Callback {
 }
 
 #[must_use]
-pub struct EventHandle {
+pub(crate) struct EventHandle {
     target: web_sys::EventTarget,
     callback: Callback,
     name: &'static str,
