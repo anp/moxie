@@ -207,58 +207,64 @@ event_ty!(Blur, "blur", sys::FocusEvent);
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/boundary
 event_ty!(SpeechBoundary, "boundary", sys::SpeechSynthesisEvent);
 
-/// The user agent can play the media, but estimates that not enough data has been loaded to play the media up to its end without having to stop for further buffering of content.
+/// The user agent can play the media, but estimates that not enough data has been loaded to play
+/// the media up to its end without having to stop for further buffering of content.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/canplay
 event_ty!(CanPlay, "canplay", sys::Event);
 
-/// The user agent can play the media up to its end without having to stop for further buffering of content.
+/// The user agent can play the media up to its end without having to stop for further buffering of
+/// content. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/canplaythrough
 event_ty!(CanPlayThrough, "canplaythrough", sys::Event);
 
-/// The change event is fired for <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input">&lt;textarea&gt;</a> elements when a change to the element's value is committed by the user.
+/// The change event is fired for [`<textarea>`][textarea] elements when a change to the element's
+/// value is committed by the user. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/change
+/// [textarea]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
 event_ty!(Change, "change", sys::Event);
 
-/// The battery begins or stops charging.
+/// The battery begins or stops charging. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/chargingchange
 event_ty!(ChargingChange, "chargingchange", sys::Event);
 
-/// The chargingTime attribute has been updated.
+/// The chargingTime attribute has been updated. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/chargingtimechange
 event_ty!(ChargingTime, "chargingtimechange", sys::Event);
 
-/// A pointing device button has been pressed and released on an element.
+/// A pointing device button has been pressed and released on an element. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/click
 event_ty!(Click, "click", sys::MouseEvent);
 
-/// A WebSocket connection has been closed.
+/// A WebSocket connection has been closed. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/close_websocket
 event_ty!(CloseWebsocket, "close", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/complete">complete</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioCompletionEvent"> </i></span>
-/// <a href="https://webaudio.github.io/web-audio-api/#OfflineAudioCompletionEvent-section" hreflang="en" lang="en">The definition of 'OfflineAudioCompletionEvent' in that specification.</small></a>
-/// The rendering of an <a href="https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext">OfflineAudioContext</a> is terminated.
+/// The rendering of an [OfflineAudioContext] is terminated. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/complete
+/// [OfflineAudioContext]: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext
 event_ty!(AudioComplete, "complete", sys::OfflineAudioCompletionEvent);
 
-/// The composition of a passage of text has been completed or canceled.
+/// The composition of a passage of text has been completed or canceled. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/compositionend
 event_ty!(CompositionEnd, "compositionend", sys::CompositionEvent);
 
-/// The composition of a passage of text is prepared (similar to keydown for a keyboard input, but works with other inputs such as speech recognition).
+/// The composition of a passage of text is prepared (similar to keydown for a keyboard input, but
+/// works with other inputs such as speech recognition). [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/compositionstart
 event_ty!(CompositionStart, "compositionstart", sys::CompositionEvent);
 
-/// A character is added to a passage of text being composed.
+/// A character is added to a passage of text being composed. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/compositionupdate
 event_ty!(
@@ -268,313 +274,316 @@ event_ty!(
 );
 
 /// The right button of the mouse is clicked (before the context menu is displayed).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/contextmenu
 event_ty!(ContextMenu, "contextmenu", sys::MouseEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/copy">copy</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/ClipboardEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/clipboard-apis/#copy-event">Clipboard</a>
-/// The text selection has been added to the clipboard.
+/// The text selection has been added to the clipboard. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/copy
 event_ty!(Copy, "copy", sys::ClipboardEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/cut">cut</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/ClipboardEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/clipboard-apis/#cut-event">Clipboard</a>
 /// The text selection has been removed from the document and added to the clipboard.
+/// [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/cut
 event_ty!(Cut, "cut", sys::ClipboardEvent);
 
-/// A pointing device button is clicked twice on an element.
+/// A pointing device button is clicked twice on an element. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
 event_ty!(DoubleClick, "dblclick", sys::MouseEvent);
 
 /// A media device such as a camera, microphone, or speaker is connected or removed from the system.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/devicechange
 event_ty!(DeviceChange, "devicechange", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/devicemotion">devicemotion</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent"> </i></span>
-/// <a href="http://dev.w3.org/geo/api/spec-source-orientation.html" lang="en">Device Orientation Events</a>
-/// Fresh data is available from a motion sensor.
+/// Fresh data is available from a motion sensor. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/devicemotion
 event_ty!(DeviceMotion, "devicemotion", sys::DeviceMotionEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/deviceorientation">deviceorientation</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent"> </i></span>
-/// <a href="http://dev.w3.org/geo/api/spec-source-orientation.html" lang="en">Device Orientation Events</a>
-/// Fresh data is available from an orientation sensor.
+/// Fresh data is available from an orientation sensor. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/deviceorientation
 event_ty!(
     DeviceOrientation,
     "deviceorientation",
     sys::DeviceOrientationEvent
 );
 
-/// The dischargingTime attribute has been updated.
+/// The dischargingTime attribute has been updated. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dischargingtimechange
 event_ty!(DischargingTime, "dischargingtimechange", sys::Event);
 
-/// The document has finished loading (but not its dependent resources).
+/// The document has finished loading (but not its dependent resources). [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/DOMContentLoaded
 event_ty!(DomContentLoaded, "DOMContentLoaded", sys::Event);
 
-/// An element or text selection is being dragged (every 350ms).
+/// An element or text selection is being dragged (every 350ms). [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/drag
 event_ty!(Drag, "drag", sys::DragEvent);
 
 /// A drag operation is being ended (by releasing a mouse button or hitting the escape key).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragend
 event_ty!(DragEnd, "dragend", sys::DragEvent);
 
-/// A dragged element or text selection enters a valid drop target.
+/// A dragged element or text selection enters a valid drop target. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
 event_ty!(DragEnter, "dragenter", sys::DragEvent);
 
-/// A dragged element or text selection leaves a valid drop target.
+/// A dragged element or text selection leaves a valid drop target. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
 event_ty!(DragLeave, "dragleave", sys::DragEvent);
 
 /// An element or text selection is being dragged over a valid drop target (every 350ms).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragover
 event_ty!(DragOver, "dragover", sys::DragEvent);
 
-/// The user starts dragging an element or text selection.
+/// The user starts dragging an element or text selection. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
 event_ty!(DragStart, "dragstart", sys::DragEvent);
 
-/// An element is dropped on a valid drop target.
+/// An element is dropped on a valid drop target. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/drop
 event_ty!(Dropped, "drop", sys::DragEvent);
 
-/// The duration attribute has been updated.
+/// The duration attribute has been updated. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/durationchange
 event_ty!(DurationChange, "durationchange", sys::Event);
 
-/// The media has become empty; for example, this event is sent if the media has already been loaded (or partially loaded), and the <a href="https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/NsIDOMHTMLMediaElement">load()</a> method is called to reload it.
+/// The media has become empty; for example, this event is sent if the media has already been loaded
+/// (or partially loaded), and the [load()][load] method is called to reload it.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/emptied
+/// [load]: https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/NsIDOMHTMLMediaElement
 event_ty!(Emptied, "emptied", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/end_(SpeechRecognition)"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event">Event</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The speech recognition service has disconnected.
+/// The speech recognition service has disconnected. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/end_(SpeechRecognition)
 event_ty!(SpeechRecognitionEnd, "end", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/end_(SpeechSynthesis)"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisEvent">SpeechSynthesisEvent</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The utterance has finished being spoken.
+/// The utterance has finished being spoken. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/end_(SpeechSynthesis)
 event_ty!(SpeechSynthesisEnd, "end", sys::SpeechSynthesisEvent);
 
-/// Playback has stopped because the end of the media was reached.
+/// Playback has stopped because the end of the media was reached. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/ended
 event_ty!(PlaybackEnded, "ended", sys::Event);
 
-/// Playback has stopped because the end of the media was reached.
+/// Playback has stopped because the end of the media was reached. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/ended_(Web_Audio)
 event_ty!(AudioEnded, "ended", sys::Event);
 
-/// A <a href="https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL">SMIL</a> animation element ends.
+/// A [SMIL] animation element ends. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/endEvent
+/// [SMIL]: https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL
 event_ty!(SvgAnimationEnd, "endEvent", sys::TimeEvent);
 
-/// A resource failed to load.
+/// A resource failed to load. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
 event_ty!(ResourceError, "error", sys::UiEvent);
 
-/// Progression has failed.
+/// Progression has failed. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
 event_ty!(ProgressError, "error", sys::ProgressEvent);
 
 /// A WebSocket connection has been closed with prejudice (some data couldn't be sent for example).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
 event_ty!(WebsocketError, "error", sys::Event);
 
-/// An event source connection has been failed.
+/// An event source connection has been failed. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
 event_ty!(EventSourceError, "error", sys::Event);
 
-/// A request caused an error and failed.
+/// A request caused an error and failed. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
 event_ty!(RequestError, "error", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/error_(SpeechRecognitionError)"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event">Event</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// A speech recognition error occurs.
+/// A speech recognition error occurs. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error_(SpeechRecognitionError)
 event_ty!(SpeechRecognitionError, "error", sys::Event);
 
 /// An error occurs that prevents the utterance from being successfully spoken.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error_(SpeechSynthesisError)
 event_ty!(SpeechError, "error", sys::SpeechSynthesisErrorEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/focus">focus</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/DOM-Level-3-Events/#event-type-focus">DOM L3</a>
-/// An element has received focus (does not bubble).
+/// An element has received focus (does not bubble). [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/focus
 event_ty!(Focus, "focus", sys::FocusEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/focusin">focusin</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/DOM-Level-3-Events/#event-type-focusIn">DOM L3</a>
-/// An element is about to receive focus (bubbles).
+/// An element is about to receive focus (bubbles). [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/focusin
 event_ty!(FocusIn, "focusin", sys::FocusEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/focusout">focusout</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/DOM-Level-3-Events/#event-type-focusout">DOM L3</a>
-/// An element is about to lose focus (bubbles).
+/// An element is about to lose focus (bubbles). [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/focusout
 event_ty!(FocusOut, "focusout", sys::FocusEvent);
 
-/// An element was turned to fullscreen mode or back to normal mode.
+/// An element was turned to fullscreen mode or back to normal mode. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/fullscreenchange
 event_ty!(FullscreenChange, "fullscreenchange", sys::Event);
 
-/// It was impossible to switch to fullscreen mode for technical reasons or because the permission was denied.
+/// It was impossible to switch to fullscreen mode for technical reasons or because the permission
+/// was denied. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/fullscreenerror
 event_ty!(FullscreenError, "fullscreenerror", sys::Event);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/gamepadconnected">gamepadconnected</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/GamepadEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/gamepad/#the-gamepadconnected-event">Gamepad</a>
-/// A gamepad has been connected.
+/// A gamepad has been connected. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/gamepadconnected
 event_ty!(GamepadConnected, "gamepadconnected", sys::GamepadEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/gamepaddisconnected">gamepaddisconnected</a>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/GamepadEvent"> </i></span>
-/// <a href="http://www.w3.org/TR/gamepad/#the-gamepaddisconnected-event">Gamepad</a>
-/// A gamepad has been disconnected.
+/// A gamepad has been disconnected. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/gamepaddisconnected
 event_ty!(
     GamepadDisconnected,
     "gamepaddisconnected",
     sys::GamepadEvent
 );
 
-/// Element receives pointer capture.
+/// Element receives pointer capture. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/gotpointercapture
 event_ty!(GotPointerCapture, "gotpointercapture", sys::PointerEvent);
 
 /// The fragment identifier of the URL has changed (the part of the URL after the #).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/hashchange
 event_ty!(HashChange, "hashchange", sys::HashChangeEvent);
 
-/// Element lost pointer capture.
+/// Element lost pointer capture. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/lostpointercapture
 event_ty!(LostPointerCapture, "lostpointercapture", sys::PointerEvent);
 
-/// The value of an element changes or the content of an element with the attribute <a href="https://developer.mozilla.org/en-US/docs/DOM/Element.contentEditable">contenteditable</a> is modified.
+/// The value of an element changes or the content of an element with the attribute
+/// [contenteditable] is modified.
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/input
+/// [contenteditable]: https://developer.mozilla.org/en-US/docs/DOM/Element.contentEditable
 event_ty!(Input, "input", sys::Event);
 
 /// A submittable element has been checked and doesn't satisfy its constraints.
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/invalid
 event_ty!(Invalid, "invalid", sys::Event);
 
-/// A key is pressed down.
+/// A key is pressed down. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 event_ty!(KeyDown, "keydown", sys::KeyboardEvent);
 
-/// A key is released.
+/// A key is released. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/keyup
 event_ty!(KeyUp, "keyup", sys::KeyboardEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/languagechange"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/Event">Event</a>
-/// <a href="https://www.w3.org/TR/html51/#dom-navigator-languages" hreflang="en" lang="en">The definition of 'NavigatorLanguage.languages' in that specification.</small></a>
-/// The user's preferred languages have changed.
+/// The user's preferred languages have changed. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/languagechange
 event_ty!(LanguageChange, "languagechange", sys::Event);
 
-/// The level attribute has been updated.
+/// The level attribute has been updated. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/levelchange
 event_ty!(LevelChange, "levelchange", sys::Event);
 
-/// A resource and its dependent resources have finished loading.
+/// A resource and its dependent resources have finished loading. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/load
 event_ty!(ResourceLoad, "load", sys::UiEvent);
 
-/// Progression has been successful.
+/// Progression has been successful. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/load_(ProgressEvent)
 event_ty!(ProgressLoad, "load", sys::ProgressEvent);
 
-/// The first frame of the media has finished loading.
+/// The first frame of the media has finished loading. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/loadeddata
 event_ty!(DataLoaded, "loadeddata", sys::Event);
 
-/// The metadata has been loaded.
+/// The metadata has been loaded. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/loadedmetadata
 event_ty!(MetadataLoaded, "loadedmetadata", sys::Event);
 
 /// Progress has stopped (after "error", "abort" or "load" have been dispatched).
+/// [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/loadend
 event_ty!(LoadEnd, "loadend", sys::ProgressEvent);
 
-/// Progress has begun.
+/// Progress has begun. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/loadstart
 event_ty!(LoadStart, "loadstart", sys::ProgressEvent);
 
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/mark"> </i></span>
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisEvent">SpeechSynthesisEvent</a>
-/// <a href="https://w3c.github.io/speech-api/" hreflang="en" lang="en">Web Speech API</a>
-/// The spoken utterance reaches a named SSML "mark" tag.
+/// The spoken utterance reaches a named SSML "mark" tag. [MDN documentation][mdn]
+///
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/mark
 event_ty!(SpeechMark, "mark", sys::SpeechSynthesisEvent);
 
-/// A message is received through a WebSocket.
+/// A message is received through a WebSocket. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/message_websocket
 event_ty!(WebsocketMessage, "message", sys::MessageEvent);
 
-/// A message is received from a Web Worker.
+/// A message is received from a Web Worker. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/message_webworker
 event_ty!(WorkerMessage, "message", sys::MessageEvent);
 
-/// A message is received from a child (i)frame or a parent window.
+/// A message is received from a child (i)frame or a parent window. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/message_webmessaging
 event_ty!(ChildMessage, "message", sys::MessageEvent);
 
-/// A message is received through an event source.
+/// A message is received through an event source. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/message_serversentevents
 event_ty!(EventSourceMessage, "message", sys::MessageEvent);
 
-/// A message error is raised when a message is received by an object.
+/// A message error is raised when a message is received by an object. [MDN documentation][mdn]
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/messageerror
 event_ty!(MessageError, "messageerror", sys::MessageEvent);
