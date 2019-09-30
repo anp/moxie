@@ -5,6 +5,7 @@ use {
     main_section::*,
     moxie_dom::*,
     std::sync::atomic::{AtomicU32, Ordering},
+    wasm_bindgen::prelude::*,
 };
 
 #[macro_use]
