@@ -551,11 +551,10 @@ event_ty! {
 
 event_ty! {
     /// The media has become empty; for example, this event is sent if the media has already been
-    /// loaded (or partially loaded), and the [load()][load] method is called to reload it.
+    /// loaded (or partially loaded), and the load() method is called to reload it.
     /// [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/emptied
-    /// [load]: https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/NsIDOMHTMLMediaElement
     Emptied,
     "emptied",
     sys::Event
