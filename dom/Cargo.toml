@@ -84,7 +84,7 @@ features = [
 
 [dev-dependencies]
 typed-html = "0.2.1"
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.3"
 
 [features]
 default = ["log"]
