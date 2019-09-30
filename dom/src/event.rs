@@ -914,7 +914,7 @@ event_ty!(SpeechRecognitionStart, "start", sys::Event);
 /// Sound that is recognised by the speech recognition service as speech has been detected.
 /// [MDN documentation][mdn]
 ///
-/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/speechstart"> </i></span>
+/// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/speechstart
 event_ty!(SpeechRecognized, "speechstart", sys::Event);
 
 /// A storage area ([localStorage] or [sessionStorage]) has changed. [MDN documentation][mdn]
@@ -1059,7 +1059,7 @@ event_ty!(UserProximity, "userproximity", sys::UserProximityEvent);
 /// Fires when the list of SpeechSynthesisVoice objects that would be returned by the
 /// SpeechSynthesis.getVoices() method has changed. [MDN documentation][mdn]
 ///
-/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/voiceschanged"> </i></span>
+/// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/voiceschanged
 event_ty!(VoicesChanged, "voiceschanged", sys::Event);
 
 /// A versionchange transaction completed. [MDN documentation][mdn]
