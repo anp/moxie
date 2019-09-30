@@ -3,10 +3,19 @@
 #[doc(hidden)]
 pub use moxie::*;
 
-use {crate::embed::WebRuntime, moxie, std::cell::Cell, tracing::*, wasm_bindgen::JsCast};
+use {
+    crate::{
+        embed::WebRuntime,
+        event::{Event, EventHandle},
+    },
+    moxie,
+    std::cell::Cell,
+    tracing::*,
+};
 
 pub mod elements;
 pub mod embed;
+pub mod event;
 
 pub use moxie::*;
 pub use wasm_bindgen::prelude::*;
@@ -169,111 +178,3 @@ impl MemoElement {
         ret
     }
 }
-
-pub trait Event: AsRef<web_sys::Event> + JsCast {
-    const NAME: &'static str;
-}
-
-struct Callback {
-    cb: Closure<dyn FnMut(JsValue)>,
-}
-
-impl Callback {
-    fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
-    where
-        Ev: Event,
-    {
-        let cb = Closure::wrap(Box::new(move |ev: JsValue| {
-            let ev: Ev = ev.dyn_into().unwrap();
-            cb(ev);
-        }) as Box<dyn FnMut(JsValue)>);
-        Self { cb }
-    }
-
-    fn as_fn(&self) -> &js_sys::Function {
-        self.cb.as_ref().unchecked_ref()
-    }
-}
-
-#[must_use]
-pub struct EventHandle {
-    target: web_sys::EventTarget,
-    callback: Callback,
-    name: &'static str,
-}
-
-impl EventHandle {
-    fn new<Ev>(target: web_sys::EventTarget, callback: impl FnMut(Ev) + 'static) -> Self
-    where
-        Ev: Event,
-    {
-        let callback = Callback::new(callback);
-        let name = Ev::NAME;
-        target
-            .add_event_listener_with_callback(name, callback.as_fn())
-            .unwrap();
-        Self {
-            target,
-            callback,
-            name,
-        }
-    }
-}
-
-impl Drop for EventHandle {
-    fn drop(&mut self) {
-        self.target
-            .remove_event_listener_with_callback(self.name, self.callback.as_fn())
-            .unwrap();
-    }
-}
-
-macro_rules! event_ty {
-    ($name:ident, $ty_str:expr, $parent_ty:ty) => {
-        #[wasm_bindgen]
-        pub struct $name($parent_ty);
-
-        impl AsRef<web_sys::Event> for $name {
-            fn as_ref(&self) -> &web_sys::Event {
-                self.0.as_ref()
-            }
-        }
-
-        impl AsRef<JsValue> for $name {
-            fn as_ref(&self) -> &JsValue {
-                self.0.as_ref()
-            }
-        }
-
-        impl std::ops::Deref for $name {
-            type Target = $parent_ty;
-            fn deref(&self) -> &Self::Target {
-                &self.0
-            }
-        }
-
-        impl JsCast for $name {
-            fn instanceof(val: &JsValue) -> bool {
-                <$parent_ty as JsCast>::instanceof(val)
-            }
-
-            fn unchecked_from_js(val: JsValue) -> Self {
-                $name(<$parent_ty as JsCast>::unchecked_from_js(val))
-            }
-
-            fn unchecked_from_js_ref(_val: &JsValue) -> &Self {
-                unimplemented!()
-            }
-        }
-
-        impl Event for $name {
-            const NAME: &'static str = $ty_str;
-        }
-    };
-}
-
-event_ty!(BlurEvent, "blur", web_sys::FocusEvent);
-event_ty!(ChangeEvent, "change", web_sys::Event);
-event_ty!(ClickEvent, "click", web_sys::MouseEvent);
-event_ty!(DoubleClickEvent, "dblclick", web_sys::MouseEvent);
-event_ty!(KeyDownEvent, "keydown", web_sys::KeyboardEvent);

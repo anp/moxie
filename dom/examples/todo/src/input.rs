@@ -18,10 +18,10 @@ pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(Stri
     }
 
     let change_text = text.clone();
-    let on_change = move |change: ChangeEvent| change_text.set(input_value(change));
+    let on_change = move |change: event::Change| change_text.set(input_value(change));
 
     let clear_text = text.clone();
-    let on_keydown = move |keypress: KeyDownEvent| {
+    let on_keydown = move |keypress: event::KeyDown| {
         if keypress.key() == "Enter" {
             let value = input_value(keypress);
             if !value.is_empty() {

@@ -7,7 +7,7 @@ use {
 #[topo::from_env(todos: Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
     let todos = todos.clone();
-    let on_click = move |_: ClickEvent| {
+    let on_click = move |_: event::Click| {
         todos.update(|t| {
             Some(
                 t.iter()

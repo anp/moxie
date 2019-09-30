@@ -15,7 +15,7 @@ pub fn main() {
             <div>{% "hello world from moxie! ({})", &count }</div>
 
             // TODO figure out how this could be `onclick` and still be nice
-            <button type="button" on={move |_: ClickEvent| count.update(|c| Some(c + 1))}>
+            <button type="button" on={move |_: event::Click| count.update(|c| Some(c + 1))}>
                 "increment"
             </button>
         </>};
