@@ -365,6 +365,10 @@ impl Point {
     fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
         CURRENT_POINT.with(|p| op(&*p.borrow()))
     }
+
+    fn with_current_mut<Out>(op: impl FnOnce(&mut Point) -> Out) -> Out {
+        CURRENT_POINT.with(|p| op(&mut *p.borrow_mut()))
+    }
 }
 
 impl Default for Point {
@@ -432,7 +436,7 @@ impl AnonRc {
     #[doc(hidden)]
     pub fn unstable_new<T: 'static>(inner: T) -> Self {
         Self {
-            name: "TODO",
+            name: std::any::type_name::<T>(),
             id: TypeId::of::<T>(),
             inner: Rc::new(inner),
         }
@@ -464,6 +468,16 @@ impl Deref for AnonRc {
 type EnvInner = HashMap<TypeId, AnonRc>;
 
 impl Env {
+    /// Sets the provided value as the singleton for its type in the current environment for the
+    /// remainder of the `Env`'s scope.
+    pub fn add<E: 'static>(val: E) {
+        Point::with_current_mut(|p| {
+            p.state.env = p.state.env.child(env! {
+                E => val,
+            });
+        });
+    }
+
     /// Returns a reference to a value in the current environment if it has been added to the
     /// environment by parent/enclosing [`call`] invocations.
     pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
@@ -676,5 +690,31 @@ mod tests {
             }
         );
         assert!(Env::get::<u8>().is_none());
+    }
+
+    #[test]
+    fn adding_to_env() {
+        assert!(
+            Env::get::<u8>().is_none(),
+            "test Env must not already have a u8"
+        );
+
+        Env::add(2u8);
+        assert_eq!(*Env::get::<u8>().unwrap(), 2, "just added 2u8");
+        call!({
+            assert_eq!(*Env::get::<u8>().unwrap(), 2, "parent added 2u8");
+
+            Env::add(7u8);
+            assert_eq!(*Env::get::<u8>().unwrap(), 7, "just added 7u8");
+
+            Env::add(9u8);
+            assert_eq!(*Env::get::<u8>().unwrap(), 9, "just added 9u8");
+        });
+
+        assert_eq!(
+            *Env::get::<u8>().unwrap(),
+            2,
+            "returned to parent Env with 2u8"
+        );
     }
 }
