@@ -478,6 +478,21 @@ impl Env {
         });
     }
 
+    /// Removes the provided type from the current environment for the remainder of its scope.
+    /// Parent environments may still possess a reference to the value, so it is not guaranteed to
+    /// be dropped, just no longer visible to this and subsequent child scopes.
+    pub fn hide<E: 'static>() {
+        Point::with_current_mut(|p| {
+            let mut without_e: EnvInner = (*p.state.env.inner).clone();
+            let excluded_ty = TypeId::of::<E>();
+            without_e.retain(|ty, _| ty != &excluded_ty);
+
+            p.state.env = Env {
+                inner: Rc::new(without_e),
+            };
+        });
+    }
+
     /// Returns a reference to a value in the current environment if it has been added to the
     /// environment by parent/enclosing [`call`] invocations.
     pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
@@ -693,7 +708,7 @@ mod tests {
     }
 
     #[test]
-    fn adding_to_env() {
+    fn adding_to_and_removing_from_env() {
         assert!(
             Env::get::<u8>().is_none(),
             "test Env must not already have a u8"
@@ -701,11 +716,15 @@ mod tests {
 
         Env::add(2u8);
         assert_eq!(*Env::get::<u8>().unwrap(), 2, "just added 2u8");
+
         call!({
             assert_eq!(*Env::get::<u8>().unwrap(), 2, "parent added 2u8");
 
             Env::add(7u8);
             assert_eq!(*Env::get::<u8>().unwrap(), 7, "just added 7u8");
+
+            Env::hide::<u8>();
+            assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
 
             Env::add(9u8);
             assert_eq!(*Env::get::<u8>().unwrap(), 9, "just added 9u8");
@@ -716,5 +735,8 @@ mod tests {
             2,
             "returned to parent Env with 2u8"
         );
+
+        Env::hide::<u8>();
+        assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
     }
 }
