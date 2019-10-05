@@ -36,32 +36,36 @@ fn mini_list() {
     assert_vnode_matches_element(&expected, &root);
 }
 
-fn assert_vnode_matches_element(vnode: &VNode<String>, node: &sys::Node) {
-    match (vnode, node.node_type()) {
-        (VNode::Text(t), sys::Node::TEXT_NODE) => {
-            assert_eq!(*t, &node.text_content().unwrap());
+fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
+    match (expected, actual.node_type()) {
+        (VNode::Text(expected), sys::Node::TEXT_NODE) => {
+            assert_eq!(*expected, &actual.text_content().unwrap());
         }
-        (VNode::Element(ve), sys::Node::ELEMENT_NODE) => {
-            let elem: &sys::Element = node.dyn_ref().unwrap();
-            assert_eq!(ve.name.to_lowercase(), node.node_name().to_lowercase());
+        (VNode::Element(expected), sys::Node::ELEMENT_NODE) => {
+            let actual: &sys::Element = actual.dyn_ref().unwrap();
+            assert_eq!(
+                expected.name.to_lowercase(),
+                actual.node_name().to_lowercase(),
+                "element types must match",
+            );
 
             // for (name, value) in &e.attributes {
             //     // TODO make sure they're equal
             // }
             // // TODO make sure there aren't any missing or extras
 
-            let mut actual_child = elem.first_child();
-            for (i, expected_child) in ve.children.iter().enumerate() {
-                let actual = match actual_child {
+            let mut actual_child = actual.first_child();
+            for (i, expected_child) in expected.children.iter().enumerate() {
+                let child = match actual_child {
                     Some(a) => a,
                     None => panic!(
                         "failed while looking for child {} of {}",
                         i,
-                        elem.inner_html()
+                        actual.inner_html()
                     ),
                 };
-                assert_vnode_matches_element(expected_child, &actual);
-                actual_child = actual.next_sibling();
+                assert_vnode_matches_element(expected_child, &child);
+                actual_child = child.next_sibling();
             }
             assert!(
                 actual_child.is_none(),
