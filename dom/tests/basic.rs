@@ -1,9 +1,6 @@
 use {
-    moxie_dom::*,
-    typed_html::{
-        dom::{DOMTree, VNode},
-        html,
-    },
+    moxie_dom::{embed::WebRuntime, *},
+    typed_html::dom::{DOMTree, VNode},
     wasm_bindgen::JsCast,
     wasm_bindgen_test::*,
 };
@@ -25,7 +22,7 @@ fn mini_list() {
         </div>
     );
 
-    boot(root.clone(), move || {
+    let mut tester = WebRuntime::new(root.clone(), move || {
         moxie::mox! {
             <ul>
                 <li>"first"</li>
@@ -35,6 +32,8 @@ fn mini_list() {
         };
         assert_vnode_matches_element(&expected.vnode(), &root);
     });
+
+    tester.run_once();
 }
 
 fn assert_vnode_matches_element(vnode: &VNode<String>, node: &sys::Node) {
