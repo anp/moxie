@@ -1,5 +1,6 @@
 use {
     moxie_dom::{embed::WebRuntime, *},
+    std::io::prelude::*,
     typed_html::dom::{DOMTree, VNode},
     wasm_bindgen::JsCast,
     wasm_bindgen_test::*,
@@ -10,9 +11,9 @@ wasm_bindgen_test_configure!(run_in_browser);
 fn mini_list() {
     let mut expected: DOMTree<String> = typed_html::html!(
         <div>
-            <ul>
+            <ul class="listywisty">
                 <li>"first"</li>
-                <li>"second"</li>
+                <li class="item">"second"</li>
                 <li>"third"</li>
             </ul>
         </div>
@@ -24,9 +25,9 @@ fn mini_list() {
 
     let mut tester = WebRuntime::new(root.clone(), move || {
         moxie::mox! {
-            <ul>
+            <ul class="listywisty">
                 <li>"first"</li>
-                <li>"second"</li>
+                <li class="item">"second"</li>
                 <li>"third"</li>
             </ul>
         };
@@ -49,10 +50,7 @@ fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
                 "element types must match",
             );
 
-            // for (name, value) in &e.attributes {
-            //     // TODO make sure they're equal
-            // }
-            // // TODO make sure there aren't any missing or extras
+            assert_attributes_match(expected, actual);
 
             let mut actual_child = actual.first_child();
             for (i, expected_child) in expected.children.iter().enumerate() {
@@ -75,5 +73,47 @@ fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
         _ => {
             panic!("mismatched nodes!");
         }
+    }
+}
+
+fn assert_attributes_match(expected: &typed_html::dom::VElement<String>, actual: &sys::Element) {
+    let mut attr_panic_msg = Vec::new();
+
+    let mut expected_attrs = std::collections::BTreeMap::new();
+    for (name, value) in &expected.attributes {
+        expected_attrs.insert(name.to_string(), value);
+    }
+
+    let actual_attrs = actual.attributes();
+    for i in 0..actual_attrs.length() {
+        let actual = actual_attrs.item(i).unwrap();
+        let name = actual.local_name();
+        let expected = expected_attrs.remove(&name);
+
+        if let Some(expected) = expected {
+            assert_eq!(&actual.value(), expected, "attribute `{}` must match", name);
+        } else {
+            writeln!(
+                &mut attr_panic_msg,
+                "unexpected {}={}",
+                name,
+                actual.value()
+            )
+            .unwrap();
+        }
+    }
+
+    for (expected_name, expected_value) in expected_attrs {
+        writeln!(
+            &mut attr_panic_msg,
+            "missing {}={}",
+            expected_name, expected_value
+        )
+        .unwrap();
+    }
+
+    if !attr_panic_msg.is_empty() {
+        let msg = String::from_utf8(attr_panic_msg).unwrap();
+        panic!("attributes mismatched:\n{}", msg);
     }
 }
