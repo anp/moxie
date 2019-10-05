@@ -8,10 +8,6 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 fn mini_list() {
-    let body = document().body().unwrap();
-    let root = document().create_element("div").unwrap();
-    body.append_child(&root).unwrap();
-
     let mut expected: DOMTree<String> = typed_html::html!(
         <div>
             <ul>
@@ -21,6 +17,10 @@ fn mini_list() {
             </ul>
         </div>
     );
+    let expected = expected.vnode();
+
+    let root = document().create_element("div").unwrap();
+    document().body().unwrap().append_child(&root).unwrap();
 
     let mut tester = WebRuntime::new(root.clone(), move || {
         moxie::mox! {
@@ -30,10 +30,10 @@ fn mini_list() {
                 <li>"third"</li>
             </ul>
         };
-        assert_vnode_matches_element(&expected.vnode(), &root);
     });
 
     tester.run_once();
+    assert_vnode_matches_element(&expected, &root);
 }
 
 fn assert_vnode_matches_element(vnode: &VNode<String>, node: &sys::Node) {
