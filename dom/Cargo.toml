@@ -32,8 +32,24 @@ tracing = "^0.1"
 wasm-bindgen = "0.2.48"
 
 [dependencies.web-sys]
-version = "0.3.25"
+version = "0.3.28"
 features = [
+    # dom types
+    "Attr",
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlElement",
+    "NamedNodeMap",
+    "Node",
+    "Text",
+    "Window",
+
+    # TODO these are for examples only, move them there
+    "HtmlInputElement",
+
+    # event types
     "AnimationEvent",
     "AudioProcessingEvent",
     "BeforeUnloadEvent",
@@ -43,24 +59,16 @@ features = [
     "CompositionEvent",
     "DeviceMotionEvent",
     "DeviceOrientationEvent",
-    "Document",
     "DragEvent",
-    "Element",
     "ErrorEvent",
-    "Event",
-    "EventTarget",
     "FetchEvent",
     "FocusEvent",
     "GamepadEvent",
     "HashChangeEvent",
-    "HtmlButtonElement",
-    "HtmlInputElement",
-    "HtmlElement",
     "IdbVersionChangeEvent",
     "KeyboardEvent",
     "MessageEvent",
     "MouseEvent",
-    "Node",
     "NotificationEvent",
     "OfflineAudioCompletionEvent",
     "PageTransitionEvent",
@@ -72,14 +80,12 @@ features = [
     "SpeechSynthesisEvent",
     "SpeechSynthesisErrorEvent",
     "StorageEvent",
-    "Text",
     "TimeEvent",
     "TouchEvent",
     "TransitionEvent",
     "UiEvent",
     "UserProximityEvent",
     "WheelEvent",
-    "Window",
 ]
 
 [dev-dependencies]
@@ -87,5 +93,4 @@ typed-html = "0.2.1"
 wasm-bindgen-test = "0.3"
 
 [features]
-default = ["log"]
 log = ["tracing/log"]
