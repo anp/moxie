@@ -82,9 +82,6 @@ impl AnimationFrameScheduler {
     /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
     /// animation frames are requested immmediately after the last `moxie::Revision` is completed.
     /// `WebRuntime::run_once` is called once per requested animation frame.
-    ///
-    /// **WARNING**: until proper memoization of DOM nodes lands and is stable, there's a good
-    /// chance that this will make your application unresponsive.
     pub fn run_on_every_frame(self) {
         self.ensure_scheduled(true);
     }
