@@ -15,7 +15,7 @@ fn mini_list() {
     let root = document().create_element("div").unwrap();
     body.append_child(&root).unwrap();
 
-    let mut expected: DOMTree<String> = html!(
+    let mut expected: DOMTree<String> = typed_html::html!(
         <div>
             <ul>
                 <li>"first"</li>
@@ -26,12 +26,13 @@ fn mini_list() {
     );
 
     boot(root.clone(), move || {
-        element!("ul", |e| e.inner(|| {
-            for item in &["first", "second", "third"] {
-                element!("li", |e| e.inner(|| text!(item)));
-            }
-        }));
-
+        moxie::mox! {
+            <ul>
+                <li>"first"</li>
+                <li>"second"</li>
+                <li>"third"</li>
+            </ul>
+        };
         assert_vnode_matches_element(&expected.vnode(), &root);
     });
 }
