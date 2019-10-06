@@ -1,7 +1,7 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
 use {
-    crate::{sys, MemoElement},
+    crate::{node::Node, MemoElement},
     moxie::{embed::Runtime, topo},
     raf::AnimationFrameScheduler,
     std::task::Waker,
@@ -16,7 +16,8 @@ impl WebRuntime {
     ///
     /// On its own, a `WebRuntime` is inert and must either have its `run_once` method called when
     /// a re-render is needed, or be scheduled with [`WebRuntime::animation_frame_scheduler`].
-    pub fn new(parent: sys::Element, mut root: impl FnMut() + 'static) -> Self {
+    pub fn new(parent: impl Into<Node>, mut root: impl FnMut() + 'static) -> Self {
+        let parent = parent.into();
         WebRuntime(Runtime::new(Box::new(move || {
             topo::call!(
                 { root() },
