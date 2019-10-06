@@ -141,7 +141,7 @@ impl Node {
 #[cfg(feature = "webdom")]
 pub(crate) mod webdom {
     use {
-        super::*,
+        super::Node,
         crate::event::Event,
         wasm_bindgen::{prelude::*, JsCast},
         web_sys as sys,
