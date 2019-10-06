@@ -37,6 +37,7 @@ lto = true
 members = [
     "dom",
     "dom/examples/hacking",
+    "dom/examples/ssr",
     "dom/examples/todo",
     "dom/raf",
     "mox",
