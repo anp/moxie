@@ -24,6 +24,11 @@ pub mod node;
 #[cfg(feature = "webdom")]
 pub use web_sys as sys;
 
+static_assertions::assert_cfg!(
+    any(feature = "webdom", feature = "rsdom"),
+    "At least one DOM implementation's feature must be enabled (`webdom`, `rsdom`)"
+);
+
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the
 /// provided arguments and begins scheduling its execution with `requestAnimationFrame` on state
 /// changes.

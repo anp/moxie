@@ -24,12 +24,17 @@ wasm-opt = false
 wasm-opt = false
 
 [dependencies]
-js-sys = { version = "0.3.25", optional = true }
 moxie = { path = "../", version = "0.1.1-alpha.0" }
-quick-xml = { version = "0.16.1", optional = true }
 raf = { path = "raf", version = "0.1.0-pre" }
 scopeguard = "1"
+static_assertions = "1"
 tracing = "^0.1"
+
+# rsdom dependencies:
+quick-xml = { version = "0.16.1", optional = true }
+
+# webdom dependencies:
+js-sys = { version = "0.3.25", optional = true }
 wasm-bindgen = { version = "0.2.48", optional = true }
 
 [dependencies.web-sys]
