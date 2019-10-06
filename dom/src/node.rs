@@ -128,7 +128,8 @@ impl Node {
     pub(crate) fn replace_child(&self, new_child: &Node, existing: &Node) {
         match self {
             Node::Concrete(e) => {
-                e.replace_child(new_child.expect_concrete(), existing.expect_concrete());
+                e.replace_child(new_child.expect_concrete(), existing.expect_concrete())
+                    .unwrap();
             }
 
             #[cfg(feature = "rsdom")]
@@ -250,7 +251,23 @@ pub(crate) mod rsdom {
         new_child: &Rc<VirtNode>,
         existing: &Rc<VirtNode>,
     ) {
-        unimplemented!()
+        let parent = v.parent.replace(None);
+        if let Some(parent) = v.parent.replace(None).and_then(|w| w.upgrade()) {
+            v.parent.replace(Some(Rc::downgrade(&parent)));
+
+            let mut replace_idx = None;
+            for (i, child) in parent.children.borrow().iter().enumerate() {
+                if Rc::ptr_eq(child, existing) {
+                    replace_idx = Some(i);
+                    break;
+                }
+            }
+
+            if let Some(i) = replace_idx {
+                let mut children = &mut *parent.children.borrow_mut();
+                std::mem::replace(&mut children[i], new_child.clone());
+            }
+        }
     }
 
     pub(super) fn set_attribute(v: &Rc<VirtNode>, name: &str, value: &str) {
