@@ -7,7 +7,7 @@ mod tests {
     use moxie_dom::{embed::WebRuntime, *};
 
     #[test]
-    fn hello_world() {
+    fn basic_list_prerender() {
         let (mut tester, root) = WebRuntime::with_rsdom(move || {
             moxie::mox! {
                 <ul class="listywisty">
@@ -20,20 +20,23 @@ mod tests {
 
         tester.run_once();
 
-        let expected = r#"
+        assert_eq!(
+            &root.inner_html(),
+            r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#,
+            "concisely-rendered string output must match expected"
+        );
+        assert_eq!(
+            // this newline lets the above string output seem legible
+            &root.pretty_inner_html(),
+            r#"
 <div>
   <ul class="listywisty">
     <li>first</li>
     <li class="item">second</li>
     <li>third</li>
   </ul>
-</div>"#;
-
-        assert_eq!(
-            expected,
-            // this newline lets the above string output seem legible
-            String::from("\n") + &root.to_string(),
-            "rendered string output must match expected"
+</div>"#,
+            "human-rendered string output must match expected"
         );
     }
 }
