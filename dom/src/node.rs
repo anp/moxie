@@ -170,6 +170,7 @@ pub(crate) mod rsdom {
         super::*,
         html5ever::{
             rcdom::{Node as VirtNode, NodeData as VirtNodeData},
+            tree_builder::Attribute,
             LocalName, Namespace, QualName,
         },
         std::{
@@ -251,7 +252,6 @@ pub(crate) mod rsdom {
         new_child: &Rc<VirtNode>,
         existing: &Rc<VirtNode>,
     ) {
-        let parent = v.parent.replace(None);
         if let Some(parent) = v.parent.replace(None).and_then(|w| w.upgrade()) {
             v.parent.replace(Some(Rc::downgrade(&parent)));
 
@@ -264,18 +264,40 @@ pub(crate) mod rsdom {
             }
 
             if let Some(i) = replace_idx {
-                let mut children = &mut *parent.children.borrow_mut();
+                let children = &mut *parent.children.borrow_mut();
                 std::mem::replace(&mut children[i], new_child.clone());
             }
         }
     }
 
     pub(super) fn set_attribute(v: &Rc<VirtNode>, name: &str, value: &str) {
-        unimplemented!()
+        let mut attrs = match &v.data {
+            VirtNodeData::Element { ref attrs, .. } => attrs.borrow_mut(),
+            data @ _ => panic!("expected NodeData::Element, found {:?}", data),
+        };
+
+        let new_value = value.to_string().into();
+
+        if let Some(existing) = attrs.iter_mut().find(|a| &*a.name.local == name) {
+            existing.value = new_value;
+        } else {
+            attrs.push(Attribute {
+                name: QualName::new(
+                    None, //prefix
+                    Namespace::from(""),
+                    LocalName::from(name),
+                ),
+                value: new_value,
+            });
+        }
     }
 
     pub(super) fn remove_attribute(v: &Rc<VirtNode>, name: &str) {
-        unimplemented!()
+        let mut attrs = match &v.data {
+            VirtNodeData::Element { ref attrs, .. } => attrs.borrow_mut(),
+            data @ _ => panic!("expected NodeData::Element, found {:?}", data),
+        };
+        attrs.retain(|a| &*a.name.local != name);
     }
 
     impl Node {
