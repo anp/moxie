@@ -41,7 +41,10 @@ impl From<sys::Text> for Node {
 
 #[cfg(feature = "rsdom")]
 use {
-    html5ever::rcdom::{Node as VirtNode, NodeData as VirtNodeData},
+    html5ever::{
+        rcdom::{Node as VirtNode, NodeData as VirtNodeData},
+        LocalName, Namespace, QualName,
+    },
     std::{cell::RefCell, rc::Rc},
 };
 
@@ -74,7 +77,11 @@ impl Node {
             Node::Concrete(_) => crate::document().create_element(ty).unwrap().into(),
             #[cfg(feature = "rsdom")]
             Node::Virtual(_) => VirtNode::new(VirtNodeData::Element {
-                name: unimplemented!(),
+                name: QualName::new(
+                    None,                    //prefix
+                    Namespace::from("html"), // TODO attempt to parse other namespace from ty
+                    LocalName::from(ty),
+                ),
                 attrs: RefCell::new(vec![]),
                 template_contents: None,
                 mathml_annotation_xml_integration_point: false,
