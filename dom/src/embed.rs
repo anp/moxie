@@ -7,6 +7,9 @@ use {
     std::task::Waker,
 };
 
+#[cfg(feature = "rsdom")]
+use {crate::node::rsdom, std::rc::Rc};
+
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building trees of DOM nodes.
 #[must_use]
 pub struct WebRuntime(Runtime<Box<dyn FnMut()>, ()>);
@@ -26,6 +29,12 @@ impl WebRuntime {
                 }
             )
         })))
+    }
+
+    #[cfg(feature = "rsdom")]
+    pub fn with_rsdom(root: impl FnMut() + 'static) -> (Self, Rc<rsdom::VirtNode>) {
+        let container = rsdom::create_element("div");
+        (WebRuntime::new(container.clone(), root), container)
     }
 
     /// Run the root function in a fresh [moxie::Revision]. See [moxie::embed::Runtime::run_once]

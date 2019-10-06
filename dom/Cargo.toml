@@ -26,14 +26,11 @@ wasm-opt = false
 [dependencies]
 js-sys = { version = "0.3.25", optional = true }
 moxie = { path = "../", version = "0.1.1-alpha.0" }
+quick-xml = { version = "0.16.1", optional = true }
 raf = { path = "raf", version = "0.1.0-pre" }
 scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = { version = "0.2.48", optional = true }
-
-[dependencies.html5ever]
-version = "0.24.1"
-optional = true
 
 [dependencies.web-sys]
 version = "0.3.28"
@@ -100,5 +97,5 @@ wasm-bindgen-test = "0.3"
 [features]
 default = ["webdom"]
 log = ["tracing/log"]
-rsdom = ["html5ever"]
+rsdom = ["quick-xml"]
 webdom = ["js-sys", "wasm-bindgen", "web-sys"]

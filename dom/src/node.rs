@@ -2,7 +2,7 @@
 use {crate::sys, wasm_bindgen::JsCast};
 
 #[cfg(feature = "rsdom")]
-use {html5ever::rcdom::Node as VirtNode, std::rc::Rc};
+use {rsdom::VirtNode, std::rc::Rc};
 
 #[derive(Clone)]
 pub enum Node {
@@ -147,12 +147,12 @@ pub(crate) mod webdom {
         web_sys as sys,
     };
 
-    pub(crate) struct Callback {
+    pub struct Callback {
         cb: Closure<dyn FnMut(JsValue)>,
     }
 
     impl Callback {
-        pub(crate) fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
+        pub fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
         where
             Ev: Event,
         {
@@ -163,7 +163,7 @@ pub(crate) mod webdom {
             Self { cb }
         }
 
-        pub(crate) fn as_fn(&self) -> &js_sys::Function {
+        pub fn as_fn(&self) -> &js_sys::Function {
             self.cb.as_ref().unchecked_ref()
         }
     }
@@ -187,7 +187,7 @@ pub(crate) mod webdom {
     }
 
     impl Node {
-        pub(crate) fn expect_concrete(&self) -> &sys::Node {
+        pub(super) fn expect_concrete(&self) -> &sys::Node {
             match self {
                 Node::Concrete(n) => n,
 
@@ -199,16 +199,29 @@ pub(crate) mod webdom {
 }
 
 #[cfg(feature = "rsdom")]
-pub(crate) mod rsdom {
+pub mod rsdom {
     use {
         super::*,
-        html5ever::{
-            rcdom::{Node as VirtNode, NodeData as VirtNodeData},
-            tree_builder::Attribute,
-            LocalName, Namespace, QualName,
+        std::{
+            cell::{Cell, RefCell},
+            rc::{Rc, Weak},
         },
-        std::{cell::RefCell, rc::Rc},
     };
+
+    pub struct VirtNode {
+        parent: Cell<Option<Weak<VirtNode>>>,
+        children: RefCell<Vec<Rc<VirtNode>>>,
+        data: VirtData,
+    }
+
+    #[derive(Debug)]
+    pub enum VirtData {
+        Elem {
+            tag: String,
+            attrs: RefCell<Vec<(String, String)>>,
+        },
+        Text(String),
+    }
 
     impl From<Rc<VirtNode>> for Node {
         fn from(e: Rc<VirtNode>) -> Self {
@@ -216,31 +229,30 @@ pub(crate) mod rsdom {
         }
     }
 
-    pub(super) fn create_element(ty: &str) -> Rc<VirtNode> {
-        VirtNode::new(VirtNodeData::Element {
-            name: QualName::new(
-                None,                    //prefix
-                Namespace::from("html"), // TODO attempt to parse other namespace from ty
-                LocalName::from(ty),
-            ),
-            attrs: RefCell::new(vec![]),
-            template_contents: None,
-            mathml_annotation_xml_integration_point: false,
+    pub fn create_element(ty: &str) -> Rc<VirtNode> {
+        Rc::new(VirtNode {
+            parent: Cell::new(None),
+            children: RefCell::new(vec![]),
+            data: VirtData::Elem {
+                tag: ty.to_string(),
+                attrs: RefCell::new(vec![]),
+            },
         })
     }
 
-    pub(super) fn create_text_node(contents: &str) -> Rc<VirtNode> {
-        VirtNode::new(VirtNodeData::Text {
-            contents: RefCell::new(contents.into()),
+    pub fn create_text_node(contents: &str) -> Rc<VirtNode> {
+        Rc::new(VirtNode {
+            parent: Cell::new(None),
+            children: RefCell::new(vec![]),
+            data: VirtData::Text(contents.to_string()),
         })
     }
 
-    pub(super) fn first_child(v: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
+    pub fn first_child(v: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
         v.children.borrow().get(0).map(|n| n.clone())
     }
 
-    pub(super) fn next_sibling(v: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
-        // these lines are a silly dance to get a deref-able parent pointer from rcdom
+    pub fn next_sibling(v: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
         let parent = v.parent.replace(None);
         parent.and_then(|w| w.upgrade()).and_then(|parent| {
             v.parent.replace(Some(Rc::downgrade(&parent)));
@@ -257,11 +269,12 @@ pub(crate) mod rsdom {
         })
     }
 
-    pub(super) fn append_child(v: &Rc<VirtNode>, new_child: &Rc<VirtNode>) {
-        v.children.borrow_mut().push(new_child.clone())
+    pub fn append_child(v: &Rc<VirtNode>, new_child: &Rc<VirtNode>) {
+        v.children.borrow_mut().push(new_child.clone());
+        new_child.parent.set(Some(Rc::downgrade(v)));
     }
 
-    pub(super) fn remove_child(v: &Rc<VirtNode>, to_remove: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
+    pub fn remove_child(v: &Rc<VirtNode>, to_remove: &Rc<VirtNode>) -> Option<Rc<VirtNode>> {
         let parent = v.parent.replace(None);
         parent.and_then(|w| w.upgrade()).and_then(|parent| {
             v.parent.replace(Some(Rc::downgrade(&parent)));
@@ -278,11 +291,7 @@ pub(crate) mod rsdom {
         })
     }
 
-    pub(super) fn replace_child(
-        v: &Rc<VirtNode>,
-        new_child: &Rc<VirtNode>,
-        existing: &Rc<VirtNode>,
-    ) {
+    pub fn replace_child(v: &Rc<VirtNode>, new_child: &Rc<VirtNode>, existing: &Rc<VirtNode>) {
         if let Some(parent) = v.parent.replace(None).and_then(|w| w.upgrade()) {
             v.parent.replace(Some(Rc::downgrade(&parent)));
 
@@ -294,41 +303,33 @@ pub(crate) mod rsdom {
                 }
             }
 
-            if let Some(i) = replace_idx {
-                let children = &mut *parent.children.borrow_mut();
-                std::mem::replace(&mut children[i], new_child.clone());
-            }
+            let children = &mut *parent.children.borrow_mut();
+            std::mem::replace(&mut children[replace_idx.unwrap()], new_child.clone());
+            new_child.parent.set(Some(Rc::downgrade(&parent)));
         }
     }
 
-    pub(super) fn set_attribute(v: &Rc<VirtNode>, name: &str, value: &str) {
+    pub fn set_attribute(v: &Rc<VirtNode>, name: &str, value: &str) {
         let mut attrs = match &v.data {
-            VirtNodeData::Element { ref attrs, .. } => attrs.borrow_mut(),
-            data @ _ => panic!("expected NodeData::Element, found {:?}", data),
+            VirtData::Elem { ref attrs, .. } => attrs.borrow_mut(),
+            data @ _ => panic!("expected VirtData::Elem, found {:?}", data),
         };
 
         let new_value = value.to_string().into();
 
-        if let Some(existing) = attrs.iter_mut().find(|a| &*a.name.local == name) {
-            existing.value = new_value;
+        if let Some(existing) = attrs.iter_mut().find(|(n, _)| n == name) {
+            existing.1 = new_value;
         } else {
-            attrs.push(Attribute {
-                name: QualName::new(
-                    None, //prefix
-                    Namespace::from(""),
-                    LocalName::from(name),
-                ),
-                value: new_value,
-            });
+            attrs.push((name.to_string(), new_value));
         }
     }
 
-    pub(super) fn remove_attribute(v: &Rc<VirtNode>, name: &str) {
+    pub fn remove_attribute(v: &Rc<VirtNode>, name: &str) {
         let mut attrs = match &v.data {
-            VirtNodeData::Element { ref attrs, .. } => attrs.borrow_mut(),
-            data @ _ => panic!("expected NodeData::Element, found {:?}", data),
+            VirtData::Elem { ref attrs, .. } => attrs.borrow_mut(),
+            data @ _ => panic!("expected VirtData::Elem, found {:?}", data),
         };
-        attrs.retain(|a| &*a.name.local != name);
+        attrs.retain(|(n, _)| n != name);
     }
 
     impl Node {
