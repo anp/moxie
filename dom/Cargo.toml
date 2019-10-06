@@ -23,6 +23,16 @@ wasm-opt = false
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
 
+[features]
+default = ["webdom"]
+log = ["tracing/log"]
+rsdom = ["quick-xml"]
+webdom = ["js-sys", "wasm-bindgen", "web-sys"]
+
+[dev-dependencies]
+typed-html = "0.2.1"
+wasm-bindgen-test = "0.3"
+
 [dependencies]
 moxie = { path = "../", version = "0.1.1-alpha.0" }
 raf = { path = "raf", version = "0.1.0-pre" }
@@ -94,13 +104,3 @@ features = [
     "UserProximityEvent",
     "WheelEvent",
 ]
-
-[dev-dependencies]
-typed-html = "0.2.1"
-wasm-bindgen-test = "0.3"
-
-[features]
-default = ["webdom"]
-log = ["tracing/log"]
-rsdom = ["quick-xml"]
-webdom = ["js-sys", "wasm-bindgen", "web-sys"]
