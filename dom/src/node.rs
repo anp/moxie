@@ -1,7 +1,7 @@
-use {
-    crate::sys,
-    wasm_bindgen::{prelude::*, JsCast},
-};
+use {crate::sys, wasm_bindgen::JsCast};
+
+#[cfg(feature = "rsdom")]
+use {html5ever::rcdom::Node as VirtNode, std::rc::Rc};
 
 #[derive(Clone)]
 pub enum Node {
@@ -41,18 +41,6 @@ impl From<sys::Text> for Node {
         Node::Concrete(e.into())
     }
 }
-
-#[cfg(feature = "rsdom")]
-use {
-    html5ever::{
-        rcdom::{Node as VirtNode, NodeData as VirtNodeData},
-        LocalName, Namespace, QualName,
-    },
-    std::{
-        cell::RefCell,
-        rc::{Rc, Weak},
-    },
-};
 
 impl Node {
     fn expect_concrete(&self) -> &sys::Node {
@@ -173,10 +161,7 @@ pub(crate) mod rsdom {
             tree_builder::Attribute,
             LocalName, Namespace, QualName,
         },
-        std::{
-            cell::RefCell,
-            rc::{Rc, Weak},
-        },
+        std::{cell::RefCell, rc::Rc},
     };
 
     impl From<Rc<VirtNode>> for Node {
