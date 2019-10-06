@@ -1,6 +1,7 @@
 //! Event types.
 
 use {
+    crate::node::Node,
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
@@ -34,21 +35,28 @@ impl Callback {
 
 #[must_use]
 pub(crate) struct EventHandle {
-    target: web_sys::EventTarget,
+    target: Option<sys::EventTarget>,
     callback: Callback,
     name: &'static str,
 }
 
 impl EventHandle {
-    pub(crate) fn new<Ev>(target: web_sys::EventTarget, callback: impl FnMut(Ev) + 'static) -> Self
+    pub(crate) fn new<Ev>(target: &Node, callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
     {
         let callback = Callback::new(callback);
         let name = Ev::NAME;
-        target
-            .add_event_listener_with_callback(name, callback.as_fn())
-            .unwrap();
+        let target = match target {
+            Node::Concrete(n) => {
+                let target: &sys::EventTarget = n.as_ref();
+                target
+                    .add_event_listener_with_callback(name, callback.as_fn())
+                    .unwrap();
+                Some(target.to_owned())
+            }
+            _ => None,
+        };
         Self {
             target,
             callback,
@@ -59,9 +67,11 @@ impl EventHandle {
 
 impl Drop for EventHandle {
     fn drop(&mut self) {
-        self.target
-            .remove_event_listener_with_callback(self.name, self.callback.as_fn())
-            .unwrap();
+        if let Some(target) = self.target.take() {
+            target
+                .remove_event_listener_with_callback(self.name, self.callback.as_fn())
+                .unwrap();
+        }
     }
 }
 

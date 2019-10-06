@@ -31,6 +31,10 @@ scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = "0.2.48"
 
+[dependencies.html5ever]
+version = "0.24.1"
+optional = true
+
 [dependencies.web-sys]
 version = "0.3.28"
 features = [
@@ -93,4 +97,6 @@ typed-html = "0.2.1"
 wasm-bindgen-test = "0.3"
 
 [features]
+default = []
 log = ["tracing/log"]
+rsdom = ["html5ever"]

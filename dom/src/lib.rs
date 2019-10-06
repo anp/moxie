@@ -10,6 +10,7 @@ use {
     crate::{
         embed::WebRuntime,
         event::{Event, EventHandle},
+        node::Node,
     },
     moxie,
     std::cell::Cell,
@@ -19,6 +20,7 @@ use {
 pub mod elements;
 pub mod embed;
 pub mod event;
+pub mod node;
 
 pub use web_sys as sys;
 
@@ -59,7 +61,7 @@ pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
     // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
-    let text_node = memo!(s.to_string(), |s| document().create_text_node(s));
+    let text_node = memo!(s.to_string(), |s| parent.node.create_text_node(s));
     parent.ensure_child_attached(&text_node);
 }
 
@@ -78,9 +80,9 @@ pub fn element<ChildRet>(
     ty: &'static str,
     with_elem: impl FnOnce(&MemoElement) -> ChildRet,
 ) -> ChildRet {
-    let elem = memo!(ty, |ty| document().create_element(ty).unwrap());
+    let elem = memo!(ty, |ty| parent.node.create_element(ty));
     parent.ensure_child_attached(&elem);
-    let elem = MemoElement::new(elem);
+    let elem = MemoElement::new(elem.into());
     with_elem(&elem)
 }
 
@@ -90,15 +92,15 @@ pub fn element<ChildRet>(
 /// "stringly-typed" API for mutating the contained DOM nodes, adhering fairly closely to the
 /// upstream web specs.
 pub struct MemoElement {
-    curr: Cell<Option<sys::Node>>,
-    elem: sys::Element,
+    curr: Cell<Option<Node>>,
+    node: Node,
 }
 
 impl MemoElement {
-    fn new(elem: sys::Element) -> Self {
+    fn new(node: Node) -> Self {
         Self {
             curr: Cell::new(None),
-            elem,
+            node,
         }
     }
 
@@ -112,8 +114,8 @@ impl MemoElement {
     /// so the tools for memoization are important for keeping your application responsive. If you
     /// have legitimate needs for this API, please consider filing an issue with your use case so
     /// the maintainers of this crate can consider "official" ways to support it.
-    pub fn raw_element_that_has_sharp_edges_please_be_careful(&self) -> sys::Element {
-        self.elem.clone()
+    pub fn raw_node_that_has_sharp_edges_please_be_careful(&self) -> Node {
+        self.node.clone()
     }
 
     // FIXME this should be topo-aware
@@ -129,10 +131,8 @@ impl MemoElement {
             memo_with!(
                 value.to_string(),
                 |v| {
-                    self.elem.set_attribute(name, v).unwrap();
-                    scopeguard::guard(self.elem.clone(), move |elem| {
-                        elem.remove_attribute(name).unwrap()
-                    })
+                    self.node.set_attribute(name, v);
+                    scopeguard::guard(self.node.clone(), move |elem| elem.remove_attribute(name))
                 },
                 |_| {}
             )
@@ -156,31 +156,28 @@ impl MemoElement {
         topo::call!(slot: Ev::NAME, {
             memo_with!(
                 moxie::embed::Revision::current(),
-                |_| {
-                    let target: &sys::EventTarget = self.elem.as_ref();
-                    EventHandle::new(target.clone(), callback)
-                },
+                |_| EventHandle::new(&self.node, callback),
                 |_| {}
             );
         });
         self
     }
 
-    fn ensure_child_attached(&self, new_child: &sys::Node) {
+    fn ensure_child_attached(&self, new_child: &Node) {
         let prev_sibling = self.curr.replace(Some(new_child.clone()));
 
         let existing = if prev_sibling.is_none() {
-            self.elem.first_child()
+            self.node.first_child()
         } else {
             prev_sibling.and_then(|p| p.next_sibling())
         };
 
-        if let Some(existing) = existing {
-            if !existing.is_same_node(Some(new_child)) {
-                self.elem.replace_child(new_child, &existing).unwrap();
+        if let Some(ref existing) = existing {
+            if existing != new_child {
+                self.node.replace_child(new_child, existing);
             }
         } else {
-            self.elem.append_child(new_child).unwrap();
+            self.node.append_child(new_child);
         }
     }
 
@@ -189,7 +186,7 @@ impl MemoElement {
     /// child nodes to ensure the element's children are correct per the latest declaration.
     // FIXME this should be topo-aware
     pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
-        let elem = self.elem.clone();
+        let elem = self.node.clone();
         let last_desired_child;
         let ret;
         topo::call!(
@@ -201,7 +198,7 @@ impl MemoElement {
                 last_desired_child = topo::Env::expect::<MemoElement>().curr.replace(None);
             },
             env! {
-                MemoElement => MemoElement::new(self.elem.clone()),
+                MemoElement => MemoElement::new(self.node.clone()),
             }
         );
 
