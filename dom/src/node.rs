@@ -208,7 +208,7 @@ pub mod rsdom {
         },
         std::{
             cell::{Cell, RefCell},
-            fmt::{Display, Formatter, Result as FmtResult},
+            fmt::{Debug, Display, Formatter, Result as FmtResult},
             io::{prelude::*, Cursor},
             rc::{Rc, Weak},
         },
@@ -221,6 +221,24 @@ pub mod rsdom {
     }
 
     impl VirtNode {
+        pub fn inner_html(&self) -> String {
+            let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+            {
+                let mut writer = XmlWriter::new(&mut buf);
+                self.write_xml(&mut writer);
+            }
+            String::from_utf8(buf.into_inner()).unwrap()
+        }
+
+        pub fn inner_html_pretty(&self) -> String {
+            let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+            {
+                let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 2);
+                self.write_xml(&mut writer);
+            }
+            String::from_utf8(buf.into_inner()).unwrap()
+        }
+
         pub fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
             match &self.data {
                 VirtData::Elem { tag, attrs } => {
@@ -249,16 +267,20 @@ pub mod rsdom {
         }
     }
 
+    impl Debug for VirtNode {
+        fn fmt(&self, f: &mut Formatter) -> FmtResult {
+            let s = if f.alternate() {
+                self.inner_html_pretty()
+            } else {
+                self.inner_html()
+            };
+            f.write_str(&s)
+        }
+    }
+
     impl Display for VirtNode {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
-            let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-            {
-                let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 2);
-                self.write_xml(&mut writer);
-            }
-            let s = String::from_utf8(buf.into_inner()).unwrap();
-            f.write_str(&s);
-            Ok(())
+            f.write_str(&self.inner_html_pretty())
         }
     }
 
