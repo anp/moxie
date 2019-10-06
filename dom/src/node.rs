@@ -202,9 +202,14 @@ pub(crate) mod webdom {
 pub mod rsdom {
     use {
         super::*,
+        quick_xml::{
+            events::{BytesEnd, BytesStart, BytesText, Event},
+            Writer as XmlWriter,
+        },
         std::{
             cell::{Cell, RefCell},
             fmt::{Display, Formatter, Result as FmtResult},
+            io::{prelude::*, Cursor},
             rc::{Rc, Weak},
         },
     };
@@ -215,9 +220,45 @@ pub mod rsdom {
         data: VirtData,
     }
 
+    impl VirtNode {
+        pub fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
+            match &self.data {
+                VirtData::Elem { tag, attrs } => {
+                    writer
+                        .write_event(Event::Start(
+                            BytesStart::borrowed_name(tag.as_bytes()).with_attributes(
+                                attrs.borrow().iter().map(|(n, v)| (n.as_str(), v.as_str())),
+                            ),
+                        ))
+                        .expect("writing start of element");
+
+                    for child in self.children.borrow().iter() {
+                        child.write_xml(writer);
+                    }
+
+                    writer
+                        .write_event(Event::End(BytesEnd::borrowed(tag.as_bytes())))
+                        .expect("writing start of element");
+                }
+                VirtData::Text(t) => {
+                    writer
+                        .write_event(Event::Text(BytesText::from_plain_str(&t)))
+                        .expect("writing text node");
+                }
+            }
+        }
+    }
+
     impl Display for VirtNode {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
-            unimplemented!()
+            let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+            {
+                let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 2);
+                self.write_xml(&mut writer);
+            }
+            let s = String::from_utf8(buf.into_inner()).unwrap();
+            f.write_str(&s);
+            Ok(())
         }
     }
 

@@ -20,11 +20,20 @@ mod tests {
 
         tester.run_once();
 
-        let stringy_output = root.to_string();
+        let expected = r#"
+<div>
+  <ul class="listywisty">
+    <li>first</li>
+    <li class="item">second</li>
+    <li>third</li>
+  </ul>
+</div>"#;
 
         assert_eq!(
-            stringy_output,
-            r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#
+            expected,
+            // this newline lets the above string output seem legible
+            String::from("\n") + &root.to_string(),
+            "rendered string output must match expected"
         );
     }
 }
