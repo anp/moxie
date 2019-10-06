@@ -27,7 +27,7 @@ mod tests {
         );
         assert_eq!(
             // this newline lets the above string output seem legible
-            &root.pretty_inner_html(),
+            format!("\n{}", &root),
             r#"
 <div>
   <ul class="listywisty">
