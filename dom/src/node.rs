@@ -230,7 +230,7 @@ pub mod rsdom {
             String::from_utf8(buf.into_inner()).unwrap()
         }
 
-        pub fn inner_html_pretty(&self) -> String {
+        pub fn pretty_inner_html(&self) -> String {
             let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
             {
                 let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 2);
@@ -271,7 +271,7 @@ pub mod rsdom {
     impl Debug for VirtNode {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
             let s = if f.alternate() {
-                self.inner_html_pretty()
+                self.pretty_inner_html()
             } else {
                 self.inner_html()
             };
@@ -281,7 +281,7 @@ pub mod rsdom {
 
     impl Display for VirtNode {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
-            f.write_str(&self.inner_html_pretty())
+            f.write_str(&self.pretty_inner_html())
         }
     }
 
