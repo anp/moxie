@@ -36,7 +36,7 @@ pub use web_sys as sys;
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, root: impl FnMut() + 'static) {
     WebRuntime::new(new_parent.as_ref().to_owned(), root)
         .animation_frame_scheduler()
-        .run_on_state_changes();
+        .run_on_wake();
 }
 
 /// Returns the current window. Panics if no window is available.
