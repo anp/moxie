@@ -19,7 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@master
     # TODO(https://github.com/anp/moxie/issues/37)
-    # - run: cargo test-dom-lib
+    # - run: cargo test-dom-drivertest
+    - run: cargo test-dom-lib
     - run: cargo test-ssr-example
 
     - name: build dom examples

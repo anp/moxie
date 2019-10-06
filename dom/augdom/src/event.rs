@@ -1,10 +1,10 @@
 //! Event types.
 
-use crate::node::Node;
+use crate::Node;
 
 #[cfg(feature = "webdom")]
 use {
-    crate::node::webdom,
+    crate::webdom,
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
@@ -24,7 +24,7 @@ pub trait Event {
 
 #[cfg(feature = "webdom")]
 #[must_use]
-pub(crate) struct EventHandle {
+pub struct EventHandle {
     target: Option<web_sys::EventTarget>,
     callback: webdom::Callback,
     name: &'static str,
@@ -34,7 +34,7 @@ pub(crate) struct EventHandle {
 pub(crate) struct EventHandle;
 
 impl EventHandle {
-    pub(crate) fn new<Ev>(_target: &Node, _callback: impl FnMut(Ev) + 'static) -> Self
+    pub fn new<Ev>(_target: &Node, _callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
     {

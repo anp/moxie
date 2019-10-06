@@ -8,7 +8,7 @@ mod tests {
 
     #[test]
     fn basic_list_prerender() {
-        let (mut tester, root) = WebRuntime::with_rsdom(move || {
+        let (mut tester, root) = WebRuntime::in_rsdom_div(move || {
             moxie::mox! {
                 <ul class="listywisty">
                     <li>"first"</li>
@@ -30,11 +30,11 @@ mod tests {
             format!("\n{}", &root),
             r#"
 <div>
-  <ul class="listywisty">
-    <li>first</li>
-    <li class="item">second</li>
-    <li>third</li>
-  </ul>
+    <ul class="listywisty">
+        <li>first</li>
+        <li class="item">second</li>
+        <li>third</li>
+    </ul>
 </div>"#,
             "human-rendered string output must match expected"
         );

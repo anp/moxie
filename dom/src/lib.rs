@@ -7,9 +7,9 @@
 pub use moxie::*;
 
 use {
-    crate::{
+    augdom::{
         event::{Event, EventHandle},
-        node::Node,
+        Node,
     },
     moxie,
     std::cell::Cell,
@@ -18,16 +18,10 @@ use {
 
 pub mod elements;
 pub mod embed;
-pub mod event;
-pub mod node;
 
 #[cfg(feature = "webdom")]
-pub use web_sys as sys;
-
-static_assertions::assert_cfg!(
-    any(feature = "webdom", feature = "rsdom"),
-    "At least one DOM implementation's feature must be enabled (`webdom`, `rsdom`)"
-);
+pub use augdom::sys;
+pub use augdom::{event, *};
 
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the
 /// provided arguments and begins scheduling its execution with `requestAnimationFrame` on state
@@ -41,24 +35,10 @@ static_assertions::assert_cfg!(
 /// [`AnimationFrameScheduler`](crate::embed::AnimationFrameScheduler) which requests an animation
 /// frame only when there are updates to state variables.
 #[cfg(feature = "webdom")]
-pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, root: impl FnMut() + 'static) {
-    embed::WebRuntime::new(new_parent.as_ref().to_owned(), root)
+pub fn boot(new_parent: impl Into<Node>, root: impl FnMut() + 'static) {
+    embed::WebRuntime::new(new_parent.into(), root)
         .animation_frame_scheduler()
         .run_on_wake();
-}
-
-/// Returns the current window. Panics if no window is available.
-#[cfg(feature = "webdom")]
-pub fn window() -> sys::Window {
-    sys::window().expect("must run from within a `window`")
-}
-
-/// Returns the current document. Panics if called outside a web document context.
-#[cfg(feature = "webdom")]
-pub fn document() -> sys::Document {
-    window()
-        .document()
-        .expect("must run from within a `window` with a valid `document`")
 }
 
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
