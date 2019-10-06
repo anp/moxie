@@ -1,0 +1,14 @@
+[package]
+name = "ssr-poc"
+version = "0.1.0"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+description = "proof of concept for server-side rendered HTML with moxie-dom"
+
+[dependencies]
+moxie = { path = "../../../", version = "0.1.1-alpha.0" }
+
+[dependencies.moxie-dom]
+path = "../../"
+default-features = false
+features = [ "rsdom" ]

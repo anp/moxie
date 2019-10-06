@@ -26,13 +26,13 @@ docs-all = "doc --all --no-deps"
 
 dom-flow = """
 watch --clear
-    -x check-dom-lib
+    -x test-ssr-example
+    -x test-dom-lib
     -x check-dom-hacking
-    -x build-dom-hacking
     -x check-dom-todo
+    -x build-dom-hacking
     -x build-dom-todo
     -x clippy-dom
-    -x test-dom-lib
 """
 
 check-dom-lib = "check --package moxie-dom"
@@ -47,6 +47,7 @@ build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 test-dom-lib = "wa-pack test --chrome --headless dom"
+test-ssr-example = "test --package ssr-poc"
 
 # dom utilities
 clippy-dom = """clippy

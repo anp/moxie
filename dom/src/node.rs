@@ -204,6 +204,7 @@ pub mod rsdom {
         super::*,
         std::{
             cell::{Cell, RefCell},
+            fmt::{Display, Formatter, Result as FmtResult},
             rc::{Rc, Weak},
         },
     };
@@ -212,6 +213,12 @@ pub mod rsdom {
         parent: Cell<Option<Weak<VirtNode>>>,
         children: RefCell<Vec<Rc<VirtNode>>>,
         data: VirtData,
+    }
+
+    impl Display for VirtNode {
+        fn fmt(&self, f: &mut Formatter) -> FmtResult {
+            unimplemented!()
+        }
     }
 
     #[derive(Debug)]
