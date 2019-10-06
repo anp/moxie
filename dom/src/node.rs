@@ -239,6 +239,7 @@ pub mod rsdom {
             String::from_utf8(buf.into_inner()).unwrap()
         }
 
+        // TODO is there a way to pass the starting indentation down from a formatter?
         pub fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
             match &self.data {
                 VirtData::Elem { tag, attrs } => {
