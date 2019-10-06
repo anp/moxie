@@ -1,3 +1,4 @@
+#[cfg(feature = "webdom")]
 use {crate::sys, wasm_bindgen::JsCast};
 
 #[cfg(feature = "rsdom")]
@@ -5,6 +6,7 @@ use {html5ever::rcdom::Node as VirtNode, std::rc::Rc};
 
 #[derive(Clone)]
 pub enum Node {
+    #[cfg(feature = "webdom")]
     Concrete(sys::Node),
 
     #[cfg(feature = "rsdom")]
@@ -14,46 +16,22 @@ pub enum Node {
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            #[cfg(feature = "webdom")]
             (Node::Concrete(s), Node::Concrete(o)) => s.is_same_node(Some(o)),
 
-            #[cfg(rsdom)]
-            (Node::Virtual(s), Node::Virtual(o)) => s == o,
+            #[cfg(feature = "rsdom")]
+            (Node::Virtual(s), Node::Virtual(o)) => Rc::ptr_eq(s, o),
 
+            #[cfg(all(feature = "webdom", feature = "rsdom"))]
             _ => unreachable!("if moxie-dom is comparing two different types of nodes...uh-oh."),
         }
     }
 }
 
-impl From<sys::Node> for Node {
-    fn from(e: sys::Node) -> Self {
-        Node::Concrete(e)
-    }
-}
-
-impl From<sys::Element> for Node {
-    fn from(e: sys::Element) -> Self {
-        Node::Concrete(e.into())
-    }
-}
-
-impl From<sys::Text> for Node {
-    fn from(e: sys::Text) -> Self {
-        Node::Concrete(e.into())
-    }
-}
-
 impl Node {
-    fn expect_concrete(&self) -> &sys::Node {
-        match self {
-            Node::Concrete(n) => n,
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(_) => panic!("expected a Node::Concrete, found a Node::Virtual"),
-        }
-    }
-
     pub(crate) fn create_element(&self, ty: &str) -> Self {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(_) => crate::document().create_element(ty).unwrap().into(),
 
             #[cfg(feature = "rsdom")]
@@ -63,6 +41,7 @@ impl Node {
 
     pub(crate) fn create_text_node(&self, contents: &str) -> Self {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(_) => crate::document().create_text_node(contents).into(),
 
             #[cfg(feature = "rsdom")]
@@ -72,6 +51,7 @@ impl Node {
 
     pub(crate) fn first_child(&self) -> Option<Self> {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => e.first_child().map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
@@ -81,6 +61,7 @@ impl Node {
 
     pub(crate) fn append_child(&self, child: &Self) {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => {
                 let _ = e.append_child(child.expect_concrete()).unwrap();
             }
@@ -92,6 +73,7 @@ impl Node {
 
     pub(crate) fn next_sibling(&self) -> Option<Self> {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => e.next_sibling().map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
@@ -101,6 +83,7 @@ impl Node {
 
     pub(crate) fn remove_child(&self, to_remove: &Self) -> Option<Self> {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => e
                 .remove_child(to_remove.expect_concrete())
                 .ok()
@@ -115,6 +98,7 @@ impl Node {
 
     pub(crate) fn replace_child(&self, new_child: &Node, existing: &Node) {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => {
                 e.replace_child(new_child.expect_concrete(), existing.expect_concrete())
                     .unwrap();
@@ -129,6 +113,7 @@ impl Node {
 
     pub(crate) fn set_attribute(&self, name: &str, value: &str) {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => {
                 let e: &sys::Element = e.dyn_ref().unwrap();
                 e.set_attribute(name, value).unwrap()
@@ -141,6 +126,7 @@ impl Node {
 
     pub(crate) fn remove_attribute(&self, name: &str) {
         match self {
+            #[cfg(feature = "webdom")]
             Node::Concrete(e) => {
                 let e: &sys::Element = e.dyn_ref().unwrap();
                 e.remove_attribute(name).ok();
@@ -149,6 +135,66 @@ impl Node {
             #[cfg(feature = "rsdom")]
             Node::Virtual(v) => rsdom::remove_attribute(v, name),
         };
+    }
+}
+
+#[cfg(feature = "webdom")]
+pub(crate) mod webdom {
+    use {
+        super::*,
+        crate::event::Event,
+        wasm_bindgen::{prelude::*, JsCast},
+        web_sys as sys,
+    };
+
+    pub(crate) struct Callback {
+        cb: Closure<dyn FnMut(JsValue)>,
+    }
+
+    impl Callback {
+        pub(crate) fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
+        where
+            Ev: Event,
+        {
+            let cb = Closure::wrap(Box::new(move |ev: JsValue| {
+                let ev: Ev = ev.dyn_into().unwrap();
+                cb(ev);
+            }) as Box<dyn FnMut(JsValue)>);
+            Self { cb }
+        }
+
+        pub(crate) fn as_fn(&self) -> &js_sys::Function {
+            self.cb.as_ref().unchecked_ref()
+        }
+    }
+
+    impl From<sys::Node> for Node {
+        fn from(e: sys::Node) -> Self {
+            Node::Concrete(e)
+        }
+    }
+
+    impl From<sys::Element> for Node {
+        fn from(e: sys::Element) -> Self {
+            Node::Concrete(e.into())
+        }
+    }
+
+    impl From<sys::Text> for Node {
+        fn from(e: sys::Text) -> Self {
+            Node::Concrete(e.into())
+        }
+    }
+
+    impl Node {
+        pub(crate) fn expect_concrete(&self) -> &sys::Node {
+            match self {
+                Node::Concrete(n) => n,
+
+                #[cfg(feature = "rsdom")]
+                Node::Virtual(_) => panic!("expected a Node::Concrete, found a Node::Virtual"),
+            }
+        }
     }
 }
 
@@ -288,6 +334,7 @@ pub(crate) mod rsdom {
     impl Node {
         pub(super) fn expect_virtual(&self) -> &Rc<VirtNode> {
             match self {
+                #[cfg(feature = "webdom")]
                 Node::Concrete(_) => panic!("expected a Node::Virtual, found a Node::Concrete"),
                 Node::Virtual(n) => n,
             }

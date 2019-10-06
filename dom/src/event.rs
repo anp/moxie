@@ -1,70 +1,74 @@
 //! Event types.
 
+use crate::node::Node;
+
+#[cfg(feature = "webdom")]
 use {
-    crate::node::Node,
+    crate::node::webdom,
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
 
 /// An event that can be received as the first argument to a handler callback.
+#[cfg(feature = "webdom")]
 pub trait Event: AsRef<web_sys::Event> + JsCast {
     /// The name used to register for this event in `addEventListener`.
     const NAME: &'static str;
 }
 
-struct Callback {
-    cb: Closure<dyn FnMut(JsValue)>,
+#[cfg(not(feature = "webdom"))]
+pub trait Event {
+    /// The name used to register for this event in `addEventListener`.
+    const NAME: &'static str;
 }
 
-impl Callback {
-    fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
-    where
-        Ev: Event,
-    {
-        let cb = Closure::wrap(Box::new(move |ev: JsValue| {
-            let ev: Ev = ev.dyn_into().unwrap();
-            cb(ev);
-        }) as Box<dyn FnMut(JsValue)>);
-        Self { cb }
-    }
-
-    fn as_fn(&self) -> &js_sys::Function {
-        self.cb.as_ref().unchecked_ref()
-    }
-}
-
+#[cfg(feature = "webdom")]
 #[must_use]
 pub(crate) struct EventHandle {
-    target: Option<sys::EventTarget>,
-    callback: Callback,
+    target: Option<web_sys::EventTarget>,
+    callback: webdom::Callback,
     name: &'static str,
 }
 
+#[cfg(not(feature = "webdom"))]
+pub(crate) struct EventHandle;
+
 impl EventHandle {
-    pub(crate) fn new<Ev>(target: &Node, callback: impl FnMut(Ev) + 'static) -> Self
+    pub(crate) fn new<Ev>(_target: &Node, _callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
     {
-        let callback = Callback::new(callback);
-        let name = Ev::NAME;
-        let target = match target {
-            Node::Concrete(n) => {
-                let target: &sys::EventTarget = n.as_ref();
-                target
-                    .add_event_listener_with_callback(name, callback.as_fn())
-                    .unwrap();
-                Some(target.to_owned())
+        #[cfg(not(feature = "webdom"))]
+        {
+            Self
+        }
+
+        #[cfg(feature = "webdom")]
+        {
+            let name = Ev::NAME;
+            let callback = webdom::Callback::new(_callback);
+            let target = match _target {
+                Node::Concrete(n) => {
+                    let target: &web_sys::EventTarget = n.as_ref();
+                    target
+                        .add_event_listener_with_callback(name, callback.as_fn())
+                        .unwrap();
+                    Some(target.to_owned())
+                }
+                #[cfg(feature = "rsdom")]
+                _ => None,
+            };
+
+            Self {
+                target,
+                callback,
+                name,
             }
-            _ => None,
-        };
-        Self {
-            target,
-            callback,
-            name,
         }
     }
 }
 
+#[cfg(feature = "webdom")]
 impl Drop for EventHandle {
     fn drop(&mut self) {
         if let Some(target) = self.target.take() {
@@ -75,6 +79,19 @@ impl Drop for EventHandle {
     }
 }
 
+#[cfg(not(feature = "webdom"))]
+macro_rules! event_ty {
+    ($(#[$attr:meta])* $name:ident, $ty_str:expr, $parent_ty:ty) => {
+        $(#[$attr])*
+        pub struct $name;
+
+        impl Event for $name {
+            const NAME: &'static str = $ty_str;
+        }
+    };
+}
+
+#[cfg(feature = "webdom")]
 macro_rules! event_ty {
     ($(#[$attr:meta])* $name:ident, $ty_str:expr, $parent_ty:ty) => {
         $(#[$attr])*

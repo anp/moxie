@@ -8,7 +8,6 @@ pub use moxie::*;
 
 use {
     crate::{
-        embed::WebRuntime,
         event::{Event, EventHandle},
         node::Node,
     },
@@ -22,6 +21,7 @@ pub mod embed;
 pub mod event;
 pub mod node;
 
+#[cfg(feature = "webdom")]
 pub use web_sys as sys;
 
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the
@@ -35,18 +35,21 @@ pub use web_sys as sys;
 /// [`WebRuntime`](crate::embed::WebRuntime) and begins scheduling it with an
 /// [`AnimationFrameScheduler`](crate::embed::AnimationFrameScheduler) which requests an animation
 /// frame only when there are updates to state variables.
+#[cfg(feature = "webdom")]
 pub fn boot(new_parent: impl AsRef<sys::Element> + 'static, root: impl FnMut() + 'static) {
-    WebRuntime::new(new_parent.as_ref().to_owned(), root)
+    embed::WebRuntime::new(new_parent.as_ref().to_owned(), root)
         .animation_frame_scheduler()
         .run_on_wake();
 }
 
 /// Returns the current window. Panics if no window is available.
+#[cfg(feature = "webdom")]
 pub fn window() -> sys::Window {
     sys::window().expect("must run from within a `window`")
 }
 
 /// Returns the current document. Panics if called outside a web document context.
+#[cfg(feature = "webdom")]
 pub fn document() -> sys::Document {
     window()
         .document()
