@@ -24,9 +24,9 @@ wasm-opt = false
 wasm-opt = false
 
 [dependencies]
-futures-preview = "0.3.0-alpha.18"
 js-sys = "0.3.25"
 moxie = { path = "../", version = "0.1.1-alpha.0" }
+raf = { path = "raf", version = "0.1.0-pre" }
 scopeguard = "1"
 tracing = "^0.1"
 wasm-bindgen = "0.2.48"

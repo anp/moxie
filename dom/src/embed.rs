@@ -1,15 +1,10 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
 use {
-    crate::{sys, window, MemoElement},
-    futures::task::{waker, ArcWake},
+    crate::{sys, MemoElement},
     moxie::{embed::Runtime, topo},
-    std::{
-        cell::{Cell, RefCell},
-        rc::Rc,
-        sync::Arc,
-    },
-    wasm_bindgen::{prelude::*, JsCast},
+    raf::AnimationFrameScheduler,
+    std::task::Waker,
 };
 
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building trees of DOM nodes.
@@ -39,97 +34,19 @@ impl WebRuntime {
     }
 
     /// Pass ownership of this runtime to a "loop" which runs with `requestAnimationFrame`.
-    pub fn animation_frame_scheduler(self) -> AnimationFrameScheduler {
-        AnimationFrameScheduler(Rc::new(AnimationFrameState {
-            wrt: RefCell::new(self),
-            handle: Cell::new(None),
-        }))
+    pub fn animation_frame_scheduler(self) -> AnimationFrameScheduler<Self> {
+        AnimationFrameScheduler::new(self)
     }
 }
 
-/// Owns a `WebRuntime` and schedules its execution using `requestAnimationFrame`.
-#[must_use]
-pub struct AnimationFrameScheduler(Rc<AnimationFrameState>);
-
-struct AnimationFrameState {
-    wrt: RefCell<WebRuntime>,
-    handle: Cell<Option<AnimationFrameHandle>>,
-}
-
-impl ArcWake for AnimationFrameScheduler {
-    fn wake_by_ref(arc_self: &Arc<AnimationFrameScheduler>) {
-        arc_self.ensure_scheduled(false);
+impl raf::Tick for WebRuntime {
+    fn tick(&mut self) {
+        self.0.run_once();
     }
 }
 
-impl AnimationFrameScheduler {
-    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
-    /// animation frames are requested when state variables change. `WebRuntime::run_once` is called
-    /// once per requested animation frame.
-    pub fn run_on_state_changes(self) {
-        let wrt2 = Rc::clone(&self.0);
-        let waker = waker(Arc::new(self));
-        {
-            // ensure we've released our mutable borrow by running it in a separate block
-            wrt2.wrt
-                .borrow_mut()
-                .0
-                .set_state_change_waker(waker.clone());
-        }
-        waker.wake_by_ref();
-    }
-
-    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
-    /// animation frames are requested immmediately after the last `moxie::Revision` is completed.
-    /// `WebRuntime::run_once` is called once per requested animation frame.
-    pub fn run_on_every_frame(self) {
-        self.ensure_scheduled(true);
-    }
-
-    fn ensure_scheduled(&self, immediately_again: bool) {
-        let existing = self.0.handle.replace(None);
-        let handle = existing.unwrap_or_else(|| {
-            let self2 = AnimationFrameScheduler(Rc::clone(&self.0));
-            let callback = Closure::once(Box::new(move || {
-                self2.0.handle.set(None);
-                self2.0.wrt.borrow_mut().run_once();
-
-                if immediately_again {
-                    self2.ensure_scheduled(true);
-                }
-            }));
-
-            AnimationFrameHandle::request(callback)
-        });
-        self.0.handle.set(Some(handle));
-    }
-}
-
-// don't send these to workers until have a fix :P
-unsafe impl Send for AnimationFrameScheduler {}
-unsafe impl Sync for AnimationFrameScheduler {}
-
-struct AnimationFrameHandle {
-    raw: i32,
-    /// Prefixed with an underscore because it is only read by JS, otherwise we'll get a warning.
-    _callback: Closure<dyn FnMut()>,
-}
-
-impl AnimationFrameHandle {
-    fn request(callback: Closure<dyn FnMut()>) -> Self {
-        let raw = window()
-            .request_animation_frame(callback.as_ref().unchecked_ref())
-            .unwrap();
-
-        Self {
-            raw,
-            _callback: callback,
-        }
-    }
-}
-
-impl Drop for AnimationFrameHandle {
-    fn drop(&mut self) {
-        window().cancel_animation_frame(self.raw).ok();
+impl raf::Waking for WebRuntime {
+    fn set_waker(&mut self, wk: Waker) {
+        self.0.set_state_change_waker(wk);
     }
 }
