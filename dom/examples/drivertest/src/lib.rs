@@ -4,6 +4,7 @@ use {
     typed_html::dom::{DOMTree, VNode},
     wasm_bindgen::JsCast,
     wasm_bindgen_test::*,
+    web_sys as sys,
 };
 wasm_bindgen_test_configure!(run_in_browser);
 

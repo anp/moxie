@@ -28,6 +28,7 @@ dom-flow = """
 watch --clear
     -x test-ssr-example
     -x test-dom-lib
+    -x test-dom-drivertest
     -x check-dom-hacking
     -x check-dom-todo
     -x build-dom-hacking
@@ -46,8 +47,9 @@ build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
-test-dom-lib = "wa-pack test --chrome --headless dom"
-test-ssr-example = "test --package ssr-poc"
+test-dom-lib = "test --package moxie-dom --all-targets"
+test-dom-drivertest = "wa-pack test --chrome --headless dom/examples/drivertest"
+test-ssr-example = "test --package ssr-poc --all-targets"
 
 # dom utilities
 clippy-dom = """clippy

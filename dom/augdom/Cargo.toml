@@ -1,0 +1,81 @@
+[package]
+name = "augdom"
+version = "0.1.0-pre"
+authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+description = "thin DOM wrapper, suitable for use in-browser or for rendering HTML strings anywhere"
+repository = "https://github.com/anp/moxie"
+
+[features]
+default = ["webdom"]
+rsdom = []
+webdom = ["js-sys", "wasm-bindgen", "web-sys"]
+
+[dependencies]
+quick-xml = "0.16.1"
+static_assertions = "1"
+
+# webdom dependencies:
+js-sys = { version = "0.3.25", optional = true }
+wasm-bindgen = { version = "0.2.48", optional = true }
+
+[dependencies.web-sys]
+version = "0.3.28"
+optional = true
+features = [
+    # dom types
+    "Attr",
+    "CharacterData",
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlElement",
+    "NamedNodeMap",
+    "Node",
+    "NodeList",
+    "Text",
+    "Window",
+
+    # event types
+    "AnimationEvent",
+    "AudioProcessingEvent",
+    "BeforeUnloadEvent",
+    "BlobEvent",
+    "ClipboardEvent",
+    "CloseEvent",
+    "CompositionEvent",
+    "DeviceMotionEvent",
+    "DeviceOrientationEvent",
+    "DragEvent",
+    "ErrorEvent",
+    "FetchEvent",
+    "FocusEvent",
+    "GamepadEvent",
+    "HashChangeEvent",
+    "IdbVersionChangeEvent",
+    "KeyboardEvent",
+    "MessageEvent",
+    "MouseEvent",
+    "NotificationEvent",
+    "OfflineAudioCompletionEvent",
+    "PageTransitionEvent",
+    "PointerEvent",
+    "PopStateEvent",
+    "ProgressEvent",
+    "PushEvent",
+    "SpeechRecognitionEvent",
+    "SpeechSynthesisEvent",
+    "SpeechSynthesisErrorEvent",
+    "StorageEvent",
+    "TimeEvent",
+    "TouchEvent",
+    "TransitionEvent",
+    "UiEvent",
+    "UserProximityEvent",
+    "WheelEvent",
+
+    # TODO these are for examples only, move them there
+    "HtmlInputElement",
+]

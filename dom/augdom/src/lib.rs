@@ -1,0 +1,226 @@
+#![warn(missing_docs)]
+
+static_assertions::assert_cfg!(
+    any(feature = "webdom", feature = "rsdom"),
+    "At least one DOM implementation's feature must be enabled (`webdom`, `rsdom`)"
+);
+
+#[cfg(feature = "webdom")]
+pub use {wasm_bindgen::JsCast, web_sys as sys};
+
+#[cfg(feature = "rsdom")]
+use {rsdom::VirtNode, std::rc::Rc};
+
+use {
+    quick_xml::Writer as XmlWriter,
+    std::{
+        fmt::{Debug, Display, Formatter, Result as FmtResult},
+        io::{prelude::*, Cursor},
+    },
+};
+
+#[cfg(feature = "rsdom")]
+pub mod rsdom;
+#[cfg(feature = "webdom")]
+pub mod webdom;
+
+pub mod event;
+
+/// Returns the current window. Panics if no window is available.
+#[cfg(feature = "webdom")]
+pub fn window() -> sys::Window {
+    sys::window().expect("must run from within a `window`")
+}
+
+/// Returns the current document. Panics if called outside a web document context.
+#[cfg(feature = "webdom")]
+pub fn document() -> sys::Document {
+    window()
+        .document()
+        .expect("must run from within a `window` with a valid `document`")
+}
+
+pub trait Xml {
+    // TODO is there a way to pass the starting indentation down from a formatter?
+    fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
+
+    fn inner_html(&self) -> String {
+        let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        {
+            let mut writer = XmlWriter::new(&mut buf);
+            self.write_xml(&mut writer);
+        }
+        String::from_utf8(buf.into_inner()).unwrap()
+    }
+
+    fn pretty_inner_html(&self) -> String {
+        let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        {
+            let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 4);
+            self.write_xml(&mut writer);
+        }
+        String::from_utf8(buf.into_inner()).unwrap()
+    }
+}
+
+#[derive(Clone)]
+pub enum Node {
+    #[cfg(feature = "webdom")]
+    Concrete(sys::Node),
+
+    #[cfg(feature = "rsdom")]
+    Virtual(Rc<VirtNode>),
+}
+
+impl Xml for Node {
+    fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => n.write_xml(writer),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => v.write_xml(writer),
+        }
+    }
+}
+
+impl Debug for Node {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        let s = if f.alternate() {
+            self.pretty_inner_html()
+        } else {
+            self.inner_html()
+        };
+        f.write_str(&s)
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_str(&self.pretty_inner_html())
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            #[cfg(feature = "webdom")]
+            (Node::Concrete(s), Node::Concrete(o)) => s.is_same_node(Some(o)),
+
+            #[cfg(feature = "rsdom")]
+            (Node::Virtual(s), Node::Virtual(o)) => Rc::ptr_eq(s, o),
+
+            #[cfg(all(feature = "webdom", feature = "rsdom"))]
+            _ => unreachable!("if moxie-dom is comparing two different types of nodes...uh-oh."),
+        }
+    }
+}
+
+impl Node {
+    pub fn create_element(&self, ty: &str) -> Self {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(_) => crate::document().create_element(ty).unwrap().into(),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(_) => Node::Virtual(rsdom::create_element(ty)),
+        }
+    }
+
+    pub fn create_text_node(&self, contents: &str) -> Self {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(_) => crate::document().create_text_node(contents).into(),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(_) => Node::Virtual(rsdom::create_text_node(contents)),
+        }
+    }
+
+    pub fn first_child(&self) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => e.first_child().map(Node::Concrete),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => rsdom::first_child(v).map(Node::Virtual),
+        }
+    }
+
+    pub fn append_child(&self, child: &Self) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => {
+                let _ = e.append_child(child.expect_concrete()).unwrap();
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => rsdom::append_child(v, child.expect_virtual()),
+        };
+    }
+
+    pub fn next_sibling(&self) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => e.next_sibling().map(Node::Concrete),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => rsdom::next_sibling(v).map(Node::Virtual),
+        }
+    }
+
+    pub fn remove_child(&self, to_remove: &Self) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => e
+                .remove_child(to_remove.expect_concrete())
+                .ok()
+                .map(Node::Concrete),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => {
+                rsdom::remove_child(v, to_remove.expect_virtual()).map(Node::Virtual)
+            }
+        }
+    }
+
+    pub fn replace_child(&self, new_child: &Node, existing: &Node) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => {
+                e.replace_child(new_child.expect_concrete(), existing.expect_concrete())
+                    .unwrap();
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => {
+                rsdom::replace_child(v, new_child.expect_virtual(), existing.expect_virtual())
+            }
+        };
+    }
+
+    pub fn set_attribute(&self, name: &str, value: &str) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => {
+                let e: &sys::Element = e.dyn_ref().unwrap();
+                e.set_attribute(name, value).unwrap()
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => rsdom::set_attribute(v, name, value),
+        };
+    }
+
+    pub fn remove_attribute(&self, name: &str) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(e) => {
+                let e: &sys::Element = e.dyn_ref().unwrap();
+                e.remove_attribute(name).ok();
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(v) => rsdom::remove_attribute(v, name),
+        };
+    }
+}

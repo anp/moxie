@@ -26,81 +26,18 @@ wasm-opt = false
 [features]
 default = ["webdom"]
 log = ["tracing/log"]
-rsdom = ["quick-xml"]
-webdom = ["js-sys", "wasm-bindgen", "web-sys"]
+rsdom = ["augdom/rsdom"]
+webdom = ["augdom/webdom", "raf"]
 
 [dev-dependencies]
 typed-html = "0.2.1"
 wasm-bindgen-test = "0.3"
 
 [dependencies]
+augdom = { path = "augdom", version = "0.1.0-pre" }
 moxie = { path = "../", version = "0.1.1-alpha.0" }
-raf = { path = "raf", version = "0.1.0-pre" }
 scopeguard = "1"
-static_assertions = "1"
 tracing = "^0.1"
 
-# rsdom dependencies:
-quick-xml = { version = "0.16.1", optional = true }
-
-# webdom dependencies:
-js-sys = { version = "0.3.25", optional = true }
-wasm-bindgen = { version = "0.2.48", optional = true }
-
-[dependencies.web-sys]
-version = "0.3.28"
-optional = true
-features = [
-    # dom types
-    "Attr",
-    "Document",
-    "Element",
-    "Event",
-    "EventTarget",
-    "HtmlElement",
-    "NamedNodeMap",
-    "Node",
-    "Text",
-    "Window",
-
-    # TODO these are for examples only, move them there
-    "HtmlInputElement",
-
-    # event types
-    "AnimationEvent",
-    "AudioProcessingEvent",
-    "BeforeUnloadEvent",
-    "BlobEvent",
-    "ClipboardEvent",
-    "CloseEvent",
-    "CompositionEvent",
-    "DeviceMotionEvent",
-    "DeviceOrientationEvent",
-    "DragEvent",
-    "ErrorEvent",
-    "FetchEvent",
-    "FocusEvent",
-    "GamepadEvent",
-    "HashChangeEvent",
-    "IdbVersionChangeEvent",
-    "KeyboardEvent",
-    "MessageEvent",
-    "MouseEvent",
-    "NotificationEvent",
-    "OfflineAudioCompletionEvent",
-    "PageTransitionEvent",
-    "PointerEvent",
-    "PopStateEvent",
-    "ProgressEvent",
-    "PushEvent",
-    "SpeechRecognitionEvent",
-    "SpeechSynthesisEvent",
-    "SpeechSynthesisErrorEvent",
-    "StorageEvent",
-    "TimeEvent",
-    "TouchEvent",
-    "TransitionEvent",
-    "UiEvent",
-    "UserProximityEvent",
-    "WheelEvent",
-]
+# web-only
+raf = { path = "raf", version = "0.1.0-pre", optional = true }

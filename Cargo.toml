@@ -36,6 +36,8 @@ lto = true
 [workspace]
 members = [
     "dom",
+    "dom/augdom",
+    "dom/examples/drivertest",
     "dom/examples/hacking",
     "dom/examples/ssr",
     "dom/examples/todo",
