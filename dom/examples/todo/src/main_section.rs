@@ -16,8 +16,7 @@ pub fn toggle(default_checked: bool) {
                         new.completed = !default_checked;
                         new
                     })
-                    .collect::<Vec<_>>()
-                    .into(),
+                    .collect(),
             )
         })
     };
