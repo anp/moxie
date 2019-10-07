@@ -152,7 +152,7 @@ impl Xml for Node {
     fn first_child(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => n.first_child().map(Node::Concrete),
+            Node::Concrete(n) => <sys::Node as Xml>::first_child(n).map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.first_child().map(Node::Virtual),
@@ -163,7 +163,7 @@ impl Xml for Node {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
-                n.append_child(child.expect_concrete());
+                <sys::Node as Xml>::append_child(n, child.expect_concrete());
             }
 
             #[cfg(feature = "rsdom")]
@@ -176,7 +176,7 @@ impl Xml for Node {
     fn next_sibling(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => n.next_sibling().map(Node::Concrete),
+            Node::Concrete(n) => <sys::Node as Xml>::next_sibling(n).map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.next_sibling().map(Node::Virtual),
@@ -201,7 +201,11 @@ impl Xml for Node {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
-                n.replace_child(new_child.expect_concrete(), existing.expect_concrete());
+                <sys::Node as Xml>::replace_child(
+                    n,
+                    new_child.expect_concrete(),
+                    existing.expect_concrete(),
+                );
             }
 
             #[cfg(feature = "rsdom")]
@@ -214,7 +218,7 @@ impl Xml for Node {
     fn set_attribute(&self, name: &str, value: &str) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => n.set_attribute(name, value),
+            Node::Concrete(n) => <sys::Node as Xml>::set_attribute(n, name, value),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.set_attribute(name, value),
         }
@@ -223,7 +227,7 @@ impl Xml for Node {
     fn remove_attribute(&self, name: &str) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => n.remove_attribute(name),
+            Node::Concrete(n) => <sys::Node as Xml>::remove_attribute(n, name),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.remove_attribute(name),
         }
