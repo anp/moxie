@@ -135,7 +135,8 @@ impl From<sys::Text> for Node {
 }
 
 impl Node {
-    pub(super) fn expect_concrete(&self) -> &sys::Node {
+    /// Returns a reference to a concrete DOM node, panics if this is a virtual node.
+    pub fn expect_concrete(&self) -> &sys::Node {
         match self {
             Node::Concrete(n) => n,
 
