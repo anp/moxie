@@ -65,11 +65,7 @@ impl ToTokens for MoxItem {
         match self {
             MoxItem::Tag(tag) => tag.to_tokens(tokens),
             MoxItem::TagNoChildren(tag) => tag.to_tokens(tokens),
-            MoxItem::Fragment(children) => {
-                for c in children {
-                    c.to_tokens(tokens);
-                }
-            }
+            MoxItem::Fragment(children) => tokens.extend(quote!({ #(#children;)* })),
             MoxItem::Content(content) => content.to_tokens(tokens),
         }
     }
