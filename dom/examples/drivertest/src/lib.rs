@@ -21,10 +21,7 @@ fn mini_list() {
     );
     let expected = expected.vnode();
 
-    let root = document().create_element("div").unwrap();
-    document().body().unwrap().append_child(&root).unwrap();
-
-    let mut tester = WebRuntime::new(root.clone(), move || {
+    let list = || {
         moxie::mox! {
             <ul class="listywisty">
                 <li>"first"</li>
@@ -32,10 +29,30 @@ fn mini_list() {
                 <li>"third"</li>
             </ul>
         };
-    });
+    };
 
-    tester.run_once();
-    assert_vnode_matches_element(&expected, &root);
+    let (mut web_tester, web_root) = WebRuntime::in_web_div(list);
+    let (mut virtual_tester, rsdom_root) = WebRuntime::in_rsdom_div(list);
+
+    web_tester.run_once();
+    virtual_tester.run_once();
+
+    assert_vnode_matches_element(&expected, web_root.expect_concrete());
+
+    let expected_html =
+        r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#;
+
+    assert_eq!(
+        expected_html,
+        web_root.inner_html(),
+        "HTML produced by DOM nodes must match expected",
+    );
+
+    assert_eq!(
+        expected_html,
+        rsdom_root.inner_html(),
+        "HTML produced by virtual nodes must match expected",
+    );
 }
 
 fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
