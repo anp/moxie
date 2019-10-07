@@ -1,5 +1,6 @@
 //! Provides a scheduled loop in the browser via `requestAnimationFrame`.
-#![warn(missing_docs)]
+
+#![deny(missing_docs)]
 
 use {
     futures::task::{waker, ArcWake},
@@ -13,11 +14,15 @@ use {
     web_sys::window,
 };
 
-pub trait Tick {
+/// A value which can be mutably called by the scheduler.
+pub trait Tick: 'static {
+    /// Tick this value, indicating a new frame request is being fulfilled.
     fn tick(&mut self);
 }
 
+/// A value which can receive a waker from the scheduler that will request a new frame when woken.
 pub trait Waking {
+    /// Receive a waker from the scheduler that calls `requestAnimationFrame` when woken.
     fn set_waker(&mut self, wk: Waker);
 }
 
@@ -30,13 +35,15 @@ struct AnimationFrameState<Cb> {
     handle: Cell<Option<AnimationFrameHandle>>,
 }
 
-impl<T: Tick + 'static> ArcWake for AnimationFrameScheduler<T> {
+impl<T: Tick> ArcWake for AnimationFrameScheduler<T> {
     fn wake_by_ref(arc_self: &Arc<AnimationFrameScheduler<T>>) {
         arc_self.ensure_scheduled(false);
     }
 }
 
-impl<T: Tick + 'static> AnimationFrameScheduler<T> {
+impl<T: Tick> AnimationFrameScheduler<T> {
+    /// Construct a new scheduler with the provided callback. `ticker.tick()` will be called once
+    /// per fulfilled animation frame request.
     pub fn new(ticker: T) -> Self {
         AnimationFrameScheduler(Rc::new(AnimationFrameState {
             ticker: RefCell::new(ticker),
@@ -71,7 +78,7 @@ impl<T: Tick + 'static> AnimationFrameScheduler<T> {
     }
 }
 
-impl<T: Tick + Waking + 'static> AnimationFrameScheduler<T> {
+impl<T: Tick + Waking> AnimationFrameScheduler<T> {
     /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
     /// animation frames are requested whenever the waker passed to the provided closure is woken.
     pub fn run_on_wake(self) {
@@ -112,13 +119,5 @@ impl AnimationFrameHandle {
 impl Drop for AnimationFrameHandle {
     fn drop(&mut self) {
         window().unwrap().cancel_animation_frame(self.raw).ok();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
