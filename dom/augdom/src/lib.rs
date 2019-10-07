@@ -40,7 +40,7 @@ pub fn document() -> sys::Document {
         .expect("must run from within a `window` with a valid `document`")
 }
 
-pub trait Xml {
+pub trait Xml: Sized {
     // TODO is there a way to pass the starting indentation down from a formatter?
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
 
@@ -61,6 +61,16 @@ pub trait Xml {
         }
         String::from_utf8(buf.into_inner()).unwrap()
     }
+
+    fn remove_attribute(&self, name: &str);
+    fn set_attribute(&self, name: &str, value: &str);
+    fn replace_child(&self, new_child: &Self, existing: &Self);
+    fn remove_child(&self, to_remove: &Self) -> Option<Self>;
+    fn next_sibling(&self) -> Option<Self>;
+    fn append_child(&self, child: &Self);
+    fn first_child(&self) -> Option<Self>;
+    fn create_text_node(&self, contents: &str) -> Self;
+    fn create_element(&self, ty: &str) -> Self;
 }
 
 #[derive(Clone)]
@@ -70,17 +80,6 @@ pub enum Node {
 
     #[cfg(feature = "rsdom")]
     Virtual(Rc<VirtNode>),
-}
-
-impl Xml for Node {
-    fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(n) => n.write_xml(writer),
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => v.write_xml(writer),
-        }
-    }
 }
 
 impl Debug for Node {
@@ -115,112 +114,118 @@ impl PartialEq for Node {
     }
 }
 
-impl Node {
-    pub fn create_element(&self, ty: &str) -> Self {
+impl Xml for Node {
+    fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(_) => crate::document().create_element(ty).unwrap().into(),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(_) => Node::Virtual(rsdom::create_element(ty)),
-        }
-    }
-
-    pub fn create_text_node(&self, contents: &str) -> Self {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(_) => crate::document().create_text_node(contents).into(),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(_) => Node::Virtual(rsdom::create_text_node(contents)),
-        }
-    }
-
-    pub fn first_child(&self) -> Option<Self> {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(e) => e.first_child().map(Node::Concrete),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => rsdom::first_child(v).map(Node::Virtual),
-        }
-    }
-
-    pub fn append_child(&self, child: &Self) {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(e) => {
-                let _ = e.append_child(child.expect_concrete()).unwrap();
+            Node::Concrete(n) => {
+                n.write_xml(writer);
             }
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => rsdom::append_child(v, child.expect_virtual()),
-        };
-    }
-
-    pub fn next_sibling(&self) -> Option<Self> {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(e) => e.next_sibling().map(Node::Concrete),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => rsdom::next_sibling(v).map(Node::Virtual),
-        }
-    }
-
-    pub fn remove_child(&self, to_remove: &Self) -> Option<Self> {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(e) => e
-                .remove_child(to_remove.expect_concrete())
-                .ok()
-                .map(Node::Concrete),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => {
-                rsdom::remove_child(v, to_remove.expect_virtual()).map(Node::Virtual)
+            Node::Virtual(n) => {
+                n.write_xml(writer);
             }
         }
     }
 
-    pub fn replace_child(&self, new_child: &Node, existing: &Node) {
+    fn create_element(&self, ty: &str) -> Self {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(e) => {
-                e.replace_child(new_child.expect_concrete(), existing.expect_concrete())
-                    .unwrap();
-            }
+            Node::Concrete(n) => Node::Concrete(n.create_element(ty).into()),
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => {
-                rsdom::replace_child(v, new_child.expect_virtual(), existing.expect_virtual())
-            }
-        };
+            Node::Virtual(n) => Node::Virtual(n.create_element(ty).into()),
+        }
     }
 
-    pub fn set_attribute(&self, name: &str, value: &str) {
+    fn create_text_node(&self, contents: &str) -> Self {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(e) => {
-                let e: &sys::Element = e.dyn_ref().unwrap();
-                e.set_attribute(name, value).unwrap()
-            }
+            Node::Concrete(n) => Node::Concrete(n.create_text_node(contents)),
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => rsdom::set_attribute(v, name, value),
-        };
+            Node::Virtual(n) => Node::Virtual(n.create_text_node(contents)),
+        }
     }
 
-    pub fn remove_attribute(&self, name: &str) {
+    fn first_child(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(e) => {
-                let e: &sys::Element = e.dyn_ref().unwrap();
-                e.remove_attribute(name).ok();
+            Node::Concrete(n) => n.first_child().map(Node::Concrete),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n.first_child().map(Node::Virtual),
+        }
+    }
+
+    fn append_child(&self, child: &Self) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => {
+                n.append_child(child.expect_concrete());
             }
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(v) => rsdom::remove_attribute(v, name),
-        };
+            Node::Virtual(n) => {
+                n.append_child(child.expect_virtual());
+            }
+        }
+    }
+
+    fn next_sibling(&self) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => n.next_sibling().map(Node::Concrete),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n.next_sibling().map(Node::Virtual),
+        }
+    }
+
+    fn remove_child(&self, to_remove: &Self) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => {
+                <sys::Node as Xml>::remove_child(n, to_remove.expect_concrete()).map(Node::Concrete)
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n
+                .remove_child(to_remove.expect_virtual())
+                .map(Node::Virtual),
+        }
+    }
+
+    fn replace_child(&self, new_child: &Node, existing: &Node) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => {
+                n.replace_child(new_child.expect_concrete(), existing.expect_concrete());
+            }
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => {
+                n.replace_child(new_child.expect_virtual(), existing.expect_virtual());
+            }
+        }
+    }
+
+    fn set_attribute(&self, name: &str, value: &str) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => n.set_attribute(name, value),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n.set_attribute(name, value),
+        }
+    }
+
+    fn remove_attribute(&self, name: &str) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => n.remove_attribute(name),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n.remove_attribute(name),
+        }
     }
 }
