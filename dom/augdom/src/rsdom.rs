@@ -178,7 +178,8 @@ impl From<Rc<VirtNode>> for Node {
 }
 
 impl Node {
-    pub(super) fn expect_virtual(&self) -> &Rc<VirtNode> {
+    /// Returns a reference to a virtual node, panics if this is a concrete node.
+    pub fn expect_virtual(&self) -> &Rc<VirtNode> {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(_) => panic!("expected a Node::Virtual, found a Node::Concrete"),
