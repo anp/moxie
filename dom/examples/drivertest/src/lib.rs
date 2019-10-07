@@ -31,27 +31,55 @@ fn mini_list() {
         };
     };
 
-    let (mut web_tester, web_root) = WebRuntime::in_web_div(list);
+    let (mut web_tester, web_div) = WebRuntime::in_web_div(list);
     let (mut virtual_tester, rsdom_root) = WebRuntime::in_rsdom_div(list);
+    let web_root_node: &sys::Node = web_div.as_ref();
 
     web_tester.run_once();
     virtual_tester.run_once();
 
-    assert_vnode_matches_element(&expected, &web_root);
+    assert_vnode_matches_element(&expected, &web_div);
 
     let expected_html =
         r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#;
 
     assert_eq!(
+        sys::Element::outer_html(&web_div),
         expected_html,
-        web_root.outer_html(),
-        "HTML produced by DOM nodes must match expected",
+        "expected HTML must match the natively produced outer_html",
+    );
+
+    assert_eq!(
+        expected_html,
+        &Dom::outer_html(web_root_node),
+        "our outer_html implementation must match the expected HTML",
     );
 
     assert_eq!(
         expected_html,
         rsdom_root.outer_html(),
         "HTML produced by virtual nodes must match expected",
+    );
+
+    let expected_pretty_html = r#"
+<div>
+  <ul class="listywisty">
+    <li>first</li>
+    <li class="item">second</li>
+    <li>third</li>
+  </ul>
+</div>"#;
+
+    assert_eq!(
+        expected_pretty_html,
+        &(String::from("\n") + &web_root_node.pretty_outer_html(2)),
+        "pretty HTML produced from DOM nodes must match expected",
+    );
+
+    assert_eq!(
+        expected_pretty_html,
+        &(String::from("\n") + &rsdom_root.pretty_outer_html(2)),
+        "pretty HTML produced from virtual nodes must match expected",
     );
 }
 
