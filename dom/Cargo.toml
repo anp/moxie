@@ -29,10 +29,6 @@ log = ["tracing/log"]
 rsdom = ["augdom/rsdom"]
 webdom = ["augdom/webdom", "raf"]
 
-[dev-dependencies]
-typed-html = "0.2.1"
-wasm-bindgen-test = "0.3"
-
 [dependencies]
 augdom = { path = "augdom", version = "0.1.0-pre" }
 moxie = { path = "../", version = "0.1.1-alpha.0" }
