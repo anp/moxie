@@ -19,9 +19,10 @@ mod tests {
         });
 
         tester.run_once();
+        let root = augdom::Node::Virtual(root);
 
         assert_eq!(
-            &root.inner_html(),
+            &root.outer_html(),
             r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#,
             "concisely-rendered string output must have no newlines or indentation"
         );

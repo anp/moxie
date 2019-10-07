@@ -60,7 +60,7 @@ pub trait Dom: Sized {
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
 
     /// Returns a string of serialized XML without newlines or indentation.
-    fn inner_html(&self) -> String {
+    fn outer_html(&self) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
             let mut writer = XmlWriter::new(&mut buf);
@@ -70,7 +70,7 @@ pub trait Dom: Sized {
     }
 
     /// Returns a string of "prettified" serialized XML with the provided indentation.
-    fn pretty_inner_html(&self, indent: usize) -> String {
+    fn pretty_outer_html(&self, indent: usize) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
             let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, indent);
@@ -123,9 +123,9 @@ pub enum Node {
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         let s = if f.alternate() {
-            self.pretty_inner_html(4)
+            self.pretty_outer_html(4)
         } else {
-            self.inner_html()
+            self.outer_html()
         };
         f.write_str(&s)
     }
@@ -133,7 +133,7 @@ impl Debug for Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_str(&self.pretty_inner_html(2))
+        f.write_str(&self.pretty_outer_html(2))
     }
 }
 

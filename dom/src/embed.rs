@@ -36,12 +36,11 @@ impl WebRuntime {
 
 #[cfg(feature = "webdom")]
 impl WebRuntime {
-    pub fn in_web_div(root: impl FnMut() + 'static) -> (Self, Node) {
+    /// Create a new `div` and use that as the parent node for the runtime with which it is
+    /// returned.
+    pub fn in_web_div(root: impl FnMut() + 'static) -> (Self, augdom::sys::Element) {
         let container = augdom::document().create_element("div").unwrap();
-        (
-            WebRuntime::new(container.clone(), root),
-            Node::Concrete(container.into()),
-        )
+        (WebRuntime::new(container.clone(), root), container)
     }
 
     /// Pass ownership of this runtime to a "loop" which runs with `requestAnimationFrame`.
@@ -64,11 +63,12 @@ impl WebRuntime {
 
 #[cfg(feature = "rsdom")]
 impl WebRuntime {
-    pub fn in_rsdom_div(root: impl FnMut() + 'static) -> (Self, Node) {
+    /// Create a new virtual `div` and use that as the parent node for the runtime with which it is
+    /// returned.
+    pub fn in_rsdom_div(
+        root: impl FnMut() + 'static,
+    ) -> (Self, std::rc::Rc<augdom::rsdom::VirtNode>) {
         let container = augdom::rsdom::create_element("div");
-        (
-            WebRuntime::new(container.clone(), root),
-            Node::Virtual(container),
-        )
+        (WebRuntime::new(container.clone(), root), container)
     }
 }

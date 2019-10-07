@@ -37,20 +37,20 @@ fn mini_list() {
     web_tester.run_once();
     virtual_tester.run_once();
 
-    assert_vnode_matches_element(&expected, web_root.expect_concrete());
+    assert_vnode_matches_element(&expected, &web_root);
 
     let expected_html =
         r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#;
 
     assert_eq!(
         expected_html,
-        web_root.inner_html(),
+        web_root.outer_html(),
         "HTML produced by DOM nodes must match expected",
     );
 
     assert_eq!(
         expected_html,
-        rsdom_root.inner_html(),
+        rsdom_root.outer_html(),
         "HTML produced by virtual nodes must match expected",
     );
 }
