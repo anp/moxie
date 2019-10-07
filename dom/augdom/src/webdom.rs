@@ -1,6 +1,6 @@
 use {
     super::Node,
-    crate::event::Event,
+    crate::{document, event::Event},
     std::io::Write,
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
@@ -62,6 +62,44 @@ impl crate::Xml for sys::Node {
         } else {
             unreachable!("augdom only creates elements and text nodes. this is a bug.");
         }
+    }
+
+    fn create_element(&self, ty: &str) -> Self {
+        document().create_element(ty).unwrap().into()
+    }
+
+    fn create_text_node(&self, contents: &str) -> Self {
+        document().create_text_node(contents).into()
+    }
+
+    fn first_child(&self) -> Option<Self> {
+        self.first_child()
+    }
+
+    fn append_child(&self, child: &Self) {
+        self.append_child(child).unwrap();
+    }
+
+    fn next_sibling(&self) -> Option<Self> {
+        self.next_sibling()
+    }
+
+    fn remove_child(&self, to_remove: &Self) -> Option<Self> {
+        self.remove_child(to_remove).ok()
+    }
+
+    fn replace_child(&self, new_child: &Self, existing: &Self) {
+        self.replace_child(new_child, existing).unwrap();
+    }
+
+    fn set_attribute(&self, name: &str, value: &str) {
+        let e: &sys::Element = self.dyn_ref().unwrap();
+        e.set_attribute(name, value).unwrap();
+    }
+
+    fn remove_attribute(&self, name: &str) {
+        let e: &sys::Element = self.dyn_ref().unwrap();
+        e.remove_attribute(name).ok();
     }
 }
 
