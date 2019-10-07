@@ -1,3 +1,6 @@
+//! An implementation of `augdom`'s APIs on top of the actual web using the `web-sys` crate and
+//! `wasm-bindgen`.
+
 use {
     super::Node,
     crate::{document, event::Event},
@@ -6,11 +9,13 @@ use {
     web_sys as sys,
 };
 
+/// A dynamically-allocated closure that is callable from JavaScript.
 pub struct Callback {
     cb: Closure<dyn FnMut(JsValue)>,
 }
 
 impl Callback {
+    /// Allocate a new JS-compatible callback.
     pub fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
@@ -22,12 +27,14 @@ impl Callback {
         Self { cb }
     }
 
+    /// Returns an reference to the underlying JS function. If the reference is used after this
+    /// `Callback` is dropped it will panic.
     pub fn as_fn(&self) -> &js_sys::Function {
         self.cb.as_ref().unchecked_ref()
     }
 }
 
-impl crate::Xml for sys::Node {
+impl crate::Dom for sys::Node {
     fn write_xml<W: Write>(&self, writer: &mut quick_xml::Writer<W>) {
         use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
         if let Some(elem) = self.dyn_ref::<sys::Element>() {
