@@ -40,6 +40,28 @@ pub fn boot(new_parent: impl Into<Node>, root: impl FnMut() + 'static) {
         .run_on_wake();
 }
 
+/// Runs the provided closure once and produces a prettified HTML string from the contents.
+///
+/// If you need more control over the output of the HTML, see the implementation of this function.
+#[cfg(feature = "rsdom")]
+pub fn render_html(root: impl FnMut() + 'static) -> String {
+    let (mut tester, root) = embed::WebRuntime::in_rsdom_div(root);
+    tester.run_once();
+    let outer = augdom::Node::Virtual(root).pretty_outer_html(2);
+    // because we use the indented version, we know that only at the top and bottom is what we want
+    outer
+        .lines()
+        .filter(|l| *l != "<div>" && *l != "</div>")
+        .map(|l| l.split_at(2).1)
+        .fold(String::new(), |mut fragment, line| {
+            if !fragment.is_empty() {
+                fragment.push('\n');
+            }
+            fragment.push_str(line);
+            fragment
+        })
+}
+
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the [`moxie::mox!`] macro.
 #[topo::aware]
