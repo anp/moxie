@@ -17,6 +17,17 @@ pub struct VirtNode {
     data: VirtData,
 }
 
+pub fn create_element(ty: &str) -> Rc<VirtNode> {
+    Rc::new(VirtNode {
+        parent: Cell::new(None),
+        children: RefCell::new(vec![]),
+        data: VirtData::Elem {
+            tag: ty.to_string(),
+            attrs: RefCell::new(vec![]),
+        },
+    })
+}
+
 impl crate::Xml for Rc<VirtNode> {
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match &self.data {
@@ -46,14 +57,7 @@ impl crate::Xml for Rc<VirtNode> {
     }
 
     fn create_element(&self, ty: &str) -> Rc<VirtNode> {
-        Rc::new(VirtNode {
-            parent: Cell::new(None),
-            children: RefCell::new(vec![]),
-            data: VirtData::Elem {
-                tag: ty.to_string(),
-                attrs: RefCell::new(vec![]),
-            },
-        })
+        create_element(ty)
     }
 
     fn create_text_node(&self, contents: &str) -> Rc<VirtNode> {
