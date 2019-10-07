@@ -23,11 +23,12 @@ mod tests {
         assert_eq!(
             &root.inner_html(),
             r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#,
-            "concisely-rendered string output must match expected"
+            "concisely-rendered string output must have no newlines or indentation"
         );
+
         assert_eq!(
-            // this newline lets the above string output seem legible
-            format!("\n{}", &root),
+            // this newline lets the below string output seem legible
+            format!("\n{:#?}", &root),
             r#"
 <div>
     <ul class="listywisty">
@@ -36,7 +37,21 @@ mod tests {
         <li>third</li>
     </ul>
 </div>"#,
-            "human-rendered string output must match expected"
+            "pretty debug output must be 4-space-indented"
+        );
+
+        assert_eq!(
+            // this newline lets the below string output seem legible
+            format!("\n{}", &root),
+            r#"
+<div>
+  <ul class="listywisty">
+    <li>first</li>
+    <li class="item">second</li>
+    <li>third</li>
+  </ul>
+</div>"#,
+            "Display output must be 2-space-indented"
         );
     }
 }

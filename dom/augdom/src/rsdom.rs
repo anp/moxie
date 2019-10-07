@@ -1,3 +1,5 @@
+//! An implementation of `augdom`'s APIs on top of an in-memory emulation of the web's DOM.
+
 use {
     super::*,
     quick_xml::{
@@ -11,12 +13,14 @@ use {
     },
 };
 
+/// A node in the "virtual DOM" implemented in `rsdom`.
 pub struct VirtNode {
     parent: Cell<Option<Weak<VirtNode>>>,
     children: RefCell<Vec<Rc<VirtNode>>>,
     data: VirtData,
 }
 
+/// Create a new virtual element of the provided type.
 pub fn create_element(ty: &str) -> Rc<VirtNode> {
     Rc::new(VirtNode {
         parent: Cell::new(None),
@@ -28,7 +32,7 @@ pub fn create_element(ty: &str) -> Rc<VirtNode> {
     })
 }
 
-impl crate::Xml for Rc<VirtNode> {
+impl crate::Dom for Rc<VirtNode> {
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match &self.data {
             VirtData::Elem { tag, attrs } => {
@@ -153,12 +157,17 @@ impl crate::Xml for Rc<VirtNode> {
     }
 }
 
+/// The data of a node in the virtual DOM tree.
 #[derive(Debug)]
 pub enum VirtData {
+    /// A virtual element.
     Elem {
+        /// The element's tag.
         tag: String,
+        /// The element's attributes.
         attrs: RefCell<Vec<(String, String)>>,
     },
+    /// A virtual text node.
     Text(String),
 }
 

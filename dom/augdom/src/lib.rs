@@ -1,4 +1,16 @@
-#![warn(missing_docs)]
+//! `augdom` provides an "augmented DOM" implementation that can run almost anywhere Rust can. By
+//! default the `webdom` feature is enabled and this crate is a wrapper around `web-sys` for
+//! creating and manipulating HTML elements. See the [crate::Dom] trait for the provided behavior.
+//!
+//! The `rsdom` feature enables a DOM emulation layer written in pure Rust which can be
+//! used for testing or to render HTML strings.
+//!
+//! # Known Limitations
+//!
+//! As of today the `<web_sys::Element as Dom>::*_attribute` methods will panic if called on a text
+//! node. This cost seems appropriate today because this is a dependency for other crates which
+//! enforce this requirement themselves. `web_sys` enforces this restriction statically.
+#![deny(missing_docs)]
 
 static_assertions::assert_cfg!(
     any(feature = "webdom", feature = "rsdom"),
@@ -40,10 +52,14 @@ pub fn document() -> sys::Document {
         .expect("must run from within a `window` with a valid `document`")
 }
 
-pub trait Xml: Sized {
+/// A value which implements a subset of the web's document object model.
+pub trait Dom: Sized {
     // TODO is there a way to pass the starting indentation down from a formatter?
+    /// Write this value as XML via the provided writer. Consider using [Xml::inner_html] or
+    /// [Xml::pretty_inner_html] unless you need the performance.
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
 
+    /// Returns a string of serialized XML without newlines or indentation.
     fn inner_html(&self) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
@@ -53,31 +69,53 @@ pub trait Xml: Sized {
         String::from_utf8(buf.into_inner()).unwrap()
     }
 
-    fn pretty_inner_html(&self) -> String {
+    /// Returns a string of "prettified" serialized XML with the provided indentation.
+    fn pretty_inner_html(&self, indent: usize) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
-            let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, 4);
+            let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, indent);
             self.write_xml(&mut writer);
         }
         String::from_utf8(buf.into_inner()).unwrap()
     }
 
-    fn remove_attribute(&self, name: &str);
-    fn set_attribute(&self, name: &str, value: &str);
-    fn replace_child(&self, new_child: &Self, existing: &Self);
-    fn remove_child(&self, to_remove: &Self) -> Option<Self>;
-    fn next_sibling(&self) -> Option<Self>;
-    fn append_child(&self, child: &Self);
-    fn first_child(&self) -> Option<Self>;
-    fn create_text_node(&self, contents: &str) -> Self;
+    /// Create a new element within the same tree as the method receiver.
     fn create_element(&self, ty: &str) -> Self;
+
+    /// Create a new text node within the same tree as the method receiver.
+    fn create_text_node(&self, contents: &str) -> Self;
+
+    /// Set an attribute on this DOM node.
+    fn set_attribute(&self, name: &str, value: &str);
+
+    /// Ensure the provided attribute has been removed from this DOM node.
+    fn remove_attribute(&self, name: &str);
+
+    /// Returns the next child of this node's parent after this node itself.
+    fn next_sibling(&self) -> Option<Self>;
+
+    /// Returns the first child of this node.
+    fn first_child(&self) -> Option<Self>;
+
+    /// Adds a new child to the end of this node's children.
+    fn append_child(&self, child: &Self);
+
+    /// Replaces the provided child of this node with a new one.
+    fn replace_child(&self, new_child: &Self, existing: &Self);
+
+    /// Removes the provided child from this node.
+    fn remove_child(&self, to_remove: &Self) -> Option<Self>;
 }
 
+/// A `Node` in the augmented DOM.
 #[derive(Clone)]
 pub enum Node {
+    /// A handle to a concrete DOM node running in the browser.
     #[cfg(feature = "webdom")]
     Concrete(sys::Node),
 
+    /// A handle to a "virtual" DOM node, emulating the web in memory. While this implementation
+    /// lacks many features, it can run on any target that Rust supports.
     #[cfg(feature = "rsdom")]
     Virtual(Rc<VirtNode>),
 }
@@ -85,7 +123,7 @@ pub enum Node {
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         let s = if f.alternate() {
-            self.pretty_inner_html()
+            self.pretty_inner_html(4)
         } else {
             self.inner_html()
         };
@@ -95,7 +133,7 @@ impl Debug for Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_str(&self.pretty_inner_html())
+        f.write_str(&self.pretty_inner_html(2))
     }
 }
 
@@ -114,7 +152,7 @@ impl PartialEq for Node {
     }
 }
 
-impl Xml for Node {
+impl Dom for Node {
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match self {
             #[cfg(feature = "webdom")]
@@ -152,7 +190,7 @@ impl Xml for Node {
     fn first_child(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => <sys::Node as Xml>::first_child(n).map(Node::Concrete),
+            Node::Concrete(n) => <sys::Node as Dom>::first_child(n).map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.first_child().map(Node::Virtual),
@@ -163,7 +201,7 @@ impl Xml for Node {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
-                <sys::Node as Xml>::append_child(n, child.expect_concrete());
+                <sys::Node as Dom>::append_child(n, child.expect_concrete());
             }
 
             #[cfg(feature = "rsdom")]
@@ -176,7 +214,7 @@ impl Xml for Node {
     fn next_sibling(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => <sys::Node as Xml>::next_sibling(n).map(Node::Concrete),
+            Node::Concrete(n) => <sys::Node as Dom>::next_sibling(n).map(Node::Concrete),
 
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.next_sibling().map(Node::Virtual),
@@ -187,7 +225,7 @@ impl Xml for Node {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
-                <sys::Node as Xml>::remove_child(n, to_remove.expect_concrete()).map(Node::Concrete)
+                <sys::Node as Dom>::remove_child(n, to_remove.expect_concrete()).map(Node::Concrete)
             }
 
             #[cfg(feature = "rsdom")]
@@ -201,7 +239,7 @@ impl Xml for Node {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
-                <sys::Node as Xml>::replace_child(
+                <sys::Node as Dom>::replace_child(
                     n,
                     new_child.expect_concrete(),
                     existing.expect_concrete(),
@@ -218,7 +256,7 @@ impl Xml for Node {
     fn set_attribute(&self, name: &str, value: &str) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => <sys::Node as Xml>::set_attribute(n, name, value),
+            Node::Concrete(n) => <sys::Node as Dom>::set_attribute(n, name, value),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.set_attribute(name, value),
         }
@@ -227,7 +265,7 @@ impl Xml for Node {
     fn remove_attribute(&self, name: &str) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => <sys::Node as Xml>::remove_attribute(n, name),
+            Node::Concrete(n) => <sys::Node as Dom>::remove_attribute(n, name),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.remove_attribute(name),
         }

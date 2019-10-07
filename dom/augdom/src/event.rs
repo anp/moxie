@@ -16,12 +16,15 @@ pub trait Event: AsRef<web_sys::Event> + JsCast {
     const NAME: &'static str;
 }
 
+/// An event that can be received as the first argument to a handler callback.
 #[cfg(not(feature = "webdom"))]
 pub trait Event {
     /// The name used to register for this event in `addEventListener`.
     const NAME: &'static str;
 }
 
+/// A binding of a particular event listener to a DOM node. The listener is removed when this value
+/// is dropped.
 #[cfg(feature = "webdom")]
 #[must_use]
 pub struct EventHandle {
@@ -31,9 +34,12 @@ pub struct EventHandle {
 }
 
 #[cfg(not(feature = "webdom"))]
+#[doc(hidden)]
 pub(crate) struct EventHandle;
 
 impl EventHandle {
+    /// Construct a new `EventHandle`, binding the provided callback to its target if the target is
+    /// able to receive events.
     pub fn new<Ev>(_target: &Node, _callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
