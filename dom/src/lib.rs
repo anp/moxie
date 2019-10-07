@@ -13,7 +13,6 @@ use {
     },
     moxie,
     std::cell::Cell,
-    tracing::*,
 };
 
 pub mod elements;
