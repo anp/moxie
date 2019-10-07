@@ -1,7 +1,7 @@
 //! Tools for declaratively constructing and incrementally updating HTML DOM trees on the web. Based
 //! on the [`moxie`] UI runtime.
 
-#![warn(missing_docs, intra_doc_link_resolution_failure)]
+#![deny(missing_docs, intra_doc_link_resolution_failure)]
 
 #[doc(hidden)]
 pub use moxie::*;
