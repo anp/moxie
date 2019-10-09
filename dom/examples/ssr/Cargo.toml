@@ -1,6 +1,7 @@
 [package]
 name = "ssr-poc"
 version = "0.1.0"
+publish = false
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 description = "proof of concept for server-side rendered HTML with moxie-dom"
