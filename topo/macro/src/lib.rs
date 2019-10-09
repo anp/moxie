@@ -12,14 +12,14 @@ use {
     },
 };
 
-/// Transforms a function declaration into a topological function invoked with macro syntax to
-/// attach its call tree's (sub)topology to the parent topology.
+/// Transforms a function declaration into a topologically-nested function invoked with macro syntax
+/// to attach its call tree's (sub)topology to the parent topology.
 ///
 /// A macro transformation is used to capture unique callsite information from the invoking
 /// function. In the current implementation, we synthesize a unique [`std::any::TypeId`] at each
 /// callsite which can be used to identify the chain of topological invocations.
 #[proc_macro_attribute]
-pub fn aware(_attrs: TokenStream, input: TokenStream) -> TokenStream {
+pub fn nested(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
     let tmp = std::mem::replace(&mut input_fn.attrs, Vec::new());
@@ -147,7 +147,7 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     })
 }
 
-/// Create a local Env::expect assignment expression from the `pattern: type` pair which is passed.
+/// Create a local Env::expect assignment expression from the `pattern: &type` pair which is passed.
 fn bind_env_reference(arg: PatType) -> Local {
     let arg_span = arg.span();
 

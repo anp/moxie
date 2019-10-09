@@ -64,7 +64,7 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the [`moxie::mox!`] macro.
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(parent: &MemoElement)]
 pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
@@ -83,7 +83,7 @@ pub fn text(s: impl ToString) {
 ///
 /// Mutation of the created element is performed during the `with_elem` closure via the provided
 /// [`moxie_dom::MemoElement`] wrapper.
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(parent: &MemoElement)]
 pub fn element<ChildRet>(
     ty: &'static str,
@@ -95,7 +95,7 @@ pub fn element<ChildRet>(
     with_elem(&elem)
 }
 
-/// A topologically-aware "incremental smart pointer" for an HTML element.
+/// A topologically-nested "incremental smart pointer" for an HTML element.
 ///
 /// Created during execution of the (element) macro and the element-specific wrappers. Offers a
 /// "stringly-typed" API for mutating the contained DOM nodes, adhering fairly closely to the
@@ -127,7 +127,7 @@ impl MemoElement {
         self.node.clone()
     }
 
-    // FIXME this should be topo-aware
+    // FIXME this should be topo-nested
     // TODO and it should be able to express its slot as an annotation
     /// Declare an attribute of the element, mutating the actual element's attribute when the passed
     /// value changes.
@@ -149,7 +149,7 @@ impl MemoElement {
         self
     }
 
-    // FIXME this should be topo-aware
+    // FIXME this should be topo-nested
     /// Declare an event handler on the element.
     ///
     /// A guard value is stored as a resulting "effect" of the mutation, and removes the attribute
@@ -193,7 +193,7 @@ impl MemoElement {
     /// Declare the inner contents of the element, usually declaring children within the inner
     /// scope. After any children have been run and their nodes attached, this clears any trailing
     /// child nodes to ensure the element's children are correct per the latest declaration.
-    // FIXME this should be topo-aware
+    // FIXME this should be topo-nested
     pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
         let elem = self.node.clone();
         let last_desired_child;

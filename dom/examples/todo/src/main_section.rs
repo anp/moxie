@@ -3,7 +3,7 @@ use {
     moxie_dom::*,
 };
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
     let todos = todos.clone();
@@ -29,7 +29,7 @@ pub fn toggle(default_checked: bool) {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
 pub fn todo_list() {
     mox! {
@@ -45,7 +45,7 @@ pub fn todo_list() {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>)]
 pub fn main_section() {
     let num_complete = todos.iter().filter(|t| t.completed).count();

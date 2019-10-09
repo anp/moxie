@@ -18,7 +18,7 @@ use std::{
 /// It is currently possible to nest calls to `memo_with` and other functions in this module, but
 /// the values they store won't be correctly retained across `Revision`s until we track
 /// dependency information. As a result, it's not recommended to nest calls to `memo_with!`.
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(store: &MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
@@ -75,7 +75,7 @@ where
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
-#[topo::aware]
+#[topo::nested]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
     with: impl FnOnce(&Stored) -> Ret,
@@ -89,7 +89,7 @@ where
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and `Arg` is the same
 /// as when the stored value was created.
-#[topo::aware]
+#[topo::nested]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
     Arg: PartialEq + 'static,
@@ -100,7 +100,7 @@ where
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will always be cloned on
 /// subsequent calls unless dropped from storage and reinitialized in a later `Revision`.
-#[topo::aware]
+#[topo::nested]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,

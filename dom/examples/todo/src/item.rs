@@ -3,7 +3,7 @@ use {
     moxie_dom::*,
 };
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) {
     let todos = todos.clone();
@@ -25,7 +25,7 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) {
     let id = todo.id;
@@ -65,7 +65,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 pub fn todo_item(todo: &Todo) {
     let editing = state!(|| false);
 
