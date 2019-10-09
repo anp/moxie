@@ -10,8 +10,8 @@ watch --clear
     -x fmt
     -x check-core
     -x clippy-core
-    -x docs-all
     -x test-core
+    -x docs-all
 """
 
 bench-core = "bench --package moxie --package topo --package topo-macro"
