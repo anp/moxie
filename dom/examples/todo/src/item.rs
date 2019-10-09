@@ -4,7 +4,7 @@ use {
 };
 
 #[topo::aware]
-#[topo::from_env(todos: Key<Vec<Todo>>)]
+#[topo::from_env(todos: &Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) {
     let todos = todos.clone();
     mox! {
@@ -26,7 +26,7 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) {
 }
 
 #[topo::aware]
-#[topo::from_env(todos: Key<Vec<Todo>>)]
+#[topo::from_env(todos: &Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) {
     let id = todo.id;
     let todos = todos.clone();

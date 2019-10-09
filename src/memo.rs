@@ -19,7 +19,7 @@ use std::{
 /// the values they store won't be correctly retained across `Revision`s until we track
 /// dependency information. As a result, it's not recommended to nest calls to `memo_with!`.
 #[topo::aware]
-#[topo::from_env(store: MemoStore)]
+#[topo::from_env(store: &MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,

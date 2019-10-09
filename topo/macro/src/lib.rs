@@ -5,6 +5,7 @@
 extern crate proc_macro;
 use {
     proc_macro::TokenStream,
+    proc_macro_error::{abort, entry_point},
     syn::{
         export::TokenStream2, parse::Parser, punctuated::Punctuated, spanned::Spanned, FnArg,
         Local, PatType, Stmt, Token,
@@ -110,13 +111,7 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
 /// Defines required [topo::Env] values for a function. Binds the provided types as if references to
 /// them were implicit function arguments.
 ///
-/// TODO this should allow for binding optionally and non-optionally (panicking), and also
-/// allow the default of binding by reference and allow attempting to clone something to receive it
-/// by value
-///
-/// # Examples
-///
-/// TODO
+/// TODO this should allow for binding optionally and non-optionally (panicking)
 ///
 /// # Panics
 ///
@@ -127,42 +122,69 @@ fn docs_fn_signature(input_fn: &syn::ItemFn) -> TokenStream2 {
 /// clearly with examples demonstrating the production of a compatible environment.
 #[proc_macro_attribute]
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
+    entry_point(|| {
+        let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
-    let args = Punctuated::<FnArg, Token![,]>::parse_terminated
-        .parse(args)
-        .unwrap();
+        let args = Punctuated::<FnArg, Token![,]>::parse_terminated
+            .parse(args)
+            .unwrap();
 
-    let binding_statements = args
-        .into_iter()
-        .map(|arg| match arg {
-            FnArg::Receiver(_) => panic!("can't receive self by-environment"),
-            FnArg::Typed(pt) => pt,
-        })
-        .map(bind_env_reference)
-        .map(Stmt::Local)
-        .collect();
+        let binding_statements = args
+            .into_iter()
+            .map(|arg| match arg {
+                FnArg::Receiver(_) => abort!("can't receive self by-environment"),
+                FnArg::Typed(pt) => pt,
+            })
+            .map(bind_env_reference)
+            .map(Stmt::Local)
+            .collect();
 
-    let mut previous_statements = std::mem::replace(&mut input_fn.block.stmts, binding_statements);
-    input_fn.block.stmts.append(&mut previous_statements);
+        let mut previous_statements =
+            std::mem::replace(&mut input_fn.block.stmts, binding_statements);
+        input_fn.block.stmts.append(&mut previous_statements);
 
-    quote::quote!(#input_fn).into()
+        quote::quote!(#input_fn).into()
+    })
 }
 
 /// Create a local Env::expect assignment expression from the `pattern: type` pair which is passed.
 fn bind_env_reference(arg: PatType) -> Local {
-    let let_token = Token![let](arg.span());
-    let equals = Token![=](arg.span());
-    let semi_token = Token![;](arg.span());
+    let arg_span = arg.span();
 
-    let ty = arg.ty;
-    let init = syn::parse_quote!(&*topo::Env::expect::<#ty>());
+    let ty = match *arg.ty {
+        syn::Type::Reference(syn::TypeReference {
+            lifetime,
+            mutability,
+            elem,
+            ..
+        }) => {
+            if mutability.is_some() {
+                abort!(
+                    mutability.span(),
+                    "mutable references cannot be passed by environment"
+                );
+            }
+
+            if lifetime.is_some() {
+                abort!(
+                    lifetime.span(),
+                    "cannot bind to concrete lifetimes for environment references"
+                );
+            }
+
+            elem
+        }
+        ty @ _ => abort!(ty.span(), "only references can be passed by environment"),
+    };
 
     Local {
-        pat: *arg.pat,
-        init: Some((equals, Box::new(init))),
         attrs: vec![],
-        let_token,
-        semi_token,
+        let_token: Token![let](arg_span),
+        pat: *arg.pat,
+        init: Some((
+            Token![=](arg_span),
+            Box::new(syn::parse_quote!(&*topo::Env::expect::<#ty>())),
+        )),
+        semi_token: Token![;](arg_span),
     }
 }

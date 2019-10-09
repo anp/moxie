@@ -65,7 +65,7 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the [`moxie::mox!`] macro.
 #[topo::aware]
-#[topo::from_env(parent: MemoElement)]
+#[topo::from_env(parent: &MemoElement)]
 pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
@@ -84,7 +84,7 @@ pub fn text(s: impl ToString) {
 /// Mutation of the created element is performed during the `with_elem` closure via the provided
 /// [`moxie_dom::MemoElement`] wrapper.
 #[topo::aware]
-#[topo::from_env(parent: MemoElement)]
+#[topo::from_env(parent: &MemoElement)]
 pub fn element<ChildRet>(
     ty: &'static str,
     with_elem: impl FnOnce(&MemoElement) -> ChildRet,
