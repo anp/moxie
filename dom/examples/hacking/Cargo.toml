@@ -2,6 +2,7 @@
 name = "dom-hacking"
 description = "simple project for hacking on new moxie-dom api"
 version = "0.1.0-pre"
+publish = false
 edition = "2018"
 license-file = "../../../../LICENSE-MIT"
 repository = "https://github.com/anp/moxie.git"
