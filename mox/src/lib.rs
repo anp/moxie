@@ -2,18 +2,20 @@ extern crate proc_macro;
 
 use {
     proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree},
-    proc_macro_error::{call_site_error, filter_macro_errors, span_error, MacroError, ResultExt},
+    proc_macro_error::{abort, emit_error, MacroError, ResultExt},
     quote::{quote, ToTokens},
     snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
 };
 
 #[proc_macro_hack::proc_macro_hack]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    filter_macro_errors! {
-        let item = snax::parse(input.into()).map_err(Error::SnaxError).unwrap_or_exit();
+    proc_macro_error::entry_point(|| {
+        let item = snax::parse(input.into())
+            .map_err(Error::SnaxError)
+            .unwrap_or_abort();
         let item = MoxItem::from(item);
         quote!(#item).into()
-    }
+    })
 }
 
 enum MoxItem {
@@ -55,7 +57,7 @@ fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
         tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) => {
             new_stream = quote!(text!(#tt));
         }
-        TokenTree::Punct(p) => span_error!(p.span(), "'{}' not valid in item position", p),
+        TokenTree::Punct(p) => emit_error!(p.span(), "'{}' not valid in item position", p),
     }
     Group::new(Delimiter::Brace, new_stream).into()
 }
@@ -243,7 +245,7 @@ impl ToTokens for MoxAttr {
                 let value = g.stream();
                 quote!(.on(#value))
             }
-            _ => call_site_error!("event handlers must be surrounded in braces"),
+            _ => abort!("event handlers must be surrounded in braces"),
         };
 
         tokens.extend(stream);
@@ -256,7 +258,7 @@ impl From<SnaxAttribute> for MoxAttr {
             SnaxAttribute::Simple { name, value } => {
                 let name_str = name.to_string();
                 if name_str == "_" {
-                    span_error!(
+                    abort!(
                         name.span(),
                         "anonymous attributes are only allowed in the first position"
                     );
