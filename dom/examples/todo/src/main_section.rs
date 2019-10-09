@@ -4,7 +4,7 @@ use {
 };
 
 #[topo::aware]
-#[topo::from_env(todos: Key<Vec<Todo>>)]
+#[topo::from_env(todos: &Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) {
     let todos = todos.clone();
     let on_click = move |_: event::Click| {
@@ -30,7 +30,7 @@ pub fn toggle(default_checked: bool) {
 }
 
 #[topo::aware]
-#[topo::from_env(todos: Key<Vec<Todo>>, visibility: Key<Visibility>)]
+#[topo::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
 pub fn todo_list() {
     mox! {
         <ul class="todo-list">
@@ -46,7 +46,7 @@ pub fn todo_list() {
 }
 
 #[topo::aware]
-#[topo::from_env(todos: Key<Vec<Todo>>)]
+#[topo::from_env(todos: &Key<Vec<Todo>>)]
 pub fn main_section() {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 

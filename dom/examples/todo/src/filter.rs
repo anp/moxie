@@ -38,7 +38,7 @@ impl Visibility {
 }
 
 #[topo::aware]
-#[topo::from_env(visibility: Key<Visibility>)]
+#[topo::from_env(visibility: &Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) {
     let visibility = visibility.clone();
     mox! {
