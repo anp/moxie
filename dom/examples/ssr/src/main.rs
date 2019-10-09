@@ -22,7 +22,7 @@ struct PathExtractor {
     parts: Vec<String>,
 }
 
-#[topo::aware]
+#[topo::nested]
 fn simple_list(items: &[String]) {
     moxie::mox! {
         <ul>{

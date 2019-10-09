@@ -3,7 +3,7 @@ use {
     moxie_dom::*,
 };
 
-#[topo::aware]
+#[topo::nested]
 pub fn items_remaining(num_active: usize) {
     mox! {
         <span class="todo-count">
@@ -21,7 +21,7 @@ pub fn items_remaining(num_active: usize) {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(todos: &Key<Vec<Todo>>)]
 pub fn clear_completed_button() {
     let todos = todos.clone();
@@ -35,7 +35,7 @@ pub fn clear_completed_button() {
     };
 }
 
-#[topo::aware]
+#[topo::nested]
 pub fn filter_footer(num_complete: usize, num_active: usize) {
     mox! {
         <footer class="footer">

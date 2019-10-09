@@ -21,7 +21,7 @@ pub mod item;
 #[macro_use]
 pub mod main_section;
 
-#[topo::aware]
+#[topo::nested]
 fn todo_app() {
     let visibility = state!(|| Visibility::default());
     let todos = state!(|| vec![Todo::new("whoaaa")]);

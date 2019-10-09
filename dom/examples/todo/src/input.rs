@@ -1,6 +1,6 @@
 use {moxie_dom::*, wasm_bindgen::JsCast};
 
-#[topo::aware]
+#[topo::nested]
 pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(String) + 'static) {
     let text = state!(|| if editing {
         placeholder.to_string()

@@ -3,7 +3,7 @@
 
 //! `topo` creates a hierarchy of scoped, nested [environments][topo::Env] whose shape matches the
 //! function callgraph. These environments store singletons indexed by their type, and references to
-//! environmental values are available only to an enclosed call scope. When a `#![topo::aware]`
+//! environmental values are available only to an enclosed call scope. When a `#![topo::nested]`
 //! function is called, its parent environment is cheaply propagated along with any additional
 //! values added at appropriate callsites.
 //!
@@ -12,21 +12,21 @@
 //! the path taken through the callgraph to the current location, and are stable across repeated
 //! invocations of the same execution paths.
 //!
-//! By running the same topologically-aware functions in a loop, we can observe changes to the
+//! By running the same topologically-nested functions in a loop, we can observe changes to the
 //! structure over time. The [moxie](https://docs.rs/moxie) crate uses these identifiers and
 //! environments to create persistent trees for rendering human interfaces.
 //!
-//! # Making functions aware of the call topology
+//! # Making functions nested within the call topology
 //!
 //! Defining a topological function results in a macro definition for binding the
-//! function to each callsite where it is invoked. Define a topologically-aware function with the
-//! `topo::aware` attribute:
+//! function to each callsite where it is invoked. Define a topologically-nested function with the
+//! `topo::nested` attribute:
 //!
 //! ```
-//! #[topo::aware]
+//! #[topo::nested]
 //! fn basic_topo() -> topo::Id { topo::Id::current() }
 //!
-//! #[topo::aware]
+//! #[topo::nested]
 //! fn tier_two() -> topo::Id { basic_topo!() }
 //!
 //! // each of these functions will be run in separately identified
@@ -44,9 +44,9 @@
 //! ```
 //!
 //! Because topological functions must be sensitive to the location at which they're invoked and
-//! aware of their parent, we transform the function definition into a macro to track the source
-//! location at which it is called. Future language features may make it possible to call topo-aware
-//! functions without any special syntax.
+//! within their immediate parent, we transform the function definition into a macro to track the
+//! source location at which it is called. Future language features may make it possible to call
+//! topo-nested functions without any special syntax.
 //!
 //! # Requiring references from the environment
 //!
@@ -81,7 +81,7 @@
 //! appropriate for your use case before taking it on as a dependency.
 
 #[doc(inline)]
-pub use topo_macro::{aware, from_env};
+pub use topo_macro::{from_env, nested};
 
 use {
     owning_ref::OwningRef,
@@ -118,7 +118,7 @@ macro_rules! callsite {
     }};
 }
 
-/// Calls the provided expression within an [`Env`] aware to the callsite, optionally passing
+/// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
 /// additional environment values to the child scope.
 ///
 /// ```
@@ -286,8 +286,8 @@ macro_rules! unstable_raw_call {
 ///
 /// The `Id` for the execution of a stack frame is the combined product of:
 ///
-/// * a callsite: lexical source location at which the topologically-aware function was invoked
-/// * parent `Id`: the identifier which was active when entering the current topo-aware function
+/// * a callsite: lexical source location at which the topologically-nested function was invoked
+/// * parent `Id`: the identifier which was active when entering the current topo-nested function
 /// * a "slot": runtime value indicating the call's "logical index" within the parent call
 ///
 /// By default, the slot used is a count of the number of times that particular callsite has been

@@ -2,7 +2,7 @@ use topo::*;
 
 #[test]
 fn invoke_test_topo() {
-    #[topo::aware]
+    #[topo::nested]
     fn unique_id() -> Id {
         Id::current()
     }

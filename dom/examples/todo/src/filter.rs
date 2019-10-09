@@ -37,7 +37,7 @@ impl Visibility {
     }
 }
 
-#[topo::aware]
+#[topo::nested]
 #[topo::from_env(visibility: &Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) {
     let visibility = visibility.clone();
@@ -52,7 +52,7 @@ pub fn filter_link(to_set: Visibility) {
     }
 }
 
-#[topo::aware]
+#[topo::nested]
 pub fn filter() {
     mox! {
         <ul class="filters">
