@@ -13,6 +13,6 @@ include = ["Cargo.toml", "src/**/*.rs"]
 proc-macro = true
 
 [dependencies]
-proc-macro-error = "0.3.1"
+proc-macro-error = "0.4.1"
 quote = "1.0"
 syn = { version = "1.0", features = ["full"] }
