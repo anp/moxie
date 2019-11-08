@@ -25,8 +25,8 @@ use {
     },
 };
 
-/// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
-/// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
+/// Revisions measure moxie's notion of time passing. Each `Runtime` increments its Revision
+/// on every iteration. `crate::Commit`s to state variables are annotated with the Revision
 /// during which they were made.
 #[derive(Clone, Copy, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Revision(pub u64);
