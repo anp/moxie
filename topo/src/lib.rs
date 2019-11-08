@@ -1,13 +1,13 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` creates a hierarchy of scoped, nested [environments][topo::Env] whose shape matches the
+//! `topo` creates a hierarchy of scoped, nested [environments][crate::Env] whose shape matches the
 //! function callgraph. These environments store singletons indexed by their type, and references to
 //! environmental values are available only to an enclosed call scope. When a `#![topo::nested]`
 //! function is called, its parent environment is cheaply propagated along with any additional
 //! values added at appropriate callsites.
 //!
-//! Each environment in this hierarchy has a unique and deterministic [`topo::Id`] describing that
+//! Each environment in this hierarchy has a unique and deterministic [crate::Id] describing that
 //! environment and the path taken to arrive at its stack frame. These identifiers are derived from
 //! the path taken through the callgraph to the current location, and are stable across repeated
 //! invocations of the same execution paths.
