@@ -27,16 +27,16 @@
 //! fn basic_topo() -> topo::Id { topo::Id::current() }
 //!
 //! #[topo::nested]
-//! fn tier_two() -> topo::Id { basic_topo!() }
+//! fn tier_two() -> topo::Id { basic_topo() }
 //!
 //! // each of these functions will be run in separately identified
 //! // contexts as the source locations for their calls are different
-//! let first = basic_topo!();
-//! let second = basic_topo!();
+//! let first = basic_topo();
+//! let second = basic_topo();
 //! assert_ne!(first, second);
 //!
-//! let third = tier_two!();
-//! let fourth = tier_two!();
+//! let third = tier_two();
+//! let fourth = tier_two();
 //! assert_ne!(third, fourth);
 //! assert_ne!(first, third);
 //! assert_ne!(first, fourth);

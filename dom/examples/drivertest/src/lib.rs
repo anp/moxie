@@ -1,5 +1,9 @@
 use {
-    moxie_dom::{embed::WebRuntime, *},
+    moxie_dom::{
+        elements::{li, ul},
+        embed::WebRuntime,
+        prelude::*,
+    },
     std::io::prelude::*,
     typed_html::dom::{DOMTree, VNode},
     wasm_bindgen::JsCast,

@@ -3,7 +3,7 @@
 use {
     crate::MemoElement,
     augdom::Node,
-    moxie::{embed::Runtime, topo},
+    moxie::{embed::Runtime, prelude::topo},
 };
 
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building trees of DOM nodes.

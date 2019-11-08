@@ -52,12 +52,12 @@ fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
                     new_stream.extend(tokens);
 
                     // TODO get all but the last element here too if its a %
-                    new_stream = quote!(text!(format!(#new_stream)));
+                    new_stream = quote!(text(format!(#new_stream)));
                 }
             }
         }
         tt @ TokenTree::Ident(_) | tt @ TokenTree::Literal(_) => {
-            new_stream = quote!(text!(#tt));
+            new_stream = quote!(text(#tt));
         }
         TokenTree::Punct(p) => emit_error!(p.span(), "'{}' not valid in item position", p),
     }
@@ -170,14 +170,14 @@ fn tag_to_tokens(
     });
 
     let invocation = if contents.is_empty() {
-        quote!(#name!(#fn_args))
+        quote!(#name(#fn_args))
     } else {
         if fn_args.is_some() {
             unimplemented!(
                 "can't emit function arguments at the same time as attributes or children yet"
             )
         }
-        quote!(#name!(|_e| { _e #contents }))
+        quote!(#name(|_e| { _e #contents }))
     };
 
     stream.extend(invocation);

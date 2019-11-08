@@ -1,6 +1,9 @@
 use {
-    crate::{filter::*, footer::*, item::*, Todo},
-    moxie_dom::*,
+    crate::{filter::*, footer::*, item::todo_item, Todo},
+    moxie_dom::{
+        elements::{input, label, section, span, ul},
+        prelude::*,
+    },
 };
 
 #[topo::nested]

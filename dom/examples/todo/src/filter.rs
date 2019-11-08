@@ -1,6 +1,9 @@
 use {
     crate::Todo,
-    moxie_dom::*,
+    moxie_dom::{
+        elements::{a, li, ul},
+        prelude::*,
+    },
     Visibility::{Active, All, Completed},
 };
 

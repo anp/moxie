@@ -1,3 +1,7 @@
+//! Moxie implements "topological memoization" with storage in its runtime.
+//!
+//! TODO expand on this.
+
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
@@ -87,7 +91,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    memo_with!((), |&()| expr(), with)
+    memo_with((), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and `Arg` is the same
@@ -101,7 +105,7 @@ where
     Arg: PartialEq + 'static,
     Stored: Clone + 'static,
 {
-    memo_with!(arg, init, Clone::clone)
+    memo_with(arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will always be cloned on
@@ -111,7 +115,7 @@ pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,
 {
-    memo!((), |()| expr())
+    memo((), |()| expr())
 }
 
 /// A shared pointer to the memoization storage singleton for a given runtime.
@@ -205,7 +209,7 @@ mod tests {
                 assert!(comp_skipped_count <= 1);
 
                 assert!(revision.0 <= 5);
-                let current_call_count = once!(|| {
+                let current_call_count = once(|| {
                     call_count += 1;
                     call_count
                 });
@@ -237,7 +241,7 @@ mod tests {
             let mut rt = Runtime::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
-                    memo!(i, |_| ids.insert(topo::Id::current()));
+                    memo(i, |_| ids.insert(topo::Id::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
@@ -252,7 +256,7 @@ mod tests {
             let mut rt = Runtime::new(|| {
                 let mut counts = vec![];
                 for i in 0..num_iters {
-                    topo::call!(once!(|| counts.push(i)));
+                    topo::call!(once(|| counts.push(i)));
                 }
                 counts
             });
@@ -281,7 +285,7 @@ mod tests {
             let memo_exec = Cell::new(0);
             let mut rt = Runtime::new(|| {
                 raw_exec.set(raw_exec.get() + 1);
-                memo!(loop_ct.get(), |_| {
+                memo(loop_ct.get(), |_| {
                     memo_exec.set(memo_exec.get() + 1);
                 });
             });
