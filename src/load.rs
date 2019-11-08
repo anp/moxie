@@ -1,7 +1,7 @@
 //! Asynchronous loading primitives.
 
 use {
-    crate::{embed::Spawner, memo::*, state::*},
+    crate::{embed::Spawner, memo::memo_with, state::*},
     futures::future::{AbortHandle, Abortable},
     std::{future::Future, task::Poll},
 };
@@ -22,9 +22,9 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    let result: Key<Poll<Stored>> = memo_state!((), |()| Poll::Pending);
+    let result: Key<Poll<Stored>> = memo_state((), |()| Poll::Pending);
     let result2 = result.clone();
-    memo_with!(
+    memo_with(
         capture,
         |arg| {
             let (cancel, register_cancel) = AbortHandle::new_pair();
@@ -62,7 +62,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    load_with!((), |()| init(), with)
+    load_with((), |()| init(), with)
 }
 
 /// Calls [`load_with`], never re-initializes the loading future, and clones the returned value
@@ -73,7 +73,7 @@ where
     Fut: Future<Output = Stored> + 'static,
     Stored: Clone + 'static,
 {
-    load_with!((), |()| init(), Clone::clone)
+    load_with((), |()| init(), Clone::clone)
 }
 
 /// Load a value from a future, cloning it on subsequent revisions after it is first returned.
@@ -85,7 +85,7 @@ where
     Fut: Future<Output = Stored> + 'static,
     Stored: Clone + 'static,
 {
-    load_with!(capture, init, Clone::clone)
+    load_with(capture, init, Clone::clone)
 }
 
 #[cfg(test)]
@@ -100,7 +100,7 @@ mod tests {
 
         let mut rt = crate::embed::Runtime::new(move || -> Poll<u8> {
             let recv = recv.clone();
-            load_once!(|| async move {
+            load_once(|| async move {
                 recv.lock()
                     .await
                     .take()
@@ -142,7 +142,7 @@ mod tests {
         let mut rt = crate::embed::Runtime::new(move || -> Option<Poll<u8>> {
             if crate::embed::Revision::current().0 < 3 {
                 let recv = recv.clone();
-                Some(load_once!(|| async move {
+                Some(load_once(|| async move {
                     recv.lock()
                         .await
                         .take()

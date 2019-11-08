@@ -3,22 +3,22 @@
 //!
 //! [MDN]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 
-macro_rules! element_macro {
+macro_rules! element_fn {
     (
         $(#[$outer:meta])*
         $name:ident
     ) => {
         $(#[$outer])*
-        #[macro_export]
-        macro_rules! $name {
-            ($with_elem:expr) => {
-                $crate::element!(stringify!($name), $with_elem)
-            };
+        #[moxie::prelude::topo::nested]
+        pub fn $name<ChildRet>(
+            with_elem: impl FnOnce(&$crate::MemoElement) -> ChildRet,
+        ) -> ChildRet {
+            crate::element(stringify!($name), with_elem)
         }
     };
 }
 
-element_macro! {
+element_fn! {
     /// The [`<html>` element][mdn] represents the root (top-level element) of an HTML document,
     /// so it is also referred to as the *root element*. All other elements must be descendants of
     /// this element.
@@ -27,7 +27,7 @@ element_macro! {
     html
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<base> element`][mdn] specifies the base URL to use for all relative URLs
     /// contained within a document. There can be only one `<base>` element in a document.
     ///
@@ -35,7 +35,7 @@ element_macro! {
     base
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<head>` element][mdn] contains machine-readable information ([metadata]) about
     /// the document, like its [title], [scripts], and [style sheets].
     ///
@@ -47,7 +47,7 @@ element_macro! {
     head
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML External Resource Link element (`<link>`)][mdn] specifies relationships between
     /// the current document and an external resource. This element is most commonly used to link to
     /// [stylesheets], but is also used to establish site icons (both "favicon" style icons and
@@ -58,7 +58,7 @@ element_macro! {
     link
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<meta>` element][mdn] represents [metadata] that cannot be represented by other
     /// HTML meta-related elements, like [`<base>`], [`<link>`], [`<script>`], [`<style>`] or
     /// [`<title>`].
@@ -73,7 +73,7 @@ element_macro! {
     meta
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<style>` element][mdn] contains style information for a document, or part of a
     /// document.
     ///
@@ -81,7 +81,7 @@ element_macro! {
     style
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Title element (`<title>`)][mdn] defines the document's title that is shown in a
     /// [browser]'s title bar or a page's tab.
     ///
@@ -90,7 +90,7 @@ element_macro! {
     title
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<body>` element][mdn] represents the content of an HTML document. There can be
     /// only one `<body>` element in a document.
     ///
@@ -98,7 +98,7 @@ element_macro! {
     body
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<address>` element][mdn] indicates that the enclosed HTML provides contact
     /// information for a person or people, or for an organization.
     ///
@@ -106,7 +106,7 @@ element_macro! {
     address
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<article>` element][mdn] represents a self-contained composition in a document,
     /// page, application, or site, which is intended to be independently distributable or reusable
     /// (e.g., in syndication).
@@ -115,7 +115,7 @@ element_macro! {
     article
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<aside>` element][mdn] represents a portion of a document whose content is only
     /// indirectly related to the document's main content.
     ///
@@ -123,7 +123,7 @@ element_macro! {
     aside
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<footer>` element][mdn] represents a footer for its nearest [sectioning content]
     /// or [sectioning root] element. A footer typically contains information about the author of
     /// the section, copyright data or links to related documents.
@@ -134,7 +134,7 @@ element_macro! {
     footer
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<header>` element][mdn] represents introductory content, typically a group of
     /// introductory or navigational aids. It may contain some heading elements but also a logo, a
     /// search form, an author name, and other elements.
@@ -143,7 +143,7 @@ element_macro! {
     header
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -151,7 +151,7 @@ element_macro! {
     h1
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -159,7 +159,7 @@ element_macro! {
     h2
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -167,7 +167,7 @@ element_macro! {
     h3
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -175,7 +175,7 @@ element_macro! {
     h4
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -183,7 +183,7 @@ element_macro! {
     h5
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -191,7 +191,7 @@ element_macro! {
     h6
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<hgroup>` element][mdn] represents a multi-level heading for a section of a
     /// document. It groups a set of [`<h1>–<h6>`][heading] elements.
     ///
@@ -200,7 +200,7 @@ element_macro! {
     hgroup
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<nav>` element][mdn] represents a section of a page whose purpose is to provide
     /// navigation links, either within the current document or to other documents. Common examples
     /// of navigation sections are menus, tables of contents, and indexes.
@@ -209,7 +209,7 @@ element_macro! {
     nav
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<section>` element][mdn] represents a standalone section — which doesn't have a
     /// more specific semantic element to represent it — contained within an HTML document.
     ///
@@ -217,7 +217,7 @@ element_macro! {
     section
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<blockquote>` element][mdn] (or *HTML Block Quotation Element*) indicates that
     /// the enclosed text is an extended quotation. Usually, this is rendered visually by
     /// indentation. A URL for the source of the quotation may be given using the `cite` attribute,
@@ -228,7 +228,7 @@ element_macro! {
     blockquote
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<dd>` element][mdn] provides the description, definition, or value for the
     /// preceding term ([`<dt>`][dt]) in a description list ([`<dl>`][dl]).
     ///
@@ -238,7 +238,7 @@ element_macro! {
     dd
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Content Division element (`<div>`)][mdn] is the generic container for flow
     /// content. It has no effect on the content or layout until styled using [CSS].
     ///
@@ -247,7 +247,7 @@ element_macro! {
     div
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<dl>` element][mdn] represents a description list. The element encloses a list of
     /// groups of terms (specified using the [`<dt>`][dt] element) and descriptions (provided by
     /// [`<dd>`][dd] elements). Common uses for this element are to implement a glossary or to
@@ -259,7 +259,7 @@ element_macro! {
     dl
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<dt>` element][mdn] specifies a term in a description or definition list, and as
     /// such must be used inside a [`<dl>`][dl] element.
     ///
@@ -268,7 +268,7 @@ element_macro! {
     dt
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<figcaption>` or Figure Caption element][mdn] represents a caption or legend
     /// describing the rest of the contents of its parent [`<figure>`][figure] element.
     ///
@@ -277,7 +277,7 @@ element_macro! {
     figcaption
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<figure>` (Figure With Optional Caption) element][mdn] represents self-contained
     /// content, potentially with an optional caption, which is specified using the
     /// ([`<figcaption>`][figcaption]) element.
@@ -287,7 +287,7 @@ element_macro! {
     figure
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<hr>` element][mdn] represents a thematic break between paragraph-level elements:
     /// for example, a change of scene in a story, or a shift of topic within a section.
     ///
@@ -295,14 +295,14 @@ element_macro! {
     hr
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<li>` element][mdn] is used to represent an item in a list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
     li
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<main>` element][mdn] represents the dominant content of the [`<body>`][body] of
     /// a document. The main content area consists of content that is directly related to or expands
     /// upon the central topic of a document, or the central functionality of an application.
@@ -312,7 +312,7 @@ element_macro! {
     main
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<ol>` element][mdn] represents an ordered list of items, typically rendered as a
     /// numbered list.
     ///
@@ -320,14 +320,14 @@ element_macro! {
     ol
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<p>` element][mdn] represents a paragraph.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
     p
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<pre>` element][mdn] represents preformatted text which is to be presented
     /// exactly as written in the HTML file.
     ///
@@ -335,7 +335,7 @@ element_macro! {
     pre
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<ul>` element][mdn] represents an unordered list of items, typically rendered as
     /// a bulleted list.
     ///
@@ -343,7 +343,7 @@ element_macro! {
     ul
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<a>` element (or *anchor* element)][mdn], along with its href attribute, creates
     /// a hyperlink to other web pages, files, locations within the same page, email addresses, or
     /// any other URL.
@@ -352,7 +352,7 @@ element_macro! {
     a
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Abbreviation element (`<abbr>`)][mdn] represents an abbreviation or acronym; the
     /// optional [`title`][title] attribute can provide an expansion or description for the
     /// abbreviation.
@@ -362,7 +362,7 @@ element_macro! {
     abbr
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Bring Attention To element (`<b>`)][mdn] is used to draw the reader's attention to
     /// the element's contents, which are not otherwise granted special importance.
     ///
@@ -370,7 +370,7 @@ element_macro! {
     b
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Bidirectional Isolate element (`<bdi>`)][mdn] tells the browser's bidirectional
     /// algorithm to treat the text it contains in isolation from its surrounding text.
     ///
@@ -378,7 +378,7 @@ element_macro! {
     bdi
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Bidirectional Text Override element (`<bdo>`)][mdn] overrides the current
     /// directionality of text, so that the text within is rendered in a different direction.
     ///
@@ -386,7 +386,7 @@ element_macro! {
     bdo
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<br>` element][mdn] produces a line break in text (carriage-return). It is useful
     /// for writing a poem or an address, where the division of lines is significant.
     ///
@@ -394,7 +394,7 @@ element_macro! {
     br
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Citation element (`<cite>`)][mdn] is used to describe a reference to a cited
     /// creative work, and must include the title of that work.
     ///
@@ -402,7 +402,7 @@ element_macro! {
     cite
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<code>` element][mdn] displays its contents styled in a fashion intended to
     /// indicate that the text is a short fragment of computer code.
     ///
@@ -410,7 +410,7 @@ element_macro! {
     code
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<data>` element][mdn] links a given content with a machine-readable translation.
     /// If the content is time- or date-related, the [`<time>`][time] element must be used.
     ///
@@ -419,7 +419,7 @@ element_macro! {
     data
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Definition element (`<dfn>`)][mdn] is used to indicate the term being defined
     /// within the context of a definition phrase or sentence.
     ///
@@ -427,7 +427,7 @@ element_macro! {
     dfn
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<em>` element][mdn] marks text that has stress emphasis. The `<em>` element can
     /// be nested, with each level of nesting indicating a greater degree of emphasis.
     ///
@@ -435,7 +435,7 @@ element_macro! {
     em
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<i>` element][mdn] represents a range of text that is set off from the normal
     /// text for some reason. Some examples include technical terms, foreign language phrases, or
     /// fictional character thoughts. It is typically displayed in italic type.
@@ -444,7 +444,7 @@ element_macro! {
     i
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Keyboard Input element (`<kbd>`)][mdn] represents a span of inline text denoting
     /// textual user input from a keyboard, voice input, or any other text entry device.
     ///
@@ -452,7 +452,7 @@ element_macro! {
     kbd
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Mark Text element (`<mark>`)][mdn] represents text which is marked or highlighted
     /// for reference or notation purposes, due to the marked passage's relevance or importance in
     /// the enclosing context.
@@ -461,7 +461,7 @@ element_macro! {
     mark
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<q>` element][mdn]  indicates that the enclosed text is a short inline quotation.
     /// Most modern browsers implement this by surrounding the text in quotation marks.
     ///
@@ -469,7 +469,7 @@ element_macro! {
     q
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Ruby Base (`<rb>`) element][mdn] is used to delimit the base text component of
     /// a [`<ruby>`][ruby] annotation, i.e. the text that is being annotated.
     ///
@@ -478,7 +478,7 @@ element_macro! {
     rb
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Ruby Fallback Parenthesis (`<rp>`) element][mdn] is used to provide fall-back
     /// parentheses for browsers that do not support display of ruby annotations using the
     /// [`<ruby>`][ruby] element.
@@ -488,7 +488,7 @@ element_macro! {
     rp
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Ruby Text (`<rt>`) element][mdn] specifies the ruby text component of a ruby
     /// annotation, which is used to provide pronunciation, translation, or transliteration
     /// information for East Asian typography. The `<rt>` element must always be contained within a
@@ -499,7 +499,7 @@ element_macro! {
     rt
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Ruby Text Container (`<rtc>`) element][mdn] embraces semantic annotations of
     /// characters presented in a ruby of [`<rb>`][rb] elements used inside of [`<ruby>`][ruby]
     /// element. [`<rb>`][rb] elements can have both pronunciation ([`<rt>`][rt]) and semantic
@@ -513,7 +513,7 @@ element_macro! {
     rtc
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<ruby>` element][mdn] represents a ruby annotation. Ruby annotations are for
     /// showing pronunciation of East Asian characters.
     ///
@@ -521,7 +521,7 @@ element_macro! {
     ruby
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<s>` element][mdn] renders text with a strikethrough, or a line through it. Use
     /// the `<s>` element to represent things that are no longer relevant or no longer accurate.
     /// However, `<s>` is not appropriate when indicating document edits; for that, use the
@@ -533,7 +533,7 @@ element_macro! {
     s
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Sample Element (`<samp>`)][mdn] is used to enclose inline text which represents
     /// sample (or quoted) output from a computer program.
     ///
@@ -541,7 +541,7 @@ element_macro! {
     samp
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<small>` element][mdn] represents side-comments and small print, like copyright
     /// and legal text, independent of its styled presentation. By default, it renders text within
     /// it one font-size small, such as from `small` to `x-small`.
@@ -550,7 +550,7 @@ element_macro! {
     small
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<span>` element][mdn] is a generic inline container for phrasing content, which
     /// does not inherently represent anything. It can be used to group elements for styling
     /// purposes (using the [`class`][class] or [`id`][id] attributes), or because they share
@@ -563,7 +563,7 @@ element_macro! {
     span
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Strong Importance Element (`<strong>`)][mdn] indicates that its contents have
     /// strong importance, seriousness, or urgency. Browsers typically render the contents in bold
     /// type.
@@ -572,7 +572,7 @@ element_macro! {
     strong
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Subscript element (`<sub>`)][mdn] specifies inline text which should be displayed
     /// as subscript for solely typographical reasons.
     ///
@@ -580,7 +580,7 @@ element_macro! {
     sub
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Superscript element (`<sup>`)][mdn] specifies inline text which is to be displayed
     /// as superscript for solely typographical reasons.
     ///
@@ -588,14 +588,14 @@ element_macro! {
     sup
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<time>` element][mdn] represents a specific period in time.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     time
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Unarticulated Annotation Element (`<u>`)][mdn] represents a span of inline text
     /// which should be rendered in a way that indicates that it has a non-textual annotation.
     ///
@@ -603,7 +603,7 @@ element_macro! {
     u
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Variable element (`<var>`)][mdn] represents the name of a variable in a
     /// mathematical expression or a programming context.
     ///
@@ -611,7 +611,7 @@ element_macro! {
     var
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<wbr>` element][mdn] represents a word break opportunity—a position within text
     /// where the browser may optionally break a line, though its line-breaking rules would not
     /// otherwise create a break at that location.
@@ -620,7 +620,7 @@ element_macro! {
     wbr
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<area>` element][mdn] defines a hot-spot region on an image, and optionally
     /// associates it with a [hypertext link]. This element is used only within a [`<map>`][map]
     /// element.
@@ -631,7 +631,7 @@ element_macro! {
     area
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<audio>` element][mdn] is used to embed sound content in documents. It may
     /// contain one or more audio sources, represented using the `src` attribute or the
     /// [`<source>`][source] element: the browser will choose the most suitable one. It can also be
@@ -643,14 +643,14 @@ element_macro! {
     audio
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<img>` element][mdn] embeds an image into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     img
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<map>` element][mdn] is used with [`<area>`][area] elements to define an image
     /// map (a clickable link area).
     ///
@@ -659,7 +659,7 @@ element_macro! {
     map
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<track>` element][mdn] is used as a child of the media elements
     /// [`<audio>`][audio] and [`<video>`][video]. It lets you specify timed text tracks (or
     /// time-based data), for example to automatically handle subtitles. The tracks are formatted in
@@ -674,7 +674,7 @@ element_macro! {
     track
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Video element (`<video>`)][mdn] embeds a media player which supports video
     /// playback into the document.
     ///
@@ -682,7 +682,7 @@ element_macro! {
     video
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<embed>` element][mdn] embeds external content at the specified point in the
     /// document. This content is provided by an external application or other source of interactive
     /// content such as a browser plug-in.
@@ -691,7 +691,7 @@ element_macro! {
     embed
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Inline Frame element (`<iframe>`)][mdn] represents a nested [browsing context],
     /// embedding another HTML page into the current one.
     ///
@@ -700,7 +700,7 @@ element_macro! {
     iframe
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<object>` element][mdn] represents an external resource, which can be treated as
     /// an image, a nested browsing context, or a resource to be handled by a plugin.
     ///
@@ -708,7 +708,7 @@ element_macro! {
     object
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<param>` element][param] defines parameters for an [`<object>`][object] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
@@ -716,7 +716,7 @@ element_macro! {
     param
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<picture>` element][mdn] contains zero or more [`<source>`][source] elements and
     /// one [`<img>`][img] element to provide versions of an image for different display/device
     /// scenarios.
@@ -727,7 +727,7 @@ element_macro! {
     picture
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<source>` element][source] specifies multiple media resources for the
     /// [`<picture>`][picture], the [`<audio>`][audio] element, or the [`<video>`][video] element.
     ///
@@ -738,7 +738,7 @@ element_macro! {
     source
 }
 
-element_macro! {
+element_fn! {
     /// Use the [HTML `<canvas>` element][mdn] with either the [canvas scripting API][api] or the
     /// [WebGL API][gl] to draw graphics and animations.
     ///
@@ -748,7 +748,7 @@ element_macro! {
     canvas
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<noscript>` element][mdn] defines a section of HTML to be inserted if a script
     /// type on the page is unsupported or if scripting is currently turned off in the browser.
     ///
@@ -756,7 +756,7 @@ element_macro! {
     noscript
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<script>` element][mdn] is used to embed or reference executable code; this is
     /// typically used to embed or refer to JavaScript code.
     ///
@@ -764,7 +764,7 @@ element_macro! {
     script
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<del>` element][mdn] represents a range of text that has been deleted from a
     /// document.
     ///
@@ -772,7 +772,7 @@ element_macro! {
     del
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<ins>` element][mdn] represents a range of text that has been added to a
     /// document.
     ///
@@ -780,7 +780,7 @@ element_macro! {
     ins
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Table Caption element (`<caption>`)][mdn] specifies the caption (or title) of a
     /// table, and if used is *always* the first child of a [`<table>`][table].
     ///
@@ -789,7 +789,7 @@ element_macro! {
     caption
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<col>` element][mdn] defines a column within a table and is used for defining
     /// common semantics on all common cells. It is generally found within a [`<colgroup>`][cg]
     /// element.
@@ -799,14 +799,14 @@ element_macro! {
     col
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<colgroup>` element][mdn] defines a group of columns within a table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     colgroup
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<table>` element][mdn] represents tabular data — that is, information presented
     /// in a two-dimensional table comprised of rows and columns of cells containing data.
     ///
@@ -814,7 +814,7 @@ element_macro! {
     table
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Table Body element (`<tbody>`)][mdn] encapsulates a set of table rows
     /// ([`<tr>`][tr] elements), indicating that they comprise the body of the table
     /// ([`<table>`][table]).
@@ -825,7 +825,7 @@ element_macro! {
     tbody
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<td>` element][mdn] defines a cell of a table that contains data. It participates
     /// in the *table model*.
     ///
@@ -833,7 +833,7 @@ element_macro! {
     td
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<tfoot>` element][mdn] defines a set of rows summarizing the columns of the
     /// table.
     ///
@@ -841,7 +841,7 @@ element_macro! {
     tfoot
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<th>` element][mdn] defines a cell as header of a group of table cells. The exact
     /// nature of this group is defined by the [`scope`][scope] and [`headers`][headers] attributes.
     ///
@@ -851,7 +851,7 @@ element_macro! {
     th
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<thead>` element][mdn] defines a set of rows defining the head of the columns of
     /// the table.
     ///
@@ -859,7 +859,7 @@ element_macro! {
     thead
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<tr>` element][mdn] defines a row of cells in a table. The row's cells can then
     /// be established using a mix of [`<td>`][td] (data cell) and [`<th>`][th] (header cell)
     /// elements.
@@ -870,7 +870,7 @@ element_macro! {
     tr
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<button>` element][mdn] represents a clickable button, which can be used in
     /// [forms] or anywhere in a document that needs simple, standard button functionality.
     ///
@@ -879,7 +879,7 @@ element_macro! {
     button
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<datalist>` element][mdn] contains a set of [`<option>`][option] elements that
     /// represent the values available for other controls.
     ///
@@ -888,7 +888,7 @@ element_macro! {
     datalist
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<fieldset>` element][mdn] is used to group several controls as well as labels
     /// ([`<label>`][label]) within a web form.
     ///
@@ -897,7 +897,7 @@ element_macro! {
     fieldset
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<form>` element][mdn] represents a document section that contains interactive
     /// controls for submitting information to a web server.
     ///
@@ -905,7 +905,7 @@ element_macro! {
     form
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<input>` element][mdn] is used to create interactive controls for web-based forms
     /// in order to accept data from the user; a wide variety of types of input data and control
     /// widgets are available, depending on the device and [user agent].
@@ -915,14 +915,14 @@ element_macro! {
     input
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<label>` element][mdn] represents a caption for an item in a user interface.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
     label
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<legend>` element][mdn] represents a caption for the content of its parent
     /// [`<fieldset>`][fieldset].
     ///
@@ -931,7 +931,7 @@ element_macro! {
     legend
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<meter>` element][mdn] represents either a scalar value within a known range or a
     /// fractional value.
     ///
@@ -939,7 +939,7 @@ element_macro! {
     meter
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<optgroup>` element][mdn] creates a grouping of options within a
     /// [`<select>`][select] element.
     ///
@@ -948,7 +948,7 @@ element_macro! {
     optgroup
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<option>` element][mdn] is used to define an item contained in a
     /// [`<select>`][select], an [`<optgroup>`][optgroup], or a [`<datalist>`][datalist] element. As
     /// such, `<option>` can represent menu items in popups and other lists of items in an HTML
@@ -961,7 +961,7 @@ element_macro! {
     option
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Output element (`<output>`)][mdn] is a container element into which a site or app
     /// can inject the results of a calculation or the outcome of a user action.
     ///
@@ -969,7 +969,7 @@ element_macro! {
     output
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<progress>` element][progress] displays an indicator showing the completion
     /// progress of a task, typically displayed as a progress bar.
     ///
@@ -977,14 +977,14 @@ element_macro! {
     progress
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<select>` element][mdn] represents a control that provides a menu of options.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     select
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<textarea>` element][mdn] represents a multi-line plain-text editing control,
     /// useful when you want to allow users to enter a sizeable amount of free-form text, for
     /// example a comment on a review or feedback form.
@@ -993,7 +993,7 @@ element_macro! {
     textarea
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Details Element (`<details>`)][mdn] creates a disclosure widget in which
     /// information is visible only when the widget is toggled into an "open" state.
     ///
@@ -1001,7 +1001,7 @@ element_macro! {
     details
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<dialog>` element][mdn] represents a dialog box or other interactive component,
     /// such as an inspector or window.
     ///
@@ -1009,7 +1009,7 @@ element_macro! {
     dialog
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<menu>` element][mdn] represents a group of commands that a user can perform or
     /// activate. This includes both list menus, which might appear across the top of a screen, as
     /// well as context menus, such as those that might appear underneath a button after it has been
@@ -1019,7 +1019,7 @@ element_macro! {
     menu
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Disclosure Summary element (`<summary>`)][mdn] element specifies a summary,
     /// caption, or legend for a [`<details>`][details] element's disclosure box.
     ///
@@ -1028,7 +1028,7 @@ element_macro! {
     summary
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML `<slot>` element][mdn]—part of the [Web Components][wc] technology suite—is a
     /// placeholder inside a web component that you can fill with your own markup, which lets you
     /// create separate DOM trees and present them together.
@@ -1038,7 +1038,7 @@ element_macro! {
     slot
 }
 
-element_macro! {
+element_fn! {
     /// The [HTML Content Template (`<template>`) element][mdn] is a mechanism for holding [HTML]
     /// that is not to be rendered immediately when a page is loaded but may be instantiated
     /// subsequently during runtime using JavaScript.

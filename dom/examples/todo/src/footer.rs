@@ -1,6 +1,9 @@
 use {
-    crate::{filter::*, Todo},
-    moxie_dom::*,
+    crate::{filter::filter, Todo},
+    moxie_dom::{
+        elements::{button, footer, span, strong},
+        prelude::*,
+    },
 };
 
 #[topo::nested]
@@ -10,9 +13,9 @@ pub fn items_remaining(num_active: usize) {
             <strong>
             {
                 if num_active == 0 {
-                    text!("No")
+                    text("No")
                 } else {
-                    text!(num_active)
+                    text(num_active)
                 }
             }
             </strong>

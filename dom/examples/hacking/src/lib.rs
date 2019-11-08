@@ -1,4 +1,10 @@
-use {moxie_dom::*, wasm_bindgen::prelude::*};
+use {
+    moxie_dom::{
+        elements::{button, div},
+        prelude::*,
+    },
+    wasm_bindgen::prelude::*,
+};
 
 #[wasm_bindgen(start)]
 pub fn main() {
@@ -9,7 +15,7 @@ pub fn main() {
 
     tracing::info!("mounting moxie-dom to root");
     moxie_dom::boot(document().body().unwrap(), || {
-        let count = state!(|| 0);
+        let count = state(|| 0);
 
         mox! {<>
             <div>{% "hello world from moxie! ({})", &count }</div>

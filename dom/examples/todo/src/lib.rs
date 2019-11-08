@@ -1,9 +1,8 @@
-#![recursion_limit = "256"]
 use {
     filter::Visibility,
-    header::*,
-    main_section::*,
-    moxie_dom::*,
+    header::input_header,
+    main_section::main_section,
+    moxie_dom::{elements::div, prelude::*},
     std::sync::atomic::{AtomicU32, Ordering},
     wasm_bindgen::prelude::*,
 };
@@ -23,8 +22,8 @@ pub mod main_section;
 
 #[topo::nested]
 fn todo_app() {
-    let visibility = state!(|| Visibility::default());
-    let todos = state!(|| vec![Todo::new("whoaaa")]);
+    let visibility = state(|| Visibility::default());
+    let todos = state(|| vec![Todo::new("whoaaa")]);
 
     illicit::child_env![
         Key<Vec<Todo>> => todos,
@@ -64,5 +63,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    moxie_dom::boot(document().body().unwrap(), || todo_app!());
+    moxie_dom::boot(document().body().unwrap(), || todo_app());
 }

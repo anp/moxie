@@ -7,7 +7,10 @@ use {
     gotham::router::builder::*,
     gotham::router::Router,
     gotham::state::{FromState, State},
-    moxie_dom::*,
+    moxie_dom::{
+        elements::{li, ul},
+        prelude::*,
+    },
 };
 
 fn main() {
@@ -38,7 +41,7 @@ fn parts_handler(state: State) -> (State, String) {
         let path = PathExtractor::borrow_from(&state);
         path.parts.to_owned()
     };
-    let res = moxie_dom::render_html(move || simple_list!(&parts));
+    let res = moxie_dom::render_html(move || simple_list(&parts));
     (state, res)
 }
 

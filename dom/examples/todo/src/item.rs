@@ -1,6 +1,9 @@
 use {
-    crate::{input::*, Todo},
-    moxie_dom::*,
+    crate::{input::text_input, Todo},
+    moxie_dom::{
+        elements::{button, div, input, label, li},
+        prelude::*,
+    },
 };
 
 #[topo::nested]
@@ -67,7 +70,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
 
 #[topo::nested]
 pub fn todo_item(todo: &Todo) {
-    let editing = state!(|| false);
+    let editing = state(|| false);
 
     let mut classes = String::new();
     if todo.completed {
