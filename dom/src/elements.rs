@@ -9,7 +9,7 @@ macro_rules! element_fn {
         $name:ident
     ) => {
         $(#[$outer])*
-        #[moxie::prelude::topo::nested]
+        #[topo::nested]
         pub fn $name<ChildRet>(
             with_elem: impl FnOnce(&$crate::MemoElement) -> ChildRet,
         ) -> ChildRet {
