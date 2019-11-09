@@ -1,3 +1,5 @@
+#![feature(track_caller)]
+
 use topo::*;
 
 #[test]
