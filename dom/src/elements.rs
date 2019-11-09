@@ -195,8 +195,8 @@ element_fn! {
     /// The [HTML `<hgroup>` element][mdn] represents a multi-level heading for a section of a
     /// document. It groups a set of [`<h1>–<h6>`][heading] elements.
     ///
-    /// mdn: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
-    /// heading: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
+    /// [heading]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
     hgroup
 }
 

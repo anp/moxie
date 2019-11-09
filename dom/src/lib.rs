@@ -41,7 +41,7 @@ use prelude::*;
 ///
 /// In terms of the embed module's APIs, this function constructs a new
 /// [`WebRuntime`](crate::embed::WebRuntime) and begins scheduling it with an
-/// [`AnimationFrameScheduler`](crate::embed::AnimationFrameScheduler) which requests an animation
+/// [`AnimationFrameScheduler`](raf::AnimationFrameScheduler) which requests an animation
 /// frame only when there are updates to state variables.
 #[cfg(feature = "webdom")]
 pub fn boot(new_parent: impl Into<Node>, root: impl FnMut() + 'static) {
@@ -73,7 +73,7 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 }
 
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
-/// This is normally called by the [`moxie::mox!`] macro.
+/// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoElement)]
 pub fn text(s: impl ToString) {
@@ -86,13 +86,13 @@ pub fn text(s: impl ToString) {
 
 /// Create and mount an [HTML element](https://developer.mozilla.org/en-US/docs/Web/API/Element).
 /// Called from the individual element macros, which in turn are normally called by the output of
-/// the [`moxie::mox!`] macro.
+/// the `moxie::mox!` macro.
 ///
 /// The created DOM node is memoized at the bound callsite, allowing for subsequent re-executions to
 /// be very cheap.
 ///
 /// Mutation of the created element is performed during the `with_elem` closure via the provided
-/// [`moxie_dom::MemoElement`] wrapper.
+/// `moxie_dom::MemoElement` wrapper.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoElement)]
 pub fn element<ChildRet>(

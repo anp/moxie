@@ -22,6 +22,8 @@
 //! Define a topologically-nested function with the `topo::nested` attribute:
 //!
 //! ```
+//! #![feature(track_caller)]
+//!
 //! #[topo::nested]
 //! fn basic_topo() -> topo::Id { topo::Id::current() }
 //!
@@ -76,19 +78,19 @@ use {
 ///
 /// assert!(topo::Env::get::<Submarine>().is_none());
 ///
-/// topo::call(|| {
-///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
+/// topo::call_in_env(
+///     topo::env! { Submarine => Submarine(1) },
+///     || {
+///         assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
 ///
-///     topo::call(|| {
-///         assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap());
-///     }, env! {
-///         Submarine => Submarine(2),
-///     });
+///         topo::call_in_env(
+///             topo::env! { Submarine => Submarine(2) },
+///             || assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap()),
+///         );
 ///
-///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
-/// }, env! {
-///     Submarine => Submarine(1),
-/// });
+///         assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
+///     },
+/// );
 ///
 /// assert!(topo::Env::get::<Submarine>().is_none());
 /// ```

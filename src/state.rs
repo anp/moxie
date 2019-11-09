@@ -47,6 +47,7 @@ impl<State> Var<State> {
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state variable.
+#[topo::nested]
 pub fn state<Init, Output>(initializer: Init) -> Key<Output>
 where
     Output: 'static,
