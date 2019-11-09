@@ -19,7 +19,7 @@ impl WebRuntime {
         let parent = parent.into();
         WebRuntime(Runtime::new(Box::new(move || {
             illicit::child_env!(MemoElement => MemoElement::new(parent.clone()))
-                .enter(|| topo::call!(root()))
+                .enter(|| topo::call(|| root()))
         })))
     }
 

@@ -30,11 +30,13 @@ fn todo_app() {
         Key<Visibility> => visibility
     ]
     .enter(|| {
-        topo::call!(mox! {
-            <div class="todoapp">
-                <input_header/>
-                <main_section/>
-            </div>
+        topo::call(|| {
+            mox! {
+                <div class="todoapp">
+                    <input_header/>
+                    <main_section/>
+                </div>
+            }
         });
     });
 }

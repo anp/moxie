@@ -121,7 +121,7 @@ where
             Spawner => self.spawner.clone()
         }
         .enter(|| {
-            topo::call!({
+            topo::call(|| {
                 self.handlers.run_until_stalled(&self.wk);
                 let ret = (self.root)();
 
@@ -208,7 +208,7 @@ mod tests {
 
         assert!(illicit::Env::get::<u8>().is_none());
         illicit::child_env!(u8 => first_byte).enter(|| {
-            topo::call!(runtime.run_once());
+            topo::call(|| runtime.run_once());
         });
         assert!(illicit::Env::get::<u8>().is_none());
     }

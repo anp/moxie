@@ -29,6 +29,8 @@ pub mod prelude {
     pub use crate::text;
 }
 
+use prelude::*;
+
 /// The "boot sequence" for a moxie-dom instance creates a [crate::embed::WebRuntime] with the
 /// provided arguments and begins scheduling its execution with `requestAnimationFrame` on state
 /// changes.
@@ -143,7 +145,7 @@ impl MemoElement {
     /// when `drop`ped, to ensure that the attribute is removed when this declaration is no longer
     /// referenced in the most recent (`moxie::Revision`).
     pub fn attr(&self, name: &'static str, value: impl ToString) -> &Self {
-        topo::call!(slot: name, {
+        topo::call_in_slot(name, || {
             memo_with(
                 value.to_string(),
                 |v| {
@@ -169,7 +171,7 @@ impl MemoElement {
     where
         Ev: 'static + Event,
     {
-        topo::call!(slot: Ev::NAME, {
+        topo::call_in_slot(Ev::NAME, || {
             memo_with(
                 moxie::embed::Revision::current(),
                 |_| EventHandle::new(&self.node, callback),
@@ -206,14 +208,16 @@ impl MemoElement {
         let mut last_desired_child = None;
         let mut ret = None;
         illicit::child_env!(MemoElement => MemoElement::new(self.node.clone())).enter(|| {
-            topo::call!({
+            topo::call(|| {
                 ret = Some(children());
 
                 // before this melement is dropped when the environment goes out of scope,
                 // we need to get the last recorded child from this revision
-                last_desired_child = illicit::Env::expect::<MemoElement>().curr.replace(None);
-            });
+                last_desired_child = Some(illicit::Env::expect::<MemoElement>().curr.replace(None));
+            })
         });
+        let last_desired_child = last_desired_child.unwrap();
+        let ret = ret.unwrap();
 
         // if there weren't any children declared this revision, we need to make sure we clean up
         // any from the last revision
@@ -228,7 +232,7 @@ impl MemoElement {
             elem.remove_child(&to_remove).unwrap();
         }
 
-        ret.unwrap()
+        ret
     }
 }
 

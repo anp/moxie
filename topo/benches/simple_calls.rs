@@ -1,33 +1,50 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::{Criterion, ParameterizedBenchmark};
+use criterion::{black_box, Criterion, ParameterizedBenchmark};
 
-fn get_id(c: &mut Criterion) {
-    c.bench_function("id from env", |b| {
-        topo::call! {
-            b.iter(|| topo::Id::current())
-        };
+fn empty_env(c: &mut Criterion) {
+    c.bench_function("call empty env", |b| {
+        b.iter(|| topo::call(|| topo::Id::current()))
     });
 }
 
-fn call_and_get_id(c: &mut Criterion) {
-    c.bench_function("call and get id", |b| {
-        b.iter(|| topo::call!(topo::Id::current()))
+fn create_small_env(c: &mut Criterion) {
+    c.bench_function("call create small env", |b| {
+        b.iter(|| {
+            black_box(
+                illicit::child_env!(
+                    u128 => 10
+                )
+                .enter(|| topo::call(|| topo::Id::current())),
+            )
+        });
     });
 }
 
-fn call(c: &mut Criterion) {
-    c.bench_function("just a call", |b| b.iter(|| topo::call!(())));
+fn call_small_env(c: &mut Criterion) {
+    c.bench_function("call within small env", |b| {
+        illicit::child_env!(u128 => 10).enter(|| {
+            topo::call(|| {
+                b.iter(|| {
+                    black_box(topo::call(|| topo::Id::current()));
+                })
+            })
+        })
+    });
 }
 
 fn call_topo_fns_to_depth(b: &mut criterion::Bencher, depth: &usize) {
     macro_rules! mk {
         (go $depth_spec:ident) => {
-            b.iter(|| topo::call!(mk!(pass $depth_spec 0)));
+            illicit::child_env!(u128 => 10).enter(|| {
+                topo::call(|| {
+                    mk!(pass $depth_spec 0);
+                });
+            });
         };
         (pass $depth_spec:ident $call_depth:expr) => {
-            topo::call!({
+            topo::call(|| {
                 mk!(cur $depth_spec ($call_depth + 1));
             });
         };
@@ -68,7 +85,9 @@ fn call_topo_fns_to_depth(b: &mut criterion::Bencher, depth: &usize) {
             mk!(pass zero ($depth + 1)); // lol what a cheater!
         };
         (cur zero $depth:expr) => {
-            assert_eq!($depth - 2, *depth);
+            b.iter(|| {
+                topo::call(|| assert_eq!(10, *illicit::Env::get::<u128>().unwrap()))
+            });
         };
     }
     match depth {
@@ -99,5 +118,11 @@ fn call_depths(c: &mut Criterion) {
     );
 }
 
-criterion::criterion_group!(benches, get_id, call_and_get_id, call, call_depths,);
+criterion::criterion_group!(
+    benches,
+    empty_env,
+    create_small_env,
+    call_small_env,
+    call_depths
+);
 criterion::criterion_main!(benches);
