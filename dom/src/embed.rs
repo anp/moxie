@@ -23,7 +23,7 @@ impl WebRuntime {
         })))
     }
 
-    /// Run the root function in a fresh [moxie::Revision]. See [moxie::embed::Runtime::run_once]
+    /// Run the root function in a fresh `moxie::Revision`. See `moxie::embed::Runtime::run_once`
     /// for details.
     pub fn run_once(&mut self) {
         self.0.run_once();
