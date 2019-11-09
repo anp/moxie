@@ -2,6 +2,7 @@
 //! on the [`moxie`] UI runtime.
 
 #![deny(clippy::all, missing_docs)]
+#![feature(track_caller)]
 
 use {
     augdom::{

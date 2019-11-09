@@ -1,3 +1,4 @@
+#![feature(core_intrinsics, track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
@@ -52,6 +53,7 @@ use {
     std::{
         any::TypeId,
         cell::RefCell,
+        collections::hash_map::{DefaultHasher, HashMap},
         hash::{Hash, Hasher},
     },
 };
@@ -65,7 +67,7 @@ use {
 /// ```
 ///
 /// Adding an `env! { ... }` directive to the macro input will take ownership of provided values
-/// and make them available to the code run in the `Point` created by the invocation.
+/// and make them available to the code run in the `Id` created by the invocation.
 ///
 /// ```
 /// # use topo;
@@ -90,11 +92,14 @@ use {
 ///
 /// assert!(topo::Env::get::<Submarine>().is_none());
 /// ```
+#[track_caller]
 pub fn call<R>(op: impl FnOnce() -> R) -> R {
-    unimplemented!()
+    let callsite = Callsite::here();
+    Point::enter_child(callsite, callsite.current_count(), op)
 }
 
 /// todo document
+#[track_caller]
 pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
     // $crate::unstable_raw_call!(
     //     callsite: $crate::callsite!(),
@@ -106,7 +111,7 @@ pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
 }
 
 fn call_inner<R>(callsite: Callsite, slot: impl Hash, op: impl FnOnce() -> R) -> R {
-    unimplemented!()
+    Point::enter_child(Callsite::here(), slot, op)
 }
 
 /// Identifies an activation record in the current call topology.
@@ -129,7 +134,8 @@ pub struct Id(u64);
 impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
-        Point::unstable_with_current(|p| p.id)
+        #[allow(clippy::map_clone)]
+        illicit::Env::get().map(|id| *id).unwrap_or(Id(0))
     }
 
     fn child(self, callsite: Callsite, slot: impl Hash) -> Self {
@@ -157,66 +163,42 @@ pub struct Point {
     id: Id,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this Point.
-    callsite_counts: RefCell<Vec<(Callsite, u32)>>,
+    callsite_counts: RefCell<HashMap<Callsite, u32>>,
 }
 
 impl Point {
     /// Mark a child Point in the topology.
-    #[doc(hidden)]
-    pub fn unstable_enter_child<R>(
-        &self,
-        callsite: Callsite,
-        slot: impl Hash,
-        child: impl FnOnce() -> R,
-    ) -> R {
-        self.increment_count(callsite);
+    fn enter_child<R>(callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
+        let mut hasher = DefaultHasher::new();
+
+        if let Some(current) = illicit::Env::get::<Point>() {
+            *current
+                .callsite_counts
+                .borrow_mut()
+                .entry(callsite)
+                .or_default() += 1;
+            current.id.hash(&mut hasher);
+        }
+
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        let id = Id(hasher.finish());
+
         let child_point = Self {
+            id,
             callsite,
-            callsite_counts: RefCell::new(Vec::new()),
-            id: self.id.child(callsite, slot),
+            callsite_counts: RefCell::new(Default::default()),
         };
 
         illicit::child_env!(Point => child_point).enter(child)
-    }
-
-    /// Runs the provided closure with access to the current [`Point`].
-    #[doc(hidden)]
-    pub fn unstable_with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
-        if let Some(current) = illicit::Env::get::<Self>() {
-            op(&*current)
-        } else {
-            op(&Point::default())
-        }
-    }
-
-    fn increment_count(&self, callsite: Callsite) {
-        let mut counts = self.callsite_counts.borrow_mut();
-
-        if let Some((_, count)) = counts.iter_mut().find(|(site, _)| site == &callsite) {
-            *count += 1;
-        } else {
-            counts.push((callsite, 1));
-        }
-    }
-
-    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
-    #[doc(hidden)]
-    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
-        self.callsite_counts
-            .borrow()
-            .iter()
-            .find(|(site, _)| site == &callsite)
-            .map(|(_, count)| *count)
-            .unwrap_or(0)
     }
 }
 
 impl Default for Point {
     fn default() -> Self {
-        let callsite = unimplemented!();
         Self {
             id: Id(0),
-            callsite,
+            callsite: Callsite { location: 0 },
             callsite_counts: Default::default(),
         }
     }
@@ -235,12 +217,24 @@ pub struct Callsite {
 }
 
 impl Callsite {
-    #[doc(hidden)]
-    pub fn new(location: &'static std::panic::Location<'static>) -> Self {
+    /// Constructs a callsite whose value is unique to the source location at which it is called.
+    #[track_caller]
+    pub fn here() -> Self {
+        let location = std::intrinsics::caller_location();
         Self {
             // the pointer value for a given location is enough to differentiate it from all others
             location: location as *const _ as usize,
         }
+    }
+
+    /// Returns the number of times this callsite has been seen as a child of the current Point.
+    pub fn current_count(self) -> u32 {
+        if let Some(current) = illicit::Env::get::<Point>() {
+            if let Some(c) = current.callsite_counts.borrow().get(&self) {
+                return *c;
+            }
+        }
+        0
     }
 }
 
