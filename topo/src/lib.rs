@@ -18,9 +18,7 @@
 //!
 //! # Making functions nested within the call topology
 //!
-//! Defining a topological function results in a macro definition for binding the
-//! function to each callsite where it is invoked. Define a topologically-nested function with the
-//! `topo::nested` attribute:
+//! Define a topologically-nested function with the `topo::nested` attribute:
 //!
 //! ```
 //! #[topo::nested]
@@ -43,11 +41,6 @@
 //! assert_ne!(second, fourth);
 //! ```
 //!
-//! Because topological functions must be sensitive to the location at which they're invoked and
-//! within their immediate parent, we transform the function definition into a macro to track the
-//! source location at which it is called. Future language features may make it possible to call
-//! topo-nested functions without any special syntax.
-//!
 
 #[doc(hidden)]
 pub use illicit;
@@ -62,6 +55,59 @@ use {
         hash::{Hash, Hasher},
     },
 };
+
+/// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
+/// additional environment values to the child scope.
+///
+/// ```
+/// let prev = topo::Id::current();
+/// topo::call(|| assert_ne!(prev, topo::Id::current()));
+/// ```
+///
+/// Adding an `env! { ... }` directive to the macro input will take ownership of provided values
+/// and make them available to the code run in the `Point` created by the invocation.
+///
+/// ```
+/// # use topo;
+/// #[derive(Debug, Eq, PartialEq)]
+/// struct Submarine(usize);
+///
+/// assert!(topo::Env::get::<Submarine>().is_none());
+///
+/// topo::call(|| {
+///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
+///
+///     topo::call(|| {
+///         assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap());
+///     }, env! {
+///         Submarine => Submarine(2),
+///     });
+///
+///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
+/// }, env! {
+///     Submarine => Submarine(1),
+/// });
+///
+/// assert!(topo::Env::get::<Submarine>().is_none());
+/// ```
+pub fn call<R>(op: impl FnOnce() -> R) -> R {
+    unimplemented!()
+}
+
+/// todo document
+pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
+    // $crate::unstable_raw_call!(
+    //     callsite: $crate::callsite!(),
+    //     slot: $slot,
+    //     is_root: false,
+    //     call: $($input)*
+    // )
+    unimplemented!()
+}
+
+fn call_inner<R>(callsite: Callsite, slot: impl Hash, op: impl FnOnce() -> R) -> R {
+    unimplemented!()
+}
 
 /// Identifies an activation record in the current call topology.
 ///
@@ -167,9 +213,10 @@ impl Point {
 
 impl Default for Point {
     fn default() -> Self {
+        let callsite = unimplemented!();
         Self {
             id: Id(0),
-            callsite: callsite!(),
+            callsite,
             callsite_counts: Default::default(),
         }
     }
@@ -184,13 +231,16 @@ impl PartialEq for Point {
 /// A value unique to the source location where it is created.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Callsite {
-    ty: TypeId,
+    location: usize,
 }
 
 impl Callsite {
     #[doc(hidden)]
-    pub fn new(ty: TypeId) -> Self {
-        Self { ty }
+    pub fn new(location: &'static std::panic::Location<'static>) -> Self {
+        Self {
+            // the pointer value for a given location is enough to differentiate it from all others
+            location: location as *const _ as usize,
+        }
     }
 }
 
@@ -203,70 +253,20 @@ macro_rules! callsite {
     }};
 }
 
-/// Calls the provided expression with an [`Id`] specific to the callsite.
-///
-/// ```
-/// let prev = topo::Id::current();
-/// topo::call!(assert_ne!(prev, topo::Id::current()));
-/// ```
-///
-/// TODO document loops, recursion, branches, etc
-#[macro_export]
-macro_rules! call {
-    (slot: $slot:expr, $($input:tt)*) => {{
-        $crate::Point::unstable_with_current(|_current| {
-            _current.unstable_enter_child($crate::callsite!(), &$slot, || $($input)*)
-        })
-    }};
-    ($($input:tt)*) => {{
-        let callsite = $crate::callsite!();
-        $crate::Point::unstable_with_current(|current| {
-            let count = current.unstable_callsite_count(callsite);
-            current.unstable_enter_child(callsite, count, || $($input)*)
-        })
-    }};
-}
-
-/// Defines a new macro (named after the first metavariable) which calls a function (named in
-/// the second metavariable) in a `Point` specific to this callsite and its parents.
-///
-/// As a quirk of the `macro_rules!` parser, we have to "bring our own" metavariables for the new
-/// macro's args and their expansion for the wrapped function. This makes for an awkward invocation,
-/// but it's only invoked from the proc macro attribute for generating topological macros.
-///
-/// This is used to work around procedural macro hygiene restrictions, allowing us to "generate" a
-/// macro from a procedural macro without needing to enable a (as of writing) unstable feature.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! unstable_make_topo_macro {
-    (
-        $name:ident $mangled_name:ident
-        match $matcher:tt
-        subst $pass:tt
-        doc ($($docs:tt)*)
-    ) => {
-        $($docs)*
-        #[macro_export]
-        macro_rules! $name {
-            $matcher => { topo::call!({ $mangled_name $pass }) };
-        }
-    };
-}
-
 #[cfg(test)]
 mod tests {
-    use {super::Id, std::collections::HashSet};
+    use {super::*, std::collections::HashSet};
 
     #[test]
     fn alternating_in_a_loop() {
-        call!({
+        call(|| {
             let mut ids = HashSet::new();
 
             for i in 0..4 {
                 if i % 2 == 0 {
-                    call!(ids.insert(Id::current()));
+                    call(|| ids.insert(Id::current()));
                 } else {
-                    call!(ids.insert(Id::current()));
+                    call(|| ids.insert(Id::current()));
                 }
             }
 
@@ -276,8 +276,24 @@ mod tests {
 
     #[test]
     fn one_child_in_a_loop() {
-        call!({
-            let root = Id::current();
+        let root = Id::current();
+        assert_eq!(
+            root,
+            Id::current(),
+            "Id must be stable across calls within the same scope"
+        );
+
+        let mut prev = root;
+
+        for _ in 0..100 {
+            let mut called = false;
+            call(|| {
+                let current = Id::current();
+                assert_ne!(prev, current, "each Id in this loop must be unique");
+                prev = current;
+                called = true;
+            });
+
             assert_eq!(
                 root,
                 Id::current(),
@@ -288,7 +304,7 @@ mod tests {
 
             for _ in 0..100 {
                 let mut called = false;
-                call!({
+                call(|| {
                     let current = Id::current();
                     assert_ne!(prev, current, "each Id in this loop must be unique");
                     prev = current;
@@ -302,7 +318,7 @@ mod tests {
                 );
                 assert!(called, "the call must be made on each loop iteration");
             }
-        });
+        }
     }
 
     #[test]
@@ -310,10 +326,10 @@ mod tests {
         let slots = vec!["first", "second", "third", "fourth", "fifth"];
 
         let to_call = || {
-            call!({
+            call(|| {
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
-                    call!(slot: s, {
+                    call_in_slot(s, || {
                         let current = Id::current();
                         unique_ids.insert(current);
                     });

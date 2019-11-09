@@ -7,7 +7,7 @@ fn invoke_test_topo() {
         Id::current()
     }
 
-    topo::call!({
+    topo::call(|| {
         let mut prev = unique_id();
         for _ in 0..10 {
             let current = unique_id();

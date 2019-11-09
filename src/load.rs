@@ -42,7 +42,7 @@ where
                 .expect("spawner should definitely be live while in a revision");
             scopeguard::guard(cancel, |c| c.abort())
         },
-        |_| {}
+        |_| {},
     );
 
     match &*result2 {
@@ -100,13 +100,15 @@ mod tests {
 
         let mut rt = crate::embed::Runtime::new(move || -> Poll<u8> {
             let recv = recv.clone();
-            load_once(|| async move {
-                recv.lock()
-                    .await
-                    .take()
-                    .expect("load_once should only allow us to take from the option once")
-                    .await
-                    .expect("we control the channel and won't drop it")
+            load_once(|| {
+                async move {
+                    recv.lock()
+                        .await
+                        .take()
+                        .expect("load_once should only allow us to take from the option once")
+                        .await
+                        .expect("we control the channel and won't drop it")
+                }
             })
         });
 
@@ -142,13 +144,15 @@ mod tests {
         let mut rt = crate::embed::Runtime::new(move || -> Option<Poll<u8>> {
             if crate::embed::Revision::current().0 < 3 {
                 let recv = recv.clone();
-                Some(load_once(|| async move {
-                    recv.lock()
-                        .await
-                        .take()
-                        .expect("load_once should only allow us to take from the option once")
-                        .await
-                        .expect("we control the channel and won't drop it")
+                Some(load_once(|| {
+                    async move {
+                        recv.lock()
+                            .await
+                            .take()
+                            .expect("load_once should only allow us to take from the option once")
+                            .await
+                            .expect("we control the channel and won't drop it")
+                    }
                 }))
             } else {
                 None
