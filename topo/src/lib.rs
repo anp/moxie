@@ -1,4 +1,4 @@
-#![feature(core_intrinsics, track_caller)]
+#![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
@@ -222,7 +222,7 @@ impl Callsite {
     /// Constructs a callsite whose value is unique to the source location at which it is called.
     #[track_caller]
     pub fn here() -> Self {
-        let location = std::intrinsics::caller_location();
+        let location = std::panic::Location::caller();
         Self {
             // the pointer value for a given location is enough to differentiate it from all others
             location: location as *const _ as usize,
