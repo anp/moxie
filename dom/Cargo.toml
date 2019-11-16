@@ -31,6 +31,7 @@ webdom = ["augdom/webdom", "raf"]
 
 [dependencies]
 augdom = { path = "augdom", version = "0.1.0-pre" }
+illicit = { path = "../illicit", version = "0.9.0" }
 moxie = { path = "../", version = "0.1.1-alpha.0" }
 scopeguard = "1"
 

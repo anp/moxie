@@ -46,7 +46,7 @@ impl<State> Var<State> {
 /// Root a state variable at this callsite, returning a [`Key`] to the state variable.
 /// Re-initializes the state variable if the capture argument changes.
 #[topo::nested]
-#[topo::from_env(waker: &RunLoopWaker)]
+#[illicit::from_env(waker: &RunLoopWaker)]
 pub fn memo_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,

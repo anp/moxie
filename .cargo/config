@@ -14,10 +14,10 @@ watch --clear
     -x docs-all
 """
 
-bench-core = "bench --package moxie --package topo --package topo-macro"
-check-core = "check --all-targets --package moxie --package topo --package topo-macro"
-clippy-core = "clippy --package moxie --package topo --package topo-macro"
-test-core = "test --package moxie --package topo --package topo-macro"
+bench-core = "bench --package illicit --package moxie --package topo --package topo-macro"
+check-core = "check --all-targets --package illicit --package moxie --package topo --package topo-macro"
+clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro"
+test-core = "test --package illicit --package moxie --package topo --package topo-macro"
 
 docs-all = "doc --all --no-deps"
 

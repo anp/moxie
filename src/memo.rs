@@ -18,8 +18,11 @@ use std::{
 /// It is currently possible to nest calls to `memo_with` and other functions in this module, but
 /// the values they store won't be correctly retained across `Revision`s until we track
 /// dependency information. As a result, it's not recommended to nest calls to `memo_with!`.
+///
+/// `init` takes a reference to `Arg` so that the memoization store can compare future calls'
+/// arguments against the one used to produce the stored value.
 #[topo::nested]
-#[topo::from_env(store: &MemoStore)]
+#[illicit::from_env(store: &MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,
@@ -89,6 +92,9 @@ where
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and `Arg` is the same
 /// as when the stored value was created.
+///
+/// `init` takes a reference to `Arg` so that the memoization store can compare future calls'
+/// arguments against the one used to produce the stored value.
 #[topo::nested]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
