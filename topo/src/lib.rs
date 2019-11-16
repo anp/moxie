@@ -80,21 +80,120 @@
 //! See the attribute's documentation for more details, and please consider whether this is
 //! appropriate for your use case before taking it on as a dependency.
 
+#[doc(hidden)]
+pub use illicit;
 #[doc(inline)]
-pub use topo_macro::{from_env, nested};
+pub use topo_macro::nested;
 
-use {
-    owning_ref::OwningRef,
-    std::{
-        any::{Any, TypeId},
-        cell::RefCell,
-        collections::{hash_map::DefaultHasher, HashMap},
-        hash::{Hash, Hasher},
-        mem::replace,
-        ops::Deref,
-        rc::Rc,
-    },
+use std::{
+    any::TypeId,
+    cell::RefCell,
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
 };
+
+/// Identifies an activation record in the current call topology.
+///
+/// The `Id` for the execution of a stack frame is the combined product of:
+///
+/// * a callsite: lexical source location at which the topologically-nested function was invoked
+/// * parent `Id`: the identifier which was active when entering the current topo-nested function
+/// * a "slot": runtime value indicating the call's "logical index" within the parent call
+///
+/// By default, the slot used is a count of the number of times that particular callsite has been
+/// executed within the parent `Id`'s enclosing scope. This means that when creating an `Id` in a
+/// loop the identifier will be unique for each "index" of the loop iteration and will be stable if
+/// the same loop is invoked again. Changing the value used for the slot allows us to have stable
+/// `Id`s across multiple executions when iterating over elements of a collection that itself has
+/// unstable iteration order.
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub struct Id(u64);
+
+impl Id {
+    /// Returns the `Id` for the current scope in the call topology.
+    pub fn current() -> Self {
+        fn assert_send_and_sync<T>()
+        where
+            T: Send + Sync,
+        {
+        }
+        assert_send_and_sync::<Id>();
+        Point::with_current(|p| p.id)
+    }
+}
+
+impl std::fmt::Debug for Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:x?}", self.0))
+    }
+}
+
+/// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
+/// topological functions.
+///
+/// The current `Point` contains the local [`Env`] and [`Id`].
+#[doc(hiddent)]
+#[derive(Debug)]
+pub struct Point {
+    id: Id,
+    callsite: Callsite,
+    /// Number of times each callsite's type has been observed during this Point.
+    callsite_counts: RefCell<HashMap<Callsite, u32>>,
+}
+
+impl Point {
+    /// Mark a child Point in the topology.
+    #[doc(hidden)]
+    pub fn unstable_enter_child<R>(
+        &self,
+        callsite: Callsite,
+        slot: &impl Hash,
+        increment_counts: bool,
+        child: impl FnOnce() -> R,
+    ) -> R {
+        let mut hasher = DefaultHasher::new();
+        self.id.hash(&mut hasher);
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        let id = Id(hasher.finish());
+        if increment_counts {
+            *self
+                .callsite_counts
+                .borrow_mut()
+                .entry(callsite)
+                .or_default() += 1;
+        }
+
+        let child_point = Self {
+            id,
+            callsite,
+            callsite_counts: RefCell::new(HashMap::new()),
+        };
+
+        illicit::child_env!(Point => child_point).enter(child)
+    }
+
+    /// Runs the provided closure with access to the current [`Point`].
+    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+        op(&*illicit::Env::expect::<Point>())
+    }
+}
+
+impl Default for Point {
+    fn default() -> Self {
+        Self {
+            id: Id(0),
+            callsite: callsite!(),
+            callsite_counts: Default::default(),
+        }
+    }
+}
+
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
 
 /// A value unique to the source location where it is created.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -116,6 +215,17 @@ macro_rules! callsite {
         struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
         $crate::Callsite::new(std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>())
     }};
+}
+
+/// Returns the number of times this callsite has been seen as a child of the current Point.
+pub fn current_callsite_count(callsite: Callsite) -> u32 {
+    Point::with_current(|point| {
+        if let Some(c) = point.callsite_counts.borrow().get(&callsite) {
+            *c
+        } else {
+            0
+        }
+    })
 }
 
 /// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
@@ -172,18 +282,6 @@ macro_rules! call {
         )
     }};
 }
-
-/// Returns the number of times this callsite has been seen as a child of the current Point.
-pub fn current_callsite_count(callsite: Callsite) -> u32 {
-    Point::with_current(|point| {
-        if let Some(c) = point.state.callsite_counts.get(&callsite) {
-            *c
-        } else {
-            0
-        }
-    })
-}
-
 /// Roots a topology at a particular callsite while calling the provided expression with the same
 /// convention as [`call`].
 ///
@@ -265,301 +363,14 @@ macro_rules! unstable_raw_call {
         slot: $slot:expr,
         is_root: $is_root:expr,
         call: $inner:expr
-        $(, env! { $($env:tt)* })?
     ) => {{
-        #[allow(unused_mut)]
-        let mut _new_env = Default::default();
-        $( _new_env = $crate::env! { $($env)* };  )?
-
-        let _reset_to_parent_on_drop_pls = $crate::Point::unstable_enter_child(
-                $callsite,
-                &$slot,
-                _new_env,
-                $is_root
-        );
-
-        $inner
+        $crate::illicit::Env::expect::<$crate::Point>().unstable_enter_child(
+            $callsite,
+            &$slot,
+            $is_root,
+            || $inner,
+        )
     }};
-}
-
-/// Identifies an activation record in the current call topology.
-///
-/// The `Id` for the execution of a stack frame is the combined product of:
-///
-/// * a callsite: lexical source location at which the topologically-nested function was invoked
-/// * parent `Id`: the identifier which was active when entering the current topo-nested function
-/// * a "slot": runtime value indicating the call's "logical index" within the parent call
-///
-/// By default, the slot used is a count of the number of times that particular callsite has been
-/// executed within the parent `Id`'s enclosing scope. This means that when creating an `Id` in a
-/// loop the identifier will be unique for each "index" of the loop iteration and will be stable if
-/// the same loop is invoked again. Changing the value used for the slot allows us to have stable
-/// `Id`s across multiple executions when iterating over elements of a collection that itself has
-/// unstable iteration order.
-
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
-pub struct Id(u64);
-
-impl Id {
-    /// Returns the `Id` for the current scope in the call topology.
-    pub fn current() -> Self {
-        fn assert_send_and_sync<T>()
-        where
-            T: Send + Sync,
-        {
-        }
-        assert_send_and_sync::<Id>();
-        CURRENT_POINT.with(|p| p.borrow().id)
-    }
-}
-
-impl std::fmt::Debug for Id {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:x?}", self.0))
-    }
-}
-
-/// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
-/// topological functions.
-///
-/// The current `Point` contains the local [`Env`] and [`Id`].
-#[derive(Debug)]
-pub struct Point {
-    id: Id,
-    callsite: Callsite,
-    /// The current environment.
-    state: State,
-}
-
-thread_local! {
-    /// The `Point` representing the current dynamic scope.
-    static CURRENT_POINT: RefCell<Point> = Default::default();
-}
-
-impl Point {
-    /// "Root" a new child [`Point`]. When the guard returned from this function is dropped, the
-    /// parent point is restored as the "current" `Point`. By calling provided code while the
-    /// returned guard is live on the stack, we create the tree of indices and environments that
-    /// correspond to the topological call tree, exiting the child context when the rooted scope
-    /// ends.
-    #[doc(hidden)]
-    pub fn unstable_enter_child(
-        callsite: Callsite,
-        slot: &impl Hash,
-        add_env: EnvInner,
-        reset_on_drop: bool,
-    ) -> impl Drop {
-        CURRENT_POINT.with(|parent| {
-            let mut parent = parent.borrow_mut();
-
-            // this must be copied *before* creating the child below, which will mutate the state
-            let parent_initial_state = parent.state.clone();
-
-            let child = if reset_on_drop {
-                let mut root = Point::default();
-                // by getting a child of the state instead of the point, we skip creating
-                // a dep on the IDs of the parent, but still pass an Env through
-                root.state = parent.state.child(callsite, add_env);
-                root
-            } else {
-                parent.child(callsite, slot, add_env)
-            };
-            let parent = replace(&mut *parent, child);
-
-            // returned by this function, will fire when the current borrows have ended
-            scopeguard::guard(
-                (parent_initial_state, parent),
-                move |(prev_initial_state, mut prev)| {
-                    if reset_on_drop {
-                        prev.state = prev_initial_state;
-                    }
-                    CURRENT_POINT.with(|p| p.replace(prev));
-                },
-            )
-        })
-    }
-
-    /// Mark a child Point in the topology.
-    fn child(&mut self, callsite: Callsite, slot: &impl Hash, additional: EnvInner) -> Self {
-        let mut hasher = DefaultHasher::new();
-        self.id.hash(&mut hasher);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        let id = Id(hasher.finish());
-
-        Self {
-            id,
-            callsite,
-            state: self.state.child(callsite, additional),
-        }
-    }
-
-    /// Runs the provided closure with access to the current [`Point`].
-    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
-        CURRENT_POINT.with(|p| op(&*p.borrow()))
-    }
-
-    fn with_current_mut<Out>(op: impl FnOnce(&mut Point) -> Out) -> Out {
-        CURRENT_POINT.with(|p| op(&mut *p.borrow_mut()))
-    }
-}
-
-impl Default for Point {
-    fn default() -> Self {
-        Self {
-            id: Id(0),
-            callsite: callsite!(),
-            state: Default::default(),
-        }
-    }
-}
-
-impl PartialEq for Point {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-struct State {
-    /// Number of times each callsite's type has been observed during this Point.
-    callsite_counts: HashMap<Callsite, u32>,
-    /// The current environment.
-    env: Env,
-}
-
-impl State {
-    fn child(&mut self, callsite: Callsite, additional: EnvInner) -> Self {
-        *self.callsite_counts.entry(callsite).or_default() += 1;
-
-        Self {
-            callsite_counts: HashMap::new(),
-            env: self.env.child(additional),
-        }
-    }
-}
-
-/// Immutable environment container for the current (sub)topology. Environment values can be
-/// provided by parent topological invocations (currently just with [`call`] and
-/// [`root`]), but child functions can only mutate their environment through interior
-/// mutability.
-///
-/// The environment is type-indexed/type-directed, and each `Env` holds 0-1 instances
-/// of every [`std::any::Any`]` + 'static` type. Access is provided through read-only references.
-///
-/// Aside: one interesting implication of the above is the ability to define "private scoped global
-/// values" which are private to functions which are nonetheless propagating the values with
-/// their control flow. This can be useful for runtimes to offer themselves execution-local values
-/// in functions which are invoked by external code. It can also be severely abused, like any
-/// implicit state, and should be used with caution.
-#[derive(Clone, Debug, Default)]
-pub struct Env {
-    inner: Rc<EnvInner>,
-}
-
-#[doc(hidden)]
-#[derive(Clone, Debug)]
-pub struct AnonRc {
-    name: &'static str,
-    id: TypeId,
-    inner: Rc<dyn Any>,
-}
-
-impl AnonRc {
-    #[doc(hidden)]
-    pub fn unstable_new<T: 'static>(inner: T) -> Self {
-        Self {
-            name: std::any::type_name::<T>(),
-            id: TypeId::of::<T>(),
-            inner: Rc::new(inner),
-        }
-    }
-
-    #[doc(hidden)]
-    pub fn unstable_insert_into(self, env: &mut EnvInner) {
-        env.insert(self.id, self);
-    }
-
-    #[doc(hidden)]
-    // FIXME this should probably expose a fallible api somehow?
-    pub fn unstable_deref<T: 'static>(self) -> impl Deref<Target = T> + 'static {
-        OwningRef::new(self.inner).map(|anon| {
-            anon.downcast_ref().unwrap_or_else(|| {
-                panic!("asked {:?} to cast to {:?}", anon, TypeId::of::<T>(),);
-            })
-        })
-    }
-}
-
-impl Deref for AnonRc {
-    type Target = dyn Any;
-    fn deref(&self) -> &Self::Target {
-        &*self.inner
-    }
-}
-
-type EnvInner = HashMap<TypeId, AnonRc>;
-
-impl Env {
-    /// Sets the provided value as the singleton for its type in the current environment for the
-    /// remainder of the `Env`'s scope.
-    pub fn add<E: 'static>(val: E) {
-        Point::with_current_mut(|p| {
-            p.state.env = p.state.env.child(env! {
-                E => val,
-            });
-        });
-    }
-
-    /// Removes the provided type from the current environment for the remainder of its scope.
-    /// Parent environments may still possess a reference to the value, so it is not guaranteed to
-    /// be dropped, just no longer visible to this and subsequent child scopes.
-    pub fn hide<E: 'static>() {
-        Point::with_current_mut(|p| {
-            let mut without_e: EnvInner = (*p.state.env.inner).clone();
-            let excluded_ty = TypeId::of::<E>();
-            without_e.retain(|ty, _| ty != &excluded_ty);
-
-            p.state.env = Env {
-                inner: Rc::new(without_e),
-            };
-        });
-    }
-
-    /// Returns a reference to a value in the current environment if it has been added to the
-    /// environment by parent/enclosing [`call`] invocations.
-    pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
-    where
-        E: Any + 'static,
-    {
-        let key = TypeId::of::<E>();
-        let anon = Point::with_current(|current| current.state.env.inner.get(&key).cloned());
-
-        if let Some(anon) = anon {
-            Some(anon.unstable_deref())
-        } else {
-            None
-        }
-    }
-
-    /// Returns a reference to a value in the current environment, as [`Env::get`] does, but panics
-    /// if the value has not been set in the environment.
-    // TODO typename for debugging here would be v. nice
-    pub fn expect<E>() -> impl Deref<Target = E> + 'static
-    where
-        E: Any + 'static,
-    {
-        Self::get().expect("expected a value from the environment, found none")
-    }
-
-    fn child(&self, additional: EnvInner) -> Env {
-        let mut new: EnvInner = (*self.inner).clone();
-        new.extend(additional.into_iter());
-
-        Env {
-            inner: Rc::new(new),
-        }
-    }
 }
 
 /// Defines a new macro (named after the first metavariable) which calls a function (named in
@@ -588,23 +399,9 @@ macro_rules! unstable_make_topo_macro {
     };
 }
 
-/// Declare additional environment values to expose to a child topological function's call tree.
-#[macro_export]
-macro_rules! env {
-    ($($env_item_ty:ty => $env_item:expr,)*) => {{
-        #[allow(unused_mut)]
-        let mut new_env = std::collections::HashMap::new();
-        $( $crate::AnonRc::unstable_new($env_item).unstable_insert_into(&mut new_env); )*
-        new_env
-    }}
-}
-
 #[cfg(test)]
 mod tests {
-    use {
-        super::{Env, Id},
-        std::collections::HashSet,
-    };
+    use {super::Id, std::collections::HashSet};
 
     #[test]
     fn alternating_in_a_loop() {
@@ -633,7 +430,7 @@ mod tests {
         let mut prev = root;
 
         for _ in 0..100 {
-            let called;
+            let mut called = false;
             call!({
                 let current = Id::current();
                 assert_ne!(prev, current, "each Id in this loop must be unique");
@@ -674,102 +471,5 @@ mod tests {
             first, second,
             "same Ids must be produced for each slot each time"
         );
-    }
-
-    #[test]
-    fn call_env() {
-        let first_called;
-        let second_called;
-
-        assert!(Env::get::<u8>().is_none());
-        call!(
-            {
-                let curr_byte = *Env::expect::<u8>();
-                assert_eq!(curr_byte, 0);
-                first_called = true;
-
-                call!(
-                    {
-                        let curr_byte = *Env::expect::<u8>();
-                        assert_eq!(curr_byte, 1);
-                        second_called = true;
-                    },
-                    env! {
-                        u8 => 1u8,
-                    }
-                );
-
-                assert!(second_called);
-                assert_eq!(curr_byte, 0);
-            },
-            env! {
-                u8 => 0u8,
-            }
-        );
-        assert!(first_called);
-        assert!(Env::get::<u8>().is_none());
-    }
-
-    #[test]
-    fn root_sees_parent_env() {
-        assert!(Env::get::<u8>().is_none());
-        call!(
-            {
-                let curr_byte = *Env::expect::<u8>();
-                assert_eq!(curr_byte, 0);
-
-                root!(
-                    {
-                        let curr_byte = *Env::expect::<u8>();
-                        assert_eq!(curr_byte, 0, "must see u8 from enclosing environment");
-
-                        let curr_uh_twobyte = *Env::expect::<u16>();
-                        assert_eq!(curr_uh_twobyte, 1, "must see locally installed u16");
-                    },
-                    env! {
-                        u16 => 1u16,
-                    }
-                );
-
-                assert_eq!(curr_byte, 0, "must see 0");
-            },
-            env! {
-                u8 => 0u8,
-            }
-        );
-        assert!(Env::get::<u8>().is_none());
-    }
-
-    #[test]
-    fn adding_to_and_removing_from_env() {
-        assert!(
-            Env::get::<u8>().is_none(),
-            "test Env must not already have a u8"
-        );
-
-        Env::add(2u8);
-        assert_eq!(*Env::get::<u8>().unwrap(), 2, "just added 2u8");
-
-        call!({
-            assert_eq!(*Env::get::<u8>().unwrap(), 2, "parent added 2u8");
-
-            Env::add(7u8);
-            assert_eq!(*Env::get::<u8>().unwrap(), 7, "just added 7u8");
-
-            Env::hide::<u8>();
-            assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
-
-            Env::add(9u8);
-            assert_eq!(*Env::get::<u8>().unwrap(), 9, "just added 9u8");
-        });
-
-        assert_eq!(
-            *Env::get::<u8>().unwrap(),
-            2,
-            "returned to parent Env with 2u8"
-        );
-
-        Env::hide::<u8>();
-        assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
     }
 }

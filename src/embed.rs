@@ -24,7 +24,7 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called outside of a Runtime's
     /// execution.
     pub fn current() -> Self {
-        if let Some(r) = topo::Env::get::<Revision>() {
+        if let Some(r) = illicit::Env::get::<Revision>() {
             *r
         } else {
             Revision::default()
@@ -92,16 +92,16 @@ where
     pub fn run_once(&mut self) -> Out {
         self.revision.0 += 1;
         self.span.record("rev", &self.revision.0);
-        let _entered = self.span.enter();
+        let span = self.span.clone();
+        let _entered = span.enter();
 
-        let ret = topo::root!(
-            (self.root)(),
-            env! {
-                MemoStore => self.store.clone(),
-                Revision => self.revision,
-                RunLoopWaker => RunLoopWaker(self.wk.clone()),
-            }
-        );
+        let ret = illicit::child_env! {
+            MemoStore => self.store.clone(),
+            Revision => self.revision,
+            RunLoopWaker => RunLoopWaker(self.wk.clone())
+        }
+        .enter(|| topo::root!((self.root)()));
+
         self.store.gc();
         ret
     }
@@ -136,19 +136,14 @@ mod tests {
         let first_byte = 0u8;
 
         let mut runtime = Runtime::new(|| {
-            let from_env: u8 = *topo::Env::expect();
+            let from_env: u8 = *illicit::Env::expect();
             assert_eq!(from_env, first_byte);
         });
 
-        assert!(topo::Env::get::<u8>().is_none());
-        topo::call!(
-            {
-                runtime.run_once();
-            },
-            env! {
-                u8 => first_byte,
-            }
-        );
-        assert!(topo::Env::get::<u8>().is_none());
+        assert!(illicit::Env::get::<u8>().is_none());
+        illicit::child_env!(u8 => first_byte).enter(|| {
+            topo::call!(runtime.run_once());
+        });
+        assert!(illicit::Env::get::<u8>().is_none());
     }
 }

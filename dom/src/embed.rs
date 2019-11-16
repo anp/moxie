@@ -18,12 +18,8 @@ impl WebRuntime {
     pub fn new(parent: impl Into<Node>, mut root: impl FnMut() + 'static) -> Self {
         let parent = parent.into();
         WebRuntime(Runtime::new(Box::new(move || {
-            topo::call!(
-                { root() },
-                env! {
-                    MemoElement => MemoElement::new(parent.clone()),
-                }
-            )
+            illicit::child_env!(MemoElement => MemoElement::new(parent.clone()))
+                .enter(|| topo::call!(root()))
         })))
     }
 

@@ -65,7 +65,7 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the [`moxie::mox!`] macro.
 #[topo::nested]
-#[topo::from_env(parent: &MemoElement)]
+#[illicit::from_env(parent: &MemoElement)]
 pub fn text(s: impl ToString) {
     // TODO consider a ToOwned-based memoization API that's lower level?
     // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
@@ -84,7 +84,7 @@ pub fn text(s: impl ToString) {
 /// Mutation of the created element is performed during the `with_elem` closure via the provided
 /// [`moxie_dom::MemoElement`] wrapper.
 #[topo::nested]
-#[topo::from_env(parent: &MemoElement)]
+#[illicit::from_env(parent: &MemoElement)]
 pub fn element<ChildRet>(
     ty: &'static str,
     with_elem: impl FnOnce(&MemoElement) -> ChildRet,
@@ -196,20 +196,17 @@ impl MemoElement {
     // FIXME this should be topo-nested
     pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
         let elem = self.node.clone();
-        let last_desired_child;
-        let ret;
-        topo::call!(
-            {
-                ret = children();
+        let mut last_desired_child = None;
+        let mut ret = None;
+        illicit::child_env!(MemoElement => MemoElement::new(self.node.clone())).enter(|| {
+            topo::call!({
+                ret = Some(children());
 
                 // before this melement is dropped when the environment goes out of scope,
                 // we need to get the last recorded child from this revision
-                last_desired_child = topo::Env::expect::<MemoElement>().curr.replace(None);
-            },
-            env! {
-                MemoElement => MemoElement::new(self.node.clone()),
-            }
-        );
+                last_desired_child = illicit::Env::expect::<MemoElement>().curr.replace(None);
+            });
+        });
 
         // if there weren't any children declared this revision, we need to make sure we clean up
         // any from the last revision
@@ -224,6 +221,6 @@ impl MemoElement {
             elem.remove_child(&to_remove).unwrap();
         }
 
-        ret
+        ret.unwrap()
     }
 }
