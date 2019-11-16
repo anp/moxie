@@ -12,18 +12,16 @@
 //!
 //! [moxie-dom]: https://docs.rs/moxie-dom
 
+mod executor;
+
 use {
     crate::memo::MemoStore,
-    futures::{
-        future::{FutureObj, LocalFutureObj},
-        stream::{FuturesUnordered, StreamExt},
-        task::{LocalSpawn, Spawn, SpawnError},
-    },
+    executor::InBandExecutor,
+    futures::task::LocalSpawn,
     std::{
-        cell::RefCell,
         fmt::{Debug, Formatter, Result as FmtResult},
-        rc::{Rc, Weak},
-        task::{Context, Poll, Waker},
+        rc::Rc,
+        task::{Poll, Waker},
     },
 };
 
@@ -125,7 +123,11 @@ where
         .enter(|| {
             topo::call!({
                 self.handlers.run_until_stalled(&self.wk);
-                (self.root)()
+                let ret = (self.root)();
+
+                // run handlers again to make sure that newly spawned ones can install wakers
+                self.handlers.run_until_stalled(&self.wk);
+                ret
             })
         });
 
@@ -164,87 +166,14 @@ where
     }
 
     /// Sets the executor that will be used to spawn normal priority tasks.
-    pub fn set_task_executor(&mut self, sp: impl Spawn + 'static) -> &mut Self {
+    pub fn set_task_executor(&mut self, sp: impl LocalSpawn + 'static) -> &mut Self {
         self.spawner = Spawner(Rc::new(sp));
         self
     }
 }
 
-#[derive(Default)]
-struct InBandExecutor {
-    pool: FuturesUnordered<LocalFutureObj<'static, ()>>,
-    incoming: Rc<Incoming>,
-}
-
-type Incoming = RefCell<Vec<LocalFutureObj<'static, ()>>>;
-
-impl InBandExecutor {
-    fn run_until_stalled(&mut self, waker: &Waker) {
-        let mut cx = Context::from_waker(waker);
-        loop {
-            // empty the incoming queue of newly-spawned tasks
-            {
-                let mut incoming = self.incoming.borrow_mut();
-                for task in incoming.drain(..) {
-                    self.pool.push(task)
-                }
-            }
-
-            // try to execute the next ready future
-            let ret = self.pool.poll_next_unpin(&mut cx);
-
-            // check to see whether tasks were spawned by that
-            if !self.incoming.borrow().is_empty() {
-                continue;
-            }
-
-            // no queued tasks; we may be done
-            match ret {
-                Poll::Pending => return,
-                Poll::Ready(None) => return,
-                _ => {}
-            }
-        }
-    }
-
-    fn spawner(&self) -> Spawner {
-        Spawner(Rc::new(InBandSpawner(Rc::downgrade(&self.incoming))))
-    }
-}
-
-struct InBandSpawner(Weak<Incoming>);
-
-impl Spawn for InBandSpawner {
-    fn spawn_obj(&self, future: FutureObj<'static, ()>) -> Result<(), SpawnError> {
-        self.spawn_local_obj(future.into())
-    }
-
-    fn status(&self) -> Result<(), SpawnError> {
-        self.status_local()
-    }
-}
-
-impl LocalSpawn for InBandSpawner {
-    fn spawn_local_obj(&self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
-        if let Some(incoming) = self.0.upgrade() {
-            incoming.borrow_mut().push(future);
-            Ok(())
-        } else {
-            Err(SpawnError::shutdown())
-        }
-    }
-
-    fn status_local(&self) -> Result<(), SpawnError> {
-        if self.0.upgrade().is_some() {
-            Ok(())
-        } else {
-            Err(SpawnError::shutdown())
-        }
-    }
-}
-
 #[derive(Clone)]
-pub(crate) struct Spawner(Rc<dyn Spawn>);
+pub(crate) struct Spawner(pub Rc<dyn LocalSpawn>);
 
 impl Debug for Spawner {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
