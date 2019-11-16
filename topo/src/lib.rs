@@ -129,7 +129,7 @@ impl std::fmt::Debug for Id {
 }
 
 /// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
-/// topological functions.
+/// topologically-nested functions.
 ///
 /// The current `Point` contains the local [`Env`] and [`Id`].
 #[doc(hiddent)]
@@ -206,6 +206,17 @@ impl Callsite {
     pub fn new(ty: TypeId) -> Self {
         Self { ty }
     }
+
+    /// Returns the number of times this callsite has been seen as a child of the current Point.
+    pub fn current_count(&self) -> u32 {
+        Point::with_current(|point| {
+            if let Some(c) = point.callsite_counts.borrow().get(self) {
+                *c
+            } else {
+                0
+            }
+        })
+    }
 }
 
 /// Returns a value unique to the point of its invocation.
@@ -215,17 +226,6 @@ macro_rules! callsite {
         struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
         $crate::Callsite::new(std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>())
     }};
-}
-
-/// Returns the number of times this callsite has been seen as a child of the current Point.
-pub fn current_callsite_count(callsite: Callsite) -> u32 {
-    Point::with_current(|point| {
-        if let Some(c) = point.callsite_counts.borrow().get(&callsite) {
-            *c
-        } else {
-            0
-        }
-    })
 }
 
 /// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
@@ -276,7 +276,7 @@ macro_rules! call {
         let callsite = $crate::callsite!();
         $crate::unstable_raw_call!(
             callsite: callsite,
-            slot: $crate::current_callsite_count(callsite),
+            slot: callsite.current_count(),
             is_root: false,
             call: $($input)*
         )
