@@ -137,16 +137,13 @@ impl Env {
     /// Removes the provided type from the current environment for the remainder of its scope.
     /// Parent environments may still possess a reference to the value.
     pub fn hide<E: 'static>() {
-        unimplemented!()
-        // Point::with_current_mut(|p| {
-        //     let mut without_e: EnvInner = (*p.state.env.inner).clone();
-        //     let excluded_ty = TypeId::of::<E>();
-        //     without_e.retain(|ty, _| ty != &excluded_ty);
-
-        //     p.state.env = Env {
-        //         inner: Rc::new(without_e),
-        //     };
-        // });
+        CURRENT_SCOPE.with(|current| {
+            let mut scope = current.borrow_mut();
+            let mut without_e = scope.inner.values.clone();
+            let excluded_ty = TypeId::of::<E>();
+            without_e.retain(|ty, _| ty != &excluded_ty);
+            scope.inner = Rc::new(Env { values: without_e });
+        })
     }
 
     /// Returns a reference to a value in the current environment if it has been added to the
@@ -241,14 +238,10 @@ mod tests {
         assert!(Env::get::<u8>().is_none());
 
         child_env!(u8 => 2).enter(|| {
-            eprintln!("getting u8 from the environment");
-            let curr_byte = *Env::expect::<u8>();
-            // assert_eq!(curr_byte, 2, "just added 2u8");
+            assert_eq!(*Env::expect::<u8>(), 2, "just added 2u8");
 
-            eprintln!("adding u16 to the environment");
             child_env!().enter(|| {
                 assert_eq!(*Env::expect::<u8>(), 2, "parent added 2u8");
-                eprintln!("hiding u8 from environment");
                 Env::hide::<u8>();
                 assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
             });
