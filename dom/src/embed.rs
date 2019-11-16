@@ -8,7 +8,7 @@ use {
 
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building trees of DOM nodes.
 #[must_use]
-pub struct WebRuntime(Runtime<Box<dyn FnMut()>, ()>);
+pub struct WebRuntime(Runtime<Box<dyn FnMut()>>);
 
 impl WebRuntime {
     /// Construct a new `WebRuntime` which will maintain the children of the provided `parent`.

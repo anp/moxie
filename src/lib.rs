@@ -72,8 +72,10 @@ pub use mox::mox;
 pub mod embed;
 #[macro_use]
 mod memo;
+#[macro_use]
 mod state;
+mod load;
 
 pub use topo;
 #[doc(inline)]
-pub use {memo::*, state::*};
+pub use {load::*, memo::*, state::*};
