@@ -8,7 +8,7 @@ description = "Declarative, asynchronous, incremental UI runtime."
 repository = "https://github.com/anp/moxie"
 
 [dependencies]
-futures-preview = "0.3.0-alpha.18"
+futures = "0.3.1"
 parking_lot = "0.9"
 proc-macro-hack = "0.5"
 proc-macro-nested = "0.1.3"

@@ -12,7 +12,20 @@
 //!
 //! [moxie-dom]: https://docs.rs/moxie-dom
 
-use {crate::memo::MemoStore, std::task::Waker, tracing::*};
+use {
+    crate::memo::MemoStore,
+    futures::{
+        future::{FutureObj, LocalFutureObj},
+        stream::{FuturesUnordered, StreamExt},
+        task::{LocalSpawn, Spawn, SpawnError},
+    },
+    std::{
+        cell::RefCell,
+        fmt::{Debug, Formatter, Result as FmtResult},
+        rc::{Rc, Weak},
+        task::{Context, Poll, Waker},
+    },
+};
 
 /// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
 /// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
@@ -55,31 +68,42 @@ impl std::fmt::Debug for Revision {
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
-pub struct Runtime<Root, Out>
-where
-    Root: FnMut() -> Out,
-{
+pub struct Runtime<Root> {
     revision: Revision,
     store: MemoStore,
     root: Root,
+    spawner: Spawner,
+    handlers: InBandExecutor,
     wk: Waker,
-    span: Span,
 }
 
-impl<Root, Out> Runtime<Root, Out>
+impl<Root, Out> Runtime<Root>
 where
     Root: FnMut() -> Out,
 {
-    /// Construct a new [`Runtime`] with blank storage and with a no-op waker for state changes.
+    /// Construct a new [`Runtime`] with blank storage and no external waker or task executor.
+    ///
+    /// By default the task executor used for `load` and its siblings is the same single-threaded
+    /// one as the executor used for `handler` futures. It is strongly recommended that outside of
+    /// testing users of this struct call `set_task_executor` with a reference to a more robust
+    /// I/O- or compute-oriented executor.
     pub fn new(root: Root) -> Self {
-        let span = trace_span!("runtime", rev = 0);
+        let handlers = InBandExecutor::default();
+        let fallback_spawner = handlers.spawner();
         Self {
-            span,
-            revision: Revision(0),
-            store: MemoStore::default(),
             root,
+            handlers,
+            revision: Revision(0),
+            spawner: fallback_spawner,
+            store: MemoStore::default(),
             wk: futures::task::noop_waker(),
         }
+    }
+
+    /// Constructs a new [`Runtime`], runs the provided `root` once, and returns the result.
+    pub fn oneshot(root: Root) -> Out {
+        let mut this = Self::new(root);
+        this.run_once()
     }
 
     /// The current revision of the runtime, or how many times `run_once` has been invoked.
@@ -91,19 +115,44 @@ where
     /// `Revision`, and drops any memoized values which were not marked `Liveness::Live`.
     pub fn run_once(&mut self) -> Out {
         self.revision.0 += 1;
-        self.span.record("rev", &self.revision.0);
-        let span = self.span.clone();
-        let _entered = span.enter();
 
         let ret = illicit::child_env! {
             MemoStore => self.store.clone(),
             Revision => self.revision,
-            RunLoopWaker => RunLoopWaker(self.wk.clone())
+            RunLoopWaker => RunLoopWaker(self.wk.clone()),
+            Spawner => self.spawner.clone()
         }
-        .enter(|| topo::call!((self.root)()));
+        .enter(|| {
+            topo::call!({
+                self.handlers.run_until_stalled(&self.wk);
+                (self.root)()
+            })
+        });
 
         self.store.gc();
         ret
+    }
+
+    /// Calls `run_once` in a loop until `filter` returns `Poll::Ready`, returning the result of
+    /// that `Revision`.
+    pub fn run_until_ready(&mut self, mut filter: impl FnMut(Out) -> Poll<Out>) -> Out {
+        loop {
+            if let Poll::Ready(out) = filter(self.run_once()) {
+                return out;
+            }
+        }
+    }
+
+    /// Calls `run_once` in a loop until the runtime's revision is equal to the one provided.
+    ///
+    /// Always calls `run_once` at least once.
+    pub fn run_until_at_least_revision(&mut self, rev: Revision) -> Out {
+        loop {
+            let out = self.run_once();
+            if self.revision >= rev {
+                return out;
+            }
+        }
     }
 
     /// Sets the [`std::task::Waker`] which will be called when state variables receive commits. By
@@ -112,6 +161,94 @@ where
     pub fn set_state_change_waker(&mut self, wk: Waker) -> &mut Self {
         self.wk = wk;
         self
+    }
+
+    /// Sets the executor that will be used to spawn normal priority tasks.
+    pub fn set_task_executor(&mut self, sp: impl Spawn + 'static) -> &mut Self {
+        self.spawner = Spawner(Rc::new(sp));
+        self
+    }
+}
+
+#[derive(Default)]
+struct InBandExecutor {
+    pool: FuturesUnordered<LocalFutureObj<'static, ()>>,
+    incoming: Rc<Incoming>,
+}
+
+type Incoming = RefCell<Vec<LocalFutureObj<'static, ()>>>;
+
+impl InBandExecutor {
+    fn run_until_stalled(&mut self, waker: &Waker) {
+        let mut cx = Context::from_waker(waker);
+        loop {
+            // empty the incoming queue of newly-spawned tasks
+            {
+                let mut incoming = self.incoming.borrow_mut();
+                for task in incoming.drain(..) {
+                    self.pool.push(task)
+                }
+            }
+
+            // try to execute the next ready future
+            let ret = self.pool.poll_next_unpin(&mut cx);
+
+            // check to see whether tasks were spawned by that
+            if !self.incoming.borrow().is_empty() {
+                continue;
+            }
+
+            // no queued tasks; we may be done
+            match ret {
+                Poll::Pending => return,
+                Poll::Ready(None) => return,
+                _ => {}
+            }
+        }
+    }
+
+    fn spawner(&self) -> Spawner {
+        Spawner(Rc::new(InBandSpawner(Rc::downgrade(&self.incoming))))
+    }
+}
+
+struct InBandSpawner(Weak<Incoming>);
+
+impl Spawn for InBandSpawner {
+    fn spawn_obj(&self, future: FutureObj<'static, ()>) -> Result<(), SpawnError> {
+        self.spawn_local_obj(future.into())
+    }
+
+    fn status(&self) -> Result<(), SpawnError> {
+        self.status_local()
+    }
+}
+
+impl LocalSpawn for InBandSpawner {
+    fn spawn_local_obj(&self, future: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
+        if let Some(incoming) = self.0.upgrade() {
+            incoming.borrow_mut().push(future);
+            Ok(())
+        } else {
+            Err(SpawnError::shutdown())
+        }
+    }
+
+    fn status_local(&self) -> Result<(), SpawnError> {
+        if self.0.upgrade().is_some() {
+            Ok(())
+        } else {
+            Err(SpawnError::shutdown())
+        }
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct Spawner(Rc<dyn Spawn>);
+
+impl Debug for Spawner {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "Spawner({:p})", self.0)
     }
 }
 
@@ -145,5 +282,34 @@ mod tests {
             topo::call!(runtime.run_once());
         });
         assert!(illicit::Env::get::<u8>().is_none());
+    }
+
+    #[test]
+    fn oneshot_runtime() {
+        let rev = Runtime::oneshot(|| Revision::current());
+        assert_eq!(rev, Revision(1), "only one iteration should occur");
+    }
+
+    #[test]
+    fn revision_bound_runtime() {
+        let mut rt = Runtime::new(|| Revision::current());
+        let rev = rt.run_until_at_least_revision(Revision(4));
+        assert_eq!(rev, Revision(4), "exactly 4 iterations should occur");
+
+        let rev = rt.run_until_at_least_revision(Revision(4));
+        assert_eq!(rev, Revision(5), "exactly 1 more iteration should occur");
+    }
+
+    #[test]
+    fn readiness_bound_runtime() {
+        let mut rt = Runtime::new(|| Revision::current());
+        let rev = rt.run_until_ready(|rev| {
+            if rev == Revision(3) {
+                Poll::Ready(rev)
+            } else {
+                Poll::Pending
+            }
+        });
+        assert_eq!(rev, Revision(3), "exactly 3 iterations should occur");
     }
 }
