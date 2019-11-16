@@ -71,7 +71,7 @@ where
     Fut: Future<Output = Stored> + Send + 'static,
     Stored: Clone + 'static,
 {
-    load_once_with!(init, Clone::clone)
+    load_with!((), |()| init(), Clone::clone)
 }
 
 /// TODO
