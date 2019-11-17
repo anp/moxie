@@ -86,4 +86,3 @@ fn bind_env_reference(arg: PatType) -> Local {
         semi_token: Token![;](arg_span),
     }
 }
-

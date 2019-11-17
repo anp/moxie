@@ -12,7 +12,10 @@ use {
         Node,
     },
     moxie,
-    std::cell::Cell,
+    std::{
+        cell::Cell,
+        fmt::{Debug, Formatter, Result as FmtResult},
+    },
 };
 
 pub mod elements;
@@ -222,5 +225,13 @@ impl MemoElement {
         }
 
         ret.unwrap()
+    }
+}
+
+impl Debug for MemoElement {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_struct("MemoElement")
+            .field("node", &self.node)
+            .finish()
     }
 }

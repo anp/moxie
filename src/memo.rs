@@ -115,7 +115,7 @@ where
 }
 
 /// A shared pointer to the memoization storage singleton for a given runtime.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct MemoStore(Rc<RefCell<MemoStorage>>);
 
 impl MemoStore {
@@ -127,6 +127,7 @@ impl MemoStore {
 
 /// The memoization storage for a `Runtime`. Stores memoized values by a `MemoIndex`,
 /// exposing a garbage collection API to the embedding `Runtime`.
+#[derive(Debug)]
 pub(crate) struct MemoStorage {
     memos: HashMap<MemoIndex, (Liveness, Box<dyn Any>)>,
 }

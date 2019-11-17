@@ -118,7 +118,7 @@ where
 /// Responsible for waking the Runtime task. Because the topo environment is namespaced by type,
 /// we create a newtype here so that other crates don't accidentally cause strange behavior by
 /// overriding our access to it when passing their own wakers down.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct RunLoopWaker(std::task::Waker);
 
 impl RunLoopWaker {
