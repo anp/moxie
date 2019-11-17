@@ -3,6 +3,9 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
 
+mod anon_arc;
+
+use anon_arc::AnonArc;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
@@ -14,9 +17,24 @@ use std::{
 };
 
 #[doc(inline)]
-pub use {anon_arc::AnonArc, illicit_macro::from_env};
+pub use illicit_macro::from_env;
 
-mod anon_arc;
+thread_local! {
+    /// The current dynamic scope.
+    static CURRENT_SCOPE: RefCell<Rc<Env>> =
+        RefCell::new(Rc::new( Env { values: Default::default() }));
+}
+
+/// Declare additional environment values to expose to a child topological function's call tree.
+#[macro_export]
+macro_rules! child_env {
+    ($($env_item_ty:ty => $env_item:expr),*) => {{
+        #[allow(unused_mut)]
+        let mut _new_env = $crate::Env::unstable_new();
+        $( _new_env.unstable_insert::<$env_item_ty>($env_item); )*
+        _new_env
+    }}
+}
 
 /// Immutable environment container for the current scope. Environment values can be
 /// provided by parent environments, but child functions can only mutate their environment through
@@ -30,56 +48,7 @@ mod anon_arc;
 /// their control flow. This can be useful for runtimes to offer themselves execution-local values
 /// in functions which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
-#[derive(Debug)]
-pub struct Scope {
-    env: Rc<Env>,
-}
-
-impl Scope {
-    /// Returns a snapshot of the current dynamic scope. Most useful for debugging the contained
-    /// `Env`.
-    pub fn snapshot() -> Scope {
-        CURRENT_SCOPE.with(|s| Scope {
-            env: s.borrow().env.clone(),
-        })
-    }
-
-    /// Removes the provided type from the current environment for the remainder of its scope.
-    /// Parent environments may still possess a reference to the value.
-    pub fn hide<E: 'static>() {
-        CURRENT_SCOPE.with(|current| {
-            let mut scope = current.borrow_mut();
-            let mut without_e = scope.env.values.clone();
-            let excluded_ty = TypeId::of::<E>();
-            without_e.retain(|ty, _| ty != &excluded_ty);
-            scope.env = Rc::new(Env { values: without_e });
-        })
-    }
-}
-
-thread_local! {
-    /// The current dynamic scope.
-    static CURRENT_SCOPE: RefCell<Scope> = RefCell::new(
-        Scope {
-            env: Rc::new( Env { values: Default::default() }),
-        });
-}
-
-/// Declare additional environment values to expose to a child topological function's call tree.
-#[macro_export]
-macro_rules! child_env {
-    ($($env_item_ty:ty => $env_item:expr),*) => {{
-        #[allow(unused_mut)]
-        let mut new_env = $crate::Env::unstable_new();
-        $(
-            $crate::AnonArc::unstable_new::<$env_item_ty>($env_item)
-                .unstable_insert_into(&mut new_env);
-        )*
-        new_env
-    }}
-}
-
-/// TODO
+#[derive(Clone)]
 pub struct Env {
     values: HashMap<TypeId, AnonArc>,
 }
@@ -93,19 +62,28 @@ impl Env {
 
         CURRENT_SCOPE.with(|current| {
             let current = current.borrow();
-            for anon in current.env.values.values() {
-                anon.clone().unstable_insert_into(&mut new);
+            for anon in current.values.values() {
+                new.values.insert(anon.id(), anon.clone());
             }
         });
 
         new
     }
 
+    #[doc(hidden)]
+    pub fn unstable_insert<E>(&mut self, new_item: E)
+    where
+        E: Debug + 'static,
+    {
+        let anon = AnonArc::new(new_item);
+        self.values.insert(anon.id(), anon);
+    }
+
     /// TODO
     pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
-            let parent = replace(&mut *parent, Scope { env: Rc::new(self) });
+            let parent = replace(&mut *parent, Rc::new(self));
 
             scopeguard::guard(parent, move |prev| {
                 CURRENT_SCOPE.with(|p| p.replace(prev));
@@ -123,10 +101,9 @@ impl Env {
         E: Any + 'static,
     {
         let key = TypeId::of::<E>();
-        let anon = CURRENT_SCOPE.with(|current| current.borrow().env.values.get(&key).cloned());
-
+        let anon = CURRENT_SCOPE.with(|current| current.borrow().values.get(&key).cloned());
         if let Some(anon) = anon {
-            Some(anon.unstable_deref())
+            Some(anon.downcast_deref())
         } else {
             None
         }
@@ -145,9 +122,29 @@ impl Env {
             panic!(
                 "expected a `{}` from the environment, did not find it in current env: {:#?}",
                 std::any::type_name::<E>(),
-                Scope::snapshot().env,
+                Env::snapshot(),
             )
         }
+    }
+
+    /// Returns a snapshot of the current dynamic scope. Most useful for debugging the contained
+    /// `Env`.
+    pub fn snapshot() -> Env {
+        CURRENT_SCOPE.with(|e| Env {
+            values: (**e.borrow()).values.clone(),
+        })
+    }
+
+    /// Removes the provided type from the current environment for the remainder of its scope.
+    /// Parent environments may still possess a reference to the value.
+    pub fn hide<E: 'static>() {
+        CURRENT_SCOPE.with(|current| {
+            let mut env = current.borrow_mut();
+            let mut without_e = env.values.clone();
+            let excluded_ty = TypeId::of::<E>();
+            without_e.retain(|ty, _| ty != &excluded_ty);
+            *env = Rc::new(Env { values: without_e });
+        })
     }
 }
 
@@ -169,14 +166,14 @@ mod tests {
 
     #[test]
     fn snapshot_debug_looks_right() {
-        let current_scope = format!("{:?}", Scope::snapshot().env);
+        let current_scope = format!("{:?}", Env::snapshot());
         assert_eq!(
             "Env", &current_scope,
             "environment should be empty and validly formatted"
         );
 
         child_env!(u8 => 42).enter(|| {
-            let current_scope = format!("{:?}", Scope::snapshot().env);
+            let current_scope = format!("{:?}", Env::snapshot());
             assert_eq!(
                 "Env { u8: 42 }", &current_scope,
                 "environment should have a u8 in it with value printed"
@@ -237,7 +234,7 @@ mod tests {
 
             child_env!().enter(|| {
                 assert_eq!(*Env::expect::<u8>(), 2, "parent added 2u8");
-                Scope::hide::<u8>();
+                Env::hide::<u8>();
                 assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
             });
 
@@ -247,7 +244,7 @@ mod tests {
                 "returned to parent Env with 2u8"
             );
 
-            Scope::hide::<u8>();
+            Env::hide::<u8>();
             assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
         })
     }
