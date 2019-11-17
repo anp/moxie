@@ -174,8 +174,13 @@ impl Point {
     }
 
     /// Runs the provided closure with access to the current [`Point`].
-    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
-        op(&*illicit::Env::expect::<Point>())
+    #[doc(hidden)]
+    pub fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+        if let Some(current) = illicit::Env::get::<Self>() {
+            op(&*current)
+        } else {
+            op(&Point::default())
+        }
     }
 }
 
@@ -364,12 +369,9 @@ macro_rules! unstable_raw_call {
         is_root: $is_root:expr,
         call: $inner:expr
     ) => {{
-        $crate::illicit::Env::expect::<$crate::Point>().unstable_enter_child(
-            $callsite,
-            &$slot,
-            $is_root,
-            || $inner,
-        )
+        $crate::Point::with_current(|_current| {
+            _current.unstable_enter_child($callsite, &$slot, $is_root, || $inner)
+        })
     }};
 }
 
