@@ -129,7 +129,7 @@ impl Env {
         self.depth
     }
 
-    /// TODO
+    /// Call `child_fn` with this environment as the current scope.
     pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
