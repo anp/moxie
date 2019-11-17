@@ -370,7 +370,7 @@ macro_rules! unstable_raw_call {
         call: $inner:expr
     ) => {{
         $crate::Point::with_current(|_current| {
-            _current.unstable_enter_child($callsite, &$slot, $is_root, || $inner)
+            _current.unstable_enter_child($callsite, &$slot, !$is_root, || $inner)
         })
     }};
 }
