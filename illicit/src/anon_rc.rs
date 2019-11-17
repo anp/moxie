@@ -3,20 +3,20 @@ use {
     std::{
         any::{Any, TypeId},
         fmt::Debug,
-        sync::Arc,
+        rc::Rc,
     },
 };
 
 #[doc(hidden)]
 #[derive(Clone, Debug)]
-pub(crate) struct AnonArc {
+pub(crate) struct AnonRc {
     name: &'static str,
     id: TypeId,
-    inner: Arc<dyn Any>,
-    debug: Arc<dyn Debug>,
+    inner: Rc<dyn Any>,
+    debug: Rc<dyn Debug>,
 }
 
-impl AnonArc {
+impl AnonRc {
     /// The `TypeId` of the contained value.
     pub fn id(&self) -> TypeId {
         self.id
@@ -34,7 +34,7 @@ impl AnonArc {
 
     /// Construct a new `AnonArc` from the provided value.
     pub fn new<T: Debug + 'static>(inner: T) -> Self {
-        let inner = Arc::new(inner);
+        let inner = Rc::new(inner);
         Self {
             name: std::any::type_name::<T>(),
             id: TypeId::of::<T>(),

@@ -3,9 +3,9 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
 
-mod anon_arc;
+mod anon_rc;
 
-use anon_arc::AnonArc;
+use anon_rc::AnonRc;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
@@ -50,7 +50,7 @@ macro_rules! child_env {
 /// implicit state, and should be used with caution.
 #[derive(Clone)]
 pub struct Env {
-    values: HashMap<TypeId, AnonArc>,
+    values: HashMap<TypeId, AnonRc>,
 }
 
 impl Env {
@@ -75,7 +75,7 @@ impl Env {
     where
         E: Debug + 'static,
     {
-        let anon = AnonArc::new(new_item);
+        let anon = AnonRc::new(new_item);
         self.values.insert(anon.id(), anon);
     }
 
