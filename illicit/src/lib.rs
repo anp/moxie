@@ -1,4 +1,37 @@
 //! Type-indexed scoped singletons, propagated through an implicit backing context.
+//!
+//! # Requiring references from the environment
+//!
+//! The `from_env` macro provides an attribute for functions that require access to a singleton in
+//! their environment. Here, the contrived function requires a `u8` to add one to:
+//!
+//! ```
+//! #[illicit::from_env(num: &u8)]
+//! fn env_num_plus_one() -> u8 {
+//!     num + 1
+//! }
+//!
+//! illicit::child_env!(u8 => 1).enter(|| {
+//!     assert_eq!(env_num_plus_one(), 2u8);
+//! });
+//! ```
+//!
+//! This provides convenient sugar for values stored in the current `Env` as an alternative to
+//! thread-locals or a manually propagated context object. However this approach incurs a
+//! significant cost in that the following code will panic without the right type having been added
+//! to the environment:
+//!
+//! ```should_panic
+//! # #[illicit::from_env(num: &u8)]
+//! # fn env_num_plus_one() -> u8 {
+//! #    num + 1
+//! # }
+//! // thread 'main' panicked at 'expected a value from the environment, found none'
+//! env_num_plus_one();
+//! ```
+//!
+//! See the attribute's documentation for more details, and please consider whether this is
+//! appropriate for your use case before taking it on as a dependency.
 
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
