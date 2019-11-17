@@ -3,14 +3,13 @@ use {
     std::{
         any::{Any, TypeId},
         fmt::Debug,
-        ops::Deref,
         sync::Arc,
     },
 };
 
 #[doc(hidden)]
 #[derive(Clone, Debug)]
-pub struct AnonArc {
+pub(crate) struct AnonArc {
     name: &'static str,
     id: TypeId,
     inner: Arc<dyn Any>,
@@ -18,6 +17,11 @@ pub struct AnonArc {
 }
 
 impl AnonArc {
+    /// The `TypeId` of the contained value.
+    pub fn id(&self) -> TypeId {
+        self.id
+    }
+
     /// The typename of the contained value.
     pub fn ty(&self) -> &str {
         self.name
@@ -28,8 +32,8 @@ impl AnonArc {
         &*self.debug
     }
 
-    #[doc(hidden)]
-    pub fn unstable_new<T: Debug + 'static>(inner: T) -> Self {
+    /// Construct a new `AnonArc` from the provided value.
+    pub fn new<T: Debug + 'static>(inner: T) -> Self {
         let inner = Arc::new(inner);
         Self {
             name: std::any::type_name::<T>(),
@@ -39,25 +43,12 @@ impl AnonArc {
         }
     }
 
-    #[doc(hidden)]
-    pub fn unstable_insert_into(self, env: &mut super::Env) {
-        env.values.insert(self.id, self);
-    }
-
-    #[doc(hidden)]
     // FIXME this should probably expose a fallible api somehow?
-    pub fn unstable_deref<T: 'static>(self) -> impl Deref<Target = T> + 'static {
+    pub fn downcast_deref<T: 'static>(self) -> impl std::ops::Deref<Target = T> + 'static {
         OwningRef::new(self.inner).map(|anon| {
             anon.downcast_ref().unwrap_or_else(|| {
                 panic!("asked {:?} to cast to {:?}", anon, TypeId::of::<T>(),);
             })
         })
-    }
-}
-
-impl Deref for AnonArc {
-    type Target = dyn Any;
-    fn deref(&self) -> &Self::Target {
-        &*self.inner
     }
 }
