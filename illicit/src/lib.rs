@@ -14,9 +14,9 @@ use std::{
 };
 
 #[doc(inline)]
-pub use {anon_rc::AnonRc, illicit_macro::from_env};
+pub use {anon_arc::AnonArc, illicit_macro::from_env};
 
-mod anon_rc;
+mod anon_arc;
 
 /// Immutable environment container for the current scope. Environment values can be
 /// provided by parent environments, but child functions can only mutate their environment through
@@ -72,7 +72,7 @@ macro_rules! child_env {
         #[allow(unused_mut)]
         let mut new_env = $crate::Env::unstable_new();
         $(
-            $crate::AnonRc::unstable_new::<$env_item_ty>($env_item)
+            $crate::AnonArc::unstable_new::<$env_item_ty>($env_item)
                 .unstable_insert_into(&mut new_env);
         )*
         new_env
@@ -81,7 +81,7 @@ macro_rules! child_env {
 
 /// TODO
 pub struct Env {
-    values: HashMap<TypeId, AnonRc>,
+    values: HashMap<TypeId, AnonArc>,
 }
 
 impl Env {
