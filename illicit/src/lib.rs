@@ -188,8 +188,9 @@ impl Env {
             val
         } else {
             panic!(
-                "expected a `{}` from the environment, found none",
-                std::any::type_name::<E>()
+                "expected a `{}` from the environment, did not find it in current env: {:#?}",
+                std::any::type_name::<E>(),
+                Scope::snapshot().env,
             )
         }
     }
