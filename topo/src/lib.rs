@@ -182,9 +182,9 @@ impl Callsite {
     }
 
     /// Returns the number of times this callsite has been seen as a child of the current Point.
-    pub fn current_count(&self) -> u32 {
+    pub fn current_count(self) -> u32 {
         Point::unstable_with_current(|point| {
-            if let Some(c) = point.callsite_counts.borrow().get(self) {
+            if let Some(c) = point.callsite_counts.borrow().get(&self) {
                 *c
             } else {
                 0
