@@ -100,7 +100,7 @@ where
             Revision => self.revision,
             RunLoopWaker => RunLoopWaker(self.wk.clone())
         }
-        .enter(|| topo::root!((self.root)()));
+        .enter(|| topo::call!((self.root)()));
 
         self.store.gc();
         ret

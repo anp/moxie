@@ -48,37 +48,6 @@
 //! source location at which it is called. Future language features may make it possible to call
 //! topo-nested functions without any special syntax.
 //!
-//! # Requiring references from the environment
-//!
-//! The `from_env` macro provides an attribute for functions that require access to a singleton in
-//! their environment. Here, the contrived function requires a `u8` to add one to:
-//!
-//! ```
-//! #[topo::from_env(num: &u8)]
-//! fn env_num_plus_one() -> u8 {
-//!     num + 1
-//! }
-//!
-//! topo::Env::add(1u8);
-//! assert_eq!(env_num_plus_one(), 2u8);
-//! ```
-//!
-//! This provides convenient sugar for values stored in the current `Env` as an alternative to
-//! thread-locals or a manually propagated context object. However this approach incurs a
-//! significant cost in that the following code will panic without the right type having been added
-//! to the environment:
-//!
-//! ```should_panic
-//! # #[topo::from_env(num: &u8)]
-//! # fn env_num_plus_one() -> u8 {
-//! #    num + 1
-//! # }
-//! // thread 'main' panicked at 'expected a value from the environment, found none'
-//! env_num_plus_one();
-//! ```
-//!
-//! See the attribute's documentation for more details, and please consider whether this is
-//! appropriate for your use case before taking it on as a dependency.
 
 #[doc(hidden)]
 pub use illicit;
@@ -118,7 +87,7 @@ impl Id {
         {
         }
         assert_send_and_sync::<Id>();
-        Point::with_current(|p| p.id)
+        Point::unstable_with_current(|p| p.id)
     }
 }
 
@@ -148,21 +117,21 @@ impl Point {
         &self,
         callsite: Callsite,
         slot: &impl Hash,
-        increment_counts: bool,
         child: impl FnOnce() -> R,
     ) -> R {
-        let mut hasher = DefaultHasher::new();
-        self.id.hash(&mut hasher);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        let id = Id(hasher.finish());
-        if increment_counts {
+        {
             *self
                 .callsite_counts
                 .borrow_mut()
                 .entry(callsite)
                 .or_default() += 1;
         }
+
+        let mut hasher = DefaultHasher::new();
+        self.id.hash(&mut hasher);
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        let id = Id(hasher.finish());
 
         let child_point = Self {
             id,
@@ -175,7 +144,7 @@ impl Point {
 
     /// Runs the provided closure with access to the current [`Point`].
     #[doc(hidden)]
-    pub fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+    pub fn unstable_with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
         if let Some(current) = illicit::Env::get::<Self>() {
             op(&*current)
         } else {
@@ -214,7 +183,7 @@ impl Callsite {
 
     /// Returns the number of times this callsite has been seen as a child of the current Point.
     pub fn current_count(&self) -> u32 {
-        Point::with_current(|point| {
+        Point::unstable_with_current(|point| {
             if let Some(c) = point.callsite_counts.borrow().get(self) {
                 *c
             } else {
@@ -270,107 +239,14 @@ macro_rules! callsite {
 #[macro_export]
 macro_rules! call {
     (slot: $slot:expr, $($input:tt)*) => {{
-        $crate::unstable_raw_call!(
-            callsite: $crate::callsite!(),
-            slot: $slot,
-            is_root: false,
-            call: $($input)*
-        )
+        $crate::Point::unstable_with_current(|_current| {
+            _current.unstable_enter_child($crate::callsite!(), &$slot, || $($input)*)
+        })
     }};
     ($($input:tt)*) => {{
         let callsite = $crate::callsite!();
-        $crate::unstable_raw_call!(
-            callsite: callsite,
-            slot: callsite.current_count(),
-            is_root: false,
-            call: $($input)*
-        )
-    }};
-}
-/// Roots a topology at a particular callsite while calling the provided expression with the same
-/// convention as [`call`].
-///
-/// Normally, when a topological function is repeatedly invoked at the same callsite in a loop,
-/// each invocation receives a different [`Id`], as these invocations model siblings in the
-/// topology. The overall goal of this crate, however, is to provide imperative codepaths with
-/// stable identifiers *across* executions at the same callsite. In practice, we must have a root
-/// to the subtopology we are maintaining across these impure calls, and after each execution of the
-/// subtopology it must reset the state at its [`Id`] so that the next execution of the root
-/// is invoked at the same point under its parent as its previous execution was.
-///
-/// In this first example, a scope containing the loop can observe each separate loop
-/// iteration mutating `count` and the root closure mutating `exit`. The variables `root_ids` and
-/// `child_ids` observe the identifiers of the
-///
-/// ```
-/// # use topo::{self, *};
-/// # use std::collections::{HashMap, HashSet};
-/// struct LoopCount(usize);
-///
-/// let mut count = 0;
-/// let mut exit = false;
-/// let mut root_ids = HashSet::new();
-/// let mut child_ids = HashMap::new();
-/// while !exit {
-///     count += 1;
-///     topo::root!({
-///         root_ids.insert(topo::Id::current());
-///         assert_eq!(
-///             root_ids.len(),
-///             1,
-///             "the Id of this scope should be repeated, not incremented"
-///         );
-///
-///         let outer_count = topo::Env::get::<LoopCount>().unwrap().0;
-///         assert!(outer_count <= 10);
-///         if outer_count == 10 {
-///             exit = true;
-///         }
-///
-///         for i in 0..10 {
-///             topo::call!({
-///                 let current_id = topo::Id::current();
-///                 if outer_count > 1 {
-///                     assert_eq!(child_ids[&i], current_id);
-///                 }
-///                 child_ids.insert(i, current_id);
-///                 assert!(
-///                     child_ids.len() <= 10,
-///                     "only 10 children should be observed across all loop iterations",
-///                 );
-///             });
-///         }
-///         assert_eq!(child_ids.len(), 10);
-///     }, env! {
-///          LoopCount => LoopCount(count),
-///     });
-///     assert_eq!(child_ids.len(), 10);
-///     assert_eq!(root_ids.len(), 1);
-/// }
-/// ```
-#[macro_export]
-macro_rules! root {
-    ($($input:tt)*) => {{
-        $crate::unstable_raw_call!(
-            callsite: $crate::callsite!(),
-            slot: (),
-            is_root: true,
-            call: $($input)*
-        )
-    }}
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! unstable_raw_call {
-    (
-        callsite: $callsite:expr,
-        slot: $slot:expr,
-        is_root: $is_root:expr,
-        call: $inner:expr
-    ) => {{
-        $crate::Point::with_current(|_current| {
-            _current.unstable_enter_child($callsite, &$slot, !$is_root, || $inner)
+        $crate::Point::unstable_with_current(|_current| {
+            _current.unstable_enter_child(callsite, &callsite.current_count(), || $($input)*)
         })
     }};
 }
@@ -408,48 +284,48 @@ mod tests {
     #[test]
     fn alternating_in_a_loop() {
         call!({
-        let mut ids = HashSet::new();
+            let mut ids = HashSet::new();
 
-        for i in 0..4 {
-            if i % 2 == 0 {
-                call!(ids.insert(Id::current()));
-            } else {
-                call!(ids.insert(Id::current()));
+            for i in 0..4 {
+                if i % 2 == 0 {
+                    call!(ids.insert(Id::current()));
+                } else {
+                    call!(ids.insert(Id::current()));
+                }
             }
-        }
 
-        assert_eq!(ids.len(), 4, "each callsite must produce multiple IDs");
+            assert_eq!(ids.len(), 4, "each callsite must produce multiple IDs");
         });
     }
 
     #[test]
     fn one_child_in_a_loop() {
         call!({
-        let root = Id::current();
-        assert_eq!(
-            root,
-            Id::current(),
-            "Id must be stable across calls within the same scope"
-        );
-
-        let mut prev = root;
-
-        for _ in 0..100 {
-            let mut called = false;
-            call!({
-                let current = Id::current();
-                assert_ne!(prev, current, "each Id in this loop must be unique");
-                prev = current;
-                called = true;
-            });
-
+            let root = Id::current();
             assert_eq!(
                 root,
                 Id::current(),
-                "outside the call must have the same Id as root"
+                "Id must be stable across calls within the same scope"
             );
-            assert!(called, "the call must be made on each loop iteration");
-        }
+
+            let mut prev = root;
+
+            for _ in 0..100 {
+                let mut called = false;
+                call!({
+                    let current = Id::current();
+                    assert_ne!(prev, current, "each Id in this loop must be unique");
+                    prev = current;
+                    called = true;
+                });
+
+                assert_eq!(
+                    root,
+                    Id::current(),
+                    "outside the call must have the same Id as root"
+                );
+                assert!(called, "the call must be made on each loop iteration");
+            }
         });
     }
 
