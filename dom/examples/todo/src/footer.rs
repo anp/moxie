@@ -22,7 +22,7 @@ pub fn items_remaining(num_active: usize) {
 }
 
 #[topo::nested]
-#[topo::from_env(todos: &Key<Vec<Todo>>)]
+#[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn clear_completed_button() {
     let todos = todos.clone();
     let on_click = move |_: event::Click| {

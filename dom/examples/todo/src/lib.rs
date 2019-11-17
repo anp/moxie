@@ -26,20 +26,18 @@ fn todo_app() {
     let visibility = state!(|| Visibility::default());
     let todos = state!(|| vec![Todo::new("whoaaa")]);
 
-    topo::call!(
-        {
-            mox! {
-                <div class="todoapp">
-                    <input_header/>
-                    <main_section/>
-                </div>
-            }
-        },
-        env! {
-            Key<Vec<Todo>> => todos,
-            Key<Visibility> => visibility,
-        }
-    );
+    illicit::child_env![
+        Key<Vec<Todo>> => todos,
+        Key<Visibility> => visibility
+    ]
+    .enter(|| {
+        topo::call!(mox! {
+            <div class="todoapp">
+                <input_header/>
+                <main_section/>
+            </div>
+        });
+    });
 }
 
 #[derive(Clone, Debug)]
