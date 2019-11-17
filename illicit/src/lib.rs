@@ -42,7 +42,7 @@ use anon_rc::AnonRc;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::{Debug, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
@@ -54,16 +54,22 @@ pub use illicit_macro::from_env;
 
 thread_local! {
     /// The current dynamic scope.
-    static CURRENT_SCOPE: RefCell<Rc<Env>> =
-        RefCell::new(Rc::new( Env { values: Default::default() }));
+    static CURRENT_SCOPE: RefCell<Rc<Env>> = RefCell::new(Rc::new(
+        Env {
+            depth: 0,
+            location: (file!(), column!(), line!()),
+            values: Default::default(),
+        }
+    ));
 }
 
 /// Declare additional environment values to expose to a child topological function's call tree.
 #[macro_export]
 macro_rules! child_env {
     ($($env_item_ty:ty => $env_item:expr),*) => {{
+        let location = (file!(), line!(), column!());
         #[allow(unused_mut)]
-        let mut _new_env = $crate::Env::unstable_new();
+        let mut _new_env = $crate::Env::unstable_new(location);
         $( _new_env.unstable_insert::<$env_item_ty>($env_item); )*
         _new_env
     }}
@@ -83,24 +89,30 @@ macro_rules! child_env {
 /// implicit state, and should be used with caution.
 #[derive(Clone)]
 pub struct Env {
+    depth: u32,
+    location: (&'static str, u32, u32),
     values: HashMap<TypeId, AnonRc>,
 }
 
 impl Env {
     #[doc(hidden)]
-    pub fn unstable_new() -> Self {
-        let mut new = Self {
-            values: Default::default(),
-        };
+    pub fn unstable_new(location: (&'static str, u32, u32)) -> Self {
+        let mut values = HashMap::new();
+        let mut depth = 0;
 
         CURRENT_SCOPE.with(|current| {
             let current = current.borrow();
+            depth = current.depth + 1;
             for anon in current.values.values() {
-                new.values.insert(anon.id(), anon.clone());
+                values.insert(anon.id(), anon.clone());
             }
         });
 
-        new
+        Self {
+            values,
+            depth,
+            location,
+        }
     }
 
     #[doc(hidden)]
@@ -108,8 +120,13 @@ impl Env {
     where
         E: Debug + 'static,
     {
-        let anon = AnonRc::new(new_item);
+        let anon = AnonRc::new(new_item, self.location, self.depth);
         self.values.insert(anon.id(), anon);
+    }
+
+    /// The number of parent environments from which this environment descends.
+    pub fn depth(&self) -> u32 {
+        self.depth
     }
 
     /// TODO
@@ -162,10 +179,25 @@ impl Env {
 
     /// Returns a snapshot of the current dynamic scope. Most useful for debugging the contained
     /// `Env`.
-    pub fn snapshot() -> Env {
-        CURRENT_SCOPE.with(|e| Env {
-            values: (**e.borrow()).values.clone(),
-        })
+    pub fn snapshot() -> EnvSnapshot {
+        let mut stacked = EnvSnapshot {
+            by_depth: BTreeMap::new(),
+        };
+        CURRENT_SCOPE.with(|e| {
+            for anon in e.borrow().values.values() {
+                stacked
+                    .by_depth
+                    .entry(anon.depth())
+                    .or_insert_with(|| Env {
+                        values: HashMap::new(),
+                        depth: anon.depth(),
+                        location: anon.location(), // depth -> location is 1:1
+                    })
+                    .values
+                    .insert(anon.id(), anon.clone());
+            }
+        });
+        stacked
     }
 
     /// Removes the provided type from the current environment for the remainder of its scope.
@@ -176,20 +208,41 @@ impl Env {
             let mut without_e = env.values.clone();
             let excluded_ty = TypeId::of::<E>();
             without_e.retain(|ty, _| ty != &excluded_ty);
-            *env = Rc::new(Env { values: without_e });
+            *env = Rc::new(Env {
+                values: without_e,
+                depth: env.depth,
+                location: env.location,
+            });
         })
     }
 }
 
 impl Debug for Env {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let mut f = f.debug_struct("Env");
+        let (file, line, col) = self.location;
+        let env_w_loc = format!("Env @ {}:{}:{}", file, line, col);
 
-        for anon in self.values.values() {
-            f.field(anon.ty(), anon.debug());
+        let mut f = f.debug_struct(&env_w_loc);
+        for (ty, anon) in self
+            .values
+            .values()
+            .map(|v| (v.ty(), v))
+            .collect::<BTreeMap<_, _>>()
+        {
+            f.field(ty, anon.debug());
         }
-
         f.finish()
+    }
+}
+
+/// An alternative representation of the current scope's environment, optimized for debug printing.
+pub struct EnvSnapshot {
+    by_depth: BTreeMap<u32, Env>,
+}
+
+impl Debug for EnvSnapshot {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_list().entries(self.by_depth.values()).finish()
     }
 }
 
@@ -201,17 +254,35 @@ mod tests {
     fn snapshot_debug_looks_right() {
         let current_scope = format!("{:?}", Env::snapshot());
         assert_eq!(
-            "Env", &current_scope,
+            "[]", &current_scope,
             "environment should be empty and validly formatted"
         );
 
         child_env!(u8 => 42).enter(|| {
+            let u8_present_fragment =
+                format!("Env @ {}:{}:{} {{ u8: 42 }}", file!(), line!() - 2, 9);
+            let expected = format!("[{}]", &u8_present_fragment);
             let current_scope = format!("{:?}", Env::snapshot());
             assert_eq!(
-                "Env { u8: 42 }", &current_scope,
+                expected, current_scope,
                 "environment should have a u8 in it with value printed"
             );
-        })
+
+            child_env!(String => String::from("owo")).enter(|| {
+                let string_present_fragment = format!(
+                    "Env @ {}:{}:{} {{ alloc::string::String: \"owo\" }}",
+                    file!(),
+                    line!() - 4,
+                    13
+                );
+                let expected = format!("[{}, {}]", &u8_present_fragment, &string_present_fragment);
+                let current_scope = format!("{:?}", Env::snapshot());
+                assert_eq!(
+                    expected, current_scope,
+                    "environment should have both a u8 and a String in it, with values printed"
+                );
+            });
+        });
     }
 
     #[test]
