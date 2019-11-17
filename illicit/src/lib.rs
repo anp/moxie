@@ -3,21 +3,20 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
 
-use {
-    owning_ref::OwningRef,
-    std::{
-        any::{Any, TypeId},
-        cell::RefCell,
-        collections::HashMap,
-        fmt::{Debug, Formatter, Result as FmtResult},
-        mem::replace,
-        ops::Deref,
-        rc::Rc,
-    },
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    collections::HashMap,
+    fmt::{Debug, Formatter, Result as FmtResult},
+    mem::replace,
+    ops::Deref,
+    rc::Rc,
 };
 
 #[doc(inline)]
-pub use illicit_macro::from_env;
+pub use {anon_rc::AnonRc, illicit_macro::from_env};
+
+mod anon_rc;
 
 /// Immutable environment container for the current scope. Environment values can be
 /// provided by parent environments, but child functions can only mutate their environment through
@@ -78,50 +77,6 @@ macro_rules! child_env {
         )*
         new_env
     }}
-}
-
-#[doc(hidden)]
-#[derive(Clone, Debug)]
-pub struct AnonRc {
-    name: &'static str,
-    id: TypeId,
-    inner: Rc<dyn Any>,
-    debug: Rc<dyn Debug>,
-}
-
-impl AnonRc {
-    #[doc(hidden)]
-    pub fn unstable_new<T: Debug + 'static>(inner: T) -> Self {
-        let inner = Rc::new(inner);
-        Self {
-            name: std::any::type_name::<T>(),
-            id: TypeId::of::<T>(),
-            debug: inner.clone(),
-            inner,
-        }
-    }
-
-    #[doc(hidden)]
-    pub fn unstable_insert_into(self, env: &mut Env) {
-        env.values.insert(self.id, self);
-    }
-
-    #[doc(hidden)]
-    // FIXME this should probably expose a fallible api somehow?
-    pub fn unstable_deref<T: 'static>(self) -> impl Deref<Target = T> + 'static {
-        OwningRef::new(self.inner).map(|anon| {
-            anon.downcast_ref().unwrap_or_else(|| {
-                panic!("asked {:?} to cast to {:?}", anon, TypeId::of::<T>(),);
-            })
-        })
-    }
-}
-
-impl Deref for AnonRc {
-    type Target = dyn Any;
-    fn deref(&self) -> &Self::Target {
-        &*self.inner
-    }
 }
 
 /// TODO
@@ -201,7 +156,7 @@ impl Debug for Env {
         let mut f = f.debug_struct("Env");
 
         for anon in self.values.values() {
-            f.field(anon.name, &*anon.debug);
+            f.field(anon.ty(), anon.debug());
         }
 
         f.finish()
@@ -224,7 +179,7 @@ mod tests {
             let current_scope = format!("{:?}", Scope::snapshot().env);
             assert_eq!(
                 "Env { u8: 42 }", &current_scope,
-                "environment should have a u8 in it, no contents printing yet"
+                "environment should have a u8 in it with value printed"
             );
         })
     }
