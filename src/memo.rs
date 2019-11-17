@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn id_in_loop() {
-        with_test_logs(|| {
+        topo::call!({
             let mut ids = HashSet::new();
             for _ in 0..10 {
                 topo::call!(ids.insert(topo::Id::current()));
