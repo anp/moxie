@@ -5,7 +5,7 @@ use {
 };
 
 #[topo::nested]
-#[topo::from_env(todos: &Key<Vec<Todo>>)]
+#[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn input_header() {
     let todos = todos.clone();
     mox! {
