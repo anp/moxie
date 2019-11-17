@@ -202,40 +202,14 @@ macro_rules! callsite {
     }};
 }
 
-/// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
-/// additional environment values to the child scope.
+/// Calls the provided expression with an [`Id`] specific to the callsite.
 ///
 /// ```
 /// let prev = topo::Id::current();
 /// topo::call!(assert_ne!(prev, topo::Id::current()));
 /// ```
 ///
-/// Adding an `env! { ... }` directive to the macro input will take ownership of provided values
-/// and make them available to the code run in the `Point` created by the invocation.
-///
-/// ```
-/// # use topo;
-/// #[derive(Debug, Eq, PartialEq)]
-/// struct Submarine(usize);
-///
-/// assert!(topo::Env::get::<Submarine>().is_none());
-///
-/// topo::call!({
-///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
-///
-///     topo::call!({
-///         assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap());
-///     }, env! {
-///         Submarine => Submarine(2),
-///     });
-///
-///     assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
-/// }, env! {
-///     Submarine => Submarine(1),
-/// });
-///
-/// assert!(topo::Env::get::<Submarine>().is_none());
-/// ```
+/// TODO document loops, recursion, branches, etc
 #[macro_export]
 macro_rules! call {
     (slot: $slot:expr, $($input:tt)*) => {{
