@@ -407,6 +407,7 @@ mod tests {
 
     #[test]
     fn alternating_in_a_loop() {
+        call!({
         let mut ids = HashSet::new();
 
         for i in 0..4 {
@@ -418,10 +419,12 @@ mod tests {
         }
 
         assert_eq!(ids.len(), 4, "each callsite must produce multiple IDs");
+        });
     }
 
     #[test]
     fn one_child_in_a_loop() {
+        call!({
         let root = Id::current();
         assert_eq!(
             root,
@@ -447,6 +450,7 @@ mod tests {
             );
             assert!(called, "the call must be made on each loop iteration");
         }
+        });
     }
 
     #[test]
@@ -454,7 +458,7 @@ mod tests {
         let slots = vec!["first", "second", "third", "fourth", "fifth"];
 
         let to_call = || {
-            root!({
+            call!({
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
                     call!(slot: s, {
