@@ -9,6 +9,7 @@ use {
         any::{Any, TypeId},
         cell::RefCell,
         collections::HashMap,
+        fmt::{Debug, Formatter, Result as FmtResult},
         mem::replace,
         ops::Deref,
         rc::Rc,
@@ -30,14 +31,39 @@ pub use illicit_macro::from_env;
 /// their control flow. This can be useful for runtimes to offer themselves execution-local values
 /// in functions which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct Scope {
-    inner: Rc<Env>,
+    env: Rc<Env>,
+}
+
+impl Scope {
+    /// Returns a snapshot of the current dynamic scope. Most useful for debugging the contained
+    /// `Env`.
+    pub fn snapshot() -> Scope {
+        CURRENT_SCOPE.with(|s| Scope {
+            env: s.borrow().env.clone(),
+        })
+    }
+
+    /// Removes the provided type from the current environment for the remainder of its scope.
+    /// Parent environments may still possess a reference to the value.
+    pub fn hide<E: 'static>() {
+        CURRENT_SCOPE.with(|current| {
+            let mut scope = current.borrow_mut();
+            let mut without_e = scope.env.values.clone();
+            let excluded_ty = TypeId::of::<E>();
+            without_e.retain(|ty, _| ty != &excluded_ty);
+            scope.env = Rc::new(Env { values: without_e });
+        })
+    }
 }
 
 thread_local! {
     /// The current dynamic scope.
-    static CURRENT_SCOPE: RefCell<Scope> = Default::default();
+    static CURRENT_SCOPE: RefCell<Scope> = RefCell::new(
+        Scope {
+            env: Rc::new( Env { values: Default::default() }),
+        });
 }
 
 /// Declare additional environment values to expose to a child topological function's call tree.
@@ -60,15 +86,18 @@ pub struct AnonRc {
     name: &'static str,
     id: TypeId,
     inner: Rc<dyn Any>,
+    debug: Rc<dyn Debug>,
 }
 
 impl AnonRc {
     #[doc(hidden)]
-    pub fn unstable_new<T: 'static>(inner: T) -> Self {
+    pub fn unstable_new<T: Debug + 'static>(inner: T) -> Self {
+        let inner = Rc::new(inner);
         Self {
             name: std::any::type_name::<T>(),
             id: TypeId::of::<T>(),
-            inner: Rc::new(inner),
+            debug: inner.clone(),
+            inner,
         }
     }
 
@@ -96,7 +125,6 @@ impl Deref for AnonRc {
 }
 
 /// TODO
-#[derive(Debug, Default)]
 pub struct Env {
     values: HashMap<TypeId, AnonRc>,
 }
@@ -104,26 +132,25 @@ pub struct Env {
 impl Env {
     #[doc(hidden)]
     pub fn unstable_new() -> Self {
-        Self {
+        let mut new = Self {
             values: Default::default(),
-        }
+        };
+
+        CURRENT_SCOPE.with(|current| {
+            let current = current.borrow();
+            for anon in current.env.values.values() {
+                anon.clone().unstable_insert_into(&mut new);
+            }
+        });
+
+        new
     }
 
     /// TODO
-    pub fn enter<R>(mut self, child_fn: impl FnOnce() -> R) -> R {
+    pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
-
-            for (id, rc) in &parent.inner.values {
-                self.values.entry(*id).or_insert_with(|| rc.clone());
-            }
-
-            let parent = replace(
-                &mut *parent,
-                Scope {
-                    inner: Rc::new(self),
-                },
-            );
+            let parent = replace(&mut *parent, Scope { env: Rc::new(self) });
 
             scopeguard::guard(parent, move |prev| {
                 CURRENT_SCOPE.with(|p| p.replace(prev));
@@ -134,18 +161,6 @@ impl Env {
         child_fn()
     }
 
-    /// Removes the provided type from the current environment for the remainder of its scope.
-    /// Parent environments may still possess a reference to the value.
-    pub fn hide<E: 'static>() {
-        CURRENT_SCOPE.with(|current| {
-            let mut scope = current.borrow_mut();
-            let mut without_e = scope.inner.values.clone();
-            let excluded_ty = TypeId::of::<E>();
-            without_e.retain(|ty, _| ty != &excluded_ty);
-            scope.inner = Rc::new(Env { values: without_e });
-        })
-    }
-
     /// Returns a reference to a value in the current environment if it has been added to the
     /// environment by parent/enclosing [`call`] invocations.
     pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
@@ -153,7 +168,7 @@ impl Env {
         E: Any + 'static,
     {
         let key = TypeId::of::<E>();
-        let anon = CURRENT_SCOPE.with(|current| current.borrow().inner.values.get(&key).cloned());
+        let anon = CURRENT_SCOPE.with(|current| current.borrow().env.values.get(&key).cloned());
 
         if let Some(anon) = anon {
             Some(anon.unstable_deref())
@@ -180,13 +195,37 @@ impl Env {
     }
 }
 
+impl Debug for Env {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        let mut f = f.debug_struct("Env");
+
+        for anon in self.values.values() {
+            f.field(anon.name, &*anon.debug);
+        }
+
+        f.finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn debug_env_looks_right() {
-        unimplemented!()
+    fn snapshot_debug_looks_right() {
+        let current_scope = format!("{:?}", Scope::snapshot().env);
+        assert_eq!(
+            "Env", &current_scope,
+            "environment should be empty and validly formatted"
+        );
+
+        child_env!(u8 => 42).enter(|| {
+            let current_scope = format!("{:?}", Scope::snapshot().env);
+            assert_eq!(
+                "Env { u8: 42 }", &current_scope,
+                "environment should have a u8 in it, no contents printing yet"
+            );
+        })
     }
 
     #[test]
@@ -242,7 +281,7 @@ mod tests {
 
             child_env!().enter(|| {
                 assert_eq!(*Env::expect::<u8>(), 2, "parent added 2u8");
-                Env::hide::<u8>();
+                Scope::hide::<u8>();
                 assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
             });
 
@@ -252,7 +291,7 @@ mod tests {
                 "returned to parent Env with 2u8"
             );
 
-            Env::hide::<u8>();
+            Scope::hide::<u8>();
             assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
         })
     }
