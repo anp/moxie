@@ -4,20 +4,20 @@ use {
         any::{Any, TypeId},
         fmt::Debug,
         ops::Deref,
-        rc::Rc,
+        sync::Arc,
     },
 };
 
 #[doc(hidden)]
 #[derive(Clone, Debug)]
-pub struct AnonRc {
+pub struct AnonArc {
     name: &'static str,
     id: TypeId,
-    inner: Rc<dyn Any>,
-    debug: Rc<dyn Debug>,
+    inner: Arc<dyn Any>,
+    debug: Arc<dyn Debug>,
 }
 
-impl AnonRc {
+impl AnonArc {
     /// The typename of the contained value.
     pub fn ty(&self) -> &str {
         self.name
@@ -30,7 +30,7 @@ impl AnonRc {
 
     #[doc(hidden)]
     pub fn unstable_new<T: Debug + 'static>(inner: T) -> Self {
-        let inner = Rc::new(inner);
+        let inner = Arc::new(inner);
         Self {
             name: std::any::type_name::<T>(),
             id: TypeId::of::<T>(),
@@ -55,7 +55,7 @@ impl AnonRc {
     }
 }
 
-impl Deref for AnonRc {
+impl Deref for AnonArc {
     type Target = dyn Any;
     fn deref(&self) -> &Self::Target {
         &*self.inner
