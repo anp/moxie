@@ -85,8 +85,7 @@ jobs:
     - name: build website and deploy preview
       run: |
         cargo build-website
-        npm install netlify-cli -g
-        netlify deploy
+        npx netlify-cli deploy
 
     - name: ensure crates published
       if: github.ref == 'refs/heads/master'
@@ -96,4 +95,4 @@ jobs:
 
     - name: publish website
       if: github.ref == 'refs/heads/master'
-      run: netlify deploy --prod
+      run: npx netlify-cli deploy --prod
