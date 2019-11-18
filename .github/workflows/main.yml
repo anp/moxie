@@ -6,8 +6,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      WASM_PACK_CACHE: ~/.cargo/wasm-pack
     steps:
     - uses: actions/checkout@master
 
@@ -22,21 +20,16 @@ jobs:
       with:
         path: ~/.cargo/git
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-    - name: wasm-pack cache
-      uses: actions/cache@v1
-      with:
-        path: ~/.cargo/wasm-pack
-        key: ${{ runner.os }}-wasm-pack-${{ hashFiles('**/Cargo.lock') }}
-    - name: cache ofl target dir
-      uses: actions/cache@v1
-      with:
-        path: ofl/target
-        key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
-    - name: cache moxie target dir
-      uses: actions/cache@v1
-      with:
-        path: target
-        key: ${{ runner.os }}-target-dir-${{ hashFiles('*/Cargo.lock') }}
+    # - name: cache ofl target dir
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ofl/target
+    #     key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
+    # - name: cache moxie target dir
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: target
+    #     key: ${{ runner.os }}-target-dir-${{ hashFiles('*/Cargo.lock') }}
 
     # tests
     - run: cargo test-core
