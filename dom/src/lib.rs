@@ -1,7 +1,7 @@
 //! Tools for declaratively constructing and incrementally updating HTML DOM trees on the web. Based
 //! on the [`moxie`] UI runtime.
 
-#![deny(missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
 
 #[doc(hidden)]
 pub use moxie::*;
@@ -91,7 +91,7 @@ pub fn element<ChildRet>(
 ) -> ChildRet {
     let elem = memo!(ty, |ty| parent.node.create_element(ty));
     parent.ensure_child_attached(&elem);
-    let elem = MemoElement::new(elem.into());
+    let elem = MemoElement::new(elem);
     with_elem(&elem)
 }
 
