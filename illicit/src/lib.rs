@@ -87,7 +87,7 @@ macro_rules! child_env {
 /// their control flow. This can be useful for runtimes to offer themselves execution-local values
 /// in functions which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Env {
     depth: u32,
     location: (&'static str, u32, u32),
@@ -236,6 +236,7 @@ impl Debug for Env {
 }
 
 /// An alternative representation of the current scope's environment, optimized for debug printing.
+#[derive(Clone)]
 pub struct EnvSnapshot {
     by_depth: BTreeMap<u32, Env>,
 }
@@ -251,38 +252,74 @@ mod tests {
     use super::*;
 
     #[test]
-    fn snapshot_debug_looks_right() {
-        let current_scope = format!("{:?}", Env::snapshot());
-        assert_eq!(
-            "[]", &current_scope,
-            "environment should be empty and validly formatted"
-        );
+    fn snapshot_has_correct_structure() {
+        let empty_scope = Env::snapshot();
+        let mut u8_present = (empty_scope.clone(), 0);
+        let mut u8_and_string_present = u8_present.clone();
 
+        // generate our test values
         child_env!(u8 => 42).enter(|| {
-            let u8_present_fragment =
-                format!("Env @ {}:{}:{} {{ u8: 42 }}", file!(), line!() - 2, 9);
-            let expected = format!("[{}]", &u8_present_fragment);
-            let current_scope = format!("{:?}", Env::snapshot());
-            assert_eq!(
-                expected, current_scope,
-                "environment should have a u8 in it with value printed"
-            );
+            u8_present = (Env::snapshot(), line!() - 1);
 
             child_env!(String => String::from("owo")).enter(|| {
-                let string_present_fragment = format!(
-                    "Env @ {}:{}:{} {{ alloc::string::String: \"owo\" }}",
-                    file!(),
-                    line!() - 4,
-                    13
-                );
-                let expected = format!("[{}, {}]", &u8_present_fragment, &string_present_fragment);
-                let current_scope = format!("{:?}", Env::snapshot());
-                assert_eq!(
-                    expected, current_scope,
-                    "environment should have both a u8 and a String in it, with values printed"
-                );
+                u8_and_string_present = (Env::snapshot(), line!() - 1);
             });
         });
+
+        // check the empty scopes
+        let empty_scope_after = Env::snapshot();
+        assert_eq!(
+            empty_scope.by_depth.len(),
+            0,
+            "environment should be empty without additions"
+        );
+        assert_eq!(
+            empty_scope.by_depth.len(),
+            empty_scope_after.by_depth.len(),
+            "snapshots must be the same before and after calls"
+        );
+
+        // our generates scopes must have
+        assert_eq!(u8_present.0.by_depth.len(), 1);
+        assert_eq!(u8_and_string_present.0.by_depth.len(), 2);
+
+        let (_, first_layer) = u8_present.0.by_depth.into_iter().next().unwrap();
+        assert_eq!(first_layer.depth, 1);
+        assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
+        assert_eq!(first_layer.values.len(), 1);
+        let first_u8 = &first_layer.values[&TypeId::of::<u8>()];
+        assert_eq!(
+            (first_u8.location(), first_u8.depth()),
+            (first_layer.location, first_layer.depth),
+        );
+
+        // on to the snapshot that includes both u8 and string
+        let mut u8_and_string_layers = u8_and_string_present.0.by_depth.values();
+        let (first_layer, second_layer) = (
+            u8_and_string_layers.next().unwrap(),
+            u8_and_string_layers.next().unwrap(),
+        );
+
+        assert_eq!(first_layer.depth, 1);
+        assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
+        assert_eq!(first_layer.values.len(), 1);
+        let first_u8 = &first_layer.values[&TypeId::of::<u8>()];
+        assert_eq!(
+            (first_u8.location(), first_u8.depth()),
+            (first_layer.location, first_layer.depth),
+        );
+
+        assert_eq!(second_layer.depth, 2);
+        assert_eq!(
+            second_layer.location,
+            (file!(), u8_and_string_present.1, 13)
+        );
+        assert_eq!(second_layer.values.len(), 1);
+        let second_string = &second_layer.values[&TypeId::of::<String>()];
+        assert_eq!(
+            (second_string.location(), second_string.depth()),
+            (second_layer.location, second_layer.depth),
+        );
     }
 
     #[test]

@@ -70,3 +70,15 @@ impl AnonRc {
         self.location
     }
 }
+
+impl PartialEq for AnonRc {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.depth == other.depth
+            && self.name == other.name
+            && self.location == other.location
+            && Rc::ptr_eq(&self.inner, &other.inner)
+            && Rc::ptr_eq(&self.debug, &other.debug)
+    }
+}
+impl Eq for AnonRc {}
