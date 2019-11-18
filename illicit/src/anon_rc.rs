@@ -1,13 +1,13 @@
 use {
     owning_ref::OwningRef,
     std::{
-        any::{Any, TypeId},
-        fmt::Debug,
+        any::{type_name, Any, TypeId},
+        fmt::{Debug, Formatter, Result as FmtResult},
+        ops::Deref,
         rc::Rc,
     },
 };
 
-#[doc(hidden)]
 #[derive(Clone)]
 pub(crate) struct AnonRc {
     name: &'static str,
@@ -27,7 +27,7 @@ impl AnonRc {
     ) -> Self {
         let inner = Rc::new(inner);
         Self {
-            name: std::any::type_name::<T>(),
+            name: type_name::<T>(),
             id: TypeId::of::<T>(),
             debug: inner.clone(),
             location,
@@ -36,11 +36,14 @@ impl AnonRc {
         }
     }
 
-    // FIXME this should probably expose a fallible api somehow?
-    pub fn downcast_deref<T: 'static>(self) -> impl std::ops::Deref<Target = T> + 'static {
-        OwningRef::new(self.inner).map(|anon| {
-            anon.downcast_ref().unwrap_or_else(|| {
-                panic!("asked {:?} to cast to {:?}", anon, TypeId::of::<T>(),);
+    pub(crate) fn downcast_deref<T: 'static>(
+        self,
+    ) -> Result<impl Deref<Target = T> + 'static, impl Debug> {
+        let from = self.name;
+        OwningRef::new(self.inner).try_map(|anon| {
+            anon.downcast_ref().ok_or(DowncastError {
+                from,
+                to: type_name::<T>(),
             })
         })
     }
@@ -82,3 +85,14 @@ impl PartialEq for AnonRc {
     }
 }
 impl Eq for AnonRc {}
+
+struct DowncastError {
+    from: &'static str,
+    to: &'static str,
+}
+
+impl Debug for DowncastError {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "asked {:?} to cast to {:?}", self.from, self.to)
+    }
+}

@@ -153,7 +153,10 @@ impl Env {
         let key = TypeId::of::<E>();
         let anon = CURRENT_SCOPE.with(|current| current.borrow().values.get(&key).cloned());
         if let Some(anon) = anon {
-            Some(anon.downcast_deref())
+            Some(
+                anon.downcast_deref()
+                    .expect("used type for storage and lookup, should match"),
+            )
         } else {
             None
         }
