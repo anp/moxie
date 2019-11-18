@@ -174,7 +174,7 @@ fn bind_env_reference(arg: PatType) -> Local {
 
             elem
         }
-        ty @ _ => abort!(ty.span(), "only references can be passed by environment"),
+        ty => abort!(ty.span(), "only references can be passed by environment"),
     };
 
     Local {

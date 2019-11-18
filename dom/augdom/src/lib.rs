@@ -10,7 +10,7 @@
 //! As of today the `<web_sys::Element as Dom>::*_attribute` methods will panic if called on a text
 //! node. This cost seems appropriate today because this is a dependency for other crates which
 //! enforce this requirement themselves. `web_sys` enforces this restriction statically.
-#![deny(missing_docs)]
+#![deny(clippy::all, missing_docs)]
 
 static_assertions::assert_cfg!(
     any(feature = "webdom", feature = "rsdom"),
@@ -73,7 +73,7 @@ pub trait Dom: Sized {
     fn pretty_outer_html(&self, indent: usize) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
-            let mut writer = XmlWriter::new_with_indent(&mut buf, ' ' as u8, indent);
+            let mut writer = XmlWriter::new_with_indent(&mut buf, b' ', indent);
             self.write_xml(&mut writer);
         }
         String::from_utf8(buf.into_inner()).unwrap()
@@ -170,10 +170,10 @@ impl Dom for Node {
     fn create_element(&self, ty: &str) -> Self {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => Node::Concrete(n.create_element(ty).into()),
+            Node::Concrete(n) => Node::Concrete(n.create_element(ty)),
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(n) => Node::Virtual(n.create_element(ty).into()),
+            Node::Virtual(n) => Node::Virtual(n.create_element(ty)),
         }
     }
 

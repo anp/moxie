@@ -75,6 +75,7 @@ impl ServerOpts {
     }
 }
 
+#[allow(clippy::drop_copy, clippy::zero_ptr)] // wtf crossbeam
 fn pump_channels(
     root: PathBuf,
     (uri_rx, session_rx): (Receiver<Uri>, Receiver<Addr<ChangeWatchSession>>),
@@ -86,42 +87,63 @@ fn pump_channels(
 
     loop {
         select! {
-            recv(uri_rx) -> new_uri => {
-                let mut new_path = root.clone();
-                let new_uri = new_uri.expect("path events should be live");
-
-                for part in new_uri.path().split("/") {
-                    new_path.push(part);
-                }
-
-                let displayed = new_path.display().to_string();
-
-                if let Err(why) = watcher.watch(&displayed, notify::RecursiveMode::NonRecursive) {
-                    warn!("couldn't add a watch for {} because {:?}", &displayed, why);
-                } else {
-                    debug!("added/refreshed watch for {}", &displayed);
-                }
-            },
+            recv(uri_rx) -> new_uri => watch_uri(&mut watcher, &root, new_uri),
             recv(session_rx) -> new_session => {
-                let new_session = new_session.expect("session events should be live");
-                sessions.push(new_session);
-                debug!("new change watch session");
-            },
-            recv(event_rx) -> event => {
-                if let Ok(event) = event.expect("filesystem events should be live") {
-                    'this_event: for path in event.paths {
-                        let changed = path.display().to_string();
-
-                        info!("file change detected at {}", &changed);
-
-                        for session in &sessions {
-                            session.do_send(Changed(changed.clone()));
-                        }
-                        break 'this_event;
-                    }
+                match new_session {
+                    Ok(new_session) => sessions.push(new_session),
+                    Err(what) => warn!({ ?what }, "error on session channel"),
                 }
             },
+            recv(event_rx) -> event => consume_fs_event(&sessions, event),
         }
+    }
+}
+
+fn consume_fs_event(
+    sessions: &[Addr<ChangeWatchSession>],
+    event: Result<Result<notify::event::Event, notify::Error>, crossbeam::channel::RecvError>,
+) {
+    let event = match event {
+        Ok(Ok(event)) => event,
+        problem => {
+            warn!({ ?problem }, "problem receiving fs event");
+            return;
+        }
+    };
+    if let Some(path) = event.paths.iter().next() {
+        let changed = path.display().to_string();
+
+        info!("file change detected at {}", &changed);
+
+        for session in sessions {
+            session.do_send(Changed(changed.clone()));
+        }
+    }
+}
+
+fn watch_uri(
+    watcher: &mut notify::RecommendedWatcher,
+    root: &Path,
+    new_uri: Result<http::Uri, crossbeam::channel::RecvError>,
+) {
+    let new_uri = match new_uri {
+        Ok(new_uri) => new_uri,
+        Err(what) => {
+            warn!({ ?what }, "error on uri channel");
+            return;
+        }
+    };
+    let mut new_path = root.to_path_buf();
+    for part in new_uri.path().split('/') {
+        new_path.push(part);
+    }
+
+    let displayed = new_path.display().to_string();
+
+    if let Err(why) = watcher.watch(&displayed, notify::RecursiveMode::NonRecursive) {
+        warn!("couldn't add a watch for {} because {:?}", &displayed, why);
+    } else {
+        debug!("added/refreshed watch for {}", &displayed);
     }
 }
 

@@ -1,49 +1,67 @@
 on: push
+
 jobs:
-  core:
+  main:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
     steps:
     - uses: actions/checkout@master
+
+    # WALL'O'CACHE!
+    - name: cache cargo registry
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    - name: cache cargo index
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    # - name: cache ofl target dir
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ofl/target
+    #     key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
+    # - name: cache moxie target dir
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: target
+    #     key: ${{ runner.os }}-target-dir-${{ hashFiles('*/Cargo.lock') }}
+
+    # tests
     - run: cargo test-core
-
-  dom:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-
-    steps:
-    - uses: actions/checkout@master
-    # TODO(https://github.com/anp/moxie/issues/37)
-    # - run: cargo test-dom-drivertest
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
+      # TODO(https://github.com/anp/moxie/issues/37)
+      # run: cargo test-dom-drivertest
 
-    - name: build dom examples
+    # examples
+    - run: cargo build-dom-hacking
+    - run: cargo build-dom-todo
+
+    # docs
+    - run: cargo docs-all
+    - run: cargo docs-ofl
+
+    - run: cargo build-website
+
+    - name: deploy preview
       if: runner.os == 'Linux'
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      run: npx netlify-cli deploy
+
+    - name: promote website to prod, ensure crates published
+      if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       run: |
-        cargo build-dom-hacking
-        cargo build-dom-todo
-
-    - name: upload dom examples
-      if: runner.os == 'Linux'
-      uses: actions/upload-artifact@master
-      with:
-        name: dom-examples
-        path: dom/examples
-
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - run: rustup component add rustfmt
-    - run: cargo fmt -- --check
-    # FIXME https://github.com/anp/moxie/issues/27
-    # - run: cargo fmt-ofl -- --check
+        npx netlify-cli deploy --prod
+        cargo login ${{ secrets.CARGO_API_TOKEN }}
+        cargo ofl published
 
   clippy:
     runs-on: ubuntu-latest
@@ -52,85 +70,12 @@ jobs:
     - run: rustup component add clippy
     - run: cargo clippy-core
     - run: cargo clippy-dom
+    - run: cargo clippy-ofl
 
-  docs:
+  fmt:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: cargo docs-all
-    - run: cargo docs-ofl
-    - uses: actions/upload-artifact@master
-      with:
-        name: docs
-        path: target/doc
-
-  published:
-    needs: [core, dom, fmt, clippy, docs]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-
-    - name: download dom examples
-      uses: actions/download-artifact@master
-      with:
-        name: dom-examples
-        path: dom/examples
-
-    - name: download docs
-      uses: actions/download-artifact@master
-      with:
-        name: docs
-        path: target/doc
-
-    - name: build website
-      run: |
-        cargo ofl website build target/website
-        echo 'moxie.rs' > target/website/CNAME
-
-    - name: upload website archive
-      uses: actions/upload-artifact@master
-      with:
-        name: website
-        path: target/website
-
-    - name: ensure crates published
-      if: github.ref == 'refs/heads/master'
-      run: |
-        cargo login ${{ secrets.CARGO_API_TOKEN }}
-        cargo ofl published
-
-    - name: checkout gh-pages branch
-      uses: actions/checkout@master
-      with:
-        ref: gh-pages
-
-    - name: prepare repo for unpacking website
-      env:
-        GLOBIGNORE: .git
-      run: |
-        git rm -rf *
-        git clean -fxd
-        git config --global user.name "docs builder"
-        git config --global user.email "adam.n.perry+moxie@gmail.com"
-
-    - name: download website
-      uses: actions/download-artifact@master
-      with:
-        name: website
-
-    - name: commit website updates
-      env:
-        GLOBIGNORE: .git
-      run: |
-        mv website/* ./
-        git add --force --all
-        git commit --allow-empty --message $GITHUB_SHA .
-
-    - name: push website
-      if: github.ref == 'refs/heads/master'
-      run: |
-        git remote rm origin
-        git remote add origin https://anp:$GITHUB_TOKEN@github.com/anp/moxie.git
-        git push origin gh-pages
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+    - run: rustup component add rustfmt
+    - run: cargo fmt -- --check
+    - run: cargo fmt-ofl --check

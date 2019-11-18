@@ -8,8 +8,8 @@
 core-flow = """
 watch --clear
     -x fmt
-    -x check-core
     -x clippy-core
+    -x check-core
     -x test-core
     -x docs-all
 """
@@ -26,6 +26,7 @@ docs-all = "doc --all --no-deps"
 
 dom-flow = """
 watch --clear
+    -x clippy-dom
     -x test-ssr-example
     -x test-dom-lib
     -x test-dom-drivertest
@@ -33,7 +34,6 @@ watch --clear
     -x check-dom-todo
     -x build-dom-hacking
     -x build-dom-todo
-    -x clippy-dom
 """
 
 check-dom-lib = "check --package moxie-dom"
@@ -74,10 +74,10 @@ server = "watch -w ofl/ -x ofl"
 ofl-flow = """
 watch --clear -w ofl
     -x fmt-ofl
+    -x clippy-ofl
     -x check-ofl
     -x test-ofl
     -x docs-ofl
-    -x clippy-ofl
 """
 
 check-ofl = "check --manifest-path ofl/Cargo.toml --all"
