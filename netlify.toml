@@ -1,0 +1,13 @@
+[build]
+  command = """
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
+  cargo docs-all && 
+  cargo docs-ofl &&
+  cargo build-dom-hacking && 
+  cargo build-dom-todo && 
+  cargo build-website
+  """
+  publish = "target/website"
+  functions = "functions"
+
+  ## more info on configuring this file: https://www.netlify.com/docs/netlify-toml-reference/ 
