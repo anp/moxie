@@ -66,6 +66,14 @@ jobs:
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         cargo ofl published
 
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - run: rustup component add clippy
+    - run: cargo clippy-core
+    - run: cargo clippy-dom
+    - run: cargo clippy-ofl
+
   fmt:
     runs-on: ubuntu-latest
     steps:
