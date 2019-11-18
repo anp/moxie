@@ -31,9 +31,6 @@ impl EnsurePublished {
 
 fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
     let members = workspace_members_reverse_topo_sorted(metadata);
-
-    let mut pre_release_ids = vec![];
-    let mut release_published_ids = vec![];
     let mut to_publish_ids = vec![];
 
     for member in members {
@@ -41,27 +38,23 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
 
         let manifest = std::fs::read_to_string(&package.manifest_path)?;
         if manifest.contains("publish = false") {
-            info!({ %package.name }, "skipping non-publish package");
+            info!({ %package.name }, "skipping `publish = false`");
             continue;
         }
 
-        if package.version.to_string().ends_with("-pre") {
-            pre_release_ids.push(member);
-        } else if crates_io_has(&package.name, &package.version)? {
-            release_published_ids.push(member);
+        if package.version.to_string().ends_with("-pre")
+            || crates_io_has(&package.name, &package.version)?
+        {
+            info!({ %package.name, %package.version }, "skipping");
         } else {
             to_publish_ids.push(member);
         }
     }
 
-    let ids_to_names =
-        |ids: &[PackageId]| ids.iter().map(|id| &metadata[id].name).collect::<Vec<_>>();
-
-    let pre_release = ids_to_names(&pre_release_ids);
-    let release_published = ids_to_names(&release_published_ids);
-    let to_publish = ids_to_names(&to_publish_ids);
-
-    info!({ ?pre_release, ?release_published }, "skipping");
+    let to_publish = to_publish_ids
+        .iter()
+        .map(|id| &metadata[id].name)
+        .collect::<Vec<_>>();
 
     info!("will publish: {:#?}", &to_publish);
     Ok(to_publish_ids)
@@ -111,8 +104,7 @@ fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
     Ok(versions
         .iter()
         .map(|v| &v.num)
-        .find(|&v| v == &current_version_str)
-        .is_some())
+        .any(|v| v == &current_version_str))
 }
 
 fn workspace_members_reverse_topo_sorted(metadata: &Metadata) -> Vec<PackageId> {

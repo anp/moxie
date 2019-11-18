@@ -51,19 +51,37 @@ impl DistOpts {
     }
 
     fn copy_to_target_dir(self, root_path: &Path) -> Result<(), Error> {
-        let tools_path = root_path.join("ofl");
-
         let _ = std::fs::remove_dir_all(&self.output_dir);
         std::fs::create_dir_all(&self.output_dir)?;
         let output_path = self.output_dir.canonicalize()?;
-        let output = output_path.display();
 
-        let skip_prefixes = vec![tools_path, output_path.clone(), root_path.join(".vscode")];
+        let to_copy = self.files_to_copy(root_path, &output_path)?;
+        info!({ num_files = to_copy.len() }, "discovered");
+
+        for path in to_copy {
+            let relative = path.strip_prefix(root_path)?;
+            let rel_path = relative.display();
+            debug!({ %rel_path }, "copying path");
+            let destination = output_path.join(relative);
+            std::fs::create_dir_all(destination.parent().unwrap())?;
+            std::fs::copy(path, destination)?;
+        }
+
+        Ok(())
+    }
+
+    fn files_to_copy(&self, root_path: &Path, output_path: &Path) -> Result<Vec<PathBuf>, Error> {
+        let skip_prefixes = vec![
+            output_path.to_path_buf(),
+            root_path.join(".vscode"),
+            root_path.join("ofl"),
+        ];
 
         let exts = vec![
             "css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff",
         ];
 
+        let output = output_path.display();
         info!({ %output }, "cleaning");
 
         info!("discovering files to copy");
@@ -83,18 +101,6 @@ impl DistOpts {
             }
             to_copy.push(path);
         }
-
-        info!({ num_files = to_copy.len() }, "discovered");
-
-        for path in to_copy {
-            let relative = path.strip_prefix(root_path)?;
-            let rel_path = relative.display();
-            debug!({ %rel_path }, "copying path");
-            let destination = output_path.join(relative);
-            std::fs::create_dir_all(destination.parent().unwrap())?;
-            std::fs::copy(path, destination)?;
-        }
-
-        Ok(())
+        Ok(to_copy)
     }
 }
