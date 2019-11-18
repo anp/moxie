@@ -46,6 +46,7 @@ members = [
     "dom/examples/ssr",
     "dom/examples/todo",
     "dom/raf",
+    "illicit",
     "mox",
     "topo",
     "topo/macro",
