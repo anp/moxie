@@ -1,97 +1,74 @@
 on: push
+
 jobs:
-  core:
+  main:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
+    env:
+      WASM_PACK_CACHE: ~/.cargo/wasm-pack
     steps:
     - uses: actions/checkout@master
+
+    # WALL'O'CACHE!
+    - name: cache cargo registry
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    - name: cache cargo index
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    - name: wasm-pack cache
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/wasm-pack
+        key: ${{ runner.os }}-wasm-pack-${{ hashFiles('**/Cargo.lock') }}
+    - name: cache ofl target dir
+      uses: actions/cache@v1
+      with:
+        path: ofl/target
+        key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
+    - name: cache moxie target dir
+      uses: actions/cache@v1
+      with:
+        path: target
+        key: ${{ runner.os }}-target-dir-${{ hashFiles('Cargo.lock') }}
+
+    # tests
     - run: cargo test-core
-
-  dom:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-
-    steps:
-    - uses: actions/checkout@master
-    # TODO(https://github.com/anp/moxie/issues/37)
-    # - run: cargo test-dom-drivertest
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
+      # TODO(https://github.com/anp/moxie/issues/37)
+      # run: cargo test-dom-drivertest
 
-    - name: build dom examples
+    # examples
+    - run: cargo build-dom-hacking
+    - run: cargo build-dom-todo
+
+    # docs
+    - run: cargo docs-all
+    - run: cargo docs-ofl
+
+    - run: cargo build-website
+
+    - name: deploy preview
       if: runner.os == 'Linux'
+      run: npx netlify-cli deploy
+
+    - name: promote website to prod, ensure crates published
+      if: github.ref == 'refs/heads/master'
       run: |
-        cargo build-dom-hacking
-        cargo build-dom-todo
-
-    - name: upload dom examples
-      if: runner.os == 'Linux'
-      uses: actions/upload-artifact@master
-      with:
-        name: dom-examples
-        path: dom/examples
+        npx netlify-cli deploy --prod
+        cargo login ${{ secrets.CARGO_API_TOKEN }}
+        cargo ofl published
 
   fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
     - run: rustup component add rustfmt
     - run: cargo fmt -- --check
-    - run: cargo fmt-ofl -- --check
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - run: rustup component add clippy
-    - run: cargo clippy-core
-    - run: cargo clippy-dom
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - run: cargo docs-all
-    - run: cargo docs-ofl
-    - uses: actions/upload-artifact@master
-      with:
-        name: docs
-        path: target/doc
-
-  published:
-    needs: [core, dom, fmt, clippy, docs]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-
-    - name: download dom examples
-      uses: actions/download-artifact@master
-      with:
-        name: dom-examples
-        path: dom/examples
-
-    - name: download docs
-      uses: actions/download-artifact@master
-      with:
-        name: docs
-        path: target/doc
-
-    - name: build website and deploy preview
-      run: |
-        cargo build-website
-        npx netlify-cli deploy
-
-    - name: ensure crates published
-      if: github.ref == 'refs/heads/master'
-      run: |
-        cargo login ${{ secrets.CARGO_API_TOKEN }}
-        cargo ofl published
-
-    - name: publish website
-      if: github.ref == 'refs/heads/master'
-      run: npx netlify-cli deploy --prod
+    - run: cargo fmt-ofl --check
