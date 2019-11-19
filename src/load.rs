@@ -10,7 +10,7 @@ use {
 #[topo::nested]
 #[illicit::from_env(spawner: &Spawner)]
 pub fn load_with<Arg, Fut, Stored, Ret>(
-    arg: Arg,
+    capture: Arg,
     init: impl FnOnce(&Arg) -> Fut,
     with: impl FnOnce(&Stored) -> Ret,
 ) -> Poll<Ret>
@@ -23,7 +23,7 @@ where
     let result: Key<Poll<Stored>> = memo_state!((), |()| Poll::Pending);
     let result2 = result.clone();
     memo_with!(
-        arg,
+        capture,
         |arg| {
             let (cancel, register_cancel) = AbortHandle::new_pair();
             let fut = init(arg);
@@ -49,7 +49,7 @@ where
     }
 }
 
-/// TODO
+/// Calls [`load_with`] but never re-initializes the loading future.
 #[topo::nested]
 pub fn load_once_with<Fut, Stored, Ret>(
     init: impl FnOnce() -> Fut,
@@ -63,7 +63,8 @@ where
     load_with!((), |()| init(), with)
 }
 
-/// TODO
+/// Calls [`load_with`], never re-initializes the loading future, and clones the returned value
+/// on each revision once the future has completed and returned.
 #[topo::nested]
 pub fn load_once<Fut, Stored>(init: impl FnOnce() -> Fut) -> Poll<Stored>
 where
@@ -73,15 +74,16 @@ where
     load_with!((), |()| init(), Clone::clone)
 }
 
-/// TODO
+/// Load a value from a future, cloning it on subsequent revisions after it is first returned.
+/// Re-initializes the loading future if the capture argument changes from previous revisions.
 #[topo::nested]
-pub fn load<Arg, Fut, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Fut) -> Poll<Stored>
+pub fn load<Arg, Fut, Stored>(capture: Arg, init: impl FnOnce(&Arg) -> Fut) -> Poll<Stored>
 where
     Arg: PartialEq + 'static,
     Fut: Future<Output = Stored> + 'static,
     Stored: Clone + 'static,
 {
-    load_with!(arg, init, Clone::clone)
+    load_with!(capture, init, Clone::clone)
 }
 
 #[cfg(test)]
