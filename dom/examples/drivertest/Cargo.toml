@@ -6,8 +6,8 @@ authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-moxie = { path = "../../../", version = "0.1.1-alpha.0" }
-moxie-dom = { path = "../../", version = "0.1.1-alpha.0", features = ["rsdom"] }
+moxie = { path = "../../../" }
+moxie-dom = { path = "../../", features = ["rsdom"] }
 typed-html = "0.2.1"
 wasm-bindgen = "0.2.51"
 wasm-bindgen-test = "0.3"
