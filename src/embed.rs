@@ -181,7 +181,7 @@ impl Debug for Spawner {
     }
 }
 
-/// Responsible for waking the Runtime task. Because the topo environment is namespaced by type,
+/// Responsible for waking the Runtime task. Because the illicit environment is namespaced by type,
 /// we create a newtype here so that other crates don't accidentally cause strange behavior by
 /// overriding our access to it when passing their own wakers down.
 #[derive(Clone, Debug)]
