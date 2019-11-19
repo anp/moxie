@@ -83,3 +83,98 @@ where
 {
     load_with!(arg, init, Clone::clone)
 }
+
+#[cfg(test)]
+mod tests {
+    use {super::*, std::rc::Rc};
+
+    #[test]
+    fn basic_loading_phases() {
+        let (send, recv) = futures::channel::oneshot::channel();
+        // this is uh weird, but we know up front how much we'll poll this
+        let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
+
+        let mut rt = crate::embed::Runtime::new(move || -> Poll<u8> {
+            let recv = recv.clone();
+            load_once!(|| async move {
+                recv.lock()
+                    .await
+                    .take()
+                    .expect("load_once should only allow us to take from the option once")
+                    .await
+                    .expect("we control the channel and won't drop it")
+            })
+        });
+
+        assert_eq!(
+            rt.run_once(),
+            Poll::Pending,
+            "no values received when nothing sent"
+        );
+        assert_eq!(
+            rt.run_once(),
+            Poll::Pending,
+            "no values received, and we aren't blocking"
+        );
+
+        send.send(5u8).unwrap();
+        assert_eq!(
+            rt.run_once(),
+            Poll::Ready(5),
+            "we need to receive the value we sent"
+        );
+        assert_eq!(
+            rt.run_once(),
+            Poll::Ready(5),
+            "the value we sent must be cached because its from a oneshot channel"
+        );
+    }
+
+    #[test]
+    fn interest_loss_cancels_task() {
+        let (send, recv) = futures::channel::oneshot::channel();
+        let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
+
+        let mut rt = crate::embed::Runtime::new(move || -> Option<Poll<u8>> {
+            if crate::embed::Revision::current().0 < 3 {
+                let recv = recv.clone();
+                Some(load_once!(|| async move {
+                    recv.lock()
+                        .await
+                        .take()
+                        .expect("load_once should only allow us to take from the option once")
+                        .await
+                        .expect("we control the channel and won't drop it")
+                }))
+            } else {
+                None
+            }
+        });
+
+        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert!(
+            !send.is_canceled(),
+            "interest expressed, receiver must be live"
+        );
+
+        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert!(
+            !send.is_canceled(),
+            "interest still expressed, receiver must be live"
+        );
+
+        assert_eq!(rt.run_once(), None);
+        assert!(
+            !send.is_canceled(),
+            "interest dropped, task live for another revision"
+        );
+
+        assert_eq!(rt.run_once(), None);
+        assert!(send.is_canceled(), "interest dropped, task dropped");
+
+        assert!(
+            send.send(4u8).is_err(),
+            "must be no task holding the channel and able to receive a message"
+        );
+    }
+}
