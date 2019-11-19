@@ -2,20 +2,22 @@ extern crate proc_macro;
 
 use {
     proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree},
-    proc_macro_error::{abort, emit_error, MacroError, ResultExt},
+    proc_macro_error::{
+        abort, abort_call_site, emit_error, proc_macro_error, Diagnostic, Level, ResultExt,
+    },
+    proc_macro_hack::proc_macro_hack,
     quote::{quote, ToTokens},
     snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
 };
 
-#[proc_macro_hack::proc_macro_hack]
+#[proc_macro_error(allow_not_macro)]
+#[proc_macro_hack]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    proc_macro_error::entry_point(|| {
-        let item = snax::parse(input.into())
-            .map_err(Error::SnaxError)
-            .unwrap_or_abort();
-        let item = MoxItem::from(item);
-        quote!(#item).into()
-    })
+    let item = snax::parse(input.into())
+        .map_err(Error::SnaxError)
+        .unwrap_or_abort();
+    let item = MoxItem::from(item);
+    quote!(#item).into()
 }
 
 enum MoxItem {
@@ -245,7 +247,7 @@ impl ToTokens for MoxAttr {
                 let value = g.stream();
                 quote!(.on(#value))
             }
-            _ => abort!("event handlers must be surrounded in braces"),
+            _ => abort_call_site!("event handlers must be surrounded in braces"),
         };
 
         tokens.extend(stream);
@@ -261,7 +263,7 @@ impl From<SnaxAttribute> for MoxAttr {
                     abort!(
                         name.span(),
                         "anonymous attributes are only allowed in the first position"
-                    );
+                    )
                 } else if name_str == "on" {
                     MoxAttr::Handler { value }
                 } else {
@@ -276,27 +278,19 @@ enum Error {
     SnaxError(ParseError),
 }
 
-impl Into<MacroError> for Error {
-    fn into(self) -> MacroError {
+impl Into<Diagnostic> for Error {
+    fn into(self) -> Diagnostic {
         match self {
             Error::SnaxError(ParseError::UnexpectedEnd) => {
-                MacroError::call_site(format!("input ends before expected"))
+                Diagnostic::new(Level::Error, format!("input ends before expected"))
             }
             Error::SnaxError(ParseError::UnexpectedItem(item)) => {
                 // TODO https://github.com/LPGhatguy/snax/issues/9
-                MacroError::call_site(format!("did not expect {:?}", item))
+                Diagnostic::new(Level::Error, format!("did not expect {:?}", item))
             }
             Error::SnaxError(ParseError::UnexpectedToken(token)) => {
-                MacroError::new(token.span(), format!("did not expect '{}'", token))
+                Diagnostic::new(Level::Error, format!("did not expect '{}'", token))
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
