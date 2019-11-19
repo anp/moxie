@@ -21,28 +21,146 @@
             <p>a lightweight platform-agnostic declarative UI runtime, written in rust</p>
         </header>
 
-        <h2>moxie-dom wasm examples</h2>
-        <p>a WebAssembly-based library for describing the web's DOM using moxie</p>
+        <h5 align="middle">web crates</h5>
+
+        <h2>
+            moxie-dom
+            <a href="target/doc/moxie_dom/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="moxie-dom master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/moxie-dom">
+                <img src="https://docs.rs/moxie-dom/badge.svg" alt="moxie-dom docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/moxie-dom">
+                <img src="https://img.shields.io/crates/v/moxie-dom?color=steelblue" alt="moxie-dom version badge"
+                    align="right" />
+            </a>
+        </h2>
+        <p>
+            a WebAssembly-based library for describing the web's DOM using moxie
+        </p>
+
+        <h3>(toy) examples</h3>
         <ul>
             <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
             <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
+            <li>
+                <a href="https://github.com/anp/moxie/blob/master/dom/examples/ssr/README.md">
+                    server-side rendering
+                </a>
+            </li>
         </ul>
 
-        <h2>docs (master branch)</h2>
+        <h2>
+            augdom
+            <a href="target/doc/augdom/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="augdom master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/augdom">
+                <img src="https://docs.rs/augdom/badge.svg" alt="augdom docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/augdom">
+                <img src="https://img.shields.io/crates/v/augdom?color=steelblue" alt="augdom version badge"
+                    align="right" />
+            </a>
+        </h2>
+        <p>
+            provides an "augmented DOM" implementation that can run almost anywhere Rust can.
+            compiles as either a thin wrapper around web-sys or a DOM emulation layer written in
+            pure Rust which can be used for testing or to render HTML strings.
+        </p>
 
-        <ul>
-            <li><a href="target/doc/moxie_dom/index.html">moxie-dom</a></li>
-            <li><a href="target/doc/moxie/index.html">moxie</a></li>
-            <li><a href="target/doc/topo/index.html">topo</a></li>
-        </ul>
+        <h2>
+            raf
+            <a href="target/doc/raf/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="raf master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/raf">
+                <img src="https://docs.rs/raf/badge.svg" alt="raf docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/raf">
+                <img src="https://img.shields.io/crates/v/raf?color=steelblue" alt="raf version badge" align="right" />
+            </a>
+        </h2>
+        <p>
+            runs an event loop in the browser using requestAnimationFrame
+        </p>
 
-        <h2>docs (docs.rs)</h2>
+        <h5 align="middle">platform-agnostic crates</h5>
+        <h2>
+            moxie
+            <a href="target/doc/moxie/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="moxie master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/moxie">
+                <img src="https://docs.rs/moxie/badge.svg" alt="moxie docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/moxie">
+                <img src="https://img.shields.io/crates/v/moxie?color=steelblue" alt="moxie version badge"
+                    align="right" />
+            </a>
+        </h2>
+        <p>
+            offers memoization and runtime-coordinated mutable state for presenting interactive
+            interfaces. no platform framework dependencies.
+        </p>
 
-        <ul>
-            <li><a href="https://docs.rs/moxie-dom">moxie-dom</a></li>
-            <li><a href="https://docs.rs/moxie">moxie</a></li>
-            <li><a href="https://docs.rs/topo">topo</a></li>
-        </ul>
+        <h2>
+            mox
+            <a href="target/doc/mox/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="mox master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/mox">
+                <img src="https://docs.rs/mox/badge.svg" alt="mox docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/mox">
+                <img src="https://img.shields.io/crates/v/mox?color=steelblue" alt="mox version badge" align="right" />
+            </a>
+        </h2>
+        <p>a Mockery Of XML: express nested function calls using an embedded XML-lite syntax</p>
+
+        <h2>
+            illicit
+            <a href="target/doc/illicit/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="illicit master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/illicit">
+                <img src="https://docs.rs/illicit/badge.svg" alt="illicit docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/illicit">
+                <img src="https://img.shields.io/crates/v/illicit?color=steelblue" alt="illicit version badge"
+                    align="right" />
+            </a>
+        </h2>
+        <p>type-indexed scoped-singletons, implicitly propagated as nested environments</p>
+
+        <h2>
+            topo
+            <a href="target/doc/topo/index.html">
+                <img src="https://img.shields.io/badge/docs-master-steelblue" alt="topo master branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/topo">
+                <img src="https://docs.rs/topo/badge.svg" alt="topo docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/topo">
+                <img src="https://img.shields.io/crates/v/topo?color=steelblue" alt="topo version badge"
+                    align="right" />
+            </a>
+        </h2>
+        <p>
+            create trees of stable identifiers for repeated nested function invocations. allows
+            later calls to "rendezvous" with the results of previous calls at the same location in
+            the tree.
+        </p>
+
+        <hr />
 
         <h2>book</h2>
 
@@ -52,12 +170,17 @@
         </p>
         <p>it's a work in progress and very incomplete today.</p>
 
-        <h2>repository</h2>
+        <h2>
+            repository
+            <img src="https://img.shields.io/crates/l/moxie?color=steelblue" alt="license badge" />
+        </h2>
 
-        <a href="https://github.com/anp/moxie">
-            <img alt="github icon" height="32" width="32"
-                src="https://unpkg.com/simple-icons@latest/icons/github.svg" />
-        </a>
+        <p>
+            the project is <a href="https://github.com/anp/moxie">hosted on github</a>. both the
+            repo and the project chat (below) are covered by an actively enforced
+            <a href="https://github.com/anp/moxie/blob/master/CODE_OF_CONDUCT.md">code of
+                conduct.</a>
+        </p>
 
         <h2>chat</h2>
 
