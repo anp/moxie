@@ -74,8 +74,12 @@ pub mod embed;
 mod memo;
 #[macro_use]
 mod state;
+#[cfg(feature = "loading")]
 mod load;
+#[cfg(feature = "loading")]
+#[doc(inline)]
+pub use load::*;
 
 pub use topo;
 #[doc(inline)]
-pub use {load::*, memo::*, state::*};
+pub use {memo::*, state::*};
