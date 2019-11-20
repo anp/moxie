@@ -25,8 +25,8 @@
 //! the memo_\* topological functions will perform memoization specific to the current position
 //! within the function call topology, as other topologically-nested functions do.
 //!
-//! During [`run_once`] the memoization storage is an [environment value](topo::Env). Memoization
-//! calls write to this storage to store results. At the end of [run_once], this storage is
+//! During [run_once] the memoization storage is an  [environment value](illicit::Env). Memoization 
+//! calls write to this storage to store results. At the end of [run_once], this storage is 
 //! garbage-collected, dropping values which were not referenced, marking them as live.
 //!
 //! Memoized values are dropped in a deterministic manner when replaced or no longer referenced,
@@ -39,6 +39,10 @@
 //! to minimizing the mutations or other side effects performed while describing the interface.
 //!
 //! # State
+//!
+//! TODO
+//!
+//! # Loading
 //!
 //! TODO
 //!

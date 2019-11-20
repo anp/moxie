@@ -144,8 +144,7 @@ impl Env {
         child_fn()
     }
 
-    /// Returns a reference to a value in the current environment if it has been added to the
-    /// environment by parent/enclosing [`call`] invocations.
+    /// Returns a reference to a value in the current environment if it is present.
     pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
     where
         E: Any + 'static,
