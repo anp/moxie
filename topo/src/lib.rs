@@ -53,6 +53,7 @@ use {
         cell::RefCell,
         collections::hash_map::{DefaultHasher, HashMap},
         hash::{Hash, Hasher},
+        panic::Location,
     },
 };
 
@@ -66,23 +67,13 @@ use {
 #[track_caller]
 pub fn call<R>(op: impl FnOnce() -> R) -> R {
     let callsite = Callsite::here();
-    Point::enter_child(callsite, callsite.current_count(), op)
+    Point::with_current(|p| p.enter_child(callsite, callsite.current_count(), op))
 }
 
 /// todo document
 #[track_caller]
 pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
-    // $crate::unstable_raw_call!(
-    //     callsite: $crate::callsite!(),
-    //     slot: $slot,
-    //     is_root: false,
-    //     call: $($input)*
-    // )
-    unimplemented!()
-}
-
-fn call_inner<R>(callsite: Callsite, slot: impl Hash, op: impl FnOnce() -> R) -> R {
-    Point::enter_child(Callsite::here(), slot, op)
+    Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
 
 /// Identifies an activation record in the current call topology.
@@ -105,8 +96,7 @@ pub struct Id(u64);
 impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
-        #[allow(clippy::map_clone)]
-        illicit::Env::get().map(|id| *id).unwrap_or(Id(0))
+        Point::with_current(|current| current.id)
     }
 
     fn child(self, callsite: Callsite, slot: impl Hash) -> Self {
@@ -140,18 +130,15 @@ pub struct Point {
 
 impl Point {
     /// Mark a child Point in the topology.
-    fn enter_child<R>(callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
+    fn enter_child<R>(&self, callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
+        *self
+            .callsite_counts
+            .borrow_mut()
+            .entry(callsite)
+            .or_default() += 1;
+
         let mut hasher = DefaultHasher::new();
-
-        if let Some(current) = illicit::Env::get::<Point>() {
-            *current
-                .callsite_counts
-                .borrow_mut()
-                .entry(callsite)
-                .or_default() += 1;
-            current.id.hash(&mut hasher);
-        }
-
+        self.id.hash(&mut hasher);
         callsite.hash(&mut hasher);
         slot.hash(&mut hasher);
         let id = Id(hasher.finish());
@@ -163,6 +150,15 @@ impl Point {
         };
 
         illicit::child_env!(Point => child_point).enter(child)
+    }
+
+    /// Runs the provided closure with access to the current [`Point`].
+    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+        if let Some(current) = illicit::Env::get::<Point>() {
+            op(&*current)
+        } else {
+            op(&Point::default())
+        }
     }
 }
 
@@ -192,31 +188,22 @@ impl Callsite {
     /// Constructs a callsite whose value is unique to the source location at which it is called.
     #[track_caller]
     pub fn here() -> Self {
-        let location = std::panic::Location::caller();
         Self {
             // the pointer value for a given location is enough to differentiate it from all others
-            location: location as *const _ as usize,
+            location: Location::caller() as *const _ as usize,
         }
     }
 
     /// Returns the number of times this callsite has been seen as a child of the current Point.
     pub fn current_count(self) -> u32 {
-        if let Some(current) = illicit::Env::get::<Point>() {
+        Point::with_current(|current| {
             if let Some(c) = current.callsite_counts.borrow().get(&self) {
-                return *c;
+                *c
+            } else {
+                0
             }
-        }
-        0
+        })
     }
-}
-
-/// Returns a value unique to the point of its invocation.
-#[macro_export]
-macro_rules! callsite {
-    () => {{
-        struct UwuDaddyRustcGibUniqueTypeIdPlsPls; // thanks for the great name idea, cjm00!
-        $crate::Callsite::new(std::any::TypeId::of::<UwuDaddyRustcGibUniqueTypeIdPlsPls>())
-    }};
 }
 
 #[cfg(test)]
@@ -242,24 +229,8 @@ mod tests {
 
     #[test]
     fn one_child_in_a_loop() {
-        let root = Id::current();
-        assert_eq!(
-            root,
-            Id::current(),
-            "Id must be stable across calls within the same scope"
-        );
-
-        let mut prev = root;
-
-        for _ in 0..100 {
-            let mut called = false;
-            call(|| {
-                let current = Id::current();
-                assert_ne!(prev, current, "each Id in this loop must be unique");
-                prev = current;
-                called = true;
-            });
-
+        call(|| {
+            let root = Id::current();
             assert_eq!(
                 root,
                 Id::current(),
@@ -280,11 +251,29 @@ mod tests {
                 assert_eq!(
                     root,
                     Id::current(),
-                    "outside the call must have the same Id as root"
+                    "Id must be stable across calls within the same scope"
                 );
-                assert!(called, "the call must be made on each loop iteration");
+
+                let mut prev = root;
+
+                for _ in 0..100 {
+                    let mut called = false;
+                    call(|| {
+                        let current = Id::current();
+                        assert_ne!(prev, current, "each Id in this loop must be unique");
+                        prev = current;
+                        called = true;
+                    });
+
+                    assert_eq!(
+                        root,
+                        Id::current(),
+                        "outside the call must have the same Id as root"
+                    );
+                    assert!(called, "the call must be made on each loop iteration");
+                }
             }
-        }
+        });
     }
 
     #[test]
