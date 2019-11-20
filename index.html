@@ -19,9 +19,17 @@
             <img src="assets/logo.png" alt="moxie logo" height="150" />
             <h1>moxie</h1>
             <p>a lightweight platform-agnostic declarative UI runtime, written in rust</p>
+            <p>
+                <a href="#web">web</a> |
+                <a href="#xplat">xplat</a> |
+                <a href="#book">book</a> |
+                <a href="#repo">repo</a> |
+                <a href="#related">related</a> |
+                <a href="#chat">chat</a>
+            </p>
         </header>
 
-        <h5 align="middle">web crates</h5>
+        <h5 align="middle" id="web">web crates</h5>
 
         <h2>
             moxie-dom
@@ -46,7 +54,7 @@
             <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
             <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
             <li>
-                <a href="https://github.com/anp/moxie/blob/master/dom/examples/ssr/README.md">
+                <a href="https://github.com/anp/moxie/blob/master/dom/examples/ssr">
                     server-side rendering
                 </a>
             </li>
@@ -89,7 +97,7 @@
             runs an event loop in the browser using requestAnimationFrame
         </p>
 
-        <h5 align="middle">platform-agnostic crates</h5>
+        <h5 align="middle" id="xplat">platform-agnostic crates</h5>
         <h2>
             moxie
             <a href="target/doc/moxie/index.html">
@@ -162,7 +170,7 @@
 
         <hr />
 
-        <h2>book</h2>
+        <h2 id="book">book</h2>
 
         <p>
             the <strong><a href="book/pkg/index.html">book</a></strong> covers project values,
@@ -170,7 +178,7 @@
         </p>
         <p>it's a work in progress and very incomplete today.</p>
 
-        <h2>
+        <h2 id="repo">
             repository
             <img src="https://img.shields.io/crates/l/moxie?color=steelblue" alt="license badge" />
         </h2>
@@ -182,7 +190,18 @@
                 conduct.</a>
         </p>
 
-        <h2>chat</h2>
+        <h2 id="related">related projects</h2>
+
+        <h3><a href="https://github.com/tiffany352/moxie-native">moxie-native</a></h3>
+        <p>
+            from the repo: "Warning: This is a work in progress and not yet usable for nontrivial
+            applications."</p>
+        <p>
+            a "webrender-based UI framework with a moxie frontend" which features a "relatively
+            small footprint" and is "targeted towards real world desktop applications."
+        </p>
+
+        <h2 id="chat">chat</h2>
 
         <iframe src="https://discordapp.com/widget?id=590930607396093971&theme=dark" width="350" height="500"
             allowtransparency="true" frameborder="0">
