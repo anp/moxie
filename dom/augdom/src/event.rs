@@ -1506,7 +1506,7 @@ event_ty! {
     /// Sound that is recognised by the speech recognition service as speech has been detected.
     /// [MDN documentation][mdn]
     ///
-    /// <a href="https://developer.mozilla.org/en-US/docs/Web/Events/speechstart
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/speechstart
     SpeechRecognized,
     "speechstart",
     sys::Event

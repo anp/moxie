@@ -2,13 +2,10 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` creates a hierarchy of scoped, nested [environments][crate::Env] whose shape matches the
-//! function callgraph. These environments store singletons indexed by their type, and references to
-//! environmental values are available only to an enclosed call scope. When a `#![topo::nested]`
-//! function is called, its parent environment is cheaply propagated along with any additional
-//! values added at appropriate callsites.
+//! `topo` creates a hierarchy of nested scopes represented as stable identifiers referring to the
+//! function callgraph.
 //!
-//! Each environment in this hierarchy has a unique and deterministic [crate::Id] describing that
+//! Each scope in this hierarchy has a unique and deterministic [crate::Id] describing that
 //! environment and the path taken to arrive at its stack frame. These identifiers are derived from
 //! the path taken through the callgraph to the current location, and are stable across repeated
 //! invocations of the same execution paths.
@@ -43,7 +40,6 @@
 //! assert_ne!(first, fourth);
 //! assert_ne!(second, fourth);
 //! ```
-//!
 
 #[doc(hidden)]
 pub use illicit;
@@ -66,33 +62,6 @@ use {
 /// ```
 /// let prev = topo::Id::current();
 /// topo::call(|| assert_ne!(prev, topo::Id::current()));
-/// ```
-///
-/// Adding an `env! { ... }` directive to the macro input will take ownership of provided values
-/// and make them available to the code run in the `Id` created by the invocation.
-///
-/// ```
-/// # use topo;
-/// #[derive(Debug, Eq, PartialEq)]
-/// struct Submarine(usize);
-///
-/// assert!(topo::Env::get::<Submarine>().is_none());
-///
-/// topo::call_in_env(
-///     topo::env! { Submarine => Submarine(1) },
-///     || {
-///         assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
-///
-///         topo::call_in_env(
-///             topo::env! { Submarine => Submarine(2) },
-///             || assert_eq!(&Submarine(2), &*topo::Env::get::<Submarine>().unwrap()),
-///         );
-///
-///         assert_eq!(&Submarine(1), &*topo::Env::get::<Submarine>().unwrap());
-///     },
-/// );
-///
-/// assert!(topo::Env::get::<Submarine>().is_none());
 /// ```
 #[track_caller]
 pub fn call<R>(op: impl FnOnce() -> R) -> R {
@@ -158,7 +127,8 @@ impl std::fmt::Debug for Id {
 /// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
 /// topologically-nested functions.
 ///
-/// The current `Point` contains the local [`Env`] and [`Id`].
+/// The current `Point` contains the local [`Id`] and a count of how often each of its children has
+/// been called.
 #[doc(hiddent)]
 #[derive(Debug)]
 pub struct Point {
