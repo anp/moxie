@@ -43,7 +43,7 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
         }
 
         if package.version.to_string().ends_with("-pre")
-            || crates_io_has(&package.name, &package.version)?
+            || crates_io_has(&package.name, &package.version).unwrap_or(true)
         {
             info!({ %package.name, %package.version }, "skipping");
         } else {
