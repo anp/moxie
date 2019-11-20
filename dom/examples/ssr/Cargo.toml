@@ -11,7 +11,7 @@ augdom = { path = "../../augdom" }
 gotham = "0.4.0"
 gotham_derive = "0.4.0"
 hyper = "0.12"
-moxie = { path = "../../../", version = "0.1.1-alpha.0" }
+moxie = { path = "../../../" }
 serde = "1"
 serde_derive = "1"
 topo = { path = "../../../topo" }

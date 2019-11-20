@@ -1,10 +1,10 @@
 [package]
-name = "topo-macro"
-version = "0.8.2"
+name = "illicit-macro"
+version = "0.9.0"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
-description = "procedural macros for the topo crate"
+description = "procedural macros for the illicit crate"
 repository = "https://github.com/anp/moxie"
 
 include = ["Cargo.toml", "src/**/*.rs"]
@@ -13,5 +13,6 @@ include = ["Cargo.toml", "src/**/*.rs"]
 proc-macro = true
 
 [dependencies]
+proc-macro-error = "0.4.4"
 quote = "1.0"
 syn = { version = "1.0", features = ["full"] }

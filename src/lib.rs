@@ -72,7 +72,13 @@ pub use mox::mox;
 pub mod embed;
 #[macro_use]
 mod memo;
+#[macro_use]
 mod state;
+#[cfg(feature = "loading")]
+mod load;
+#[cfg(feature = "loading")]
+#[doc(inline)]
+pub use load::*;
 
 pub use topo;
 #[doc(inline)]

@@ -4,34 +4,31 @@ extern crate criterion;
 use criterion::{black_box, Criterion, ParameterizedBenchmark};
 
 fn empty_env(c: &mut Criterion) {
-    c.bench_function("call empty env", |b| {
-        b.iter(|| black_box(topo::root!(topo::Id::current())))
+    c.bench_function("call no env", |b| {
+        b.iter(|| black_box(topo::call!(topo::Id::current())))
     });
 }
 
 fn create_small_env(c: &mut Criterion) {
     c.bench_function("call create small env", |b| {
         b.iter(|| {
-            black_box(topo::root!(
-                topo::Id::current(),
-                env! {
-                    u128 => 10,
-                }
-            ))
+            black_box(
+                illicit::child_env!(
+                    u128 => 10
+                )
+                .enter(|| topo::call!(topo::Id::current())),
+            )
         });
     });
 }
 
 fn call_small_env(c: &mut Criterion) {
     c.bench_function("call within small env", |b| {
-        topo::call!(
-            b.iter(|| {
-                black_box(topo::root!(topo::Id::current()));
-            }),
-            env! {
-                u128 => 10,
-            }
-        )
+        illicit::child_env!(u128 => 10).enter(|| {
+            topo::call!(b.iter(|| {
+                black_box(topo::call!(topo::Id::current()));
+            }))
+        })
     });
 }
 
@@ -39,12 +36,14 @@ fn call_small_env(c: &mut Criterion) {
 fn topo_bench(b: &mut criterion::Bencher, depth: &usize) {
     macro_rules! mk {
         (go $depth_spec:ident) => {
-            topo::root!({
-                mk!(pass $depth_spec 0);
-            }, env! { u128 => 10, });
+            illicit::child_env!(u128 => 10).enter(|| {
+                topo::call!({
+                    mk!(pass $depth_spec 0);
+                });
+            });
         };
         (pass $depth_spec:ident $call_depth:expr) => {
-            topo::root!({
+            topo::call!({
                 mk!(cur $depth_spec ($call_depth + 1));
             });
         };
@@ -86,7 +85,7 @@ fn topo_bench(b: &mut criterion::Bencher, depth: &usize) {
         };
         (cur zero $depth:expr) => {
             b.iter(|| {
-                topo::root!(|| assert_eq!(10, *topo::Env::get::<u128>().unwrap()))
+                topo::call!(|| assert_eq!(10, *illicit::Env::get::<u128>().unwrap()))
             });
         };
     }

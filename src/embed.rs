@@ -12,7 +12,18 @@
 //!
 //! [moxie-dom]: https://docs.rs/moxie-dom
 
-use {crate::memo::MemoStore, std::task::Waker, tracing::*};
+mod executor;
+
+use {
+    crate::memo::MemoStore,
+    executor::InBandExecutor,
+    futures::task::LocalSpawn,
+    std::{
+        fmt::{Debug, Formatter, Result as FmtResult},
+        rc::Rc,
+        task::{Poll, Waker},
+    },
+};
 
 /// Revisions measure moxie's notion of time passing. Each [`Runtime`] increments its Revision
 /// on every iteration. [`crate::Commit`]s to state variables are annotated with the Revision
@@ -24,7 +35,7 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called outside of a Runtime's
     /// execution.
     pub fn current() -> Self {
-        if let Some(r) = topo::Env::get::<Revision>() {
+        if let Some(r) = illicit::Env::get::<Revision>() {
             *r
         } else {
             Revision::default()
@@ -55,31 +66,42 @@ impl std::fmt::Debug for Revision {
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
-pub struct Runtime<Root, Out>
-where
-    Root: FnMut() -> Out,
-{
+pub struct Runtime<Root> {
     revision: Revision,
     store: MemoStore,
     root: Root,
+    spawner: Spawner,
+    handlers: InBandExecutor,
     wk: Waker,
-    span: Span,
 }
 
-impl<Root, Out> Runtime<Root, Out>
+impl<Root, Out> Runtime<Root>
 where
     Root: FnMut() -> Out,
 {
-    /// Construct a new [`Runtime`] with blank storage and with a no-op waker for state changes.
+    /// Construct a new [`Runtime`] with blank storage and no external waker or task executor.
+    ///
+    /// By default the task executor used for `load` and its siblings is the same single-threaded
+    /// one as the executor used for `handler` futures. It is strongly recommended that outside of
+    /// testing users of this struct call `set_task_executor` with a reference to a more robust
+    /// I/O- or compute-oriented executor.
     pub fn new(root: Root) -> Self {
-        let span = trace_span!("runtime", rev = 0);
+        let handlers = InBandExecutor::default();
+        let fallback_spawner = handlers.spawner();
         Self {
-            span,
-            revision: Revision(0),
-            store: MemoStore::default(),
             root,
+            handlers,
+            revision: Revision(0),
+            spawner: fallback_spawner,
+            store: MemoStore::default(),
             wk: futures::task::noop_waker(),
         }
+    }
+
+    /// Constructs a new [`Runtime`], runs the provided `root` once, and returns the result.
+    pub fn oneshot(root: Root) -> Out {
+        let mut this = Self::new(root);
+        this.run_once()
     }
 
     /// The current revision of the runtime, or how many times `run_once` has been invoked.
@@ -91,19 +113,48 @@ where
     /// `Revision`, and drops any memoized values which were not marked `Liveness::Live`.
     pub fn run_once(&mut self) -> Out {
         self.revision.0 += 1;
-        self.span.record("rev", &self.revision.0);
-        let _entered = self.span.enter();
 
-        let ret = topo::root!(
-            (self.root)(),
-            env! {
-                MemoStore => self.store.clone(),
-                Revision => self.revision,
-                RunLoopWaker => RunLoopWaker(self.wk.clone()),
-            }
-        );
+        let ret = illicit::child_env! {
+            MemoStore => self.store.clone(),
+            Revision => self.revision,
+            RunLoopWaker => RunLoopWaker(self.wk.clone()),
+            Spawner => self.spawner.clone()
+        }
+        .enter(|| {
+            topo::call!({
+                self.handlers.run_until_stalled(&self.wk);
+                let ret = (self.root)();
+
+                // run handlers again to make sure that newly spawned ones can install wakers
+                self.handlers.run_until_stalled(&self.wk);
+                ret
+            })
+        });
+
         self.store.gc();
         ret
+    }
+
+    /// Calls `run_once` in a loop until `filter` returns `Poll::Ready`, returning the result of
+    /// that `Revision`.
+    pub fn run_until_ready(&mut self, mut filter: impl FnMut(Out) -> Poll<Out>) -> Out {
+        loop {
+            if let Poll::Ready(out) = filter(self.run_once()) {
+                return out;
+            }
+        }
+    }
+
+    /// Calls `run_once` in a loop until the runtime's revision is equal to the one provided.
+    ///
+    /// Always calls `run_once` at least once.
+    pub fn run_until_at_least_revision(&mut self, rev: Revision) -> Out {
+        loop {
+            let out = self.run_once();
+            if self.revision >= rev {
+                return out;
+            }
+        }
     }
 
     /// Sets the [`std::task::Waker`] which will be called when state variables receive commits. By
@@ -113,12 +164,27 @@ where
         self.wk = wk;
         self
     }
+
+    /// Sets the executor that will be used to spawn normal priority tasks.
+    pub fn set_task_executor(&mut self, sp: impl LocalSpawn + 'static) -> &mut Self {
+        self.spawner = Spawner(Rc::new(sp));
+        self
+    }
 }
 
-/// Responsible for waking the Runtime task. Because the topo environment is namespaced by type,
+#[derive(Clone)]
+pub(crate) struct Spawner(pub Rc<dyn LocalSpawn>);
+
+impl Debug for Spawner {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "Spawner({:p})", self.0)
+    }
+}
+
+/// Responsible for waking the Runtime task. Because the illicit environment is namespaced by type,
 /// we create a newtype here so that other crates don't accidentally cause strange behavior by
 /// overriding our access to it when passing their own wakers down.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct RunLoopWaker(std::task::Waker);
 
 impl RunLoopWaker {
@@ -136,19 +202,43 @@ mod tests {
         let first_byte = 0u8;
 
         let mut runtime = Runtime::new(|| {
-            let from_env: u8 = *topo::Env::expect();
+            let from_env: u8 = *illicit::Env::expect();
             assert_eq!(from_env, first_byte);
         });
 
-        assert!(topo::Env::get::<u8>().is_none());
-        topo::call!(
-            {
-                runtime.run_once();
-            },
-            env! {
-                u8 => first_byte,
+        assert!(illicit::Env::get::<u8>().is_none());
+        illicit::child_env!(u8 => first_byte).enter(|| {
+            topo::call!(runtime.run_once());
+        });
+        assert!(illicit::Env::get::<u8>().is_none());
+    }
+
+    #[test]
+    fn oneshot_runtime() {
+        let rev = Runtime::oneshot(|| Revision::current());
+        assert_eq!(rev, Revision(1), "only one iteration should occur");
+    }
+
+    #[test]
+    fn revision_bound_runtime() {
+        let mut rt = Runtime::new(|| Revision::current());
+        let rev = rt.run_until_at_least_revision(Revision(4));
+        assert_eq!(rev, Revision(4), "exactly 4 iterations should occur");
+
+        let rev = rt.run_until_at_least_revision(Revision(4));
+        assert_eq!(rev, Revision(5), "exactly 1 more iteration should occur");
+    }
+
+    #[test]
+    fn readiness_bound_runtime() {
+        let mut rt = Runtime::new(|| Revision::current());
+        let rev = rt.run_until_ready(|rev| {
+            if rev == Revision(3) {
+                Poll::Ready(rev)
+            } else {
+                Poll::Pending
             }
-        );
-        assert!(topo::Env::get::<u8>().is_none());
+        });
+        assert_eq!(rev, Revision(3), "exactly 3 iterations should occur");
     }
 }
