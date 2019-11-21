@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, missing_docs)]
 
 //! `topo` creates a hierarchy of scoped, nested [environments][topo::Env] whose shape matches the
 //! function callgraph. These environments store singletons indexed by their type, and references to

@@ -34,7 +34,7 @@
 //! appropriate for your use case before taking it on as a dependency.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, missing_docs)]
 
 mod anon_rc;
 
