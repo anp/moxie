@@ -26,16 +26,15 @@ jobs:
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
 
-    - name: webdriver tests
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt update
-        sudo apt-get -yqq install chromium-chromedriver
-        cargo test-dom-drivertest
-
-    # examples, docs, website
+    # examples
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
+
+    # browser tests
+    - uses: nanasess/setup-chromedriver@aa3353c76cdad1e0790dee10f09863ba11b2c00c
+    - run: cargo test-dom-drivertest
+
+    # docs, website
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: cargo build-website
