@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup update
     - run: rustup component add clippy
     - run: cargo clippy-core
     - run: cargo clippy-dom
@@ -74,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup update
     - run: rustup component add rustfmt
     - run: cargo fmt -- --check
     - run: cargo fmt-ofl --check
