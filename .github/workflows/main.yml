@@ -36,8 +36,6 @@ jobs:
 
     # browser tests
     - uses: nanasess/setup-chromedriver@aa3353c76cdad1e0790dee10f09863ba11b2c00c
-      with:
-        chromedriver-version: '78.0.3904.97'
     - run: cargo test-dom-drivertest
 
     # docs, website
