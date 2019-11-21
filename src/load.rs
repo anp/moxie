@@ -6,7 +6,9 @@ use {
     std::{future::Future, task::Poll},
 };
 
-/// TODO
+/// Load a value from the future returned by `init` whenever `capture` changes, returning the
+/// result of calling `with` with the loaded value. Cancels the running future after any revision
+/// during which this call was not made.
 #[topo::nested]
 #[illicit::from_env(spawner: &Spawner)]
 pub fn load_with<Arg, Fut, Stored, Ret>(

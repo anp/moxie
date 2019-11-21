@@ -164,7 +164,6 @@ impl Env {
 
     /// Returns a reference to a value in the current environment, as [`Env::get`] does, but panics
     /// if the value has not been set in the environment.
-    // TODO typename for debugging here would be v. nice
     pub fn expect<E>() -> impl Deref<Target = E> + 'static
     where
         E: Any + 'static,
