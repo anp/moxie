@@ -25,6 +25,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-index-
 
+    - run: rustup update
+
     # tests
     - run: cargo test-core
     - run: cargo test-dom-lib
