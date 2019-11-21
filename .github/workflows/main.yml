@@ -20,32 +20,18 @@ jobs:
       with:
         path: ~/.cargo/git
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-    # - name: cache ofl target dir
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ofl/target
-    #     key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
-    # - name: cache moxie target dir
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: target
-    #     key: ${{ runner.os }}-target-dir-${{ hashFiles('*/Cargo.lock') }}
 
     # tests
     - run: cargo test-core
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
-      # TODO(https://github.com/anp/moxie/issues/37)
-      # run: cargo test-dom-drivertest
+    - run: cargo test-dom-drivertest
 
-    # examples
+    # examples, docs, website
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
-
-    # docs
     - run: cargo docs-all
     - run: cargo docs-ofl
-
     - run: cargo build-website
 
     - name: deploy preview
