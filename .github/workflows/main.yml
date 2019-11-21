@@ -29,6 +29,7 @@ jobs:
     - name: webdriver tests
       if: runner.os == 'Linux'
       run: |
+        sudo apt update
         sudo apt-get -yqq install chromium-chromedriver
         cargo test-dom-drivertest
 
