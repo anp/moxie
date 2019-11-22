@@ -15,37 +15,35 @@ jobs:
       with:
         path: ~/.cargo/registry
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-registry-
     - name: cache cargo index
       uses: actions/cache@v1
       with:
         path: ~/.cargo/git
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-    # - name: cache ofl target dir
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ofl/target
-    #     key: ${{ runner.os }}-ofl-target-dir-${{ hashFiles('ofl/Cargo.lock') }}
-    # - name: cache moxie target dir
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: target
-    #     key: ${{ runner.os }}-target-dir-${{ hashFiles('*/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-index-
+
+    - run: rustup update
 
     # tests
     - run: cargo test-core
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
-      # TODO(https://github.com/anp/moxie/issues/37)
-      # run: cargo test-dom-drivertest
 
-    # examples
+    - name: webdriver tests
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt update
+        sudo apt-get -yqq install chromium-chromedriver
+        cargo test-dom-drivertest
+
+    # examples, docs, website
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
-
-    # docs
     - run: cargo docs-all
     - run: cargo docs-ofl
-
     - run: cargo build-website
 
     - name: deploy preview
@@ -67,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup update
     - run: rustup component add clippy
     - run: cargo clippy-core
     - run: cargo clippy-dom
@@ -76,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup update
     - run: rustup component add rustfmt
     - run: cargo fmt -- --check
     - run: cargo fmt-ofl --check

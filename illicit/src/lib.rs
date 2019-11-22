@@ -34,7 +34,7 @@
 //! appropriate for your use case before taking it on as a dependency.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, missing_docs)]
 
 mod anon_rc;
 
@@ -164,7 +164,6 @@ impl Env {
 
     /// Returns a reference to a value in the current environment, as [`Env::get`] does, but panics
     /// if the value has not been set in the environment.
-    // TODO typename for debugging here would be v. nice
     pub fn expect<E>() -> impl Deref<Target = E> + 'static
     where
         E: Any + 'static,

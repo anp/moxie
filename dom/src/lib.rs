@@ -1,7 +1,7 @@
 //! Tools for declaratively constructing and incrementally updating HTML DOM trees on the web. Based
 //! on the [`moxie`] UI runtime.
 
-#![deny(clippy::all, missing_docs, intra_doc_link_resolution_failure)]
+#![deny(clippy::all, missing_docs)]
 
 #[doc(hidden)]
 pub use moxie::*;

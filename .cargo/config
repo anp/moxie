@@ -11,6 +11,7 @@ watch --clear
     -x clippy-core
     -x check-core
     -x test-core
+    -x docs-clean
     -x docs-all
 """
 
@@ -19,7 +20,8 @@ check-core = "check --all-targets --all-features --package illicit --package mox
 clippy-core = "clippy --all-features --package illicit --package moxie --package topo --package topo-macro"
 test-core = "test --all-features --package illicit --package moxie --package topo --package topo-macro"
 
-docs-all = "doc --all --no-deps"
+docs-all = "doc --workspace --no-deps"
+docs-clean = "clean --doc"
 
 ####################################################################################################
 # dom crates and examples
@@ -80,8 +82,8 @@ watch --clear -w ofl
     -x docs-ofl
 """
 
-check-ofl = "check --manifest-path ofl/Cargo.toml --all"
-clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --all"
+check-ofl = "check --manifest-path ofl/Cargo.toml --workspace"
+clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --workspace"
 fmt-ofl = "fmt -- ofl/src/main.rs"
-test-ofl = "test --manifest-path ofl/Cargo.toml --all"
-docs-ofl = "doc --manifest-path ofl/Cargo.toml --all --no-deps"
+test-ofl = "test --manifest-path ofl/Cargo.toml --workspace"
+docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"
