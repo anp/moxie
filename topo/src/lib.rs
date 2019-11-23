@@ -57,7 +57,7 @@ pub use topo_macro::nested;
 use std::{
     any::TypeId,
     cell::RefCell,
-    collections::{hash_map::DefaultHasher, HashMap},
+    collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
 };
 
@@ -81,12 +81,6 @@ pub struct Id(u64);
 impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
-        fn assert_send_and_sync<T>()
-        where
-            T: Send + Sync,
-        {
-        }
-        assert_send_and_sync::<Id>();
         Point::unstable_with_current(|p| p.id)
     }
 }
@@ -107,7 +101,7 @@ pub struct Point {
     id: Id,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this Point.
-    callsite_counts: RefCell<HashMap<Callsite, u32>>,
+    callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
 
 impl Point {
@@ -119,13 +113,7 @@ impl Point {
         slot: impl Hash,
         child: impl FnOnce() -> R,
     ) -> R {
-        {
-            *self
-                .callsite_counts
-                .borrow_mut()
-                .entry(callsite)
-                .or_default() += 1;
-        }
+        self.increment_count(callsite);
 
         let mut hasher = DefaultHasher::new();
         self.id.hash(&mut hasher);
@@ -136,7 +124,7 @@ impl Point {
         let child_point = Self {
             id,
             callsite,
-            callsite_counts: RefCell::new(HashMap::new()),
+            callsite_counts: RefCell::new(Vec::new()),
         };
 
         illicit::child_env!(Point => child_point).enter(child)
@@ -152,10 +140,25 @@ impl Point {
         }
     }
 
+    fn increment_count(&self, callsite: Callsite) {
+        let mut counts = self.callsite_counts.borrow_mut();
+
+        if let Some((_, count)) = counts.iter_mut().find(|(site, _)| site == &callsite) {
+            *count += 1;
+        } else {
+            counts.push((callsite, 1));
+        }
+    }
+
     /// Returns the number of times the provided [`Callsite`] has been called within this Point.
     #[doc(hidden)]
     pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
-        self.callsite_counts.borrow().get(&callsite).map(|&c| c).unwrap_or(0)
+        self.callsite_counts
+            .borrow()
+            .iter()
+            .find(|(site, _)| site == &callsite)
+            .map(|(_, count)| *count)
+            .unwrap_or(0)
     }
 }
 
