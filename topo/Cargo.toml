@@ -18,5 +18,5 @@ topo-macro = { path = "macro", version = "0.8.2" }
 criterion = "0.3"
 
 [[bench]]
-name = "simple"
+name = "simple_calls"
 harness = false
