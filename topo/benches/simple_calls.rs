@@ -15,12 +15,6 @@ fn call_and_get_id(c: &mut Criterion) {
     });
 }
 
-fn enter_small_env(c: &mut Criterion) {
-    c.bench_function("enter a small illicit env", |b| {
-        b.iter(|| illicit::child_env!(u128 => 10).enter(|| ()));
-    });
-}
-
 fn call(c: &mut Criterion) {
     c.bench_function("just a call", |b| b.iter(|| topo::call(|| ())));
 }
@@ -103,12 +97,5 @@ fn call_depths(c: &mut Criterion) {
     );
 }
 
-criterion::criterion_group!(
-    benches,
-    get_id,
-    call_and_get_id,
-    enter_small_env,
-    call,
-    call_depths,
-);
+criterion::criterion_group!(benches, get_id, call_and_get_id, call, call_depths,);
 criterion::criterion_main!(benches);
