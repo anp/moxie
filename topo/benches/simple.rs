@@ -12,7 +12,9 @@ fn get_id(c: &mut Criterion) {
 }
 
 fn call_and_get_id(c: &mut Criterion) {
-    c.bench_function("call and get id", |b| b.iter(|| topo::call!(topo::Id::current())));
+    c.bench_function("call and get id", |b| {
+        b.iter(|| topo::call!(topo::Id::current()))
+    });
 }
 
 fn enter_small_env(c: &mut Criterion) {
