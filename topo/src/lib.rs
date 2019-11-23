@@ -54,11 +54,13 @@ pub use illicit;
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use std::{
-    any::TypeId,
-    cell::RefCell,
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
+use {
+    fnv::FnvHasher,
+    std::{
+        any::TypeId,
+        cell::RefCell,
+        hash::{Hash, Hasher},
+    },
 };
 
 /// Identifies an activation record in the current call topology.
@@ -82,6 +84,14 @@ impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
         Point::unstable_with_current(|p| p.id)
+    }
+
+    fn child(self, callsite: Callsite, slot: impl Hash) -> Self {
+        let mut hasher = FnvHasher::default();
+        hasher.write_u64(self.0);
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        Id(hasher.finish())
     }
 }
 
@@ -114,17 +124,10 @@ impl Point {
         child: impl FnOnce() -> R,
     ) -> R {
         self.increment_count(callsite);
-
-        let mut hasher = DefaultHasher::new();
-        self.id.hash(&mut hasher);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        let id = Id(hasher.finish());
-
         let child_point = Self {
-            id,
             callsite,
             callsite_counts: RefCell::new(Vec::new()),
+            id: self.id.child(callsite, slot),
         };
 
         illicit::child_env!(Point => child_point).enter(child)
