@@ -116,7 +116,7 @@ impl Point {
     pub fn unstable_enter_child<R>(
         &self,
         callsite: Callsite,
-        slot: &impl Hash,
+        slot: impl Hash,
         child: impl FnOnce() -> R,
     ) -> R {
         {
@@ -151,6 +151,12 @@ impl Point {
             op(&Point::default())
         }
     }
+
+    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
+    #[doc(hidden)]
+    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
+        self.callsite_counts.borrow().get(&callsite).map(|&c| c).unwrap_or(0)
+    }
 }
 
 impl Default for Point {
@@ -180,17 +186,6 @@ impl Callsite {
     pub fn new(ty: TypeId) -> Self {
         Self { ty }
     }
-
-    /// Returns the number of times this callsite has been seen as a child of the current Point.
-    pub fn current_count(self) -> u32 {
-        Point::unstable_with_current(|point| {
-            if let Some(c) = point.callsite_counts.borrow().get(&self) {
-                *c
-            } else {
-                0
-            }
-        })
-    }
 }
 
 /// Returns a value unique to the point of its invocation.
@@ -219,8 +214,9 @@ macro_rules! call {
     }};
     ($($input:tt)*) => {{
         let callsite = $crate::callsite!();
-        $crate::Point::unstable_with_current(|_current| {
-            _current.unstable_enter_child(callsite, &callsite.current_count(), || $($input)*)
+        $crate::Point::unstable_with_current(|current| {
+            let count = current.unstable_callsite_count(callsite);
+            current.unstable_enter_child(callsite, count, || $($input)*)
         })
     }};
 }
