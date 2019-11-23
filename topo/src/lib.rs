@@ -148,6 +148,16 @@ impl Point {
             op(&Point::default())
         }
     }
+
+    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
+    #[doc(hidden)]
+    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
+        self.callsite_counts
+            .borrow()
+            .get(&callsite)
+            .copied()
+            .unwrap_or(0)
+    }
 }
 
 impl Default for Point {
