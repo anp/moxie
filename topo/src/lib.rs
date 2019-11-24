@@ -54,11 +54,13 @@ pub use illicit;
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use std::{
-    any::TypeId,
-    cell::RefCell,
-    collections::{hash_map::DefaultHasher, HashMap},
-    hash::{Hash, Hasher},
+use {
+    fnv::FnvHasher,
+    std::{
+        any::TypeId,
+        cell::RefCell,
+        hash::{Hash, Hasher},
+    },
 };
 
 /// Identifies an activation record in the current call topology.
@@ -81,13 +83,15 @@ pub struct Id(u64);
 impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
-        fn assert_send_and_sync<T>()
-        where
-            T: Send + Sync,
-        {
-        }
-        assert_send_and_sync::<Id>();
         Point::unstable_with_current(|p| p.id)
+    }
+
+    fn child(self, callsite: Callsite, slot: impl Hash) -> Self {
+        let mut hasher = FnvHasher::default();
+        hasher.write_u64(self.0);
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        Id(hasher.finish())
     }
 }
 
@@ -107,7 +111,7 @@ pub struct Point {
     id: Id,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this Point.
-    callsite_counts: RefCell<HashMap<Callsite, u32>>,
+    callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
 
 impl Point {
@@ -116,27 +120,14 @@ impl Point {
     pub fn unstable_enter_child<R>(
         &self,
         callsite: Callsite,
-        slot: &impl Hash,
+        slot: impl Hash,
         child: impl FnOnce() -> R,
     ) -> R {
-        {
-            *self
-                .callsite_counts
-                .borrow_mut()
-                .entry(callsite)
-                .or_default() += 1;
-        }
-
-        let mut hasher = DefaultHasher::new();
-        self.id.hash(&mut hasher);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        let id = Id(hasher.finish());
-
+        self.increment_count(callsite);
         let child_point = Self {
-            id,
             callsite,
-            callsite_counts: RefCell::new(HashMap::new()),
+            callsite_counts: RefCell::new(Vec::new()),
+            id: self.id.child(callsite, slot),
         };
 
         illicit::child_env!(Point => child_point).enter(child)
@@ -150,6 +141,27 @@ impl Point {
         } else {
             op(&Point::default())
         }
+    }
+
+    fn increment_count(&self, callsite: Callsite) {
+        let mut counts = self.callsite_counts.borrow_mut();
+
+        if let Some((_, count)) = counts.iter_mut().find(|(site, _)| site == &callsite) {
+            *count += 1;
+        } else {
+            counts.push((callsite, 1));
+        }
+    }
+
+    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
+    #[doc(hidden)]
+    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
+        self.callsite_counts
+            .borrow()
+            .iter()
+            .find(|(site, _)| site == &callsite)
+            .map(|(_, count)| *count)
+            .unwrap_or(0)
     }
 }
 
@@ -180,17 +192,6 @@ impl Callsite {
     pub fn new(ty: TypeId) -> Self {
         Self { ty }
     }
-
-    /// Returns the number of times this callsite has been seen as a child of the current Point.
-    pub fn current_count(self) -> u32 {
-        Point::unstable_with_current(|point| {
-            if let Some(c) = point.callsite_counts.borrow().get(&self) {
-                *c
-            } else {
-                0
-            }
-        })
-    }
 }
 
 /// Returns a value unique to the point of its invocation.
@@ -219,8 +220,9 @@ macro_rules! call {
     }};
     ($($input:tt)*) => {{
         let callsite = $crate::callsite!();
-        $crate::Point::unstable_with_current(|_current| {
-            _current.unstable_enter_child(callsite, &callsite.current_count(), || $($input)*)
+        $crate::Point::unstable_with_current(|current| {
+            let count = current.unstable_callsite_count(callsite);
+            current.unstable_enter_child(callsite, count, || $($input)*)
         })
     }};
 }
