@@ -39,10 +39,11 @@
 mod anon_rc;
 
 use anon_rc::AnonRc;
+use fnv::FnvHashMap;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
@@ -91,13 +92,13 @@ macro_rules! child_env {
 pub struct Env {
     depth: u32,
     location: (&'static str, u32, u32),
-    values: HashMap<TypeId, AnonRc>,
+    values: FnvHashMap<TypeId, AnonRc>,
 }
 
 impl Env {
     #[doc(hidden)]
     pub fn unstable_new(location: (&'static str, u32, u32)) -> Self {
-        let mut values = HashMap::new();
+        let mut values = FnvHashMap::default();
         let mut depth = 0;
 
         CURRENT_SCOPE.with(|current| {
@@ -190,7 +191,7 @@ impl Env {
                     .by_depth
                     .entry(anon.depth())
                     .or_insert_with(|| Env {
-                        values: HashMap::new(),
+                        values: Default::default(),
                         depth: anon.depth(),
                         location: anon.location(), // depth -> location is 1:1
                     })
