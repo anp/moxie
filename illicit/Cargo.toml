@@ -1,6 +1,6 @@
 [package]
 name = "illicit"
-version = "0.9.1"
+version = "0.9.2"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "MIT/Apache-2.0"
