@@ -23,8 +23,6 @@ CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and
 
 ### Landing PRs
 
-When a PR is ready to merge, apply the `autorebase` label. This will inform [the autorebase GitHub App](https://github.com/tibdex/autorebase) to merge the PR if all required checks pass, and to attempt to rebase the PR onto master when the latter changes.
-
 GitHub now offers an option to require that a branch is up-to-date before it is merged in a PR, which is enabled for the repository to aid in implementing [The Not Rocket Science Rule of Software Engineering](https://graydon.livejournal.com/186550.html):
 
 > automatically maintain a repository of code that always passes all the tests
