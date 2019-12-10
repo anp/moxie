@@ -10,7 +10,7 @@ description = "proof of concept for server-side rendered HTML with moxie-dom"
 augdom = { path = "../../augdom" }
 gotham = "0.4.0"
 gotham_derive = "0.4.0"
-hyper = "0.12"
+hyper = "0.13"
 moxie = { path = "../../../" }
 serde = "1"
 serde_derive = "1"
