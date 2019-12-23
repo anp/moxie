@@ -31,13 +31,7 @@ jobs:
     - run: cargo test-core
     - run: cargo test-dom-lib
     - run: cargo test-ssr-example
-
-    - name: webdriver tests
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get -yqq install chromium-chromedriver
-        cargo test-dom-drivertest
+    - run: cargo test-dom-drivertest
 
     # examples, docs, website
     - run: cargo build-dom-hacking
