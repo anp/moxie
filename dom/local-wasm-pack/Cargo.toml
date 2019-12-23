@@ -16,6 +16,6 @@ structopt = "0.2"
 
 [dependencies.wasm-pack]
 git = "https://github.com/rustwasm/wasm-pack.git"
-rev = "15e354f19ccef26cb7baca5dacda1bcd2f9904a2"
+rev = "029127d39c619e9b5525cb3d026697d13072115f"
 
 [workspace]
