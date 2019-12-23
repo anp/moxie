@@ -10,7 +10,6 @@ repository = "https://github.com/anp/moxie"
 include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]
 
 [dependencies]
-fnv = "1.0.6"
 illicit = { path = "../illicit", version = "0.9.0" }
 topo-macro = { path = "macro", version = "0.8.2" }
 

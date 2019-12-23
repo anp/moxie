@@ -155,7 +155,7 @@ fn tag_to_tokens(
             let mut tokens: Vec<TokenTree> = g.stream().into_iter().collect();
 
             let last = tokens
-                .get(tokens.len() - 1)
+                .last()
                 .expect("function argument delimiters must contain some tokens");
 
             if last.to_string() == "," {
@@ -282,7 +282,7 @@ impl Into<Diagnostic> for Error {
     fn into(self) -> Diagnostic {
         match self {
             Error::SnaxError(ParseError::UnexpectedEnd) => {
-                Diagnostic::new(Level::Error, format!("input ends before expected"))
+                Diagnostic::new(Level::Error, "input ends before expected".to_string())
             }
             Error::SnaxError(ParseError::UnexpectedItem(item)) => {
                 // TODO https://github.com/LPGhatguy/snax/issues/9
