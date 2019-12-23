@@ -9,22 +9,16 @@ use {
     wasm_bindgen::prelude::*,
 };
 
-#[macro_use]
 pub mod filter;
-#[macro_use]
 pub mod footer;
-#[macro_use]
-pub mod input; // goes before header for macro imports ugh
-#[macro_use]
 pub mod header;
-#[macro_use]
+pub mod input;
 pub mod item;
-#[macro_use]
 pub mod main_section;
 
 #[topo::nested]
 fn todo_app() {
-    let visibility = state(|| Visibility::default());
+    let visibility = state(Visibility::default);
     let todos = state(|| vec![Todo::new("whoaaa")]);
 
     illicit::child_env![
@@ -67,5 +61,5 @@ pub fn main() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    moxie_dom::boot(document().body().unwrap(), || todo_app());
+    moxie_dom::boot(document().body().unwrap(), todo_app);
 }

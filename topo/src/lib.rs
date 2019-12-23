@@ -46,15 +46,11 @@ pub use illicit;
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use {
-    fnv::FnvHasher,
-    std::{
-        any::TypeId,
-        cell::RefCell,
-        collections::hash_map::{DefaultHasher, HashMap},
-        hash::{Hash, Hasher},
-        panic::Location,
-    },
+use std::{
+    cell::RefCell,
+    collections::hash_map::{DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+    panic::Location,
 };
 
 /// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
@@ -97,14 +93,6 @@ impl Id {
     /// Returns the `Id` for the current scope in the call topology.
     pub fn current() -> Self {
         Point::with_current(|current| current.id)
-    }
-
-    fn child(self, callsite: Callsite, slot: impl Hash) -> Self {
-        let mut hasher = FnvHasher::default();
-        hasher.write_u64(self.0);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        Id(hasher.finish())
     }
 }
 

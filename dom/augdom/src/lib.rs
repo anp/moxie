@@ -55,8 +55,8 @@ pub fn document() -> sys::Document {
 /// A value which implements a subset of the web's document object model.
 pub trait Dom: Sized {
     // TODO is there a way to pass the starting indentation down from a formatter?
-    /// Write this value as XML via the provided writer. Consider using [Xml::inner_html] or
-    /// [Xml::pretty_inner_html] unless you need the performance.
+    /// Write this value as XML via the provided writer. Consider using [Dom::outer_html] or
+    /// [Dom::pretty_outer_html] unless you need the performance.
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
 
     /// Returns a string of serialized XML without newlines or indentation.
