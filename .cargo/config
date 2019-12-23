@@ -50,7 +50,7 @@ build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 test-dom-lib = "test --package moxie-dom --all-targets"
-test-dom-drivertest = "wa-pack test --chrome --headless dom/examples/drivertest"
+test-dom-drivertest = "wa-pack test --firefox --headless dom/examples/drivertest"
 test-ssr-example = "test --package ssr-poc --all-targets"
 
 # dom utilities
