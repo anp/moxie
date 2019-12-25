@@ -14,7 +14,7 @@ actix-web = "1"
 actix-web-actors = "1"
 cargo_metadata = "0.8.1"
 crates_io_api = "0.5"
-crossbeam = "0.7"
+crossbeam = "=0.7.2"
 failure = "0.1"
 futures01 = { version = "0.1", package = "futures" }
 gumdrop = "0.6"
