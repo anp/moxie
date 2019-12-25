@@ -48,7 +48,7 @@ pub use topo_macro::nested;
 
 use std::{
     cell::RefCell,
-    collections::hash_map::{DefaultHasher, HashMap},
+    collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     panic::Location,
 };
@@ -113,17 +113,13 @@ pub struct Point {
     id: Id,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this Point.
-    callsite_counts: RefCell<HashMap<Callsite, u32>>,
+    callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
 
 impl Point {
     /// Mark a child Point in the topology.
     fn enter_child<R>(&self, callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
-        *self
-            .callsite_counts
-            .borrow_mut()
-            .entry(callsite)
-            .or_default() += 1;
+        self.increment_count(callsite);
 
         let mut hasher = DefaultHasher::new();
         self.id.hash(&mut hasher);
@@ -147,6 +143,27 @@ impl Point {
         } else {
             op(&Point::default())
         }
+    }
+
+    fn increment_count(&self, callsite: Callsite) {
+        let mut counts = self.callsite_counts.borrow_mut();
+
+        if let Some((_, count)) = counts.iter_mut().find(|(site, _)| site == &callsite) {
+            *count += 1;
+        } else {
+            counts.push((callsite, 1));
+        }
+    }
+
+    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
+    #[doc(hidden)]
+    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
+        self.callsite_counts
+            .borrow()
+            .iter()
+            .find(|(site, _)| site == &callsite)
+            .map(|(_, count)| *count)
+            .unwrap_or(0)
     }
 }
 
@@ -185,8 +202,13 @@ impl Callsite {
     /// Returns the number of times this callsite has been seen as a child of the current Point.
     pub fn current_count(self) -> u32 {
         Point::with_current(|current| {
-            if let Some(c) = current.callsite_counts.borrow().get(&self) {
-                *c
+            if let Some(c) = current
+                .callsite_counts
+                .borrow()
+                .iter()
+                .find(|(site, _)| site == &self)
+            {
+                c.1
             } else {
                 0
             }

@@ -14,7 +14,7 @@ actix-web = "1"
 actix-web-actors = "1"
 cargo_metadata = "0.8.1"
 crates_io_api = "0.5"
-crossbeam = "0.7"
+crossbeam = "=0.7.2"
 failure = "0.1"
 futures01 = { version = "0.1", package = "futures" }
 gumdrop = "0.6"
@@ -26,7 +26,7 @@ pathfinding = "1.1.12"
 pretty_env_logger = "0.3"
 semver = "0.9"
 spongedown = "0.3.2"
-tracing = { version = "0.1", features = [ "log" ] }
+tracing = { version = "^0.1", features = [ "log" ] }
 tracing-fmt = "0.0.1-alpha.3"
 walkdir = "2.2.9"
 

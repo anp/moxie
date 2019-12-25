@@ -42,7 +42,7 @@ use anon_rc::AnonRc;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
@@ -91,21 +91,19 @@ macro_rules! child_env {
 pub struct Env {
     depth: u32,
     location: (&'static str, u32, u32),
-    values: HashMap<TypeId, AnonRc>,
+    values: Vec<(TypeId, AnonRc)>,
 }
 
 impl Env {
     #[doc(hidden)]
     pub fn unstable_new(location: (&'static str, u32, u32)) -> Self {
-        let mut values = HashMap::new();
+        let mut values = Vec::new();
         let mut depth = 0;
 
         CURRENT_SCOPE.with(|current| {
             let current = current.borrow();
             depth = current.depth + 1;
-            for anon in current.values.values() {
-                values.insert(anon.id(), anon.clone());
-            }
+            values = current.values.clone();
         });
 
         Self {
@@ -121,7 +119,20 @@ impl Env {
         E: Debug + 'static,
     {
         let anon = AnonRc::new(new_item, self.location, self.depth);
-        self.values.insert(anon.id(), anon);
+        self.add_anon(anon);
+    }
+
+    fn add_anon(&mut self, anon: AnonRc) {
+        if let Some(existing) = self
+            .values
+            .iter_mut()
+            .find(|(id, _)| *id == anon.id())
+            .map(|(_, e)| e)
+        {
+            *existing = anon;
+        } else {
+            self.values.push((anon.id(), anon));
+        }
     }
 
     /// The number of parent environments from which this environment descends.
@@ -150,7 +161,14 @@ impl Env {
         E: Any + 'static,
     {
         let key = TypeId::of::<E>();
-        let anon = CURRENT_SCOPE.with(|current| current.borrow().values.get(&key).cloned());
+        let anon = CURRENT_SCOPE.with(|current| {
+            current
+                .borrow()
+                .values
+                .iter()
+                .find(|(id, _)| id == &key)
+                .map(|(_, a)| a.clone())
+        });
         if let Some(anon) = anon {
             Some(
                 anon.downcast_deref()
@@ -185,17 +203,16 @@ impl Env {
             by_depth: BTreeMap::new(),
         };
         CURRENT_SCOPE.with(|e| {
-            for anon in e.borrow().values.values() {
+            for (_, anon) in &e.borrow().values {
                 stacked
                     .by_depth
                     .entry(anon.depth())
                     .or_insert_with(|| Env {
-                        values: HashMap::new(),
+                        values: Default::default(),
                         depth: anon.depth(),
                         location: anon.location(), // depth -> location is 1:1
                     })
-                    .values
-                    .insert(anon.id(), anon.clone());
+                    .add_anon(anon.clone());
             }
         });
         stacked
@@ -208,7 +225,7 @@ impl Env {
             let mut env = current.borrow_mut();
             let mut without_e = env.values.clone();
             let excluded_ty = TypeId::of::<E>();
-            without_e.retain(|ty, _| ty != &excluded_ty);
+            without_e.retain(|(ty, _)| ty != &excluded_ty);
             *env = Rc::new(Env {
                 values: without_e,
                 depth: env.depth,
@@ -226,8 +243,8 @@ impl Debug for Env {
         let mut f = f.debug_struct(&env_w_loc);
         for (ty, anon) in self
             .values
-            .values()
-            .map(|v| (v.ty(), v))
+            .iter()
+            .map(|(_, v)| (v.ty(), v))
             .collect::<BTreeMap<_, _>>()
         {
             f.field(ty, anon.debug());
@@ -288,7 +305,12 @@ mod tests {
         assert_eq!(first_layer.depth, 1);
         assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
         assert_eq!(first_layer.values.len(), 1);
-        let first_u8 = &first_layer.values[&TypeId::of::<u8>()];
+        let first_u8 = first_layer
+            .values
+            .iter()
+            .find(|(id, _)| id == &TypeId::of::<u8>())
+            .map(|(_, v)| v)
+            .unwrap();
         assert_eq!(
             (first_u8.location(), first_u8.depth()),
             (first_layer.location, first_layer.depth),
@@ -304,7 +326,12 @@ mod tests {
         assert_eq!(first_layer.depth, 1);
         assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
         assert_eq!(first_layer.values.len(), 1);
-        let first_u8 = &first_layer.values[&TypeId::of::<u8>()];
+        let first_u8 = first_layer
+            .values
+            .iter()
+            .find(|(id, _)| id == &TypeId::of::<u8>())
+            .map(|(_, v)| v)
+            .unwrap();
         assert_eq!(
             (first_u8.location(), first_u8.depth()),
             (first_layer.location, first_layer.depth),
@@ -316,7 +343,12 @@ mod tests {
             (file!(), u8_and_string_present.1, 13)
         );
         assert_eq!(second_layer.values.len(), 1);
-        let second_string = &second_layer.values[&TypeId::of::<String>()];
+        let second_string = second_layer
+            .values
+            .iter()
+            .find(|(id, _)| id == &TypeId::of::<String>())
+            .map(|(_, v)| v)
+            .unwrap();
         assert_eq!(
             (second_string.location(), second_string.depth()),
             (second_layer.location, second_layer.depth),
