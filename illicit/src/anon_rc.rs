@@ -1,11 +1,9 @@
-use {
-    owning_ref::OwningRef,
-    std::{
-        any::{type_name, Any, TypeId},
-        fmt::{Debug, Formatter, Result as FmtResult},
-        ops::Deref,
-        rc::Rc,
-    },
+use owning_ref::OwningRef;
+use std::{
+    any::{type_name, Any, TypeId},
+    fmt::{Debug, Formatter, Result as FmtResult},
+    ops::Deref,
+    rc::Rc,
 };
 
 #[derive(Clone)]
@@ -40,12 +38,8 @@ impl AnonRc {
         self,
     ) -> Result<impl Deref<Target = T> + 'static, impl Debug> {
         let from = self.name;
-        OwningRef::new(self.inner).try_map(|anon| {
-            anon.downcast_ref().ok_or(DowncastError {
-                from,
-                to: type_name::<T>(),
-            })
-        })
+        OwningRef::new(self.inner)
+            .try_map(|anon| anon.downcast_ref().ok_or(DowncastError { from, to: type_name::<T>() }))
     }
 
     /// The `TypeId` of the contained value.

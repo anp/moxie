@@ -1,14 +1,12 @@
 //! Asynchronous loading primitives.
 
-use {
-    crate::{embed::Spawner, memo::memo_with, state::*},
-    futures::future::{AbortHandle, Abortable},
-    std::{future::Future, task::Poll},
-};
+use crate::{embed::Spawner, memo::memo_with, state::*};
+use futures::future::{AbortHandle, Abortable};
+use std::{future::Future, task::Poll};
 
-/// Load a value from the future returned by `init` whenever `capture` changes, returning the
-/// result of calling `with` with the loaded value. Cancels the running future after any revision
-/// during which this call was not made.
+/// Load a value from the future returned by `init` whenever `capture` changes,
+/// returning the result of calling `with` with the loaded value. Cancels the
+/// running future after any revision during which this call was not made.
 #[topo::nested]
 #[illicit::from_env(spawner: &Spawner)]
 pub fn load_with<Arg, Fut, Stored, Ret>(
@@ -65,8 +63,8 @@ where
     load_with((), |()| init(), with)
 }
 
-/// Calls [`load_with`], never re-initializes the loading future, and clones the returned value
-/// on each revision once the future has completed and returned.
+/// Calls [`load_with`], never re-initializes the loading future, and clones the
+/// returned value on each revision once the future has completed and returned.
 #[topo::nested]
 pub fn load_once<Fut, Stored>(init: impl FnOnce() -> Fut) -> Poll<Stored>
 where
@@ -76,8 +74,9 @@ where
     load_with((), |()| init(), Clone::clone)
 }
 
-/// Load a value from a future, cloning it on subsequent revisions after it is first returned.
-/// Re-initializes the loading future if the capture argument changes from previous revisions.
+/// Load a value from a future, cloning it on subsequent revisions after it is
+/// first returned. Re-initializes the loading future if the capture argument
+/// changes from previous revisions.
 #[topo::nested]
 pub fn load<Arg, Fut, Stored>(capture: Arg, init: impl FnOnce(&Arg) -> Fut) -> Poll<Stored>
 where
@@ -90,7 +89,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, std::rc::Rc};
+    use super::*;
+    use std::rc::Rc;
 
     #[test]
     fn basic_loading_phases() {
@@ -110,23 +110,11 @@ mod tests {
             })
         });
 
-        assert_eq!(
-            rt.run_once(),
-            Poll::Pending,
-            "no values received when nothing sent"
-        );
-        assert_eq!(
-            rt.run_once(),
-            Poll::Pending,
-            "no values received, and we aren't blocking"
-        );
+        assert_eq!(rt.run_once(), Poll::Pending, "no values received when nothing sent");
+        assert_eq!(rt.run_once(), Poll::Pending, "no values received, and we aren't blocking");
 
         send.send(5u8).unwrap();
-        assert_eq!(
-            rt.run_once(),
-            Poll::Ready(5),
-            "we need to receive the value we sent"
-        );
+        assert_eq!(rt.run_once(), Poll::Ready(5), "we need to receive the value we sent");
         assert_eq!(
             rt.run_once(),
             Poll::Ready(5),
@@ -156,22 +144,13 @@ mod tests {
         });
 
         assert_eq!(rt.run_once(), Some(Poll::Pending));
-        assert!(
-            !send.is_canceled(),
-            "interest expressed, receiver must be live"
-        );
+        assert!(!send.is_canceled(), "interest expressed, receiver must be live");
 
         assert_eq!(rt.run_once(), Some(Poll::Pending));
-        assert!(
-            !send.is_canceled(),
-            "interest still expressed, receiver must be live"
-        );
+        assert!(!send.is_canceled(), "interest still expressed, receiver must be live");
 
         assert_eq!(rt.run_once(), None);
-        assert!(
-            !send.is_canceled(),
-            "interest dropped, task live for another revision"
-        );
+        assert!(!send.is_canceled(), "interest dropped, task live for another revision");
 
         assert_eq!(rt.run_once(), None);
         assert!(send.is_canceled(), "interest dropped, task dropped");

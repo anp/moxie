@@ -5,14 +5,13 @@ extern crate gotham_derive;
 #[macro_use]
 extern crate serde_derive;
 
-use {
-    gotham::router::builder::*,
-    gotham::router::Router,
-    gotham::state::{FromState, State},
-    moxie_dom::{
-        elements::{li, ul},
-        prelude::*,
-    },
+use gotham::{
+    router::{builder::*, Router},
+    state::{FromState, State},
+};
+use moxie_dom::{
+    elements::{li, ul},
+    prelude::*,
 };
 
 fn main() {
@@ -49,25 +48,21 @@ fn parts_handler(state: State) -> (State, String) {
 
 fn router() -> Router {
     build_simple_router(|route| {
-        route
-            .get("/parts/*")
-            .with_path_extractor::<PathExtractor>()
-            .to(parts_handler);
+        route.get("/parts/*").with_path_extractor::<PathExtractor>().to(parts_handler);
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use {super::*, gotham::test::TestServer, hyper::StatusCode, moxie_dom::embed::WebRuntime};
+    use super::*;
+    use gotham::test::TestServer;
+    use hyper::StatusCode;
+    use moxie_dom::embed::WebRuntime;
 
     #[test]
     fn extracts_one_component() {
         let test_server = TestServer::new(router()).unwrap();
-        let response = test_server
-            .client()
-            .get("http://localhost/parts/head")
-            .perform()
-            .unwrap();
+        let response = test_server.client().get("http://localhost/parts/head").perform().unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
 

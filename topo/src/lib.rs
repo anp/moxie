@@ -2,16 +2,17 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` creates a hierarchy of nested scopes represented as stable identifiers referring to the
-//! function callgraph.
+//! `topo` creates a hierarchy of nested scopes represented as stable
+//! identifiers referring to the function callgraph.
 //!
-//! Each scope in this hierarchy has a unique and deterministic [crate::Id] describing that
-//! environment and the path taken to arrive at its stack frame. These identifiers are derived from
-//! the path taken through the callgraph to the current location, and are stable across repeated
-//! invocations of the same execution paths.
+//! Each scope in this hierarchy has a unique and deterministic [crate::Id]
+//! describing that environment and the path taken to arrive at its stack frame.
+//! These identifiers are derived from the path taken through the callgraph to
+//! the current location, and are stable across repeated invocations of the same
+//! execution paths.
 //!
-//! By running the same topologically-nested functions in a loop, we can observe changes to the
-//! structure over time. The [moxie](https://docs.rs/moxie) crate uses these identifiers and
+//! By running the same topologically-nested functions in a loop, we can observe
+//! changes to the structure over time. The [moxie](https://docs.rs/moxie) crate uses these identifiers and
 //! environments to create persistent trees for rendering human interfaces.
 //!
 //! # Making functions nested within the call topology
@@ -22,10 +23,14 @@
 //! #![feature(track_caller)]
 //!
 //! #[topo::nested]
-//! fn basic_topo() -> topo::Id { topo::Id::current() }
+//! fn basic_topo() -> topo::Id {
+//!     topo::Id::current()
+//! }
 //!
 //! #[topo::nested]
-//! fn tier_two() -> topo::Id { basic_topo() }
+//! fn tier_two() -> topo::Id {
+//!     basic_topo()
+//! }
 //!
 //! // each of these functions will be run in separately identified
 //! // contexts as the source locations for their calls are different
@@ -53,8 +58,8 @@ use std::{
     panic::Location,
 };
 
-/// Calls the provided expression with an [`Id`] specific to the callsite, optionally passing
-/// additional environment values to the child scope.
+/// Calls the provided expression with an [`Id`] specific to the callsite,
+/// optionally passing additional environment values to the child scope.
 ///
 /// ```
 /// let prev = topo::Id::current();
@@ -76,16 +81,20 @@ pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
 ///
 /// The `Id` for the execution of a stack frame is the combined product of:
 ///
-/// * a callsite: lexical source location at which the topologically-nested function was invoked
-/// * parent `Id`: the identifier which was active when entering the current topo-nested function
-/// * a "slot": runtime value indicating the call's "logical index" within the parent call
+/// * a callsite: lexical source location at which the topologically-nested
+///   function was invoked
+/// * parent `Id`: the identifier which was active when entering the current
+///   topo-nested function
+/// * a "slot": runtime value indicating the call's "logical index" within the
+///   parent call
 ///
-/// By default, the slot used is a count of the number of times that particular callsite has been
-/// executed within the parent `Id`'s enclosing scope. This means that when creating an `Id` in a
-/// loop the identifier will be unique for each "index" of the loop iteration and will be stable if
-/// the same loop is invoked again. Changing the value used for the slot allows us to have stable
-/// `Id`s across multiple executions when iterating over elements of a collection that itself has
-/// unstable iteration order.
+/// By default, the slot used is a count of the number of times that particular
+/// callsite has been executed within the parent `Id`'s enclosing scope. This
+/// means that when creating an `Id` in a loop the identifier will be unique for
+/// each "index" of the loop iteration and will be stable if the same loop is
+/// invoked again. Changing the value used for the slot allows us to have stable
+/// `Id`s across multiple executions when iterating over elements of a
+/// collection that itself has unstable iteration order.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Id(u64);
 
@@ -102,17 +111,18 @@ impl std::fmt::Debug for Id {
     }
 }
 
-/// The root of a sub-graph within the overall topology formed at runtime by the call-graph of
-/// topologically-nested functions.
+/// The root of a sub-graph within the overall topology formed at runtime by the
+/// call-graph of topologically-nested functions.
 ///
-/// The current `Point` contains the local [`Id`] and a count of how often each of its children has
-/// been called.
+/// The current `Point` contains the local [`Id`] and a count of how often each
+/// of its children has been called.
 #[doc(hiddent)]
 #[derive(Debug)]
 pub struct Point {
     id: Id,
     callsite: Callsite,
-    /// Number of times each callsite's type has been observed during this Point.
+    /// Number of times each callsite's type has been observed during this
+    /// Point.
     callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
 
@@ -127,11 +137,7 @@ impl Point {
         slot.hash(&mut hasher);
         let id = Id(hasher.finish());
 
-        let child_point = Self {
-            id,
-            callsite,
-            callsite_counts: RefCell::new(Default::default()),
-        };
+        let child_point = Self { id, callsite, callsite_counts: RefCell::new(Default::default()) };
 
         illicit::child_env!(Point => child_point).enter(child)
     }
@@ -155,7 +161,8 @@ impl Point {
         }
     }
 
-    /// Returns the number of times the provided [`Callsite`] has been called within this Point.
+    /// Returns the number of times the provided [`Callsite`] has been called
+    /// within this Point.
     #[doc(hidden)]
     pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
         self.callsite_counts
@@ -169,11 +176,7 @@ impl Point {
 
 impl Default for Point {
     fn default() -> Self {
-        Self {
-            id: Id(0),
-            callsite: Callsite { location: 0 },
-            callsite_counts: Default::default(),
-        }
+        Self { id: Id(0), callsite: Callsite { location: 0 }, callsite_counts: Default::default() }
     }
 }
 
@@ -190,7 +193,8 @@ pub struct Callsite {
 }
 
 impl Callsite {
-    /// Constructs a callsite whose value is unique to the source location at which it is called.
+    /// Constructs a callsite whose value is unique to the source location at
+    /// which it is called.
     #[track_caller]
     pub fn here() -> Self {
         Self {
@@ -199,14 +203,11 @@ impl Callsite {
         }
     }
 
-    /// Returns the number of times this callsite has been seen as a child of the current Point.
+    /// Returns the number of times this callsite has been seen as a child of
+    /// the current Point.
     pub fn current_count(self) -> u32 {
         Point::with_current(|current| {
-            if let Some(c) = current
-                .callsite_counts
-                .borrow()
-                .iter()
-                .find(|(site, _)| site == &self)
+            if let Some(c) = current.callsite_counts.borrow().iter().find(|(site, _)| site == &self)
             {
                 c.1
             } else {
@@ -218,7 +219,8 @@ impl Callsite {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, std::collections::HashSet};
+    use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn alternating_in_a_loop() {
@@ -241,11 +243,7 @@ mod tests {
     fn one_child_in_a_loop() {
         call(|| {
             let root = Id::current();
-            assert_eq!(
-                root,
-                Id::current(),
-                "Id must be stable across calls within the same scope"
-            );
+            assert_eq!(root, Id::current(), "Id must be stable across calls within the same scope");
 
             let mut prev = root;
 
@@ -306,9 +304,6 @@ mod tests {
 
         let first = to_call();
         let second = to_call();
-        assert_eq!(
-            first, second,
-            "same Ids must be produced for each slot each time"
-        );
+        assert_eq!(first, second, "same Ids must be produced for each slot each time");
     }
 }

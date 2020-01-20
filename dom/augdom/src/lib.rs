@@ -1,15 +1,17 @@
-//! `augdom` provides an "augmented DOM" implementation that can run almost anywhere Rust can. By
-//! default the `webdom` feature is enabled and this crate is a wrapper around `web-sys` for
-//! creating and manipulating HTML elements. See the [crate::Dom] trait for the provided behavior.
+//! `augdom` provides an "augmented DOM" implementation that can run almost
+//! anywhere Rust can. By default the `webdom` feature is enabled and this crate
+//! is a wrapper around `web-sys` for creating and manipulating HTML elements.
+//! See the [crate::Dom] trait for the provided behavior.
 //!
-//! The `rsdom` feature enables a DOM emulation layer written in pure Rust which can be
-//! used for testing or to render HTML strings.
+//! The `rsdom` feature enables a DOM emulation layer written in pure Rust which
+//! can be used for testing or to render HTML strings.
 //!
 //! # Known Limitations
 //!
-//! As of today the `<web_sys::Element as Dom>::*_attribute` methods will panic if called on a text
-//! node. This cost seems appropriate today because this is a dependency for other crates which
-//! enforce this requirement themselves. `web_sys` enforces this restriction statically.
+//! As of today the `<web_sys::Element as Dom>::*_attribute` methods will panic
+//! if called on a text node. This cost seems appropriate today because this is
+//! a dependency for other crates which enforce this requirement themselves.
+//! `web_sys` enforces this restriction statically.
 #![deny(clippy::all, missing_docs)]
 
 static_assertions::assert_cfg!(
@@ -23,12 +25,10 @@ pub use {wasm_bindgen::JsCast, web_sys as sys};
 #[cfg(feature = "rsdom")]
 use {rsdom::VirtNode, std::rc::Rc};
 
-use {
-    quick_xml::Writer as XmlWriter,
-    std::{
-        fmt::{Debug, Display, Formatter, Result as FmtResult},
-        io::{prelude::*, Cursor},
-    },
+use quick_xml::Writer as XmlWriter;
+use std::{
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+    io::{prelude::*, Cursor},
 };
 
 #[cfg(feature = "rsdom")]
@@ -44,19 +44,19 @@ pub fn window() -> sys::Window {
     sys::window().expect("must run from within a `window`")
 }
 
-/// Returns the current document. Panics if called outside a web document context.
+/// Returns the current document. Panics if called outside a web document
+/// context.
 #[cfg(feature = "webdom")]
 pub fn document() -> sys::Document {
-    window()
-        .document()
-        .expect("must run from within a `window` with a valid `document`")
+    window().document().expect("must run from within a `window` with a valid `document`")
 }
 
 /// A value which implements a subset of the web's document object model.
 pub trait Dom: Sized {
     // TODO is there a way to pass the starting indentation down from a formatter?
-    /// Write this value as XML via the provided writer. Consider using [Dom::outer_html] or
-    /// [Dom::pretty_outer_html] unless you need the performance.
+    /// Write this value as XML via the provided writer. Consider using
+    /// [Dom::outer_html] or [Dom::pretty_outer_html] unless you need the
+    /// performance.
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>);
 
     /// Returns a string of serialized XML without newlines or indentation.
@@ -69,7 +69,8 @@ pub trait Dom: Sized {
         String::from_utf8(buf.into_inner()).unwrap()
     }
 
-    /// Returns a string of "prettified" serialized XML with the provided indentation.
+    /// Returns a string of "prettified" serialized XML with the provided
+    /// indentation.
     fn pretty_outer_html(&self, indent: usize) -> String {
         let mut buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         {
@@ -114,19 +115,16 @@ pub enum Node {
     #[cfg(feature = "webdom")]
     Concrete(sys::Node),
 
-    /// A handle to a "virtual" DOM node, emulating the web in memory. While this implementation
-    /// lacks many features, it can run on any target that Rust supports.
+    /// A handle to a "virtual" DOM node, emulating the web in memory. While
+    /// this implementation lacks many features, it can run on any target
+    /// that Rust supports.
     #[cfg(feature = "rsdom")]
     Virtual(Rc<VirtNode>),
 }
 
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let s = if f.alternate() {
-            self.pretty_outer_html(4)
-        } else {
-            self.outer_html()
-        };
+        let s = if f.alternate() { self.pretty_outer_html(4) } else { self.outer_html() };
         f.write_str(&s)
     }
 }
@@ -229,9 +227,7 @@ impl Dom for Node {
             }
 
             #[cfg(feature = "rsdom")]
-            Node::Virtual(n) => n
-                .remove_child(to_remove.expect_virtual())
-                .map(Node::Virtual),
+            Node::Virtual(n) => n.remove_child(to_remove.expect_virtual()).map(Node::Virtual),
         }
     }
 

@@ -1,10 +1,8 @@
-use {
-    moxie_dom::{
-        elements::{button, div},
-        prelude::*,
-    },
-    wasm_bindgen::prelude::*,
+use moxie_dom::{
+    elements::{button, div},
+    prelude::*,
 };
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn main() {

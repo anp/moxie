@@ -1,21 +1,17 @@
 extern crate proc_macro;
 
-use {
-    proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree},
-    proc_macro_error::{
-        abort, abort_call_site, emit_error, proc_macro_error, Diagnostic, Level, ResultExt,
-    },
-    proc_macro_hack::proc_macro_hack,
-    quote::{quote, ToTokens},
-    snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag},
+use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
+use proc_macro_error::{
+    abort, abort_call_site, emit_error, proc_macro_error, Diagnostic, Level, ResultExt,
 };
+use proc_macro_hack::proc_macro_hack;
+use quote::{quote, ToTokens};
+use snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag};
 
 #[proc_macro_error(allow_not_macro)]
 #[proc_macro_hack]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let item = snax::parse(input.into())
-        .map_err(Error::SnaxError)
-        .unwrap_or_abort();
+    let item = snax::parse(input.into()).map_err(Error::SnaxError).unwrap_or_abort();
     let item = MoxItem::from(item);
     quote!(#item).into()
 }
@@ -84,13 +80,7 @@ struct MoxTag {
 
 impl ToTokens for MoxTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tag_to_tokens(
-            &self.name,
-            &self.fn_args,
-            &self.attributes,
-            Some(&self.children),
-            tokens,
-        );
+        tag_to_tokens(&self.name, &self.fn_args, &self.attributes, Some(&self.children), tokens);
     }
 }
 
@@ -123,20 +113,15 @@ fn tag_to_tokens(
     children: Option<&[MoxItem]>,
     stream: &mut TokenStream,
 ) {
-    // this needs to be nested within other token groups, must be accumulated separately from stream
+    // this needs to be nested within other token groups, must be accumulated
+    // separately from stream
     let mut contents = quote!();
 
-    attributes
-        .iter()
-        .map(ToTokens::to_token_stream)
-        .for_each(|ts| contents.extend(ts));
+    attributes.iter().map(ToTokens::to_token_stream).for_each(|ts| contents.extend(ts));
 
     if let Some(items) = children {
         let mut children = quote!();
-        items
-            .iter()
-            .map(ToTokens::to_token_stream)
-            .for_each(|ts| children.extend(quote!(#ts;)));
+        items.iter().map(ToTokens::to_token_stream).for_each(|ts| children.extend(quote!(#ts;)));
 
         contents.extend(quote!(
             .inner(|| {
@@ -144,8 +129,9 @@ fn tag_to_tokens(
             })
         ));
     } else if !contents.is_empty() {
-        // if there were attributes or handlers installed but there isn't an inner function to call
-        // with its own return type, the previous calls probably return references that can't return
+        // if there were attributes or handlers installed but there isn't an inner
+        // function to call with its own return type, the previous calls
+        // probably return references that can't return
         contents.extend(quote!(;));
     }
 
@@ -154,9 +140,8 @@ fn tag_to_tokens(
             // strip trailing commas that would bork macro parsing
             let mut tokens: Vec<TokenTree> = g.stream().into_iter().collect();
 
-            let last = tokens
-                .last()
-                .expect("function argument delimiters must contain some tokens");
+            let last =
+                tokens.last().expect("function argument delimiters must contain some tokens");
 
             if last.to_string() == "," {
                 tokens.truncate(tokens.len() - 1);
@@ -184,13 +169,7 @@ fn tag_to_tokens(
 }
 
 impl From<SnaxTag> for MoxTag {
-    fn from(
-        SnaxTag {
-            name,
-            attributes,
-            children,
-        }: SnaxTag,
-    ) -> Self {
+    fn from(SnaxTag { name, attributes, children }: SnaxTag) -> Self {
         let (fn_args, attributes) = args_and_attrs(attributes);
         Self {
             name,
@@ -216,11 +195,7 @@ impl ToTokens for MoxTagNoChildren {
 impl From<SnaxSelfClosingTag> for MoxTagNoChildren {
     fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
         let (fn_args, attributes) = args_and_attrs(attributes);
-        Self {
-            name,
-            fn_args,
-            attributes,
-        }
+        Self { name, fn_args, attributes }
     }
 }
 
@@ -240,10 +215,9 @@ impl ToTokens for MoxAttr {
                 let name = name.to_string();
                 quote!(.attr(#name, #value))
             }
-            MoxAttr::Handler {
-                value: TokenTree::Group(g),
-            } => {
-                // remove the braces from the event handler args, these need to "splat" into a call
+            MoxAttr::Handler { value: TokenTree::Group(g) } => {
+                // remove the braces from the event handler args, these need to "splat" into a
+                // call
                 let value = g.stream();
                 quote!(.on(#value))
             }

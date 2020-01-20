@@ -10,9 +10,7 @@ fn get_id(c: &mut Criterion) {
 }
 
 fn call_and_get_id(c: &mut Criterion) {
-    c.bench_function("call and get id", |b| {
-        b.iter(|| topo::call(|| topo::Id::current()))
-    });
+    c.bench_function("call and get id", |b| b.iter(|| topo::call(|| topo::Id::current())));
 }
 
 fn call(c: &mut Criterion) {
@@ -89,11 +87,9 @@ fn call_topo_fns_to_depth(b: &mut criterion::Bencher, depth: &usize) {
 fn call_depths(c: &mut Criterion) {
     c.bench(
         "call_depths",
-        ParameterizedBenchmark::new(
-            "topo calls nested to depth",
-            call_topo_fns_to_depth,
-            vec![1, 3, 9, 12],
-        ),
+        ParameterizedBenchmark::new("topo calls nested to depth", call_topo_fns_to_depth, vec![
+            1, 3, 9, 12,
+        ]),
     );
 }
 

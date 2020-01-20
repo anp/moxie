@@ -1,5 +1,6 @@
-//! Element definitions generated from the listing on [MDN]. Because topologically-nested functions
-//! are called-by-macro today, the element macros generated here appear in the root module.
+//! Element definitions generated from the listing on [MDN]. Because
+//! topologically-nested functions are called-by-macro today, the element macros
+//! generated here appear in the root module.
 //!
 //! [MDN]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 
