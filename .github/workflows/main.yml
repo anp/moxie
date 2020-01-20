@@ -41,7 +41,7 @@ jobs:
     - run: cargo build-website
 
     - name: deploy preview
-      if: runner.os == 'Linux'
+      if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       run: npx netlify-cli deploy
