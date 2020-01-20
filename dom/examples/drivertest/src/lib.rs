@@ -1,6 +1,6 @@
 use {
     moxie_dom::{
-        elements::{li, ul},
+        elements::{li, ul, button},
         embed::WebRuntime,
         prelude::*,
     },
@@ -85,6 +85,48 @@ fn mini_list() {
         "pretty HTML produced from virtual nodes must match expected",
     );
 }
+
+#[wasm_bindgen_test]
+fn mutiple_event_listeners() {
+    // Create a button with two click event listeners
+    let (mut web_tester, web_div) = WebRuntime::in_web_div(move || {
+        // Each event listener increments a counter
+        let counter1 = moxie::state::state(|| 0u8);
+        let counter2 = moxie::state::state(|| 0u8);
+
+        let increment = |n: &u8| { Some(n + 1) };
+
+        // Clone the counters so they can be displayed later
+        let (counter1_val, counter2_val) = (counter1.clone(), counter2.clone());
+
+        moxie::mox! {
+            <button
+                on={ move |_: event::Click| counter1.update(increment) }
+                on={ move |_: event::Click| counter2.update(increment) }
+            >
+                // Display the values of the counters
+                {% "counter1 = {}, counter2 = {}", &counter1_val, &counter2_val }
+            </button>
+        }
+    });
+
+    web_tester.run_once(); // Initial rendering
+
+    // Retreive the HtmlElement of to the <button> tag
+    let web_root_element: &sys::Element = web_div.as_ref();
+    let button_element = web_root_element
+        .first_element_child()
+        .and_then(|node| node.dyn_into::<sys::HtmlElement>().ok())
+        .unwrap();
+
+    assert_eq!(button_element.inner_text(), "counter1 = 0, counter2 = 0", "Counters should start at zero");
+
+    button_element.click(); // Simulate a click event
+    web_tester.run_once(); // Update the DOM
+
+    assert_eq!(button_element.inner_text(), "counter1 = 1, counter2 = 1", "Counters should be updated once");
+}
+
 
 fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
     match (expected, actual.node_type()) {
