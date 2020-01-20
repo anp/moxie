@@ -12,14 +12,13 @@ use syn::{
 /// Defines required [topo::Env] values for a function. Binds the provided types
 /// as if references to them were implicit function arguments.
 ///
-/// TODO this should allow for binding optionally and non-optionally (panicking)
-///
 /// # Panics
 ///
 /// Will cause the annotated function to panic if it is invoked without the
 /// requested type in its `topo::Env`.
 #[proc_macro_attribute]
 #[proc_macro_error]
+// TODO(#97) support optional binding
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 

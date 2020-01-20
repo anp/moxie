@@ -1,6 +1,4 @@
 //! Moxie implements "topological memoization" with storage in its runtime.
-//!
-//! TODO expand on this.
 
 use std::{
     any::{Any, TypeId},

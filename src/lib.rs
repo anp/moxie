@@ -3,22 +3,6 @@
 //! runtime which powers a declarative style for creating interfaces and
 //! attempts to minimize latency and general overhead.
 //!
-//! TODO simple snippet
-//!
-//! # Declarative style
-//!
-//! TODO "imperative but idempotent"
-//!
-//! "describe the UI *right now*"
-//!
-//! partition the render space using function calls
-//!
-//! while managing persistent stateful elements
-//!
-//! with minimal incremental updates
-//!
-//! in order to achieve minimal latency and consistent responsiveness
-//!
 //! # Memoization
 //!
 //! Memoization is the core tool which moxie provides to store data across
@@ -45,11 +29,11 @@
 //!
 //! # State
 //!
-//! TODO
+//! TODO(#95)
 //!
 //! # Loading
 //!
-//! TODO
+//! TODO(#95)
 //!
 //! # UI Runtime
 //!
@@ -84,7 +68,8 @@ pub mod load;
 pub mod memo;
 pub mod state;
 
-/// TODO figure out where this is actually documented
+/// Accepts an XML-like expression and expands it to builder method calls.
+// TODO(#87) document when an api is decided upon
 #[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use mox::mox;
 

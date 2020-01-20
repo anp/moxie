@@ -58,8 +58,7 @@ use std::{
     panic::Location,
 };
 
-/// Calls the provided expression with an [`Id`] specific to the callsite,
-/// optionally passing additional environment values to the child scope.
+/// Calls the provided expression with an [`Id`] specific to the callsite.
 ///
 /// ```
 /// let prev = topo::Id::current();
@@ -71,7 +70,9 @@ pub fn call<R>(op: impl FnOnce() -> R) -> R {
     Point::with_current(|p| p.enter_child(callsite, callsite.current_count(), op))
 }
 
-/// todo document
+/// The default "slot" for a topo call is the number of times that callsite
+/// has executed. You can override that by providing an arbitrary slot in
+/// this call.
 #[track_caller]
 pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))

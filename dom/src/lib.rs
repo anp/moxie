@@ -75,9 +75,7 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 #[topo::nested]
 #[illicit::from_env(parent: &MemoElement)]
 pub fn text(s: impl ToString) {
-    // TODO consider a ToOwned-based memoization API that's lower level?
-    // memo_ref<Ref, Arg, Output>(reference: Ref, init: impl FnOnce(Arg) -> Output)
-    // where Ref: ToOwned<Owned=Arg> + PartialEq, etcetcetc
+    // TODO(#99) avoid allocating this extra string when it hasn't changed
     let text_node = memo(s.to_string(), |s| parent.node.create_text_node(s));
     parent.ensure_child_attached(&text_node);
 }
@@ -134,8 +132,6 @@ impl MemoElement {
         self.node.clone()
     }
 
-    // FIXME this should be topo-nested
-    // TODO and it should be able to express its slot as an annotation
     /// Declare an attribute of the element, mutating the actual element's
     /// attribute when the passed value changes.
     ///
@@ -143,6 +139,7 @@ impl MemoElement {
     /// removes the attribute when `drop`ped, to ensure that the attribute
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
+    // TODO(#98) this should be topo::nested once slots can be assigned
     pub fn attr(&self, name: &'static str, value: impl ToString) -> &Self {
         topo::call_in_slot(name, || {
             memo_with(
@@ -168,6 +165,7 @@ impl MemoElement {
     /// handlers don't typically affect the debugging experience and have
     /// not yet shown up in performance profiles.
     #[topo::nested]
+    // TODO(#98) nested should allow specifying a slot
     pub fn on<Ev>(&self, callback: impl FnMut(Ev) + 'static) -> &Self
     where
         Ev: 'static + Event,
@@ -204,7 +202,7 @@ impl MemoElement {
     /// within the inner scope. After any children have been run and their
     /// nodes attached, this clears any trailing child nodes to ensure the
     /// element's children are correct per the latest declaration.
-    // FIXME this should be topo-nested
+    // TODO(#98) this should be topo::nested once slots can be assigned
     pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
         let elem = self.node.clone();
         let mut last_desired_child = None;

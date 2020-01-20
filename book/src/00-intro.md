@@ -30,3 +30,21 @@ This will start an HTTP server for the static files in the repo, and opens the r
 browser.
 
 Take a look at [`.cargo/config`](.cargo/config) for other subcommand aliases used in the project.
+
+---
+
+random:
+
+# Declarative style
+
+TODO "imperative but idempotent"
+
+"describe the UI *right now*"
+
+partition the render space using function calls
+
+while managing persistent stateful elements
+
+with minimal incremental updates
+
+in order to achieve minimal latency and consistent responsiveness

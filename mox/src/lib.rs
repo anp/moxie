@@ -46,8 +46,6 @@ fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
                     // strip the percent sign off the front
                     new_stream = TokenStream::new();
                     new_stream.extend(tokens);
-
-                    // TODO get all but the last element here too if its a %
                     new_stream = quote!(text(format!(#new_stream)));
                 }
             }
@@ -259,7 +257,7 @@ impl Into<Diagnostic> for Error {
                 Diagnostic::new(Level::Error, "input ends before expected".to_string())
             }
             Error::SnaxError(ParseError::UnexpectedItem(item)) => {
-                // TODO https://github.com/LPGhatguy/snax/issues/9
+                // TODO(#96)
                 Diagnostic::new(Level::Error, format!("did not expect {:?}", item))
             }
             Error::SnaxError(ParseError::UnexpectedToken(token)) => {
