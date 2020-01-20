@@ -1,6 +1,6 @@
 use {
     moxie_dom::{
-        elements::{li, ul, button},
+        elements::{button, li, ul},
         embed::WebRuntime,
         prelude::*,
     },
@@ -94,7 +94,7 @@ fn mutiple_event_listeners() {
         let counter1 = moxie::state::state(|| 0u8);
         let counter2 = moxie::state::state(|| 0u8);
 
-        let increment = |n: &u8| { Some(n + 1) };
+        let increment = |n: &u8| Some(n + 1);
 
         // Clone the counters so they can be displayed later
         let (counter1_val, counter2_val) = (counter1.clone(), counter2.clone());
@@ -119,14 +119,21 @@ fn mutiple_event_listeners() {
         .and_then(|node| node.dyn_into::<sys::HtmlElement>().ok())
         .unwrap();
 
-    assert_eq!(button_element.inner_text(), "counter1 = 0, counter2 = 0", "Counters should start at zero");
+    assert_eq!(
+        button_element.inner_text(),
+        "counter1 = 0, counter2 = 0",
+        "Counters should start at zero"
+    );
 
     button_element.click(); // Simulate a click event
     web_tester.run_once(); // Update the DOM
 
-    assert_eq!(button_element.inner_text(), "counter1 = 1, counter2 = 1", "Counters should be updated once");
+    assert_eq!(
+        button_element.inner_text(),
+        "counter1 = 1, counter2 = 1",
+        "Counters should be updated once"
+    );
 }
-
 
 fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
     match (expected, actual.node_type()) {
