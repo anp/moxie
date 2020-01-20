@@ -159,7 +159,6 @@ impl MemoElement {
         self
     }
 
-    // FIXME this should be topo-nested
     /// Declare an event handler on the element.
     ///
     /// A guard value is stored as a resulting "effect" of the mutation, and removes the attribute
@@ -168,6 +167,7 @@ impl MemoElement {
     ///
     /// Currently this is performed on every Revision, as changes to event handlers don't typically
     /// affect the debugging experience and have not yet shown up in performance profiles.
+    #[topo::nested]
     pub fn on<Ev>(&self, callback: impl FnMut(Ev) + 'static) -> &Self
     where
         Ev: 'static + Event,
