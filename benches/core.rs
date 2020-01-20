@@ -12,21 +12,21 @@ criterion::criterion_group!(runtime, once_from_store, run_empty, run_repeated);
 criterion::criterion_main!(runtime);
 
 fn once_from_store(c: &mut Criterion) {
-    let mut rt = Runtime::new(|| once(|| Rc::new(vec![0; 1_000_000])));
-    rt.run_once();
-    c.bench_function("1mb vec cached", |b| b.iter(|| rt.run_once()));
+    let mut rt = Runtime::new(|()| once(|| Rc::new(vec![0; 1_000_000])));
+    rt.run_once(());
+    c.bench_function("1mb vec cached", |b| b.iter(|| rt.run_once(())));
 }
 
 fn run_empty(c: &mut Criterion) {
-    let mut rt = Runtime::new(|| Revision::current());
-    c.bench_function("run_empty", |b| b.iter(|| rt.run_once()));
+    let mut rt = Runtime::new(|()| Revision::current());
+    c.bench_function("run_empty", |b| b.iter(|| rt.run_once(())));
 }
 
 fn run_n_times_empty(b: &mut criterion::Bencher, n: &usize) {
-    let mut rt = Runtime::new(|| Revision::current());
+    let mut rt = Runtime::new(|()| Revision::current());
     b.iter(|| {
         for _ in 0..*n {
-            rt.run_once();
+            rt.run_once(());
         }
     });
 }
