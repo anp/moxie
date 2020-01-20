@@ -116,7 +116,7 @@ impl std::fmt::Debug for Id {
 ///
 /// The current `Point` contains the local [`Id`] and a count of how often each
 /// of its children has been called.
-#[doc(hiddent)]
+#[doc(hidden)]
 #[derive(Debug)]
 pub struct Point {
     id: Id,
