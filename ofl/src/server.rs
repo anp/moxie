@@ -1,26 +1,24 @@
-use {
-    actix::prelude::*,
-    actix_web::{
-        dev::{MessageBody, Service, ServiceRequest, ServiceResponse, Transform},
-        http::uri::Uri,
-        middleware, web, App, HttpServer,
-    },
-    actix_web_actors::ws,
-    crossbeam::channel::{select, unbounded as chan, Receiver, Sender},
-    failure::Error,
-    futures::{compat::Compat, future::Ready, TryFutureExt},
-    futures01::{Async, Future as OldFuture},
-    gumdrop::Options,
-    notify::Watcher,
-    session::{ChangeWatchSession, Changed},
-    std::{
-        net::IpAddr,
-        path::{Path, PathBuf},
-        sync::Arc,
-        thread::JoinHandle,
-    },
-    tracing::*,
+use actix::prelude::*;
+use actix_web::{
+    dev::{MessageBody, Service, ServiceRequest, ServiceResponse, Transform},
+    http::uri::Uri,
+    middleware, web, App, HttpServer,
 };
+use actix_web_actors::ws;
+use crossbeam::channel::{select, unbounded as chan, Receiver, Sender};
+use failure::Error;
+use futures::{compat::Compat, future::Ready, TryFutureExt};
+use futures01::{Async, Future as OldFuture};
+use gumdrop::Options;
+use notify::Watcher;
+use session::{ChangeWatchSession, Changed};
+use std::{
+    net::IpAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
+    thread::JoinHandle,
+};
+use tracing::*;
 
 mod session;
 
@@ -156,9 +154,7 @@ impl FilesWatcher {
     fn new(root_path: &Path, session_rx: Receiver<Addr<ChangeWatchSession>>) -> Self {
         let (uri_tx, uri_rx) = chan();
         let root = root_path.to_owned();
-        let joiner = Some(std::thread::spawn(|| {
-            pump_channels(root, (uri_rx, session_rx))
-        }));
+        let joiner = Some(std::thread::spawn(|| pump_channels(root, (uri_rx, session_rx))));
 
         Self { uri_tx, joiner }
     }
@@ -176,19 +172,15 @@ where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>>,
     S::Future: 'static,
 {
+    type Error = S::Error;
+    type Future = Compat<Ready<Result<Self::Transform, Self::InitError>>>;
+    type InitError = ();
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
-    type Error = S::Error;
     type Transform = WatchHandle<S>;
-    type InitError = ();
-    type Future = Compat<Ready<Result<Self::Transform, Self::InitError>>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        futures::future::ok(WatchHandle {
-            service,
-            uri_tx: self.uri_tx.clone(),
-        })
-        .compat()
+        futures::future::ok(WatchHandle { service, uri_tx: self.uri_tx.clone() }).compat()
     }
 }
 
@@ -203,8 +195,6 @@ where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>>,
     S::Future: 'static,
 {
-    type Request = ServiceRequest;
-    type Response = ServiceResponse<B>;
     type Error = S::Error;
     type Future = Box<
         dyn OldFuture<
@@ -212,6 +202,8 @@ where
                 Error = <<S as Service>::Future as OldFuture>::Error,
             > + 'static,
     >;
+    type Request = ServiceRequest;
+    type Response = ServiceResponse<B>;
 
     fn poll_ready(&mut self) -> Result<Async<()>, Self::Error> {
         Ok(Async::Ready(()))

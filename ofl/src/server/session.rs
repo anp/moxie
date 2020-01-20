@@ -1,10 +1,8 @@
-use {
-    actix::prelude::*,
-    actix_web_actors::ws,
-    crossbeam::channel::Sender,
-    std::time::{Duration, Instant},
-    tracing::*,
-};
+use actix::prelude::*;
+use actix_web_actors::ws;
+use crossbeam::channel::Sender;
+use std::time::{Duration, Instant};
+use tracing::*;
 
 pub struct Changed(pub String);
 
@@ -19,10 +17,7 @@ pub struct ChangeWatchSession {
 
 impl ChangeWatchSession {
     pub fn new(session_tx: Sender<Addr<ChangeWatchSession>>) -> Self {
-        ChangeWatchSession {
-            last_heartbeat: Instant::now(),
-            session_tx,
-        }
+        ChangeWatchSession { last_heartbeat: Instant::now(), session_tx }
     }
 
     fn tick_heartbeat(&mut self) {
@@ -32,6 +27,7 @@ impl ChangeWatchSession {
 
 impl Handler<Changed> for ChangeWatchSession {
     type Result = ();
+
     fn handle(
         &mut self,
         Changed(changed): Changed,
