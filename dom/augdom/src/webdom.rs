@@ -1,13 +1,11 @@
-//! An implementation of `augdom`'s APIs on top of the actual web using the `web-sys` crate and
-//! `wasm-bindgen`.
+//! An implementation of `augdom`'s APIs on top of the actual web using the
+//! `web-sys` crate and `wasm-bindgen`.
 
-use {
-    super::Node,
-    crate::{document, event::Event},
-    std::io::Write,
-    wasm_bindgen::{prelude::*, JsCast},
-    web_sys as sys,
-};
+use super::Node;
+use crate::{document, event::Event};
+use std::io::Write;
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys as sys;
 
 /// A dynamically-allocated closure that is callable from JavaScript.
 pub struct Callback {
@@ -27,8 +25,8 @@ impl Callback {
         Self { cb }
     }
 
-    /// Returns an reference to the underlying JS function. If the reference is used after this
-    /// `Callback` is dropped it will panic.
+    /// Returns an reference to the underlying JS function. If the reference is
+    /// used after this `Callback` is dropped it will panic.
     pub fn as_fn(&self) -> &js_sys::Function {
         self.cb.as_ref().unchecked_ref()
     }
@@ -135,7 +133,8 @@ impl From<sys::Text> for Node {
 }
 
 impl Node {
-    /// Returns a reference to a concrete DOM node, panics if this is a virtual node.
+    /// Returns a reference to a concrete DOM node, panics if this is a virtual
+    /// node.
     pub fn expect_concrete(&self) -> &sys::Node {
         match self {
             Node::Concrete(n) => n,

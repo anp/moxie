@@ -1,15 +1,13 @@
-use {
-    moxie_dom::{
-        elements::{button, li, ul},
-        embed::WebRuntime,
-        prelude::*,
-    },
-    std::io::prelude::*,
-    typed_html::dom::{DOMTree, VNode},
-    wasm_bindgen::JsCast,
-    wasm_bindgen_test::*,
-    web_sys as sys,
+use moxie_dom::{
+    elements::{button, li, ul},
+    embed::WebRuntime,
+    prelude::*,
 };
+use std::io::prelude::*;
+use typed_html::dom::{DOMTree, VNode};
+use wasm_bindgen::JsCast;
+use wasm_bindgen_test::*;
+use web_sys as sys;
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
@@ -154,19 +152,14 @@ fn assert_vnode_matches_element(expected: &VNode<String>, actual: &sys::Node) {
             for (i, expected_child) in expected.children.iter().enumerate() {
                 let child = match actual_child {
                     Some(a) => a,
-                    None => panic!(
-                        "failed while looking for child {} of {}",
-                        i,
-                        actual.inner_html()
-                    ),
+                    None => {
+                        panic!("failed while looking for child {} of {}", i, actual.inner_html())
+                    }
                 };
                 assert_vnode_matches_element(expected_child, &child);
                 actual_child = child.next_sibling();
             }
-            assert!(
-                actual_child.is_none(),
-                "dom node should not have any children remaining"
-            );
+            assert!(actual_child.is_none(), "dom node should not have any children remaining");
         }
         _ => {
             panic!("mismatched nodes!");
@@ -191,23 +184,12 @@ fn assert_attributes_match(expected: &typed_html::dom::VElement<String>, actual:
         if let Some(expected) = expected {
             assert_eq!(&actual.value(), expected, "attribute `{}` must match", name);
         } else {
-            writeln!(
-                &mut attr_panic_msg,
-                "unexpected {}={}",
-                name,
-                actual.value()
-            )
-            .unwrap();
+            writeln!(&mut attr_panic_msg, "unexpected {}={}", name, actual.value()).unwrap();
         }
     }
 
     for (expected_name, expected_value) in expected_attrs {
-        writeln!(
-            &mut attr_panic_msg,
-            "missing {}={}",
-            expected_name, expected_value
-        )
-        .unwrap();
+        writeln!(&mut attr_panic_msg, "missing {}={}", expected_name, expected_value).unwrap();
     }
 
     if !attr_panic_msg.is_empty() {

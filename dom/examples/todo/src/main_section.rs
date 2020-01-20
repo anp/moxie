@@ -1,9 +1,7 @@
-use {
-    crate::{filter::*, footer::*, item::todo_item, Todo},
-    moxie_dom::{
-        elements::{input, label, section, span, ul},
-        prelude::*,
-    },
+use crate::{filter::*, footer::*, item::todo_item, Todo};
+use moxie_dom::{
+    elements::{input, label, section, span, ul},
+    prelude::*,
 };
 
 #[topo::nested]
@@ -77,8 +75,6 @@ pub fn main_section() {
 }
 
 // TODO test where:
-/*
-assert starting list of todos matches starting elements
-switch filter to active, everything stays the same
-switch filter to completed, list is empty
-*/
+// assert starting list of todos matches starting elements
+// switch filter to active, everything stays the same
+// switch filter to completed, list is empty

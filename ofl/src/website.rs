@@ -1,10 +1,8 @@
-use {
-    failure::{Error, SyncFailure},
-    gumdrop::Options,
-    mdbook::MDBook,
-    std::path::{Path, PathBuf},
-    tracing::*,
-};
+use failure::{Error, SyncFailure};
+use gumdrop::Options;
+use mdbook::MDBook;
+use std::path::{Path, PathBuf};
+use tracing::*;
 
 #[derive(Debug, Options)]
 pub struct Website {
@@ -15,9 +13,7 @@ pub struct Website {
 
 impl Website {
     pub fn run(self, root_path: PathBuf) -> Result<(), Error> {
-        let operation = self
-            .op
-            .unwrap_or_else(|| Operation::Build(DistOpts::default(&root_path)));
+        let operation = self.op.unwrap_or_else(|| Operation::Build(DistOpts::default(&root_path)));
         match operation {
             Operation::Build(opts) => opts.build_website_dist(&root_path),
         }
@@ -38,10 +34,7 @@ struct DistOpts {
 
 impl DistOpts {
     fn default(root_path: &Path) -> Self {
-        Self {
-            help: false,
-            output_dir: root_path.join("target").join("website"),
-        }
+        Self { help: false, output_dir: root_path.join("target").join("website") }
     }
 
     fn build_website_dist(self, root_path: &Path) -> Result<(), Error> {
@@ -71,15 +64,10 @@ impl DistOpts {
     }
 
     fn files_to_copy(&self, root_path: &Path, output_path: &Path) -> Result<Vec<PathBuf>, Error> {
-        let skip_prefixes = vec![
-            output_path.to_path_buf(),
-            root_path.join(".vscode"),
-            root_path.join("ofl"),
-        ];
+        let skip_prefixes =
+            vec![output_path.to_path_buf(), root_path.join(".vscode"), root_path.join("ofl")];
 
-        let exts = vec![
-            "css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff",
-        ];
+        let exts = vec!["css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff"];
 
         let output = output_path.display();
         info!({ %output }, "cleaning");

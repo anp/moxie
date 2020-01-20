@@ -1,6 +1,4 @@
 //! Moxie implements "topological memoization" with storage in its runtime.
-//!
-//! TODO expand on this.
 
 use std::{
     any::{Any, TypeId},
@@ -9,22 +7,26 @@ use std::{
     rc::Rc,
 };
 
-/// Memoizes the provided function, caching the intermediate `Stored` value in memoization storage
-/// and only re-initializing it if `Arg` has changed since the cached value was created. Regardless
-/// of prior cached results, `with` is then called in to produce a return value.
+/// Memoizes the provided function, caching the intermediate `Stored` value in
+/// memoization storage and only re-initializing it if `Arg` has changed since
+/// the cached value was created. Regardless of prior cached results, `with` is
+/// then called in to produce a return value.
 ///
-/// Marks the memoized value as `Live` in the current `Revision`, preventing the value from being
-/// garbage collected during at the end of the current `Revision`.
+/// Marks the memoized value as `Live` in the current `Revision`, preventing the
+/// value from being garbage collected during at the end of the current
+/// `Revision`.
 ///
-/// If a previous value was cached for this callsite but the argument has changed and it must be
-/// re-initialized, the previous value will be dropped before the new one is initialized.
+/// If a previous value was cached for this callsite but the argument has
+/// changed and it must be re-initialized, the previous value will be dropped
+/// before the new one is initialized.
 ///
-/// It is currently possible to nest calls to `memo_with` and other functions in this module, but
-/// the values they store won't be correctly retained across `Revision`s until we track
-/// dependency information. As a result, it's not recommended to nest calls to `memo_with!`.
+/// It is currently possible to nest calls to `memo_with` and other functions in
+/// this module, but the values they store won't be correctly retained across
+/// `Revision`s until we track dependency information. As a result, it's not
+/// recommended to nest calls to `memo_with!`.
 ///
-/// `init` takes a reference to `Arg` so that the memoization store can compare future calls'
-/// arguments against the one used to produce the stored value.
+/// `init` takes a reference to `Arg` so that the memoization store can compare
+/// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
 #[illicit::from_env(store: &MemoStore)]
 pub fn memo_with<Arg, Stored, Ret>(
@@ -37,13 +39,10 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    let key = (
-        topo::Id::current(),
-        TypeId::of::<Arg>(),
-        TypeId::of::<Stored>(),
-    );
+    let key = (topo::Id::current(), TypeId::of::<Arg>(), TypeId::of::<Stored>());
 
-    // to allow nested memo_with calls, we separate mutable borrows of `store` from the callbacks:
+    // to allow nested memo_with calls, we separate mutable borrows of `store` from
+    // the callbacks:
     //
     // * with &mut store
     //   * remove optionally-cached value from storage
@@ -72,11 +71,7 @@ where
         (with(&fresh), Box::new((arg, fresh)))
     });
 
-    store
-        .0
-        .borrow_mut()
-        .memos
-        .insert(key, (Liveness::Live, boxed as _));
+    store.0.borrow_mut().memos.insert(key, (Liveness::Live, boxed as _));
 
     returned
 }
@@ -94,11 +89,11 @@ where
     memo_with((), |&()| expr(), with)
 }
 
-/// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and `Arg` is the same
-/// as when the stored value was created.
+/// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
+/// `Arg` is the same as when the stored value was created.
 ///
-/// `init` takes a reference to `Arg` so that the memoization store can compare future calls'
-/// arguments against the one used to produce the stored value.
+/// `init` takes a reference to `Arg` so that the memoization store can compare
+/// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
@@ -108,8 +103,9 @@ where
     memo_with(arg, init, Clone::clone)
 }
 
-/// Runs the provided expression once per [`topo::Id`]. The provided value will always be cloned on
-/// subsequent calls unless dropped from storage and reinitialized in a later `Revision`.
+/// Runs the provided expression once per [`topo::Id`]. The provided value will
+/// always be cloned on subsequent calls unless dropped from storage and
+/// reinitialized in a later `Revision`.
 #[topo::nested]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
@@ -123,14 +119,15 @@ where
 pub(crate) struct MemoStore(Rc<RefCell<MemoStorage>>);
 
 impl MemoStore {
-    /// Drops memoized values that were not referenced during the last `Revision`.
+    /// Drops memoized values that were not referenced during the last
+    /// `Revision`.
     pub fn gc(&self) {
         self.0.borrow_mut().gc();
     }
 }
 
-/// The memoization storage for a `Runtime`. Stores memoized values by a `MemoIndex`,
-/// exposing a garbage collection API to the embedding `Runtime`.
+/// The memoization storage for a `Runtime`. Stores memoized values by a
+/// `MemoIndex`, exposing a garbage collection API to the embedding `Runtime`.
 #[derive(Debug)]
 pub(crate) struct MemoStorage {
     memos: HashMap<MemoIndex, (Liveness, Box<dyn Any>)>,
@@ -139,27 +136,24 @@ type MemoIndex = (topo::Id, TypeId, TypeId);
 
 impl Default for MemoStorage {
     fn default() -> Self {
-        MemoStorage {
-            memos: HashMap::new(),
-        }
+        MemoStorage { memos: HashMap::new() }
     }
 }
 
 impl MemoStorage {
-    /// Drops memoized values that were not referenced during the last tick, removing all `Dead`
-    /// storage values and sets all remaining values to `Dead` for the next GC execution.
+    /// Drops memoized values that were not referenced during the last tick,
+    /// removing all `Dead` storage values and sets all remaining values to
+    /// `Dead` for the next GC execution.
     fn gc(&mut self) {
-        self.memos
-            .retain(|_, (liveness, _)| liveness == &Liveness::Live);
-        self.memos
-            .values_mut()
-            .for_each(|(liveness, _)| *liveness = Liveness::Dead);
+        self.memos.retain(|_, (liveness, _)| liveness == &Liveness::Live);
+        self.memos.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
     }
 }
 
-/// Describes the outcome for a memoization value if a garbage collection were to occur when
-/// observed. During the run of a `Revision` any memoized values which are initialized or read are
-/// marked as `Live`. At the end of a `Revision`,
+/// Describes the outcome for a memoization value if a garbage collection were
+/// to occur when observed. During the run of a `Revision` any memoized values
+/// which are initialized or read are marked as `Live`. At the end of a
+/// `Revision`,
 #[derive(Debug, PartialEq)]
 enum Liveness {
     /// The memoized value would be retained in a GC right now.
@@ -170,13 +164,11 @@ enum Liveness {
 
 #[cfg(test)]
 mod tests {
-    use {
-        crate::{
-            embed::{Revision, Runtime},
-            memo::*,
-        },
-        std::{cell::Cell, collections::HashSet},
+    use crate::{
+        embed::{Revision, Runtime},
+        memo::*,
     };
+    use std::{cell::Cell, collections::HashSet};
 
     fn with_test_logs(test: impl FnOnce()) {
         tracing::subscriber::with_default(
@@ -262,11 +254,7 @@ mod tests {
             });
 
             let first_counts = rt.run_once();
-            assert_eq!(
-                first_counts.len(),
-                num_iters,
-                "each mutation must be called exactly once"
-            );
+            assert_eq!(first_counts.len(), num_iters, "each mutation must be called exactly once");
 
             let second_counts = rt.run_once();
             assert_eq!(

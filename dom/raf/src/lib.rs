@@ -2,17 +2,15 @@
 
 #![deny(missing_docs)]
 
-use {
-    futures::task::{waker, ArcWake},
-    std::{
-        cell::{Cell, RefCell},
-        rc::Rc,
-        sync::Arc,
-        task::Waker,
-    },
-    wasm_bindgen::{prelude::*, JsCast},
-    web_sys::window,
+use futures::task::{waker, ArcWake};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::Arc,
+    task::Waker,
 };
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys::window;
 
 /// A value which can be mutably called by the scheduler.
 pub trait Tick: 'static {
@@ -20,13 +18,16 @@ pub trait Tick: 'static {
     fn tick(&mut self);
 }
 
-/// A value which can receive a waker from the scheduler that will request a new frame when woken.
+/// A value which can receive a waker from the scheduler that will request a new
+/// frame when woken.
 pub trait Waking {
-    /// Receive a waker from the scheduler that calls `requestAnimationFrame` when woken.
+    /// Receive a waker from the scheduler that calls `requestAnimationFrame`
+    /// when woken.
     fn set_waker(&mut self, wk: Waker);
 }
 
-/// Owns a `WebRuntime` and schedules its execution using `requestAnimationFrame`.
+/// Owns a `WebRuntime` and schedules its execution using
+/// `requestAnimationFrame`.
 #[must_use]
 pub struct AnimationFrameScheduler<Cb>(Rc<AnimationFrameState<Cb>>);
 
@@ -42,8 +43,8 @@ impl<T: Tick> ArcWake for AnimationFrameScheduler<T> {
 }
 
 impl<T: Tick> AnimationFrameScheduler<T> {
-    /// Construct a new scheduler with the provided callback. `ticker.tick()` will be called once
-    /// per fulfilled animation frame request.
+    /// Construct a new scheduler with the provided callback. `ticker.tick()`
+    /// will be called once per fulfilled animation frame request.
     pub fn new(ticker: T) -> Self {
         AnimationFrameScheduler(Rc::new(AnimationFrameState {
             ticker: RefCell::new(ticker),
@@ -70,17 +71,19 @@ impl<T: Tick> AnimationFrameScheduler<T> {
         self.0.handle.set(Some(handle));
     }
 
-    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
-    /// animation frames are requested immmediately after the last `moxie::Revision` is completed.
-    /// `WebRuntime::run_once` is called once per requested animation frame.
+    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback
+    /// loop where new animation frames are requested immmediately after the
+    /// last `moxie::Revision` is completed. `WebRuntime::run_once` is
+    /// called once per requested animation frame.
     pub fn run_on_every_frame(self) {
         self.ensure_scheduled(true);
     }
 }
 
 impl<T: Tick + Waking> AnimationFrameScheduler<T> {
-    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback loop where new
-    /// animation frames are requested whenever the waker passed to the provided closure is woken.
+    /// Consumes the scheduler to initiate a `requestAnimationFrame` callback
+    /// loop where new animation frames are requested whenever the waker
+    /// passed to the provided closure is woken.
     pub fn run_on_wake(self) {
         let state = Rc::clone(&self.0);
         let waker = waker(Arc::new(self));
@@ -98,21 +101,17 @@ unsafe impl<Cb> Sync for AnimationFrameScheduler<Cb> {}
 
 struct AnimationFrameHandle {
     raw: i32,
-    /// Prefixed with an underscore because it is only read by JS, otherwise we'll get a warning.
+    /// Prefixed with an underscore because it is only read by JS, otherwise
+    /// we'll get a warning.
     _callback: Closure<dyn FnMut()>,
 }
 
 impl AnimationFrameHandle {
     fn request(callback: Closure<dyn FnMut()>) -> Self {
-        let raw = window()
-            .unwrap()
-            .request_animation_frame(callback.as_ref().unchecked_ref())
-            .unwrap();
+        let raw =
+            window().unwrap().request_animation_frame(callback.as_ref().unchecked_ref()).unwrap();
 
-        Self {
-            raw,
-            _callback: callback,
-        }
+        Self { raw, _callback: callback }
     }
 }
 

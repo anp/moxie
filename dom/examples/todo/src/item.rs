@@ -1,9 +1,7 @@
-use {
-    crate::{input::text_input, Todo},
-    moxie_dom::{
-        elements::{button, div, input, label, li},
-        prelude::*,
-    },
+use crate::{input::text_input, Todo};
+use moxie_dom::{
+    elements::{button, div, input, label, li},
+    prelude::*,
 };
 
 #[topo::nested]

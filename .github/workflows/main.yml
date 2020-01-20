@@ -1,5 +1,10 @@
-on: [pull_request, push]
-
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
 jobs:
   main:
     strategy:
@@ -39,12 +44,6 @@ jobs:
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: cargo build-website
-
-    - name: deploy preview
-      if: runner.os == 'Linux'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      run: npx netlify-cli deploy
 
     - name: promote website to prod, ensure crates published
       if: github.ref == 'refs/heads/master' && runner.os == 'Linux'

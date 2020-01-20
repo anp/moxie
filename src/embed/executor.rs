@@ -1,23 +1,23 @@
-//! An executor for futures that need to run with low latency relative to the runtime.
+//! An executor for futures that need to run with low latency relative to the
+//! runtime.
 
-use {
-    super::Spawner,
-    futures::{
-        future::{FutureObj, LocalFutureObj},
-        stream::{FuturesUnordered, StreamExt},
-        task::{LocalSpawn, Spawn, SpawnError},
-    },
-    std::{
-        cell::RefCell,
-        rc::{Rc, Weak},
-        task::{Context, Poll, Waker},
-    },
+use super::Spawner;
+use futures::{
+    future::{FutureObj, LocalFutureObj},
+    stream::{FuturesUnordered, StreamExt},
+    task::{LocalSpawn, Spawn, SpawnError},
+};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+    task::{Context, Poll, Waker},
 };
 
-/// An executor styled after [`futures::LocalPool`] but which can run inside another executor. Its
-/// primary usage here is to run handlers until stalled before & after each revision. Its goals
-/// limit the executor to being useful for a small number of mostly quiet futures, typical of
-/// streams of input events or other "per-frame" types of activity.
+/// An executor styled after [`futures::LocalPool`] but which can run inside
+/// another executor. Its primary usage here is to run handlers until stalled
+/// before & after each revision. Its goals limit the executor to being useful
+/// for a small number of mostly quiet futures, typical of streams of input
+/// events or other "per-frame" types of activity.
 #[derive(Default)]
 pub struct InBandExecutor {
     /// Futures currently being executed.
@@ -31,8 +31,8 @@ pub struct InBandExecutor {
 pub struct InBandSpawner(Weak<RefCell<Vec<LocalFutureObj<'static, ()>>>>);
 
 impl InBandExecutor {
-    /// Run the executor until it has stalled. This does not yet offer any timeout
-    /// mechanism which works across platforms.
+    /// Run the executor until it has stalled. This does not yet offer any
+    /// timeout mechanism which works across platforms.
     pub fn run_until_stalled(&mut self, waker: &Waker) {
         let mut cx = Context::from_waker(waker);
         loop {
@@ -92,27 +92,21 @@ impl LocalSpawn for InBandSpawner {
     }
 
     fn status_local(&self) -> Result<(), SpawnError> {
-        if self.0.upgrade().is_some() {
-            Ok(())
-        } else {
-            Err(SpawnError::shutdown())
-        }
+        if self.0.upgrade().is_some() { Ok(()) } else { Err(SpawnError::shutdown()) }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        futures::{
-            future::{lazy, poll_fn, Future},
-            task::{noop_waker, Context, LocalSpawn, Poll},
-        },
-        std::{
-            cell::{Cell, RefCell},
-            pin::Pin,
-            rc::Rc,
-        },
+    use super::*;
+    use futures::{
+        future::{lazy, poll_fn, Future},
+        task::{noop_waker, Context, LocalSpawn, Poll},
+    };
+    use std::{
+        cell::{Cell, RefCell},
+        pin::Pin,
+        rc::Rc,
     };
 
     struct Pending(Rc<()>);
@@ -145,16 +139,12 @@ mod tests {
         let cnt = Rc::new(Cell::new(0));
 
         let cnt1 = cnt.clone();
-        spawn
-            .spawn_local_obj(Box::pin(lazy(move |_| cnt1.set(cnt1.get() + 1))).into())
-            .unwrap();
+        spawn.spawn_local_obj(Box::pin(lazy(move |_| cnt1.set(cnt1.get() + 1))).into()).unwrap();
         pool.run_until_stalled(&wk);
         assert_eq!(cnt.get(), 1);
 
         let cnt2 = cnt.clone();
-        spawn
-            .spawn_local_obj(Box::pin(lazy(move |_| cnt2.set(cnt2.get() + 1))).into())
-            .unwrap();
+        spawn.spawn_local_obj(Box::pin(lazy(move |_| cnt2.set(cnt2.get() + 1))).into()).unwrap();
         pool.run_until_stalled(&wk);
         assert_eq!(cnt.get(), 2);
     }
@@ -263,19 +253,9 @@ mod tests {
         let wk = noop_waker();
         let spawn = pool.local_spawner();
 
-        spawn
-            .spawn_local_obj(
-                Box::pin(Spin {
-                    state: state.clone(),
-                    idx: 0,
-                })
-                .into(),
-            )
-            .unwrap();
+        spawn.spawn_local_obj(Box::pin(Spin { state: state.clone(), idx: 0 }).into()).unwrap();
 
-        spawn
-            .spawn_local_obj(Box::pin(Spin { state, idx: 1 }).into())
-            .unwrap();
+        spawn.spawn_local_obj(Box::pin(Spin { state, idx: 1 }).into()).unwrap();
 
         pool.run_until_stalled(&wk);
     }

@@ -1,9 +1,7 @@
-use {
-    crate::{filter::filter, Todo},
-    moxie_dom::{
-        elements::{button, footer, span, strong},
-        prelude::*,
-    },
+use crate::{filter::filter, Todo};
+use moxie_dom::{
+    elements::{button, footer, span, strong},
+    prelude::*,
 };
 
 #[topo::nested]

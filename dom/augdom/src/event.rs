@@ -23,8 +23,8 @@ pub trait Event {
     const NAME: &'static str;
 }
 
-/// A binding of a particular event listener to a DOM node. The listener is removed when this value
-/// is dropped.
+/// A binding of a particular event listener to a DOM node. The listener is
+/// removed when this value is dropped.
 #[cfg(feature = "webdom")]
 #[must_use]
 pub struct EventHandle {
@@ -38,8 +38,8 @@ pub struct EventHandle {
 pub(crate) struct EventHandle;
 
 impl EventHandle {
-    /// Construct a new `EventHandle`, binding the provided callback to its target if the target is
-    /// able to receive events.
+    /// Construct a new `EventHandle`, binding the provided callback to its
+    /// target if the target is able to receive events.
     pub fn new<Ev>(_target: &Node, _callback: impl FnMut(Ev) + 'static) -> Self
     where
         Ev: Event,
@@ -56,20 +56,14 @@ impl EventHandle {
             let target = match _target {
                 Node::Concrete(n) => {
                     let target: &web_sys::EventTarget = n.as_ref();
-                    target
-                        .add_event_listener_with_callback(name, callback.as_fn())
-                        .unwrap();
+                    target.add_event_listener_with_callback(name, callback.as_fn()).unwrap();
                     Some(target.to_owned())
                 }
                 #[cfg(feature = "rsdom")]
                 _ => None,
             };
 
-            Self {
-                target,
-                callback,
-                name,
-            }
+            Self { target, callback, name }
         }
     }
 }
@@ -78,9 +72,7 @@ impl EventHandle {
 impl Drop for EventHandle {
     fn drop(&mut self) {
         if let Some(target) = self.target.take() {
-            target
-                .remove_event_listener_with_callback(self.name, self.callback.as_fn())
-                .unwrap();
+            target.remove_event_listener_with_callback(self.name, self.callback.as_fn()).unwrap();
         }
     }
 }

@@ -1,11 +1,9 @@
-use {
-    crate::{input::text_input, Todo},
-    moxie_dom::{
-        elements::{h1, header},
-        prelude::*,
-    },
-    tracing::info,
+use crate::{input::text_input, Todo};
+use moxie_dom::{
+    elements::{h1, header},
+    prelude::*,
 };
+use tracing::info;
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]

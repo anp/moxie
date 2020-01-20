@@ -1,16 +1,15 @@
-//! An implementation of `augdom`'s APIs on top of an in-memory emulation of the web's DOM.
+//! An implementation of `augdom`'s APIs on top of an in-memory emulation of the
+//! web's DOM.
 
-use {
-    super::*,
-    quick_xml::{
-        events::{BytesEnd, BytesStart, BytesText, Event},
-        Writer as XmlWriter,
-    },
-    std::{
-        cell::{Cell, RefCell},
-        fmt::Debug,
-        rc::{Rc, Weak},
-    },
+use super::*;
+use quick_xml::{
+    events::{BytesEnd, BytesStart, BytesText, Event},
+    Writer as XmlWriter,
+};
+use std::{
+    cell::{Cell, RefCell},
+    fmt::Debug,
+    rc::{Rc, Weak},
 };
 
 /// A node in the "virtual DOM" implemented in `rsdom`.
@@ -25,10 +24,7 @@ pub fn create_element(ty: &str) -> Rc<VirtNode> {
     Rc::new(VirtNode {
         parent: Cell::new(None),
         children: RefCell::new(vec![]),
-        data: VirtData::Elem {
-            tag: ty.to_string(),
-            attrs: RefCell::new(vec![]),
-        },
+        data: VirtData::Elem { tag: ty.to_string(), attrs: RefCell::new(vec![]) },
     })
 }
 
@@ -178,7 +174,8 @@ impl From<Rc<VirtNode>> for Node {
 }
 
 impl Node {
-    /// Returns a reference to a virtual node, panics if this is a concrete node.
+    /// Returns a reference to a virtual node, panics if this is a concrete
+    /// node.
     pub fn expect_virtual(&self) -> &Rc<VirtNode> {
         match self {
             #[cfg(feature = "webdom")]

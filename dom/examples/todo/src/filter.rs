@@ -1,11 +1,9 @@
-use {
-    crate::Todo,
-    moxie_dom::{
-        elements::{a, li, ul},
-        prelude::*,
-    },
-    Visibility::{Active, All, Completed},
+use crate::Todo;
+use moxie_dom::{
+    elements::{a, li, ul},
+    prelude::*,
 };
+use Visibility::{Active, All, Completed};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Visibility {

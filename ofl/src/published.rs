@@ -1,12 +1,10 @@
-use {
-    cargo_metadata::{Metadata, Package, PackageId},
-    crates_io_api as crates,
-    failure::{bail, Error, ResultExt},
-    gumdrop::Options,
-    semver::Version,
-    std::collections::BTreeMap,
-    tracing::*,
-};
+use cargo_metadata::{Metadata, Package, PackageId};
+use crates_io_api as crates;
+use failure::{bail, Error, ResultExt};
+use gumdrop::Options;
+use semver::Version;
+use std::collections::BTreeMap;
+use tracing::*;
 
 #[derive(Debug, Options)]
 pub struct EnsurePublished {
@@ -51,10 +49,7 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
         }
     }
 
-    let to_publish = to_publish_ids
-        .iter()
-        .map(|id| &metadata[id].name)
-        .collect::<Vec<_>>();
+    let to_publish = to_publish_ids.iter().map(|id| &metadata[id].name).collect::<Vec<_>>();
 
     info!("will publish: {:#?}", &to_publish);
     Ok(to_publish_ids)
@@ -87,8 +82,6 @@ stdout:
         bail!("cargo failure");
     }
 
-    // TODO tag this commit with a version string
-
     Ok(())
 }
 
@@ -101,10 +94,7 @@ fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
 
     let current_version_str = version.to_string();
 
-    Ok(versions
-        .iter()
-        .map(|v| &v.num)
-        .any(|v| v == &current_version_str))
+    Ok(versions.iter().map(|v| &v.num).any(|v| v == &current_version_str))
 }
 
 fn workspace_members_reverse_topo_sorted(metadata: &Metadata) -> Vec<PackageId> {
@@ -116,10 +106,7 @@ fn workspace_members_reverse_topo_sorted(metadata: &Metadata) -> Vec<PackageId> 
         id_by_name.insert(name.clone(), id.clone());
 
         for dep in &package.dependencies {
-            dep_names_by_name
-                .entry(name.clone())
-                .or_default()
-                .push(dep.name.clone());
+            dep_names_by_name.entry(name.clone()).or_default().push(dep.name.clone());
         }
     }
 
@@ -133,10 +120,5 @@ fn workspace_members_reverse_topo_sorted(metadata: &Metadata) -> Vec<PackageId> 
     })
     .unwrap();
 
-    member_names
-        .into_iter()
-        .rev()
-        .filter_map(|name| id_by_name.get(&name))
-        .cloned()
-        .collect()
+    member_names.into_iter().rev().filter_map(|name| id_by_name.get(&name)).cloned().collect()
 }

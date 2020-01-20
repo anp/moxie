@@ -1,13 +1,11 @@
 #![feature(track_caller)]
 
-use {
-    filter::Visibility,
-    header::input_header,
-    main_section::main_section,
-    moxie_dom::{elements::div, prelude::*},
-    std::sync::atomic::{AtomicU32, Ordering},
-    wasm_bindgen::prelude::*,
-};
+use filter::Visibility;
+use header::input_header;
+use main_section::main_section;
+use moxie_dom::{elements::div, prelude::*};
+use std::sync::atomic::{AtomicU32, Ordering};
+use wasm_bindgen::prelude::*;
 
 pub mod filter;
 pub mod footer;
@@ -47,11 +45,7 @@ pub struct Todo {
 impl Todo {
     fn new(s: impl Into<String>) -> Self {
         static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-        Self {
-            id: NEXT_ID.fetch_add(1, Ordering::SeqCst),
-            text: s.into(),
-            completed: false,
-        }
+        Self { id: NEXT_ID.fetch_add(1, Ordering::SeqCst), text: s.into(), completed: false }
     }
 }
 
