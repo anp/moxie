@@ -7,7 +7,7 @@ use moxie::{embed::Runtime, prelude::topo};
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building
 /// trees of DOM nodes.
 #[must_use]
-pub struct WebRuntime(Runtime<Box<dyn FnMut()>>);
+pub struct WebRuntime(Runtime<Box<dyn FnMut(())>>);
 
 impl WebRuntime {
     /// Construct a new `WebRuntime` which will maintain the children of the
@@ -18,7 +18,7 @@ impl WebRuntime {
     /// [`WebRuntime::animation_frame_scheduler`].
     pub fn new(parent: impl Into<Node>, mut root: impl FnMut() + 'static) -> Self {
         let parent = parent.into();
-        WebRuntime(Runtime::new(Box::new(move || {
+        WebRuntime(Runtime::new(Box::new(move |()| {
             illicit::child_env!(MemoElement => MemoElement::new(parent.clone()))
                 .enter(|| topo::call(|| root()))
         })))
@@ -27,7 +27,7 @@ impl WebRuntime {
     /// Run the root function in a fresh `moxie::Revision`. See
     /// `moxie::embed::Runtime::run_once` for details.
     pub fn run_once(&mut self) {
-        self.0.run_once();
+        self.0.run_once(());
     }
 }
 
@@ -45,7 +45,7 @@ impl WebRuntime {
     pub fn animation_frame_scheduler(self) -> raf::AnimationFrameScheduler<Self> {
         impl raf::Tick for WebRuntime {
             fn tick(&mut self) {
-                self.0.run_once();
+                self.0.run_once(());
             }
         }
 
