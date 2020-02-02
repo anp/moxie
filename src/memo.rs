@@ -189,7 +189,8 @@ mod tests {
 
             let mut prev_revision = None;
             let mut comp_skipped_count = 0;
-            let mut rt = Runtime::new(|()| {
+            let mut rt = Runtime::new();
+            let mut run = || {
                 let revision = Revision::current();
 
                 if let Some(pr) = prev_revision {
@@ -208,12 +209,12 @@ mod tests {
 
                 assert_eq!(current_call_count, 1);
                 assert_eq!(call_count, 1);
-            });
+            };
 
             for i in 0..5 {
                 assert_eq!(rt.revision().0, i);
 
-                rt.run_once(());
+                rt.run_once(&mut run);
 
                 assert_eq!(rt.revision().0, i + 1);
             }
@@ -230,14 +231,14 @@ mod tests {
             }
             assert_eq!(ids.len(), 10);
 
-            let mut rt = Runtime::new(|()| {
+            let mut rt = Runtime::new();
+            rt.run_once(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
                     memo(i, |_| ids.insert(topo::Id::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
-            rt.run_once(());
         });
     }
 
@@ -245,18 +246,19 @@ mod tests {
     fn memo_in_a_loop() {
         with_test_logs(|| {
             let num_iters = 10;
-            let mut rt = Runtime::new(|()| {
+            let mut rt = Runtime::new();
+            let run = || {
                 let mut counts = vec![];
                 for i in 0..num_iters {
                     topo::call(|| once(|| counts.push(i)));
                 }
                 counts
-            });
+            };
 
-            let first_counts = rt.run_once(());
+            let first_counts = rt.run_once(run);
             assert_eq!(first_counts.len(), num_iters, "each mutation must be called exactly once");
 
-            let second_counts = rt.run_once(());
+            let second_counts = rt.run_once(run);
             assert_eq!(
                 second_counts.len(),
                 0,
@@ -271,12 +273,13 @@ mod tests {
             let loop_ct = Cell::new(0);
             let raw_exec = Cell::new(0);
             let memo_exec = Cell::new(0);
-            let mut rt = Runtime::new(|()| {
+            let mut rt = Runtime::new();
+            let run = || {
                 raw_exec.set(raw_exec.get() + 1);
                 memo(loop_ct.get(), |_| {
                     memo_exec.set(memo_exec.get() + 1);
                 });
-            });
+            };
 
             for i in 0..10 {
                 loop_ct.set(i);
@@ -293,8 +296,8 @@ mod tests {
                     "runtime's root block should run exactly twice per loop_ct value"
                 );
 
-                rt.run_once(());
-                rt.run_once(());
+                rt.run_once(run);
+                rt.run_once(run);
             }
         })
     }

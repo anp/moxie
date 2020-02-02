@@ -198,7 +198,6 @@ mod tests {
                     .spawn_local_obj(
                         Box::pin(lazy(move |_| {
                             cnt.set(cnt.get() + 1);
-                            ()
                         }))
                         .into(),
                     )
