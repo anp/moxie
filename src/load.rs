@@ -98,7 +98,8 @@ mod tests {
         // this is uh weird, but we know up front how much we'll poll this
         let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
 
-        let mut rt = crate::embed::Runtime::new(move |()| -> Poll<u8> {
+        let mut rt = crate::embed::Runtime::new();
+        let mut run = move || -> Poll<u8> {
             let recv = recv.clone();
             load_once(|| async move {
                 recv.lock()
@@ -108,15 +109,19 @@ mod tests {
                     .await
                     .expect("we control the channel and won't drop it")
             })
-        });
+        };
 
-        assert_eq!(rt.run_once(()), Poll::Pending, "no values received when nothing sent");
-        assert_eq!(rt.run_once(()), Poll::Pending, "no values received, and we aren't blocking");
+        assert_eq!(rt.run_once(&mut run), Poll::Pending, "no values received when nothing sent");
+        assert_eq!(
+            rt.run_once(&mut run),
+            Poll::Pending,
+            "no values received, and we aren't blocking"
+        );
 
         send.send(5u8).unwrap();
-        assert_eq!(rt.run_once(()), Poll::Ready(5), "we need to receive the value we sent");
+        assert_eq!(rt.run_once(&mut run), Poll::Ready(5), "we need to receive the value we sent");
         assert_eq!(
-            rt.run_once(()),
+            rt.run_once(&mut run),
             Poll::Ready(5),
             "the value we sent must be cached because its from a oneshot channel"
         );
@@ -127,7 +132,8 @@ mod tests {
         let (send, recv) = futures::channel::oneshot::channel();
         let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
 
-        let mut rt = crate::embed::Runtime::new(move |()| -> Option<Poll<u8>> {
+        let mut rt = crate::embed::Runtime::new();
+        let mut run = move || -> Option<Poll<u8>> {
             if crate::embed::Revision::current().0 < 3 {
                 let recv = recv.clone();
                 Some(load_once(|| async move {
@@ -141,18 +147,18 @@ mod tests {
             } else {
                 None
             }
-        });
+        };
 
-        assert_eq!(rt.run_once(()), Some(Poll::Pending));
+        assert_eq!(rt.run_once(&mut run), Some(Poll::Pending));
         assert!(!send.is_canceled(), "interest expressed, receiver must be live");
 
-        assert_eq!(rt.run_once(()), Some(Poll::Pending));
+        assert_eq!(rt.run_once(&mut run), Some(Poll::Pending));
         assert!(!send.is_canceled(), "interest still expressed, receiver must be live");
 
-        assert_eq!(rt.run_once(()), None);
+        assert_eq!(rt.run_once(&mut run), None);
         assert!(!send.is_canceled(), "interest dropped, task live for another revision");
 
-        assert_eq!(rt.run_once(()), None);
+        assert_eq!(rt.run_once(&mut run), None);
         assert!(send.is_canceled(), "interest dropped, task dropped");
 
         assert!(

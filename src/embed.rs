@@ -22,7 +22,6 @@ use executor::InBandExecutor;
 use futures::task::LocalSpawn;
 use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
-    marker::PhantomData,
     rc::Rc,
     task::{Poll, Waker},
 };
@@ -58,27 +57,28 @@ impl std::fmt::Debug for Revision {
 ///
 /// ```
 /// # use moxie::embed::{Revision, Runtime};
-/// let mut rt = Runtime::new(|| {});
+/// let mut rt = Runtime::new();
 /// assert_eq!(rt.revision().0, 0);
 /// for i in 1..10 {
-///     rt.run_once();
+///     rt.run_once(|| ());
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
-pub struct Runtime<Root, Input = (), Out = ()> {
+pub struct Runtime {
     revision: Revision,
     store: MemoStore,
-    root: Root,
     spawner: Spawner,
     handlers: InBandExecutor,
     wk: Waker,
-    _io_ty: PhantomData<(Input, Out)>,
 }
 
-impl<Root, Input, Out> Runtime<Root, Input, Out>
-where
-    Root: FnMut(Input) -> Out,
-{
+impl Default for Runtime {
+    fn default() -> Runtime {
+        Runtime::new()
+    }
+}
+
+impl Runtime {
     /// Construct a new [`Runtime`] with blank storage and no external waker or
     /// task executor.
     ///
@@ -87,25 +87,23 @@ where
     /// It is strongly recommended that outside of testing users of this
     /// struct call `set_task_executor` with a reference to a more robust
     /// I/O- or compute-oriented executor.
-    pub fn new(root: Root) -> Self {
+    pub fn new() -> Self {
         let handlers = InBandExecutor::default();
         let fallback_spawner = handlers.spawner();
         Self {
-            root,
             handlers,
             revision: Revision(0),
             spawner: fallback_spawner,
             store: MemoStore::default(),
             wk: futures::task::noop_waker(),
-            _io_ty: Default::default(),
         }
     }
 
     /// Constructs a new [`Runtime`], runs the provided `root` once, and returns
     /// the result.
-    pub fn oneshot(root: Root, input: Input) -> Out {
-        let mut this = Self::new(root);
-        this.run_once(input)
+    pub fn oneshot<Out>(func: impl FnOnce() -> Out) -> Out {
+        let mut this = Self::new();
+        this.run_once(func)
     }
 
     /// The current revision of the runtime, or how many times `run_once` has
@@ -117,7 +115,7 @@ where
     /// Runs the root closure once with access to memoization storage,
     /// increments the runtime's `Revision`, and drops any memoized values
     /// which were not marked `Liveness::Live`.
-    pub fn run_once(&mut self, input: Input) -> Out {
+    pub fn run_once<Out>(&mut self, func: impl FnOnce() -> Out) -> Out {
         self.revision.0 += 1;
 
         let ret = illicit::child_env! {
@@ -129,7 +127,7 @@ where
         .enter(|| {
             topo::call(|| {
                 self.handlers.run_until_stalled(&self.wk);
-                let ret = (self.root)(input);
+                let ret = func();
 
                 // run handlers again to make sure that newly spawned ones can install wakers
                 self.handlers.run_until_stalled(&self.wk);
@@ -157,16 +155,16 @@ where
     }
 }
 
-impl<Root, Input, Out> Runtime<Root, Input, Out>
-where
-    Root: FnMut(Input) -> Out,
-    Input: Default,
-{
+impl Runtime {
     /// Calls `run_once` in a loop until `filter` returns `Poll::Ready`,
     /// returning the result of that `Revision`.
-    pub fn run_until_ready(&mut self, mut filter: impl FnMut(Out) -> Poll<Out>) -> Out {
+    pub fn run_until_ready<Out>(
+        &mut self,
+        mut func: impl FnMut() -> Out,
+        mut filter: impl FnMut(Out) -> Poll<Out>,
+    ) -> Out {
         loop {
-            if let Poll::Ready(out) = filter(self.run_once(Default::default())) {
+            if let Poll::Ready(out) = filter(self.run_once(&mut func)) {
                 return out;
             }
         }
@@ -176,9 +174,13 @@ where
     /// one provided.
     ///
     /// Always calls `run_once` at least once.
-    pub fn run_until_at_least_revision(&mut self, rev: Revision) -> Out {
+    pub fn run_until_at_least_revision<Out>(
+        &mut self,
+        rev: Revision,
+        mut func: impl FnMut() -> Out,
+    ) -> Out {
         loop {
-            let out = self.run_once(Default::default());
+            let out = self.run_once(&mut func);
             if self.revision >= rev {
                 return out;
             }
@@ -216,43 +218,43 @@ mod tests {
     fn propagating_env_to_runtime() {
         let first_byte = 0u8;
 
-        let mut runtime = Runtime::new(|()| {
+        let mut runtime = Runtime::new();
+
+        let run = || {
             let from_env: u8 = *illicit::Env::expect();
             assert_eq!(from_env, first_byte);
-        });
+        };
 
         assert!(illicit::Env::get::<u8>().is_none());
         illicit::child_env!(u8 => first_byte).enter(|| {
-            topo::call(|| runtime.run_once(()));
+            topo::call(|| runtime.run_once(run));
         });
         assert!(illicit::Env::get::<u8>().is_none());
     }
 
     #[test]
     fn oneshot_runtime() {
-        let rev = Runtime::oneshot(|()| Revision::current(), ());
+        let rev = Runtime::oneshot(Revision::current);
         assert_eq!(rev, Revision(1), "only one iteration should occur");
     }
 
     #[test]
     fn revision_bound_runtime() {
-        let mut rt = Runtime::new(|()| Revision::current());
-        let rev = rt.run_until_at_least_revision(Revision(4));
+        let mut rt = Runtime::new();
+        let run = || Revision::current();
+        let rev = rt.run_until_at_least_revision(Revision(4), run);
         assert_eq!(rev, Revision(4), "exactly 4 iterations should occur");
 
-        let rev = rt.run_until_at_least_revision(Revision(4));
+        let rev = rt.run_until_at_least_revision(Revision(4), run);
         assert_eq!(rev, Revision(5), "exactly 1 more iteration should occur");
     }
 
     #[test]
     fn readiness_bound_runtime() {
-        let mut rt = Runtime::new(|()| Revision::current());
-        let rev =
-            rt.run_until_ready(
-                |rev| {
-                    if rev == Revision(3) { Poll::Ready(rev) } else { Poll::Pending }
-                },
-            );
+        let mut rt = Runtime::new();
+        let rev = rt.run_until_ready(Revision::current, |rev| {
+            if rev == Revision(3) { Poll::Ready(rev) } else { Poll::Pending }
+        });
         assert_eq!(rev, Revision(3), "exactly 3 iterations should occur");
     }
 }
