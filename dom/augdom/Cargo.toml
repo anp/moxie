@@ -13,7 +13,7 @@ rsdom = []
 webdom = ["js-sys", "wasm-bindgen", "web-sys"]
 
 [dependencies]
-quick-xml = "0.17.0"
+quick-xml = "0.18.0"
 static_assertions = "1"
 
 # webdom dependencies:
