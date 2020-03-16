@@ -8,7 +8,7 @@ use augdom::{
     event::{Event, EventHandle},
     Dom, Node,
 };
-use moxie;
+
 use std::{
     cell::Cell,
     fmt::{Debug, Formatter, Result as FmtResult},
