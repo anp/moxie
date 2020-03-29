@@ -1,0 +1,94 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "core crates",
+            "type": "shell",
+            "presentation": {
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "core-flow"
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+        {
+            "label": "dom crates",
+            "type": "shell",
+            "presentation": {
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "dom-flow"
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+        {
+            "label": "project website",
+            "type": "shell",
+            "presentation": {
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "site-flow"
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+        {
+            "label": "project server",
+            "type": "shell",
+            "presentation": {
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "server"
+            ]
+        },
+        {
+            "label": "ofl crates",
+            "type": "shell",
+            "presentation": {
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "ofl-flow"
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+    ]
+}
