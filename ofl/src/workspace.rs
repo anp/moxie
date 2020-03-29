@@ -1,6 +1,10 @@
 use cargo_metadata::{Metadata, PackageId};
 use failure::{Error, ResultExt};
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::Path,
+    process::{Command, Output},
+};
 
 pub struct Workspace {
     pub metadata: Metadata,
@@ -25,6 +29,17 @@ impl Workspace {
 
     pub fn ofl_members(&self) -> Vec<PackageId> {
         local_metadata_members_reverse_topo(&self.ofl_metadata)
+    }
+
+    pub fn ensure_rustfmt_toolchain(&self) -> Result<Output, Error> {
+        Ok(Command::new("rustup")
+            .arg("toolchain")
+            .arg("install")
+            .arg("--component")
+            .arg("rustfmt")
+            .arg("--force")
+            .arg(&self.rustfmt_toolchain)
+            .output()?)
     }
 }
 
