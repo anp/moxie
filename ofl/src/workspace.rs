@@ -12,18 +12,10 @@ impl Workspace {
     pub fn get(project_root: impl AsRef<Path>) -> Result<Self, Error> {
         let project_root = project_root.as_ref();
 
-        let mut rustfmt_toolchain = "nightly".to_string();
-        for dir in project_root.ancestors() {
-            if let Ok(tc) = std::fs::read_to_string(dir.join("rustfmt-toolchain")) {
-                rustfmt_toolchain = tc;
-                break;
-            }
-        }
-
         Ok(Self {
             metadata: metadata_for_directory(project_root)?,
             ofl_metadata: metadata_for_directory(project_root.join("ofl"))?,
-            rustfmt_toolchain,
+            rustfmt_toolchain: rustfmt_toolchain(project_root),
         })
     }
 
@@ -34,6 +26,24 @@ impl Workspace {
     pub fn ofl_members(&self) -> Vec<PackageId> {
         local_metadata_members_reverse_topo(&self.ofl_metadata)
     }
+}
+
+/// Find which rustfmt we should use, falling back to the version in
+/// rust-toolchain if need be.
+fn rustfmt_toolchain(project_root: &Path) -> String {
+    for dir in project_root.ancestors() {
+        if let Ok(tc) = std::fs::read_to_string(dir.join("rustfmt-toolchain")) {
+            return tc;
+        }
+    }
+
+    for dir in project_root.ancestors() {
+        if let Ok(tc) = std::fs::read_to_string(dir.join("rust-toolchain")) {
+            return tc;
+        }
+    }
+
+    panic!("couldn't find either a rustfmt-toolchain or a rust-toolchain file");
 }
 
 fn metadata_for_directory(dir: impl AsRef<Path>) -> Result<Metadata, Error> {
