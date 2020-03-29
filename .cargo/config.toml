@@ -7,7 +7,7 @@
 
 core-flow = """
 watch --clear
-    -x fmt
+    -x fmt-project
     -x clippy-core
     -x check-core
     -x test-core
@@ -22,6 +22,8 @@ test-core = "test --all-targets --all-features --package illicit --package moxie
 
 docs-all = "doc --workspace --no-deps"
 docs-clean = "clean --doc"
+
+fmt-project = "ofl fmt"
 
 ####################################################################################################
 # dom crates and examples
@@ -75,7 +77,6 @@ server = "watch -w ofl/ -x ofl"
 
 ofl-flow = """
 watch --clear -w ofl
-    -x fmt-ofl
     -x clippy-ofl
     -x check-ofl
     -x test-ofl
@@ -84,6 +85,5 @@ watch --clear -w ofl
 
 check-ofl = "check --manifest-path ofl/Cargo.toml --workspace"
 clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --workspace"
-fmt-ofl = "fmt -- ofl/src/main.rs"
 test-ofl = "test --manifest-path ofl/Cargo.toml --workspace"
 docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"

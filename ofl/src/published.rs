@@ -1,10 +1,12 @@
-use cargo_metadata::{Metadata, Package, PackageId};
+use cargo_metadata::{Package, PackageId};
 use crates_io_api as crates;
 use failure::{bail, Error, ResultExt};
 use gumdrop::Options;
 use semver::Version;
-use std::collections::BTreeMap;
+use std::path::PathBuf;
 use tracing::*;
+
+use crate::workspace::Workspace;
 
 #[derive(Debug, Options)]
 pub struct EnsurePublished {
@@ -15,10 +17,11 @@ pub struct EnsurePublished {
 }
 
 impl EnsurePublished {
-    pub fn run(self, metadata: Metadata) -> Result<(), Error> {
-        let to_publish = packages_to_publish(&metadata)?;
+    pub fn run(self, root: PathBuf) -> Result<(), Error> {
+        let workspace = Workspace::get(&root)?;
+        let to_publish = packages_to_publish(&workspace)?;
         for id in to_publish {
-            let package = &metadata[&id];
+            let package = &workspace.metadata[&id];
             publish(package, self.dry_run)?;
             info!("sleeping a bit");
             std::thread::sleep(std::time::Duration::from_secs(30));
@@ -27,12 +30,12 @@ impl EnsurePublished {
     }
 }
 
-fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
-    let members = workspace_members_reverse_topo_sorted(metadata);
+fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
+    let members = workspace.local_members();
     let mut to_publish_ids = vec![];
 
     for member in members {
-        let package = &metadata[&member];
+        let package = &workspace.metadata[&member];
 
         let manifest = std::fs::read_to_string(&package.manifest_path)?;
         if manifest.contains("publish = false") {
@@ -49,7 +52,8 @@ fn packages_to_publish(metadata: &Metadata) -> Result<Vec<PackageId>, Error> {
         }
     }
 
-    let to_publish = to_publish_ids.iter().map(|id| &metadata[id].name).collect::<Vec<_>>();
+    let to_publish =
+        to_publish_ids.iter().map(|id| &workspace.metadata[id].name).collect::<Vec<_>>();
 
     info!("will publish: {:#?}", &to_publish);
     Ok(to_publish_ids)
@@ -95,30 +99,4 @@ fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
     let current_version_str = version.to_string();
 
     Ok(versions.iter().map(|v| &v.num).any(|v| v == &current_version_str))
-}
-
-fn workspace_members_reverse_topo_sorted(metadata: &Metadata) -> Vec<PackageId> {
-    let mut id_by_name: BTreeMap<String, PackageId> = Default::default();
-    let mut dep_names_by_name: BTreeMap<String, Vec<String>> = Default::default();
-    for id in &metadata.workspace_members {
-        let package = &metadata[id];
-        let name = &package.name;
-        id_by_name.insert(name.clone(), id.clone());
-
-        for dep in &package.dependencies {
-            dep_names_by_name.entry(name.clone()).or_default().push(dep.name.clone());
-        }
-    }
-
-    let member_names = id_by_name.keys().cloned().collect::<Vec<_>>();
-    let member_names = pathfinding::prelude::topological_sort(&member_names, |name| {
-        let mut deps = vec![];
-        if let Some(names) = dep_names_by_name.get(name) {
-            deps.extend(names.iter().cloned());
-        }
-        deps
-    })
-    .unwrap();
-
-    member_names.into_iter().rev().filter_map(|name| id_by_name.get(&name)).cloned().collect()
 }
