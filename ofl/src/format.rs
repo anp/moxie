@@ -39,7 +39,7 @@ impl Format {
             command.args(ofl_targets.iter().map(|t| &t.src_path));
         }
 
-        info!({ ?command }, "running rustfmt");
+        debug!({ ?command }, "running rustfmt");
 
         let status = command.status().context("running rustfmt command")?;
         if !status.success() {
