@@ -70,5 +70,4 @@ jobs:
     - uses: actions/checkout@master
     - run: rustup update
     - run: rustup component add rustfmt
-    - run: cargo fmt -- --check
-    - run: cargo fmt-ofl --check
+    - run: cargo fmt-project --check
