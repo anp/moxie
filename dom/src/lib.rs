@@ -139,18 +139,16 @@ impl MemoElement {
     /// removes the attribute when `drop`ped, to ensure that the attribute
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
-    // TODO(#98) this should be topo::nested once slots can be assigned
-    pub fn attr(&self, name: &'static str, value: impl ToString) -> &Self {
-        topo::call_in_slot(name, || {
-            memo_with(
-                value.to_string(),
-                |v| {
-                    self.node.set_attribute(name, v);
-                    scopeguard::guard(self.node.clone(), move |elem| elem.remove_attribute(name))
-                },
-                |_| {},
-            )
-        });
+    #[topo::nested]
+    pub fn attr(&self, #[slot] name: &'static str, value: impl ToString) -> &Self {
+        memo_with(
+            value.to_string(),
+            |v| {
+                self.node.set_attribute(name, v);
+                scopeguard::guard(self.node.clone(), move |elem| elem.remove_attribute(name))
+            },
+            |_| {},
+        );
         self
     }
 
@@ -165,18 +163,15 @@ impl MemoElement {
     /// handlers don't typically affect the debugging experience and have
     /// not yet shown up in performance profiles.
     #[topo::nested]
-    // TODO(#98) nested should allow specifying a slot
     pub fn on<Ev>(&self, callback: impl FnMut(Ev) + 'static) -> &Self
     where
         Ev: 'static + Event,
     {
-        topo::call_in_slot(Ev::NAME, || {
-            memo_with(
-                moxie::embed::Revision::current(),
-                |_| EventHandle::new(&self.node, callback),
-                |_| {},
-            );
-        });
+        memo_with(
+            moxie::embed::Revision::current(),
+            |_| EventHandle::new(&self.node, callback),
+            |_| {},
+        );
         self
     }
 
@@ -202,22 +197,15 @@ impl MemoElement {
     /// within the inner scope. After any children have been run and their
     /// nodes attached, this clears any trailing child nodes to ensure the
     /// element's children are correct per the latest declaration.
-    // TODO(#98) this should be topo::nested once slots can be assigned
+    #[topo::nested]
     pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
         let elem = self.node.clone();
-        let mut last_desired_child = None;
-        let mut ret = None;
-        illicit::child_env!(MemoElement => MemoElement::new(self.node.clone())).enter(|| {
-            topo::call(|| {
-                ret = Some(children());
-
+        let (ret, last_desired_child) =
+            illicit::child_env!(MemoElement => MemoElement::new(self.node.clone())).enter(|| {
                 // before this melement is dropped when the environment goes out of scope,
                 // we need to get the last recorded child from this revision
-                last_desired_child = Some(illicit::Env::expect::<MemoElement>().curr.replace(None));
-            })
-        });
-        let last_desired_child = last_desired_child.unwrap();
-        let ret = ret.unwrap();
+                (children(), illicit::Env::expect::<MemoElement>().curr.replace(None))
+            });
 
         // if there weren't any children declared this revision, we need to make sure we
         // clean up any from the last revision
