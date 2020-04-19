@@ -91,14 +91,10 @@ pub fn text(s: impl ToString) {
 /// via the provided `moxie_dom::MemoElement` wrapper.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoElement)]
-pub fn element<ChildRet>(
-    ty: &'static str,
-    with_elem: impl FnOnce(&MemoElement) -> ChildRet,
-) -> ChildRet {
+pub fn element(ty: &'static str) -> MemoElement {
     let elem = memo(ty, |ty| parent.node.create_element(ty));
     parent.ensure_child_attached(&elem);
-    let elem = MemoElement::new(elem);
-    with_elem(&elem)
+    MemoElement::new(elem)
 }
 
 /// A topologically-nested "incremental smart pointer" for an HTML element.

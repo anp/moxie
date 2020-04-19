@@ -160,7 +160,7 @@ fn tag_to_tokens(
                 "can't emit function arguments at the same time as attributes or children yet"
             )
         }
-        quote!(#name(|_e| { _e #contents }))
+        quote!(topo::call(|| { #name() #contents }))
     };
 
     stream.extend(invocation);
