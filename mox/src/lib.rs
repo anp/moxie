@@ -211,7 +211,7 @@ impl ToTokens for MoxAttr {
         let stream = match self {
             MoxAttr::Simple { name, value } => {
                 let name = name.to_string();
-                quote!(.attr(#name, #value))
+                quote!(.attr(#name, &#value))
             }
             MoxAttr::Handler { value: TokenTree::Group(g) } => {
                 // remove the braces from the event handler args, these need to "splat" into a
