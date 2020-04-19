@@ -11,10 +11,8 @@ macro_rules! element_fn {
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        pub fn $name<ChildRet>(
-            with_elem: impl FnOnce(&$crate::MemoElement) -> ChildRet,
-        ) -> ChildRet {
-            crate::element(stringify!($name), with_elem)
+        pub fn $name() -> crate::MemoElement {
+            crate::element(stringify!($name))
         }
     };
 }
