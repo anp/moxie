@@ -140,7 +140,7 @@ impl MemoElement {
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
     #[topo::nested]
-    pub fn attr(&self, #[slot] name: &'static str, value: impl ToString) -> &Self {
+    pub fn attr(&self, #[slot] name: &'static str, value: &dyn ToString) -> &Self {
         memo_with(
             value.to_string(),
             |v| {
