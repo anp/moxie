@@ -86,9 +86,6 @@ pub fn text(s: impl ToString) {
 ///
 /// The created DOM node is memoized at the bound callsite, allowing for
 /// subsequent re-executions to be very cheap.
-///
-/// Mutation of the created element is performed during the `with_elem` closure
-/// via the provided `moxie_dom::MemoElement` wrapper.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoElement)]
 pub fn element(ty: &'static str) -> MemoElement {
