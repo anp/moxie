@@ -445,6 +445,17 @@ event_ty! {
 }
 
 event_ty! {
+    /// The [cuechange][mdn] event fires when a TextTrack has changed the currently
+    /// displaying cues. The event is fired at both the TextTrack and at the HTMLTrackElement in
+    /// which it's being presented, if any.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/TextTrack/cuechange_event
+    CueChange,
+    "cuechange",
+    sys::Event
+}
+
+event_ty! {
     /// The text selection has been removed from the document and added to the clipboard.
     /// [MDN documentation][mdn]
     ///
@@ -535,6 +546,16 @@ event_ty! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
     DragEnter,
     "dragenter",
+    sys::DragEvent
+}
+
+event_ty! {
+    /// Fired when an element is no longer the drag operation's immediate selection target.
+    /// [MDN documentation][mdn]
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
+    DragExit,
+    "dragexit",
     sys::DragEvent
 }
 
@@ -834,6 +855,15 @@ event_ty! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/keydown
     KeyDown,
     "keydown",
+    sys::KeyboardEvent
+}
+
+event_ty! {
+    /// A key is pressed. [MDN documentation][mdn]
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
+    KeyPress,
+    "keypress",
     sys::KeyboardEvent
 }
 
