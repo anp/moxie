@@ -310,6 +310,14 @@ event_ty! {
 }
 
 event_ty! {
+    /// The cancel event fires on a <dialog> when the user instructs the browser that they wish to
+    /// dismiss the current open dialog.
+    Cancel,
+    "cancel",
+    sys::Event
+}
+
+event_ty! {
     /// The user agent can play the media, but estimates that not enough data has been loaded to
     /// play the media up to its end without having to stop for further buffering of content.
     /// [MDN documentation][mdn]
@@ -631,6 +639,15 @@ event_ty! {
     SvgAnimationEnd,
     "endEvent",
     sys::TimeEvent
+}
+
+event_ty! {
+    /// A generic error event.
+    ///
+    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
+    Error,
+    "error",
+    sys::Event
 }
 
 event_ty! {

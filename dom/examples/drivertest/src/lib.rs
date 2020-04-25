@@ -99,8 +99,8 @@ fn mutiple_event_listeners() {
 
         moxie::mox! {
             <button
-                on={ move |_: event::Click| counter1.update(increment) }
-                on={ move |_: event::Click| counter2.update(increment) }
+                onclick={ move |_| counter1.update(increment) }
+                onclick={ move |_| counter2.update(increment) }
             >
                 // Display the values of the counters
                 {% "counter1 = {}, counter2 = {}", &counter1_val, &counter2_val }
