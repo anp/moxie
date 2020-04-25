@@ -209,10 +209,7 @@ enum MoxAttr {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let stream = match self {
-            MoxAttr::Simple { name, value } => {
-                let name = name.to_string();
-                quote!(.attr(#name, &#value))
-            }
+            MoxAttr::Simple { name, value } => quote!(.#name(#value)),
             MoxAttr::Handler { value: TokenTree::Group(g) } => {
                 // remove the braces from the event handler args, these need to "splat" into a
                 // call
