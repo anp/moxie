@@ -32,5 +32,6 @@ macro_rules! bool_attr_method {
 
 pub mod element;
 pub mod event_target;
+pub mod global_events;
 pub mod html_element;
 pub mod node;

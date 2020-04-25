@@ -46,7 +46,7 @@ pub fn filter_link(to_set: Visibility) {
         <li>
             <a style="cursor: pointer;"
              class={if *visibility == to_set { "selected" } else { "" }}
-             on={move |_: event::Click| visibility.set(to_set)}>
+             onclick={move |_| visibility.set(to_set)}>
                 {% "{}", to_set }
             </a>
         </li>

@@ -33,7 +33,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
     let todos = todos.clone();
     let toggle_todos = todos.clone();
 
-    let on_change = move |_: event::Change| {
+    let on_change = move |_| {
         toggle_todos.update(|t| {
             Some(
                 t.iter()
@@ -53,13 +53,13 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
 
     mox! {
         <div class="view">
-            <input class="toggle" type="checkbox" checked={todo.completed} on={on_change} />
+            <input class="toggle" type="checkbox" checked={todo.completed} onchange={on_change} />
 
-            <label on={move |_: event::DoubleClick| editing.set(true)}>
+            <label ondblclick={move |_| editing.set(true)}>
                 {% "{}", todo.text }
             </label>
 
-            <button class="destroy" on={move |_: event::Click| {
+            <button class="destroy" onclick={move |_| {
                 todos.update(|t| Some(t.iter().filter(|t| t.id != id).cloned().collect()));
             }} />
         </div>

@@ -20,7 +20,8 @@ pub mod prelude {
 
     pub use crate::{
         interfaces::{
-            element::Element, event_target::EventTarget, html_element::HtmlElement, node::Node,
+            element::Element, event_target::EventTarget, global_events::GlobalEventHandler,
+            html_element::HtmlElement, node::Node,
         },
         memo_node::text,
     };

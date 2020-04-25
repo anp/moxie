@@ -7,6 +7,7 @@ use crate::{
     memo_node::MemoNode,
     prelude::*,
 };
+use augdom::event::*;
 
 macro_rules! element {
     (
@@ -28,7 +29,83 @@ macro_rules! element {
             }
         }
 
-        // TODO impl eventtarget for appropriate events
+        impl EventTarget<Abort> for $ret {}
+        // impl EventTarget<Blur> for $ret {}
+        // impl EventTarget<Cancel> for $ret {}
+        // impl EventTarget<Error> for $ret {}
+        // impl EventTarget<Focus> for $ret {}
+        // impl EventTarget<CanPlay> for $ret {}
+        // impl EventTarget<CanPlayThrough> for $ret {}
+        // impl EventTarget<Change> for $ret {}
+        // impl EventTarget<Click> for $ret {}
+        // impl EventTarget<Close> for $ret {}
+        // impl EventTarget<ContextMenu> for $ret {}
+        // impl EventTarget<CueChange> for $ret {}
+        // impl EventTarget<DoubleClick> for $ret {}
+        // impl EventTarget<Drag> for $ret {}
+        // impl EventTarget<DragEnd> for $ret {}
+        // impl EventTarget<DragEnter> for $ret {}
+        // impl EventTarget<DragExit> for $ret {}
+        // impl EventTarget<DragLeave> for $ret {}
+        // impl EventTarget<DragOver> for $ret {}
+        // impl EventTarget<DragStart> for $ret {}
+        // impl EventTarget<Drop> for $ret {}
+        // impl EventTarget<DurationChange> for $ret {}
+        // impl EventTarget<Emptied> for $ret {}
+        // impl EventTarget<Ended> for $ret {}
+        // impl EventTarget<FormData> for $ret {}
+        // impl EventTarget<PointerCapture> for $ret {}
+        // impl EventTarget<Input> for $ret {}
+        // impl EventTarget<Invalid> for $ret {}
+        // impl EventTarget<KeyDown> for $ret {}
+        // impl EventTarget<KeyPress> for $ret {}
+        // impl EventTarget<KeyUp> for $ret {}
+        // impl EventTarget<Load> for $ret {}
+        // impl EventTarget<LoadedData> for $ret {}
+        // impl EventTarget<LoadedMetadata> for $ret {}
+        // impl EventTarget<LoadEnd> for $ret {}
+        // impl EventTarget<LoadStart> for $ret {}
+        // impl EventTarget<LostPointerCapture> for $ret {}
+        // impl EventTarget<MouseEnter> for $ret {}
+        // impl EventTarget<MouseLeave> for $ret {}
+        // impl EventTarget<MouseMove> for $ret {}
+        // impl EventTarget<MouseOut> for $ret {}
+        // impl EventTarget<MouseOver> for $ret {}
+        // impl EventTarget<MouseUp> for $ret {}
+        // impl EventTarget<Wheel> for $ret {}
+        // impl EventTarget<Pause> for $ret {}
+        // impl EventTarget<Play> for $ret {}
+        // impl EventTarget<Playing> for $ret {}
+        // impl EventTarget<PointerDown> for $ret {}
+        // impl EventTarget<PointerMove> for $ret {}
+        // impl EventTarget<PointerUp> for $ret {}
+        // impl EventTarget<PointerCancel> for $ret {}
+        // impl EventTarget<PointerOver> for $ret {}
+        // impl EventTarget<PointerOut> for $ret {}
+        // impl EventTarget<PointerEnter> for $ret {}
+        // impl EventTarget<PointerLeave> for $ret {}
+        // impl EventTarget<Progress> for $ret {}
+        // impl EventTarget<RateChange> for $ret {}
+        // impl EventTarget<Reset> for $ret {}
+        // impl EventTarget<Resize> for $ret {}
+        // impl EventTarget<Scroll> for $ret {}
+        // impl EventTarget<Seeked> for $ret {}
+        // impl EventTarget<Seeking> for $ret {}
+        // impl EventTarget<Select> for $ret {}
+        // impl EventTarget<SelectStart> for $ret {}
+        // impl EventTarget<SelectionChange> for $ret {}
+        // impl EventTarget<Show> for $ret {}
+        // impl EventTarget<Sort> for $ret {}
+        // impl EventTarget<Stalled> for $ret {}
+        // impl EventTarget<Submit> for $ret {}
+        // impl EventTarget<Suspend> for $ret {}
+        // impl EventTarget<TimeUpdate> for $ret {}
+        // impl EventTarget<VolumeChange> for $ret {}
+        // impl EventTarget<TransitionCancel> for $ret {}
+        // impl EventTarget<TransitionEnd> for $ret {}
+        // impl EventTarget<TransitionRun> for $ret {}
+        // impl EventTarget<TransitionStart> for $ret {}
+        // impl EventTarget<Waiting> for $ret {}
 
         $(#[$outer])*
         #[topo::nested]

@@ -26,11 +26,10 @@ pub fn items_remaining(num_active: usize) {
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn clear_completed_button() {
     let todos = todos.clone();
-    let on_click = move |_: event::Click| {
-        todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()))
-    };
     mox! {
-        <button class="clear-completed" on={on_click}>
+        <button class="clear-completed" onclick={ move |_|
+            todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()))
+        }>
             "Clear completed"
         </button>
     };
