@@ -1,6 +1,6 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
-use crate::MemoElement;
+use crate::memo_node::MemoNode;
 use augdom::Node;
 use moxie::{embed::Runtime, prelude::topo};
 
@@ -24,7 +24,7 @@ impl WebRuntime {
         WebRuntime {
             runtime: Runtime::new(),
             root: Box::new(move || {
-                illicit::child_env!(MemoElement => MemoElement::new(parent.clone()))
+                illicit::child_env!(MemoNode => MemoNode::new(parent.clone()))
                     .enter(|| topo::call(|| root()))
             }),
         }

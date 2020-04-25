@@ -2,23 +2,43 @@
 //!
 //! [MDN]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 
+use crate::{
+    interfaces::node::{sealed::Memoized, Node},
+    memo_node::MemoNode,
+    prelude::*,
+};
+
 macro_rules! element {
     (
         $(#[$outer:meta])*
         $name:ident -> $ret:ident
     ) => {
         $(#[$outer])*
-        pub struct $ret(crate::MemoElement);
-
-        impl std::ops::Deref for $ret {
-            type Target = crate::MemoElement;
-            fn deref(&self) -> &Self::Target { &self.0 }
+        pub struct $ret {
+            inner: MemoNode
         }
+
+        impl Element for $ret {}
+        impl HtmlElement for $ret {}
+        impl Node for $ret {}
+
+        impl Memoized for $ret {
+            fn node(&self) -> &MemoNode {
+                &self.inner
+            }
+        }
+
+        // TODO impl eventtarget for appropriate events
 
         $(#[$outer])*
         #[topo::nested]
+        #[illicit::from_env(parent: &MemoNode)]
         pub fn $name() -> $ret {
-            $ret(crate::element(stringify!($name)))
+            let elem = memo(stringify!($name), |ty| {
+                parent.raw_node().create_element(ty)
+            });
+            parent.ensure_child_attached(&elem);
+            $ret { inner: MemoNode::new(elem) }
         }
     };
 }
