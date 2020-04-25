@@ -16,13 +16,13 @@ pub trait HtmlElement: Element {
         dir
     }
 
-    attr_method! {
-        /// A Boolean indicating if the element is hidden or not.
+    bool_attr_method! {
+        /// Indicates if the element is hidden or not.
         hidden
     }
 
-    attr_method! {
-        /// A Boolean indicating whether the user agent must act as though the given node is absent
+    bool_attr_method! {
+        /// Indicates whether the user agent must act as though the given node is absent
         /// for the purposes of user interaction events, in-page text searches ("find in page"), and
         /// text selection.
         inert
