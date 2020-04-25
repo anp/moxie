@@ -13,6 +13,8 @@ pub(crate) mod sealed {
 /// Node is an interface from which various types of DOM API objects inherit,
 /// allowing those types to be treated similarly; for example, inheriting the
 /// same set of methods, or being testable in the same way.
+///
+/// Note: this trait cannot be implemented outside of this crate.
 pub trait Node: sealed::Memoized {
     /// Run the provided closure in the "scope" of this node. Elements created
     /// within that scope will be bound to `self` as children in the order
