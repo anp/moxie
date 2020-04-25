@@ -3,6 +3,8 @@
 use crate::prelude::*;
 
 /// The HTMLElement interface represents any HTML element.
+///
+/// Note: this trait cannot be implemented outside of this crate.
 pub trait HtmlElement: Element {
     attr_method! {
         /// A value of "true" means the element is editable and a value of "false" means it isn't.
