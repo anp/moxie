@@ -1,6 +1,6 @@
 use crate::{input::text_input, Todo};
 use moxie_dom::{
-    elements::{h1, header},
+    elements::sectioning::{h1, header},
     prelude::*,
 };
 use tracing::info;

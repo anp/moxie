@@ -1,8 +1,5 @@
 use crate::{filter::filter, Todo};
-use moxie_dom::{
-    elements::{button, footer, span, strong},
-    prelude::*,
-};
+use moxie_dom::{elements::all::*, prelude::*};
 
 #[topo::nested]
 pub fn items_remaining(num_active: usize) {

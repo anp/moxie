@@ -1,8 +1,5 @@
 use crate::{input::text_input, Todo};
-use moxie_dom::{
-    elements::{button, div, input, label, li},
-    prelude::*,
-};
+use moxie_dom::{elements::all::*, prelude::*};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
