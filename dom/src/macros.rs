@@ -81,6 +81,12 @@ macro_rules! element {
     };
 }
 
+macro_rules! mass_bare_impl {
+    ($to_impl:ty: $($receives:ty,)+) => {
+        $(impl $to_impl for $receives {})+
+    };
+}
+
 /// Define an HTML element type, which is essentially an `element!` with the
 /// `HtmlElement` and `GlobalEventHandler` traits.
 macro_rules! html_element {
