@@ -1,5 +1,5 @@
 use moxie_dom::{
-    elements::{button, div},
+    elements::{forms::button, text_content::div},
     prelude::*,
 };
 use wasm_bindgen::prelude::*;

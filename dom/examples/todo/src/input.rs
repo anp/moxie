@@ -1,4 +1,4 @@
-use moxie_dom::{elements::input, prelude::*};
+use moxie_dom::{elements::forms::input, prelude::*};
 use wasm_bindgen::JsCast;
 
 #[topo::nested]

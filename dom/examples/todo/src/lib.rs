@@ -3,7 +3,7 @@
 use filter::Visibility;
 use header::input_header;
 use main_section::main_section;
-use moxie_dom::{elements::div, prelude::*};
+use moxie_dom::{elements::text_content::div, prelude::*};
 use std::sync::atomic::{AtomicU32, Ordering};
 use wasm_bindgen::prelude::*;
 
