@@ -7,7 +7,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML Table Caption element (`<caption>`)][mdn] specifies the caption (or title) of a
     /// table, and if used is *always* the first child of a [`<table>`][table].
     ///
@@ -16,7 +16,7 @@ element! {
     caption -> TableCaption
 }
 
-element! {
+html_element! {
     /// The [HTML `<col>` element][mdn] defines a column within a table and is used for defining
     /// common semantics on all common cells. It is generally found within a [`<colgroup>`][cg]
     /// element.
@@ -26,14 +26,14 @@ element! {
     col -> TableColumn
 }
 
-element! {
+html_element! {
     /// The [HTML `<colgroup>` element][mdn] defines a group of columns within a table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     colgroup -> TableColumnGroup
 }
 
-element! {
+html_element! {
     /// The [HTML `<table>` element][mdn] represents tabular data — that is, information presented
     /// in a two-dimensional table comprised of rows and columns of cells containing data.
     ///
@@ -41,7 +41,7 @@ element! {
     table -> Table
 }
 
-element! {
+html_element! {
     /// The [HTML Table Body element (`<tbody>`)][mdn] encapsulates a set of table rows
     /// ([`<tr>`][tr] elements), indicating that they comprise the body of the table
     /// ([`<table>`][table]).
@@ -52,7 +52,7 @@ element! {
     tbody -> TableBody
 }
 
-element! {
+html_element! {
     /// The [HTML `<td>` element][mdn] defines a cell of a table that contains data. It participates
     /// in the *table model*.
     ///
@@ -60,7 +60,7 @@ element! {
     td -> TableCell
 }
 
-element! {
+html_element! {
     /// The [HTML `<tfoot>` element][mdn] defines a set of rows summarizing the columns of the
     /// table.
     ///
@@ -68,7 +68,7 @@ element! {
     tfoot -> TableFooter
 }
 
-element! {
+html_element! {
     /// The [HTML `<th>` element][mdn] defines a cell as header of a group of table cells. The exact
     /// nature of this group is defined by the [`scope`][scope] and [`headers`][headers] attributes.
     ///
@@ -78,7 +78,7 @@ element! {
     th -> TableHeaderCell
 }
 
-element! {
+html_element! {
     /// The [HTML `<thead>` element][mdn] defines a set of rows defining the head of the columns of
     /// the table.
     ///
@@ -86,7 +86,7 @@ element! {
     thead -> TableHeader
 }
 
-element! {
+html_element! {
     /// The [HTML `<tr>` element][mdn] defines a row of cells in a table. The row's cells can then
     /// be established using a mix of [`<td>`][td] (data cell) and [`<th>`][th] (header cell)
     /// elements.

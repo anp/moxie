@@ -8,7 +8,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<embed>` element][mdn] embeds external content at the specified point in the
     /// document. This content is provided by an external application or other source of interactive
     /// content such as a browser plug-in.
@@ -17,7 +17,7 @@ element! {
     embed -> Embed
 }
 
-element! {
+html_element! {
     /// The [HTML Inline Frame element (`<iframe>`)][mdn] represents a nested [browsing context],
     /// embedding another HTML page into the current one.
     ///
@@ -26,7 +26,7 @@ element! {
     iframe -> InlineFrame
 }
 
-element! {
+html_element! {
     /// The [HTML `<object>` element][mdn] represents an external resource, which can be treated as
     /// an image, a nested browsing context, or a resource to be handled by a plugin.
     ///
@@ -34,7 +34,7 @@ element! {
     object -> Object
 }
 
-element! {
+html_element! {
     /// The [HTML `<param>` element][param] defines parameters for an [`<object>`][object] element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
@@ -42,7 +42,7 @@ element! {
     param -> Param
 }
 
-element! {
+html_element! {
     /// The [HTML `<picture>` element][mdn] contains zero or more [`<source>`][source] elements and
     /// one [`<img>`][img] element to provide versions of an image for different display/device
     /// scenarios.
@@ -53,7 +53,7 @@ element! {
     picture -> Picture
 }
 
-element! {
+html_element! {
     /// The [HTML `<source>` element][source] specifies multiple media resources for the
     /// [`<picture>`][picture], the [`<audio>`][audio] element, or the [`<video>`][video] element.
     ///

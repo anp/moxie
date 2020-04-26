@@ -8,7 +8,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML Details Element (`<details>`)][mdn] creates a disclosure widget in which
     /// information is visible only when the widget is toggled into an "open" state.
     ///
@@ -16,7 +16,7 @@ element! {
     details -> Details
 }
 
-element! {
+html_element! {
     /// The [HTML `<dialog>` element][mdn] represents a dialog box or other interactive component,
     /// such as an inspector or window.
     ///
@@ -24,7 +24,7 @@ element! {
     dialog -> Dialog
 }
 
-element! {
+html_element! {
     /// The [HTML `<menu>` element][mdn] represents a group of commands that a user can perform or
     /// activate. This includes both list menus, which might appear across the top of a screen, as
     /// well as context menus, such as those that might appear underneath a button after it has been
@@ -34,7 +34,7 @@ element! {
     menu -> Menu
 }
 
-element! {
+html_element! {
     /// The [HTML Disclosure Summary element (`<summary>`)][mdn] element specifies a summary,
     /// caption, or legend for a [`<details>`][details] element's disclosure box.
     ///

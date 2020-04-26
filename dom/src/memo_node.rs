@@ -1,4 +1,4 @@
-//! Traits corresponding to "core" class definitions in the web platform.
+//! Nodes which memoize mutations.
 
 use augdom::{Dom, Node};
 

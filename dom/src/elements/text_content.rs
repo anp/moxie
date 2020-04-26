@@ -10,7 +10,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<blockquote>` element][mdn] (or *HTML Block Quotation Element*) indicates that
     /// the enclosed text is an extended quotation. Usually, this is rendered visually by
     /// indentation. A URL for the source of the quotation may be given using the `cite` attribute,
@@ -21,7 +21,7 @@ element! {
     blockquote -> BlockQuote
 }
 
-element! {
+html_element! {
     /// The [HTML `<dd>` element][mdn] provides the description, definition, or value for the
     /// preceding term ([`<dt>`][dt]) in a description list ([`<dl>`][dl]).
     ///
@@ -31,7 +31,7 @@ element! {
     dd -> DescriptionDefinition
 }
 
-element! {
+html_element! {
     /// The [HTML Content Division element (`<div>`)][mdn] is the generic container for flow
     /// content. It has no effect on the content or layout until styled using [CSS].
     ///
@@ -40,7 +40,7 @@ element! {
     div -> Div
 }
 
-element! {
+html_element! {
     /// The [HTML `<dl>` element][mdn] represents a description list. The element encloses a list of
     /// groups of terms (specified using the [`<dt>`][dt] element) and descriptions (provided by
     /// [`<dd>`][dd] elements). Common uses for this element are to implement a glossary or to
@@ -52,7 +52,7 @@ element! {
     dl -> DescriptionList
 }
 
-element! {
+html_element! {
     /// The [HTML `<dt>` element][mdn] specifies a term in a description or definition list, and as
     /// such must be used inside a [`<dl>`][dl] element.
     ///
@@ -61,7 +61,7 @@ element! {
     dt -> DescriptionTerm
 }
 
-element! {
+html_element! {
     /// The [HTML `<figcaption>` or Figure Caption element][mdn] represents a caption or legend
     /// describing the rest of the contents of its parent [`<figure>`][figure] element.
     ///
@@ -70,7 +70,7 @@ element! {
     figcaption -> FigureCaption
 }
 
-element! {
+html_element! {
     /// The [HTML `<figure>` (Figure With Optional Caption) element][mdn] represents self-contained
     /// content, potentially with an optional caption, which is specified using the
     /// ([`<figcaption>`][figcaption]) element.
@@ -80,7 +80,7 @@ element! {
     figure -> Figure
 }
 
-element! {
+html_element! {
     /// The [HTML `<hr>` element][mdn] represents a thematic break between paragraph-level elements:
     /// for example, a change of scene in a story, or a shift of topic within a section.
     ///
@@ -88,14 +88,14 @@ element! {
     hr -> HorizontalRule
 }
 
-element! {
+html_element! {
     /// The [HTML `<li>` element][mdn] is used to represent an item in a list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
     li -> ListItem
 }
 
-element! {
+html_element! {
     /// The [HTML `<ol>` element][mdn] represents an ordered list of items, typically rendered as a
     /// numbered list.
     ///
@@ -103,14 +103,14 @@ element! {
     ol -> OrderedList
 }
 
-element! {
+html_element! {
     /// The [HTML `<p>` element][mdn] represents a paragraph.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
     p -> Paragraph
 }
 
-element! {
+html_element! {
     /// The [HTML `<pre>` element][mdn] represents preformatted text which is to be presented
     /// exactly as written in the HTML file.
     ///
@@ -118,7 +118,7 @@ element! {
     pre -> Preformatted
 }
 
-element! {
+html_element! {
     /// The [HTML `<ul>` element][mdn] represents an unordered list of items, typically rendered as
     /// a bulleted list.
     ///

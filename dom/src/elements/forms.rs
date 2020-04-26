@@ -10,7 +10,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<button>` element][mdn] represents a clickable button, which can be used in
     /// [forms] or anywhere in a document that needs simple, standard button functionality.
     ///
@@ -19,7 +19,7 @@ element! {
     button -> Button
 }
 
-element! {
+html_element! {
     /// The [HTML `<datalist>` element][mdn] contains a set of [`<option>`][option] elements that
     /// represent the values available for other controls.
     ///
@@ -28,7 +28,7 @@ element! {
     datalist -> DataList
 }
 
-element! {
+html_element! {
     /// The [HTML `<fieldset>` element][mdn] is used to group several controls as well as labels
     /// ([`<label>`][label]) within a web form.
     ///
@@ -37,7 +37,7 @@ element! {
     fieldset -> FieldSet
 }
 
-element! {
+html_element! {
     /// The [HTML `<form>` element][mdn] represents a document section that contains interactive
     /// controls for submitting information to a web server.
     ///
@@ -45,7 +45,7 @@ element! {
     form -> Form
 }
 
-element! {
+html_element! {
     /// The [HTML `<input>` element][mdn] is used to create interactive controls for web-based forms
     /// in order to accept data from the user; a wide variety of types of input data and control
     /// widgets are available, depending on the device and [user agent].
@@ -55,14 +55,14 @@ element! {
     input -> Input
 }
 
-element! {
+html_element! {
     /// The [HTML `<label>` element][mdn] represents a caption for an item in a user interface.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
     label -> Label
 }
 
-element! {
+html_element! {
     /// The [HTML `<legend>` element][mdn] represents a caption for the content of its parent
     /// [`<fieldset>`][fieldset].
     ///
@@ -71,7 +71,7 @@ element! {
     legend -> Legend
 }
 
-element! {
+html_element! {
     /// The [HTML `<meter>` element][mdn] represents either a scalar value within a known range or a
     /// fractional value.
     ///
@@ -79,7 +79,7 @@ element! {
     meter -> Meter
 }
 
-element! {
+html_element! {
     /// The [HTML `<optgroup>` element][mdn] creates a grouping of options within a
     /// [`<select>`][select] element.
     ///
@@ -88,7 +88,7 @@ element! {
     optgroup -> OptionGroup
 }
 
-element! {
+html_element! {
     /// The [HTML `<option>` element][mdn] is used to define an item contained in a
     /// [`<select>`][select], an [`<optgroup>`][optgroup], or a [`<datalist>`][datalist] element. As
     /// such, `<option>` can represent menu items in popups and other lists of items in an HTML
@@ -101,7 +101,7 @@ element! {
     option -> Option
 }
 
-element! {
+html_element! {
     /// The [HTML Output element (`<output>`)][mdn] is a container element into which a site or app
     /// can inject the results of a calculation or the outcome of a user action.
     ///
@@ -109,7 +109,7 @@ element! {
     output -> Output
 }
 
-element! {
+html_element! {
     /// The [HTML `<progress>` element][progress] displays an indicator showing the completion
     /// progress of a task, typically displayed as a progress bar.
     ///
@@ -117,18 +117,26 @@ element! {
     progress -> Progress
 }
 
-element! {
+html_element! {
     /// The [HTML `<select>` element][mdn] represents a control that provides a menu of options.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     select -> Select
 }
 
-element! {
+html_element! {
     /// The [HTML `<textarea>` element][mdn] represents a multi-line plain-text editing control,
     /// useful when you want to allow users to enter a sizeable amount of free-form text, for
     /// example a comment on a review or feedback form.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
     textarea -> TextArea
+}
+
+impl TextArea {
+    unum_attr_method! {
+        /// The visible width of the text control, in average character widths. If it is specified,
+        /// it must be a positive integer. If it is not specified, the default value is 20.
+        cols
+    }
 }

@@ -7,7 +7,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<area>` element][mdn] defines a hot-spot region on an image, and optionally
     /// associates it with a [hypertext link]. This element is used only within a [`<map>`][map]
     /// element.
@@ -18,7 +18,7 @@ element! {
     area -> Area
 }
 
-element! {
+html_element! {
     /// The [HTML `<audio>` element][mdn] is used to embed sound content in documents. It may
     /// contain one or more audio sources, represented using the `src` attribute or the
     /// [`<source>`][source] element: the browser will choose the most suitable one. It can also be
@@ -30,14 +30,14 @@ element! {
     audio -> Audio
 }
 
-element! {
+html_element! {
     /// The [HTML `<img>` element][mdn] embeds an image into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     img -> Image
 }
 
-element! {
+html_element! {
     /// The [HTML `<map>` element][mdn] is used with [`<area>`][area] elements to define an image
     /// map (a clickable link area).
     ///
@@ -46,7 +46,7 @@ element! {
     map -> Map
 }
 
-element! {
+html_element! {
     /// The [HTML `<track>` element][mdn] is used as a child of the media elements
     /// [`<audio>`][audio] and [`<video>`][video]. It lets you specify timed text tracks (or
     /// time-based data), for example to automatically handle subtitles. The tracks are formatted in
@@ -61,7 +61,7 @@ element! {
     track -> Track
 }
 
-element! {
+html_element! {
     /// The [HTML Video element (`<video>`)][mdn] embeds a media player which supports video
     /// playback into the document.
     ///
