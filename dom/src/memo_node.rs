@@ -9,14 +9,26 @@ use std::{
 
 use super::prelude::*;
 
+/// A text node in the DOM.
+pub struct Text(MemoNode);
+
+impl crate::interfaces::node::Node for Text {}
+
+impl crate::interfaces::node::sealed::Memoized for Text {
+    fn node(&self) -> &MemoNode {
+        &self.0
+    }
+}
+
 /// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoNode)]
-pub fn text(s: impl ToString) {
+pub fn text(s: impl ToString) -> Text {
     // TODO(#99) avoid allocating this extra string when it hasn't changed
     let text_node = memo(s.to_string(), |s| parent.node.create_text_node(s));
     parent.ensure_child_attached(&text_node);
+    Text(MemoNode::new(text_node))
 }
 
 /// A topologically-nested "incremental smart pointer" for an HTML element.
