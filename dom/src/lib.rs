@@ -24,8 +24,16 @@ pub mod prelude {
 
     pub use crate::{
         interfaces::{
-            element::Element, event_target::EventTarget, global_events::GlobalEventHandler,
-            html_element::HtmlElement, node::Node,
+            content_categories::{
+                EmbeddedContent, FlowContent, FormAssociatedContent, HeadingContent,
+                InteractiveContent, LabelableFormContent, ListedFormContent, MetadataContent,
+                PhrasingContent, ResettableFormContent, SectioningContent, SubmittableFormContent,
+            },
+            element::Element,
+            event_target::EventTarget,
+            global_events::GlobalEventHandler,
+            html_element::HtmlElement,
+            node::Node,
         },
         memo_node::text,
     };
