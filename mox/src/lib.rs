@@ -1,9 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
-use proc_macro_error::{
-    abort, abort_call_site, emit_error, proc_macro_error, Diagnostic, Level, ResultExt,
-};
+use proc_macro_error::{abort, emit_error, proc_macro_error, Diagnostic, Level, ResultExt};
 use proc_macro_hack::proc_macro_hack;
 use quote::{quote, ToTokens};
 use snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag};
@@ -201,25 +199,15 @@ struct MoxArgs {
     value: TokenTree,
 }
 
-enum MoxAttr {
-    Simple { name: Ident, value: TokenTree },
-    Handler { value: TokenTree },
+struct MoxAttr {
+    name: Ident,
+    value: TokenTree,
 }
 
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let stream = match self {
-            MoxAttr::Simple { name, value } => quote!(.#name(#value)),
-            MoxAttr::Handler { value: TokenTree::Group(g) } => {
-                // remove the braces from the event handler args, these need to "splat" into a
-                // call
-                let value = g.stream();
-                quote!(.on(#value))
-            }
-            _ => abort_call_site!("event handlers must be surrounded in braces"),
-        };
-
-        tokens.extend(stream);
+        let Self { name, value } = self;
+        tokens.extend(if name == "type" { quote!(.ty(#value)) } else { quote!(.#name(#value)) });
     }
 }
 
@@ -233,10 +221,8 @@ impl From<SnaxAttribute> for MoxAttr {
                         name.span(),
                         "anonymous attributes are only allowed in the first position"
                     )
-                } else if name_str == "on" {
-                    MoxAttr::Handler { value }
                 } else {
-                    MoxAttr::Simple { name, value }
+                    MoxAttr { name, value }
                 }
             }
         }
