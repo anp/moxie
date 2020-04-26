@@ -10,7 +10,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<base> element`][mdn] specifies the base URL to use for all relative URLs
     /// contained within a document. There can be only one `<base>` element in a document.
     ///
@@ -18,7 +18,7 @@ element! {
     base -> Base
 }
 
-element! {
+html_element! {
     /// The [HTML `<head>` element][mdn] contains machine-readable information ([metadata]) about
     /// the document, like its [title], [scripts], and [style sheets].
     ///
@@ -30,7 +30,7 @@ element! {
     head -> Head
 }
 
-element! {
+html_element! {
     /// The [HTML External Resource Link element (`<link>`)][mdn] specifies relationships between
     /// the current document and an external resource. This element is most commonly used to link to
     /// [stylesheets], but is also used to establish site icons (both "favicon" style icons and
@@ -41,7 +41,7 @@ element! {
     link -> ExternalResourceLink
 }
 
-element! {
+html_element! {
     /// The [HTML `<meta>` element][mdn] represents [metadata] that cannot be represented by other
     /// HTML meta-related elements, like [`<base>`], [`<link>`], [`<script>`], [`<style>`] or
     /// [`<title>`].
@@ -56,7 +56,7 @@ element! {
     meta -> Meta
 }
 
-element! {
+html_element! {
     /// The [HTML `<style>` element][mdn] contains style information for a document, or part of a
     /// document.
     ///
@@ -64,7 +64,7 @@ element! {
     style -> Style
 }
 
-element! {
+html_element! {
     /// The [HTML Title element (`<title>`)][mdn] defines the document's title that is shown in a
     /// [browser]'s title bar or a page's tab.
     ///

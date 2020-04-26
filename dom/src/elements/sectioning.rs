@@ -10,7 +10,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// The [HTML `<address>` element][mdn] indicates that the enclosed HTML provides contact
     /// information for a person or people, or for an organization.
     ///
@@ -18,7 +18,7 @@ element! {
     address -> Address
 }
 
-element! {
+html_element! {
     /// The [HTML `<article>` element][mdn] represents a self-contained composition in a document,
     /// page, application, or site, which is intended to be independently distributable or reusable
     /// (e.g., in syndication).
@@ -27,7 +27,7 @@ element! {
     article -> Article
 }
 
-element! {
+html_element! {
     /// The [HTML `<aside>` element][mdn] represents a portion of a document whose content is only
     /// indirectly related to the document's main content.
     ///
@@ -35,7 +35,7 @@ element! {
     aside -> Aside
 }
 
-element! {
+html_element! {
     /// The [HTML `<footer>` element][mdn] represents a footer for its nearest [sectioning content]
     /// or [sectioning root] element. A footer typically contains information about the author of
     /// the section, copyright data or links to related documents.
@@ -46,7 +46,7 @@ element! {
     footer -> Footer
 }
 
-element! {
+html_element! {
     /// The [HTML `<header>` element][mdn] represents introductory content, typically a group of
     /// introductory or navigational aids. It may contain some heading elements but also a logo, a
     /// search form, an author name, and other elements.
@@ -55,7 +55,7 @@ element! {
     header -> Header
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -63,7 +63,7 @@ element! {
     h1 -> H1
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -71,7 +71,7 @@ element! {
     h2 -> H2
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -79,7 +79,7 @@ element! {
     h3 -> H3
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -87,7 +87,7 @@ element! {
     h4 -> H4
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -95,7 +95,7 @@ element! {
     h5 -> H5
 }
 
-element! {
+html_element! {
     /// The [HTML `<h1>`–`<h6>` elements][mdn] represent six levels of section headings. `<h1>` is
     /// the highest section level and `<h6>` is the lowest.
     ///
@@ -103,7 +103,7 @@ element! {
     h6 -> H6
 }
 
-element! {
+html_element! {
     /// The [HTML `<hgroup>` element][mdn] represents a multi-level heading for a section of a
     /// document. It groups a set of [`<h1>–<h6>`][heading] elements.
     ///
@@ -112,7 +112,7 @@ element! {
     hgroup -> HGroup
 }
 
-element! {
+html_element! {
     /// The [HTML `<main>` element][mdn] represents the dominant content of the [`<body>`][body] of
     /// a document. The main content area consists of content that is directly related to or expands
     /// upon the central topic of a document, or the central functionality of an application.
@@ -122,7 +122,7 @@ element! {
     main -> Main
 }
 
-element! {
+html_element! {
     /// The [HTML `<nav>` element][mdn] represents a section of a page whose purpose is to provide
     /// navigation links, either within the current document or to other documents. Common examples
     /// of navigation sections are menus, tables of contents, and indexes.
@@ -131,7 +131,7 @@ element! {
     nav -> Nav
 }
 
-element! {
+html_element! {
     /// The [HTML `<section>` element][mdn] represents a standalone section — which doesn't have a
     /// more specific semantic element to represent it — contained within an HTML document.
     ///

@@ -6,6 +6,10 @@
 
 use augdom::Node;
 
+/// Internal macros for stamping out types to match stringly-typed web APIs.
+#[macro_use]
+mod macros;
+
 pub mod elements;
 pub mod embed;
 pub mod interfaces;

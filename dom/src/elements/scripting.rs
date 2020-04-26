@@ -7,7 +7,7 @@ use crate::{
 };
 use augdom::event;
 
-element! {
+html_element! {
     /// Use the [HTML `<canvas>` element][mdn] with either the [canvas scripting API][api] or the
     /// [WebGL API][gl] to draw graphics and animations.
     ///
@@ -17,7 +17,7 @@ element! {
     canvas -> Canvas
 }
 
-element! {
+html_element! {
     /// The [HTML `<noscript>` element][mdn] defines a section of HTML to be inserted if a script
     /// type on the page is unsupported or if scripting is currently turned off in the browser.
     ///
@@ -25,7 +25,7 @@ element! {
     noscript -> NoScript
 }
 
-element! {
+html_element! {
     /// The [HTML `<script>` element][mdn] is used to embed or reference executable code; this is
     /// typically used to embed or refer to JavaScript code.
     ///
