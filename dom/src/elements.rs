@@ -11,7 +11,7 @@ use augdom::event;
 
 /// A module for glob-importing all element creation functions, similar to the
 /// global HTML namespace.
-pub mod all {
+pub mod html {
     pub use super::{
         body,
         embedding::{embed, iframe, object, param, picture, source},

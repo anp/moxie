@@ -1,5 +1,5 @@
 use crate::Todo;
-use moxie_dom::{elements::all::*, prelude::*};
+use moxie_dom::{elements::html::*, prelude::*};
 use Visibility::{Active, All, Completed};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -23,6 +23,7 @@ pub mod prelude {
     pub use moxie::{mox, prelude::*};
 
     pub use crate::{
+        elements::html,
         interfaces::{
             content_categories::{
                 EmbeddedContent, FlowContent, FormAssociatedContent, HeadingContent,

@@ -10,7 +10,7 @@ use gotham::{
     state::{FromState, State},
 };
 use moxie_dom::{
-    elements::{li, ul},
+    elements::html::{li, ul},
     prelude::*,
 };
 
