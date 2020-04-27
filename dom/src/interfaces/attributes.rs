@@ -15,12 +15,6 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// The URI of a program that processes the information submitted via the form.
-    ActionAttr::action for
-    Form
-}
-
-attr_trait! {
     /// Specifies the horizontal alignment of the element.
     AlignAttr::align for
     TableCaption, TableColumn, TableColumnGroup, HorizontalRule, InlineFrame, Image, Table,
@@ -28,21 +22,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Specifies a feature-policy for the iframe.
-    AllowAttr::allow for
-    InlineFrame
-}
-
-attr_trait! {
     /// Alternative text in case an image can't be displayed.
     AltAttr::alt for
     Area, Image, Input
-}
-
-attr_trait! {
-    /// Executes the script asynchronously.
-    AsyncAttr::async_ for
-    Script
 }
 
 attr_trait! {
@@ -71,28 +53,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// The definition of 'media capture' in that specification.spec, specifies a new
-    /// file can be captured.
-    CaptureAttr::capture for
-    Input
-}
-
-attr_trait! {
-    /// Indicates whether the element should be checked on page load.
-    CheckedAttr::checked for
-    Input
-}
-
-attr_trait! {
     /// Contains a URI which points to the source of the quote or change.
     CiteAttr::cite for
     BlockQuote, Deleted, Inserted, Quotation
-}
-
-attr_trait! {
-    /// Defines the number of columns in a textarea.
-    ColsAttr::cols for
-    TextArea
 }
 
 attr_trait! {
@@ -102,21 +65,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// A value associated with http-equiv or name depending on the context.
-    ContentAttr::content for
-    Meta
-}
-
-attr_trait! {
     /// Indicates whether the browser should show playback controls to the user.
     ControlsAttr::controls for
     Audio, Video
-}
-
-attr_trait! {
-    /// A set of values specifying the coordinates of the hot-spot region.
-    CoordsAttr::coords for
-    Area
 }
 
 attr_trait! {
@@ -126,34 +77,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Specifies the URL of the resource.
-    DataAttr::data for
-    Object
-}
-
-attr_trait! {
     /// Indicates the date and time associated with the element.
     DateTimeAttr::datetime for
     Deleted, Inserted, Time
-}
-
-attr_trait! {
-    /// Indicates the preferred method to decode the image.
-    DecodingAttr::decoding for
-    Image
-}
-
-attr_trait! {
-    /// Indicates that the track should be enabled unless the user's preferences indicate something
-    /// different.
-    DefaultAttr::default for
-    Track
-}
-
-attr_trait! {
-    /// Indicates that the script should be executed after the page has been parsed.
-    DeferAttr::defer for
-    Script
 }
 
 attr_trait! {
@@ -165,19 +91,13 @@ attr_trait! {
 attr_trait! {
     /// Indicates whether the user can interact with the element.
     DisabledAttr::disabled for
-    Button, FieldSet, Input, OptionGroup, Option, Select, TextArea
+    Button, FieldSet, Input, OptionGroup, OptionItem, Select, TextArea
 }
 
 attr_trait! {
     /// Indicates that the hyperlink is to be used for downloading a resource.
     DownloadAttr::download for
     Anchor, Area
-}
-
-attr_trait! {
-    /// Defines the content type of the form date when the method is POST.
-    EnctypeAttr::enctype for
-    Form
 }
 
 attr_trait! {
@@ -244,12 +164,6 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Indicates the lower bound of the upper range.
-    HighAttr::high for
-    Meter
-}
-
-attr_trait! {
     /// The URL of a linked resource.
     HrefAttr::href for
     Anchor, Area, Base, ExternalResourceLink
@@ -274,52 +188,15 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// This attribute tells the browser to ignore the actual intrinsic size of the image and
-    /// pretend it’s the size specified in the attribute.
-    IntrinsicSize::intrinsicsize  for
-    Image
-}
-
-attr_trait! {
-    /// Indicates that the image is part of a server-side image map.
-    IsMapAttr::ismap for
-    Image
-}
-
-attr_trait! {
-    /// Specifies the kind of text track.
-    KindAttr::kind for
-    Track
-}
-
-attr_trait! {
     /// Specifies a user-readable title of the element.
     LabelAttr::label for
-    OptionGroup, Option, Track
-}
-
-attr_trait! {
-    /// Defines the script language used in the element.
-    LanguageAttr::language for
-    Script
-}
-
-attr_trait! {
-    /// Identifies a list of pre-defined options to suggest to the user.
-    ListAttr::list for
-    Input
+    OptionGroup, OptionItem, Track
 }
 
 attr_trait! {
     /// Indicates whether the media should start playing from the start when it's finished.
     LoopAttr::loop_ for
     Audio, Video
-}
-
-attr_trait! {
-    /// Indicates the upper bound of the lower range.
-    LowAttr::low for
-    Meter
 }
 
 attr_trait! {
@@ -347,12 +224,6 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Defines which HTTP method to use when submitting the form. Can be GET (default) or POST.
-    MethodAttr::method for
-    Form
-}
-
-attr_trait! {
     /// Indicates the minimum value allowed.
     MinAttr::min for
     Input, Meter
@@ -377,30 +248,6 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// This attribute indicates that the form shouldn't be validated when submitted.
-    NoValidateAttr::novalidate for
-    Form
-}
-
-attr_trait! {
-    /// Indicates whether the details will be shown on page load.
-    OpenAttr::open for
-    Details
-}
-
-attr_trait! {
-    /// Indicates the optimal numeric value.
-    OptimumAttr::optimum for
-    Meter
-}
-
-attr_trait! {
-    /// Defines a regular expression which the element's value will be validated against.
-    PatternAttr::pattern for
-    Input
-}
-
-attr_trait! {
     /// The ping attribute specifies a space-separated list of URLs to be notified if a user follows the hyperlink.
     PingAttr::ping for
     Anchor, Area
@@ -410,12 +257,6 @@ attr_trait! {
     /// Provides a hint to the user of what can be entered in the field.
     PlaceholderAttr::placeholder for
     Input, TextArea
-}
-
-attr_trait! {
-    /// A URL indicating a poster frame to show until the user plays or seeks.
-    PosterAttr::poster for
-    Video
 }
 
 attr_trait! {
@@ -449,40 +290,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Indicates whether the list should be displayed in a descending order instead of a ascending.
-    ReversedAttr::reversed for
-    OrderedList
-}
-
-attr_trait! {
-    /// Defines the number of rows in a text area.
-    RowsAttr::rows for
-    TextArea
-}
-
-attr_trait! {
     /// Defines the number of rows a table cell should span over.
     RowSpanAttr::rowspan for
     TableCell, TableHeaderCell
-}
-
-attr_trait! {
-    /// Stops a document loaded in an iframe from using certain features (such as submitting forms
-    /// or opening new windows).
-    SandboxAttr::sandbox for
-    InlineFrame
-}
-
-attr_trait! {
-    /// Defines the cells that the header test (defined in the th element) relates to.
-    ScopeAttr::scope for
-    TableHeaderCell
-}
-
-attr_trait! {
-    /// Defines a value which will be selected on page load.
-    SelectedAttr::selected for
-    Option
 }
 
 attr_trait! {
@@ -512,38 +322,9 @@ attr_trait! {
 }
 
 attr_trait! {
-    /// Inline HTML to embed, overriding the `src` attribute. If a browser does not support the
-    /// `srcdoc` attribute, it will fall back to the URL in the `src` attribute.
-    SrcDocAttr::srcdoc for
-    InlineFrame
-}
-
-attr_trait! {
-    /// Language of the track text data. It must be a valid [BCP 47] language tag. If the kind
-    /// attribute is set to subtitles, then srclang must be defined.
-    ///
-    /// [BCP 47]: https://r12a.github.io/app-subtags/
-    SrcLangAttr::srclang for
-    Track
-}
-
-attr_trait! {
     /// One or more responsive image candidates.
     SrcSetAttr::srcset for
     Image, Source
-}
-
-attr_trait! {
-    /// Defines the first number if other than 1.
-    StartAttr::start for
-    OrderedList
-}
-
-attr_trait! {
-    /// Valid for the numeric input types, including number, date/time input types, and range, the
-    /// step attribute is a number that specifies the granularity that the value must adhere to.
-    StepAttr::step for
-    Input
 }
 
 attr_trait! {
@@ -568,17 +349,11 @@ attr_trait! {
 attr_trait! {
     /// Defines a default value which will be displayed in the element on page load.
     ValueAttr::value for
-    Button, Data, Input, ListItem, Meter, Option, Progress, Param
+    Button, Data, Input, ListItem, Meter, OptionItem, Progress, Param
 }
 
 attr_trait! {
     /// For the elements listed here, this establishes the element's width.
     WidthAttr::width for
     Canvas, Embed, InlineFrame, Image, Input, Object, Video
-}
-
-attr_trait! {
-    /// Indicates whether the text should be wrapped.
-    WrapAttr::wrap for
-    TextArea
 }

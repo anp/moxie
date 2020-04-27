@@ -24,9 +24,9 @@ pub trait HtmlElement: Element {
         autocapitalize
     }
 
-    bool_attr_method! {
+    attr_method! {
         /// A value of "true" means the element is editable and a value of "false" means it isn't.
-        contenteditable
+        contenteditable(bool)
     }
 
     /// Forms a class of attributes, called custom data attributes, that allow
@@ -49,21 +49,21 @@ pub trait HtmlElement: Element {
         dir
     }
 
-    bool_attr_method! {
+    attr_method! {
         /// Defines whether the element can be dragged.
-        draggable
+        draggable(bool)
     }
 
-    bool_attr_method! {
+    attr_method! {
         /// Indicates if the element is hidden or not.
-        hidden
+        hidden(bool)
     }
 
-    bool_attr_method! {
+    attr_method! {
         /// Indicates whether the user agent must act as though the given node is absent
         /// for the purposes of user interaction events, in-page text searches ("find in page"), and
         /// text selection.
-        inert
+        inert(bool)
     }
 
     attr_method! {

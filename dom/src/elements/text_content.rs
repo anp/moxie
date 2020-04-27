@@ -103,6 +103,18 @@ html_element! {
     ol -> OrderedList
 }
 
+impl OrderedList {
+    attr_method! {
+        /// Indicates whether the list should be displayed in a descending order instead of a ascending.
+        pub reversed
+    }
+
+    attr_method! {
+        /// Defines the first number if other than 1.
+        pub start
+    }
+}
+
 html_element! {
     /// The [HTML `<p>` element][mdn] represents a paragraph.
     ///

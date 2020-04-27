@@ -18,6 +18,13 @@ html_element! {
     area -> Area
 }
 
+impl Area {
+    attr_method! {
+        /// A set of values specifying the coordinates of the hot-spot region.
+        pub coords
+    }
+}
+
 html_element! {
     /// The [HTML `<audio>` element][mdn] is used to embed sound content in documents. It may
     /// contain one or more audio sources, represented using the `src` attribute or the
@@ -35,6 +42,24 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     img -> Image
+}
+
+impl Image {
+    attr_method! {
+        /// Indicates the preferred method to decode the image.
+        pub decoding
+    }
+
+    attr_method! {
+        /// This attribute tells the browser to ignore the actual intrinsic size of the image and
+        /// pretend it’s the size specified in the attribute.
+        pub intrinsicsize
+    }
+
+    attr_method! {
+        /// Indicates that the image is part of a server-side image map.
+        pub ismap
+    }
 }
 
 html_element! {
@@ -61,10 +86,38 @@ html_element! {
     track -> Track
 }
 
+impl Track {
+    attr_method! {
+        /// Indicates that the track should be enabled unless the user's preferences indicate something
+        /// different.
+        pub default
+    }
+
+    attr_method! {
+        /// Specifies the kind of text track.
+        pub kind
+    }
+
+    attr_method! {
+        /// Language of the track text data. It must be a valid [BCP 47] language tag. If the kind
+        /// attribute is set to subtitles, then srclang must be defined.
+        ///
+        /// [BCP 47]: https://r12a.github.io/app-subtags/
+        pub srclang
+    }
+}
+
 html_element! {
     /// The [HTML Video element (`<video>`)][mdn] embeds a media player which supports video
     /// playback into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     video -> Video
+}
+
+impl Video {
+    attr_method! {
+        /// A URL indicating a poster frame to show until the user plays or seeks.
+        pub poster
+    }
 }

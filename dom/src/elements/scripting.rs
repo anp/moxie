@@ -32,3 +32,20 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     script -> Script
 }
+
+impl Script {
+    attr_method! {
+        /// Executes the script asynchronously.
+        pub async_
+    }
+
+    attr_method! {
+        /// Indicates that the script should be executed after the page has been parsed.
+        pub defer
+    }
+
+    attr_method! {
+        /// Defines the script language used in the element.
+        pub language
+    }
+}

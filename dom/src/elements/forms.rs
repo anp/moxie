@@ -46,6 +46,26 @@ html_element! {
 }
 
 impl Form {
+    attr_method! {
+        /// The URI of a program that processes the information submitted via the form.
+        pub action
+    }
+
+    attr_method! {
+        /// Defines the content type of the form date when the method is POST.
+        pub enctype
+    }
+
+    attr_method! {
+        /// Defines which HTTP method to use when submitting the form. Can be GET (default) or POST.
+        pub method
+    }
+
+    attr_method! {
+        /// This attribute indicates that the form shouldn't be validated when submitted.
+        pub novalidate
+    }
+
     /// Space-separated character encodings the server accepts. The browser uses
     /// them in the order in which they are listed. The default value means
     /// the same encoding as the page.
@@ -62,6 +82,36 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
     /// [user agent]: https://developer.mozilla.org/en-US/docs/Glossary/user_agent
     input -> Input
+}
+
+impl Input {
+    attr_method! {
+        /// The definition of 'media capture' in that specification.spec, specifies a new
+        /// file can be captured.
+        pub capture
+    }
+
+    attr_method! {
+        /// Indicates whether the element should be checked on page load.
+        pub checked
+    }
+
+    attr_method! {
+        /// Identifies a list of pre-defined options to suggest to the user.
+        pub list
+    }
+
+    attr_method! {
+        /// Defines a regular expression which the element's value will be validated against.
+        pub pattern
+    }
+
+    attr_method! {
+        /// Valid for the numeric input types, including number, date/time input types, and range,
+        /// the step attribute is a number that specifies the granularity that the value must adhere
+        /// to.
+        pub step
+    }
 }
 
 html_element! {
@@ -88,6 +138,23 @@ html_element! {
     meter -> Meter
 }
 
+impl Meter {
+    attr_method! {
+        /// Indicates the lower bound of the upper range.
+        pub high(u32)
+    }
+
+    attr_method! {
+        /// Indicates the upper bound of the lower range.
+        pub low(u32)
+    }
+
+    attr_method! {
+        /// Indicates the optimal numeric value.
+        pub optimum(u32)
+    }
+}
+
 html_element! {
     /// The [HTML `<optgroup>` element][mdn] creates a grouping of options within a
     /// [`<select>`][select] element.
@@ -107,7 +174,14 @@ html_element! {
     /// [select]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     /// [optgroup]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
     /// [datalist]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
-    option -> Option
+    option -> OptionItem
+}
+
+impl OptionItem {
+    attr_method! {
+        /// Defines a value which will be selected on page load.
+        pub selected
+    }
 }
 
 html_element! {
@@ -143,9 +217,19 @@ html_element! {
 }
 
 impl TextArea {
-    unum_attr_method! {
+    attr_method! {
+        /// Indicates whether the text should be wrapped.
+        pub wrap
+    }
+
+    attr_method! {
         /// The visible width of the text control, in average character widths. If it is specified,
         /// it must be a positive integer. If it is not specified, the default value is 20.
-        cols
+        pub cols(u32)
+    }
+
+    attr_method! {
+        /// Defines the number of rows in a text area.
+        pub rows(u32)
     }
 }
