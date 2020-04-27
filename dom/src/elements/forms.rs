@@ -45,6 +45,15 @@ html_element! {
     form -> Form
 }
 
+impl Form {
+    /// Space-separated character encodings the server accepts. The browser uses
+    /// them in the order in which they are listed. The default value means
+    /// the same encoding as the page.
+    pub fn accept_charset(&self, to_set: String) -> &Self {
+        self.attribute("accept-charset", to_set)
+    }
+}
+
 html_element! {
     /// The [HTML `<input>` element][mdn] is used to create interactive controls for web-based forms
     /// in order to accept data from the user; a wide variety of types of input data and control

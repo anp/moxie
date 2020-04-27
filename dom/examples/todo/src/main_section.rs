@@ -21,7 +21,7 @@ pub fn toggle(default_checked: bool) {
 
     mox! {
         <span>
-            <input class="toggle-all" type="checkbox" defaultChecked={default_checked} />
+            <input class="toggle-all" type="checkbox" checked={default_checked} />
             <label onclick={on_click}/>
         </span>
     };

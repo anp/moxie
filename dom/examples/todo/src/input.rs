@@ -17,7 +17,7 @@ pub fn text_input(placeholder: &str, editing: bool, mut on_save: impl FnMut(Stri
     let change_text = text.clone();
     let clear_text = text.clone();
     mox! {
-        <input type="text" placeholder={placeholder} value={&*text} autoFocus="true"
+        <input type="text" placeholder={placeholder} value={text} autofocus="true"
             class={if editing { "edit new-todo" } else { "new-todo"}}
             onchange={move |change| change_text.set(input_value(change))}
             onkeydown={move |keypress| {

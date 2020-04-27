@@ -23,6 +23,7 @@ pub mod prelude {
     pub use crate::{
         elements::html,
         interfaces::{
+            attributes::*,
             content_categories::{
                 EmbeddedContent, FlowContent, FormAssociatedContent, HeadingContent,
                 InteractiveContent, LabelableFormContent, ListedFormContent, MetadataContent,

@@ -89,6 +89,27 @@ macro_rules! mass_bare_impl {
     };
 }
 
+/// Define a trait which is responsible for implementing an HTML attribute.
+macro_rules! attr_trait {
+    (
+        $(#[$outer:meta])*
+        $name:ident :: $attr:ident for
+        $($receives:ident),+
+    ) => {
+        $(#[$outer])*
+        pub trait $name: Element {
+            $(#[$outer])*
+            fn $attr(&self, to_set: impl ToString) -> &Self {
+                self.attribute(stringify!($attr), to_set)
+            }
+        }
+
+        mass_bare_impl! {
+            $name for $($receives,)+
+        }
+    };
+}
+
 /// Define an HTML element type, which is essentially an `element!` with the
 /// `HtmlElement` and `GlobalEventHandler` traits.
 macro_rules! html_element {
