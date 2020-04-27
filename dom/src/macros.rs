@@ -81,8 +81,10 @@ macro_rules! element {
     };
 }
 
+/// Implement the provided trait for all listed types. Requires the trait be a
+/// marker trait, i.e. without any functions or types.
 macro_rules! mass_bare_impl {
-    ($to_impl:ty: $($receives:ty,)+) => {
+    ($to_impl:ident for $($receives:ty,)+) => {
         $(impl $to_impl for $receives {})+
     };
 }

@@ -29,7 +29,7 @@ use crate::{
 /// documents, or convey other out of band information.
 pub trait MetadataContent: Node {}
 mass_bare_impl! {
-    MetadataContent:
+    MetadataContent for
     Base, ExternalResourceLink, Meta, Style, Title, NoScript, Script,
 }
 
@@ -37,7 +37,7 @@ mass_bare_impl! {
 /// embedded content.
 pub trait FlowContent: Node {}
 mass_bare_impl! {
-    FlowContent:
+    FlowContent for
     Anchor, Abbreviation, Address, Article, Aside, Audio, BringAttentionTo, BidirectionalOverride,
     BlockQuote, LineBreak, Button, Canvas, Citation, Code, Data, DataList, Deleted, Details,
     DescriptionDefinition, Div, DescriptionList, Emphasis, Embed, FieldSet, Figure, Footer, Form,
@@ -56,7 +56,7 @@ mass_bare_impl! {
 /// elements, and heading content.
 pub trait SectioningContent: Node {}
 mass_bare_impl! {
-    SectioningContent:
+    SectioningContent for
     Article, Aside, Nav, Section,
 }
 
@@ -65,7 +65,7 @@ mass_bare_impl! {
 /// content itself.
 pub trait HeadingContent: Node {}
 mass_bare_impl! {
-    HeadingContent:
+    HeadingContent for
     H1, H2, H3, H4, H5, H6, HGroup,
 }
 
@@ -73,7 +73,7 @@ mass_bare_impl! {
 /// phrasing content make up paragraphs.
 pub trait PhrasingContent: Node {}
 mass_bare_impl! {
-    PhrasingContent:
+    PhrasingContent for
     Abbreviation, Audio, BringAttentionTo, BidirectionalOverride, LineBreak, Button, Canvas,
     Citation, Code, Data, DataList, DescriptionDefinition, Emphasis, Embed, Italic, InlineFrame,
     Image, Input, KeyboardInput, Label, Mark, Meter, NoScript, Object, Output, Picture, Progress,
@@ -92,7 +92,7 @@ mass_bare_impl! {
 /// mark-up language or namespace into the document.
 pub trait EmbeddedContent: Node {}
 mass_bare_impl! {
-    EmbeddedContent:
+    EmbeddedContent for
     Audio, Canvas, Embed, InlineFrame, Image, Object, Picture, Video,
 }
 
@@ -100,7 +100,7 @@ mass_bare_impl! {
 /// user interaction.
 pub trait InteractiveContent: Node {}
 mass_bare_impl! {
-    InteractiveContent:
+    InteractiveContent for
     Anchor, Button, Details, Embed, InlineFrame, Label, Select, TextArea,
     Audio, // if the controls attribute is present
     Image, // if the usemap attribute is present
@@ -115,7 +115,7 @@ mass_bare_impl! {
 /// the element whose id is specified in the form attribute.
 pub trait FormAssociatedContent: Node {}
 mass_bare_impl! {
-    FormAssociatedContent:
+    FormAssociatedContent for
     Button, FieldSet, Input, Label, Meter, Object, Output, Progress, Select, TextArea,
 }
 
@@ -123,14 +123,14 @@ mass_bare_impl! {
 /// collections.
 pub trait ListedFormContent: FormAssociatedContent {}
 mass_bare_impl! {
-    ListedFormContent:
+    ListedFormContent for
     Button, FieldSet, Input, Object, Output, Select, TextArea,
 }
 
 /// Elements that can be associated with <label> elements.
 pub trait LabelableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
-    LabelableFormContent:
+    LabelableFormContent for
     Button, Input, Meter, Output, Progress, Select, TextArea,
 }
 
@@ -138,13 +138,13 @@ mass_bare_impl! {
 /// is submitted.
 pub trait SubmittableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
-    SubmittableFormContent:
+    SubmittableFormContent for
     Button, Input, Object, Select, TextArea,
 }
 
 /// Elements that can be affected when a form is reset.
 pub trait ResettableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
-    ResettableFormContent:
+    ResettableFormContent for
     Input, Output, Select, TextArea,
 }
