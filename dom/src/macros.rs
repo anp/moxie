@@ -25,7 +25,7 @@ macro_rules! bool_attr_method {
         #[topo::nested]
         fn $attr(&self, to_set: bool) -> &Self {
             if to_set {
-                self.attribute(stringify!($attr), "".to_string());
+                self.attribute(stringify!($attr), "");
             }
             self
         }
@@ -42,7 +42,7 @@ macro_rules! unum_attr_method {
         $(#[$outer])*
         #[topo::nested]
         fn $attr(&self, to_set: u32) -> &Self {
-            self.attribute(stringify!($attr), to_set.to_string());
+            self.attribute(stringify!($attr), to_set);
             self
         }
     };
