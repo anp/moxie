@@ -666,7 +666,7 @@ event_ty! {
     /// A generic error event.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error
-    Error,
+    ErrorEvent,
     "error",
     sys::Event
 }
