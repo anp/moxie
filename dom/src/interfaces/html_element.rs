@@ -12,7 +12,15 @@ pub trait HtmlElement: Element {
     }
 
     attr_method! {
-        /// Sets whether input is automatically capitalized when entered by user.
+        /// Sets whether input is automatically capitalized when entered by user. It can have the
+        /// following values:
+        ///
+        /// * `off` or `none`, no autocapitalization is applied (all letters default to lowercase)
+        /// * `on` or `sentences`, the first letter of each sentence defaults to a capital letter;
+        ///   all other letters default to lowercase
+        /// * `words`, the first letter of each word defaults to a capital letter; all other letters
+        ///   default to lowercase
+        /// * `characters`, all letters should default to uppercase
         autocapitalize
     }
 
@@ -29,7 +37,15 @@ pub trait HtmlElement: Element {
     }
 
     attr_method! {
-        /// The directionality of the element. Possible values are "ltr", "rtl", and "auto".
+        /// The directionality of the element. It can have the following values:
+        ///
+        /// * `ltr`, which means left to right and is to be used for languages that are written from
+        ///   the left to the right (like English);
+        /// * `rtl`, which means right to left and is to be used for languages that are written from
+        ///   the right to the left (like Arabic);
+        /// * `auto`, which lets the user agent decide. It uses a basic algorithm as it parses the
+        ///   characters inside the element until it finds a character with a strong directionality,
+        ///   then it applies that directionality to the whole element.
         dir
     }
 
