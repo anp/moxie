@@ -5,6 +5,7 @@ use proc_macro_error::{abort, emit_error, proc_macro_error, Diagnostic, Level, R
 use proc_macro_hack::proc_macro_hack;
 use quote::{quote, ToTokens};
 use snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag};
+use std::borrow::Cow;
 
 #[proc_macro_error(allow_not_macro)]
 #[proc_macro_hack]
@@ -207,7 +208,27 @@ struct MoxAttr {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self { name, value } = self;
-        tokens.extend(if name == "type" { quote!(.ty(#value)) } else { quote!(.#name(#value)) });
+        let name = mangle_keywords(name);
+        tokens.extend(quote!(.#name(#value)));
+    }
+}
+
+fn mangle_keywords(name: &Ident) -> Cow<'_, Ident> {
+    let replacement = if name == "async" {
+        Some("async_")
+    } else if name == "for" {
+        Some("for_")
+    } else if name == "loop" {
+        Some("loop_")
+    } else if name == "type" {
+        Some("type_")
+    } else {
+        None
+    };
+
+    match replacement {
+        Some(r) => Cow::Owned(Ident::new(r, name.span())),
+        None => Cow::Borrowed(name),
     }
 }
 

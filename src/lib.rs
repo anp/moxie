@@ -135,8 +135,8 @@ pub mod prelude {
 /// Each attribute takes the form `NAME=VAL` where `NAME` is an identifier and
 /// `VALUE` is an expression.
 ///
-/// If the attribute's name is `type` it is rewritten as `ty` to avoid colliding
-/// with the Rust keyword.
+/// If the attribute's name is `async`, `for`, `loop`, or `type` an underscore
+/// is appended to avoid colliding with the Rust keyword.
 ///
 /// ### Children
 ///
