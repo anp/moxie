@@ -1,5 +1,5 @@
 use crate::{filter::*, footer::*, item::todo_item, Todo};
-use moxie_dom::{elements::all::*, prelude::*};
+use moxie_dom::{elements::html::*, prelude::*};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
