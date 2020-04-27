@@ -56,6 +56,13 @@ html_element! {
     meta -> Meta
 }
 
+impl Meta {
+    /// Defines a pragma directive.
+    pub fn http_equiv(&self, to_set: impl ToString) -> &Self {
+        self.attribute("http-equiv", to_set)
+    }
+}
+
 html_element! {
     /// The [HTML `<style>` element][mdn] contains style information for a document, or part of a
     /// document.
