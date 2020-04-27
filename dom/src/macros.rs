@@ -3,46 +3,34 @@
 macro_rules! attr_method {
     (
         $(#[$outer:meta])*
-        $attr:ident
+        $publicity:vis $attr:ident(bool)
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        fn $attr(&self, to_set: impl Into<String>) -> &Self {
-            self.attribute(stringify!($attr), to_set.into());
-            self
-        }
-    };
-}
-
-/// Stamps a *boolean* attribute method with the provided identifier as the
-/// name, optionally passing docs.
-macro_rules! bool_attr_method {
-    (
-        $(#[$outer:meta])*
-        $attr:ident
-    ) => {
-        $(#[$outer])*
-        #[topo::nested]
-        fn $attr(&self, to_set: bool) -> &Self {
+        $publicity fn $attr(&self, to_set: bool) -> &Self {
             if to_set {
                 self.attribute(stringify!($attr), "");
             }
             self
         }
     };
-}
-
-/// Stamps an *unsigned integer* attribute method with the provided identifier
-/// as the name, optionally passing docs.
-macro_rules! unum_attr_method {
     (
         $(#[$outer:meta])*
-        $attr:ident
+        $publicity:vis $attr:ident
+    ) => {
+        attr_method! {
+            $(#[$outer])*
+            $publicity $attr(impl ToString)
+        }
+    };
+    (
+        $(#[$outer:meta])*
+        $publicity:vis $attr:ident($arg:ty)
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        fn $attr(&self, to_set: u32) -> &Self {
-            self.attribute(stringify!($attr), to_set);
+        $publicity fn $attr(&self, to_set: $arg) -> &Self {
+            self.attribute(stringify!($attr), to_set.to_string());
             self
         }
     };

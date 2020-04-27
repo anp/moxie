@@ -78,6 +78,13 @@ html_element! {
     th -> TableHeaderCell
 }
 
+impl TableHeaderCell {
+    attr_method! {
+        /// Defines the cells that the header test (defined in the th element) relates to.
+        pub scope
+    }
+}
+
 html_element! {
     /// The [HTML `<thead>` element][mdn] defines a set of rows defining the head of the columns of
     /// the table.

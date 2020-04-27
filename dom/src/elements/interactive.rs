@@ -16,6 +16,13 @@ html_element! {
     details -> Details
 }
 
+impl Details {
+    attr_method! {
+        /// Indicates whether the details will be shown on page load.
+        pub open(bool)
+    }
+}
+
 html_element! {
     /// The [HTML `<dialog>` element][mdn] represents a dialog box or other interactive component,
     /// such as an inspector or window.

@@ -57,6 +57,11 @@ html_element! {
 }
 
 impl Meta {
+    attr_method! {
+        /// A value associated with http-equiv or name depending on the context.
+        pub content
+    }
+
     /// Defines a pragma directive.
     pub fn http_equiv(&self, to_set: impl ToString) -> &Self {
         self.attribute("http-equiv", to_set)

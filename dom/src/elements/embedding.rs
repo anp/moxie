@@ -26,12 +26,38 @@ html_element! {
     iframe -> InlineFrame
 }
 
+impl InlineFrame {
+    attr_method! {
+        /// Specifies a feature-policy for the iframe.
+        pub allow
+    }
+
+    attr_method! {
+        /// Stops a document loaded in an iframe from using certain features (such as submitting forms
+        /// or opening new windows).
+        pub sandbox
+    }
+
+    attr_method! {
+        /// Inline HTML to embed, overriding the `src` attribute. If a browser does not support the
+        /// `srcdoc` attribute, it will fall back to the URL in the `src` attribute.
+        pub srcdoc
+    }
+}
+
 html_element! {
     /// The [HTML `<object>` element][mdn] represents an external resource, which can be treated as
     /// an image, a nested browsing context, or a resource to be handled by a plugin.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
     object -> Object
+}
+
+impl Object {
+    attr_method! {
+        /// Specifies the URL of the resource.
+        pub data
+    }
 }
 
 html_element! {
