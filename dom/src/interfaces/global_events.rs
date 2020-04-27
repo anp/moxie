@@ -43,7 +43,7 @@ pub trait GlobalEventHandler:
     + EventTarget<Dropped>
     + EventTarget<DurationChange>
     + EventTarget<Emptied>
-    + EventTarget<Error>
+    + EventTarget<ErrorEvent>
     + EventTarget<Focus>
     + EventTarget<FormReset>
     + EventTarget<GotPointerCapture>
@@ -115,7 +115,7 @@ pub trait GlobalEventHandler:
     global_event!(ondurationchange     DurationChange);
     global_event!(onemptied            Emptied);
     global_event!(onended              PlaybackEnded);
-    global_event!(onerror              Error);
+    global_event!(onerror              ErrorEvent);
     global_event!(onfocus              Focus);
     global_event!(ongotpointercapture  GotPointerCapture);
     global_event!(oninput              Input);

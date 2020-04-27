@@ -104,7 +104,7 @@ macro_rules! html_element {
         impl EventTarget<event::Abort> for $ret {}
         impl EventTarget<event::Blur> for $ret {}
         impl EventTarget<event::Cancel> for $ret {}
-        impl EventTarget<event::Error> for $ret {}
+        impl EventTarget<event::ErrorEvent> for $ret {}
         impl EventTarget<event::Focus> for $ret {}
         impl EventTarget<event::CanPlay> for $ret {}
         impl EventTarget<event::CanPlayThrough> for $ret {}
