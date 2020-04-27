@@ -25,13 +25,14 @@ pub trait Element: Node {
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
     #[topo::nested]
-    fn attribute(&self, #[slot] name: &'static str, value: impl ToString) -> &Self {
+    fn attribute(&self, #[slot] name: &str, value: impl ToString) -> &Self {
+        let name = name.to_owned();
         memo_with(
             value.to_string(),
             |v| {
                 let raw_node = self.raw_node_that_has_sharp_edges_please_be_careful();
-                raw_node.set_attribute(name, v);
-                scopeguard::guard(raw_node.clone(), move |elem| elem.remove_attribute(name))
+                raw_node.set_attribute(&name, v);
+                scopeguard::guard(raw_node.clone(), move |elem| elem.remove_attribute(&name))
             },
             |_| {},
         );
