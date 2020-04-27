@@ -25,9 +25,9 @@ pub trait Element: Node {
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
     #[topo::nested]
-    fn attribute(&self, #[slot] name: &'static str, value: String) -> &Self {
+    fn attribute(&self, #[slot] name: &'static str, value: impl ToString) -> &Self {
         memo_with(
-            value,
+            value.to_string(),
             |v| {
                 let raw_node = self.raw_node_that_has_sharp_edges_please_be_careful();
                 raw_node.set_attribute(name, v);
