@@ -4,8 +4,6 @@
 #![deny(clippy::all, missing_docs)]
 #![feature(track_caller)]
 
-use augdom::Node;
-
 /// Internal macros for stamping out types to match stringly-typed web APIs.
 #[macro_use]
 mod macros;
@@ -55,7 +53,7 @@ pub mod prelude {
 ///
 /// Requires the `webdom` feature.
 #[cfg(any(feature = "webdom", doc))]
-pub fn boot(new_parent: impl Into<Node>, root: impl FnMut() + 'static) {
+pub fn boot(new_parent: impl Into<augdom::Node>, root: impl FnMut() + 'static) {
     embed::WebRuntime::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
 
