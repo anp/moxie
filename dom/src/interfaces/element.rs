@@ -2,7 +2,6 @@
 //! Document inherit.
 
 use crate::prelude::*;
-use augdom::Dom;
 
 /// Element is the most general base class from which all element objects (i.e.
 /// objects that represent elements) in a Document inherit. It only has methods
@@ -26,16 +25,7 @@ pub trait Element: Node {
     /// recent (`moxie::Revision`).
     #[topo::nested]
     fn attribute(&self, #[slot] name: &str, value: impl ToString) -> &Self {
-        let name = name.to_owned();
-        memo_with(
-            value.to_string(),
-            |v| {
-                let raw_node = self.raw_node_that_has_sharp_edges_please_be_careful();
-                raw_node.set_attribute(&name, v);
-                scopeguard::guard(raw_node.clone(), move |elem| elem.remove_attribute(&name))
-            },
-            |_| {},
-        );
+        self.node().memo_attribute(name, value.to_string());
         self
     }
 

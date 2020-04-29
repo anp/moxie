@@ -50,6 +50,19 @@ impl MemoNode {
         &self.node
     }
 
+    #[topo::nested]
+    pub(crate) fn memo_attribute(&self, name: &str, value: String) {
+        let name = name.to_owned();
+        memo_with(
+            value.to_string(),
+            |v| {
+                self.node.set_attribute(&name, v);
+                scopeguard::guard(self.node.clone(), move |node| node.remove_attribute(&name))
+            },
+            |_| {},
+        );
+    }
+
     pub(crate) fn ensure_child_attached(&self, new_child: &Node) {
         let prev_sibling = self.curr.replace(Some(new_child.clone()));
 
