@@ -31,13 +31,14 @@ fmt-project = "ofl fmt"
 dom-flow = """
 watch --clear
     -x clippy-dom
-    -x test-ssr-example
     -x test-dom-lib
+    -x test-dom-lib-browser
     -x test-dom-drivertest
-    -x check-dom-hacking
-    -x check-dom-todo
+    -x test-ssr-example
     -x build-dom-hacking
+    -x test-dom-hacking
     -x build-dom-todo
+    -x test-dom-todo
 """
 
 check-dom-lib = "check --package moxie-dom"
@@ -46,13 +47,17 @@ check-dom-todo = "check --package todomvc-moxie"
 
 wa-pack = "run --manifest-path dom/local-wasm-pack/Cargo.toml --"
 wa-pack-build = "wa-pack build --target web --out-name index"
+wa-test = "wa-pack test --firefox --headless"
 
 build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 test-dom-lib = "test --package moxie-dom --all-targets"
-test-dom-drivertest = "wa-pack test --firefox --headless dom/examples/drivertest"
+test-dom-lib-browser = "wa-test dom"
+test-dom-drivertest = "wa-test dom/examples/drivertest"
+test-dom-hacking = "wa-test dom/examples/hacking"
+test-dom-todo = "wa-test dom/examples/todo"
 test-ssr-example = "test --package ssr-poc --all-targets"
 
 # dom utilities

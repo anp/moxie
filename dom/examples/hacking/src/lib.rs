@@ -5,7 +5,7 @@ use moxie_dom::{
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
-pub fn main() {
+pub fn begin() {
     console_log::init_with_level(tracing::log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
@@ -18,7 +18,6 @@ pub fn main() {
         mox! {<>
             <div>{% "hello world from moxie! ({})", &count }</div>
 
-            // TODO figure out how this could be `onclick` and still be nice
             <button type="button" onclick={move |_| count.update(|c| Some(c + 1))}>
                 "increment"
             </button>
@@ -28,4 +27,15 @@ pub fn main() {
             mox! { <div>{% "{}", t }</div> };
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    pub fn hello_browser() {
+        println!("hello");
+    }
 }
