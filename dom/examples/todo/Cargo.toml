@@ -26,3 +26,6 @@ illicit = { path = "../../../illicit" }
 moxie-dom = { path = "../../" }
 tracing = { version = "^0.1", features = [ "log" ] }
 wasm-bindgen = "0.2"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.2"

@@ -85,3 +85,19 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
         },
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    pub fn hello_browser() {
+        println!("hello");
+    }
+
+    #[test]
+    fn hello_world() {
+        println!("hello");
+    }
+}

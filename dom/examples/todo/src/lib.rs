@@ -50,10 +50,21 @@ impl Todo {
 }
 
 #[wasm_bindgen(start)]
-pub fn main() {
+pub fn begin() {
     console_log::init_with_level(tracing::log::Level::Debug).unwrap();
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
     moxie_dom::boot(document().body().unwrap(), todo_app);
+}
+
+#[cfg(test)]
+mod tests {
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    pub fn hello_browser() {
+        println!("hello");
+    }
 }
