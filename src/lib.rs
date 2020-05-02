@@ -112,7 +112,7 @@ pub mod prelude {
 /// Each macro invocation must resolve to a single item. Items can be tags,
 /// fragments, or content.
 ///
-/// [snax](https://docs.rs/snax) is used to tokenize the input as [JSX](ish).
+/// [snax](https://docs.rs/snax) is used to tokenize the input as [JSX]\(ish\).
 ///
 /// ## Tags
 ///
