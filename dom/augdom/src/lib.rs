@@ -121,6 +121,20 @@ pub enum Node {
     Virtual(Rc<VirtNode>),
 }
 
+impl Node {
+    /// Make a new `Node` from web-sys' DOM APIs.
+    #[cfg(feature = "webdom")]
+    pub fn new(ty: &str) -> Self {
+        Node::Concrete(document().create_element(ty).unwrap().into())
+    }
+
+    /// Make a new `Node` from augdom's DOM emulation API.
+    #[cfg(feature = "rsdom")]
+    pub fn new_virtual(ty: &str) -> Self {
+        Node::Virtual(rsdom::create_element(ty))
+    }
+}
+
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         let s = if f.alternate() { self.pretty_outer_html(4) } else { self.outer_html() };
