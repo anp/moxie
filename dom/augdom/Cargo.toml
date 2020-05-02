@@ -7,6 +7,10 @@ license = "MIT/Apache-2.0"
 description = "thin DOM wrapper, suitable for use in-browser or for rendering HTML strings anywhere"
 repository = "https://github.com/anp/moxie"
 
+[package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
+all-features = true
+
 [features]
 default = ["webdom"]
 rsdom = []
