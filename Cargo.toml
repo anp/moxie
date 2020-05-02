@@ -31,14 +31,6 @@ path = "topo"
 criterion = "0.3"
 tracing-subscriber = "0.2.1"
 
-[features]
-default = ["log"]
-loading = []
-log = ["tracing/log"]
-
-[profile.release]
-lto = true
-
 [workspace]
 members = [
     "dom",

@@ -63,7 +63,6 @@
 #![deny(clippy::all, missing_docs)]
 
 pub mod embed;
-#[cfg(feature = "loading")]
 pub mod load;
 pub mod memo;
 pub mod state;

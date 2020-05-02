@@ -12,6 +12,7 @@ crate-type = [ "cdylib", "rlib", ]
 
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
+all-features = true
 
 # TODO(https://github.com/rustwasm/wasm-pack/issues/696)
 [package.metadata.wasm-pack.profile.dev]
@@ -25,7 +26,6 @@ wasm-opt = false
 
 [features]
 default = ["webdom"]
-log = ["moxie/log"]
 rsdom = ["augdom/rsdom"]
 webdom = ["augdom/webdom", "raf"]
 
