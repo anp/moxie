@@ -280,3 +280,12 @@ impl Dom for Node {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::forget as cleanup_with_test;
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
+}

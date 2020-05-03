@@ -83,3 +83,6 @@ features = [
     # TODO these are for examples only, move them there
     "HtmlInputElement",
 ]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

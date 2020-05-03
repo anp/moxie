@@ -31,6 +31,7 @@ fmt-project = "ofl fmt"
 dom-flow = """
 watch --clear
     -x clippy-dom
+    -x test-augdom
     -x test-dom-lib
     -x test-dom-lib-browser
     -x test-dom-drivertest
@@ -53,6 +54,7 @@ build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
+test-augdom = "wa-test dom/augdom"
 test-dom-lib = "test --package moxie-dom --all-targets"
 test-dom-lib-browser = "wa-test dom"
 test-dom-drivertest = "wa-test dom/examples/drivertest"

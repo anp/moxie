@@ -34,6 +34,7 @@ jobs:
 
     # tests
     - run: cargo test-core
+    - run: cargo test-augdom
     - run: cargo test-dom-lib
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-hacking
