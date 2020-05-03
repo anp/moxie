@@ -33,6 +33,8 @@ impl Callback {
 }
 
 impl crate::Dom for sys::Node {
+    type NodeList = sys::NodeList;
+
     fn write_xml<W: Write>(&self, writer: &mut quick_xml::Writer<W>) {
         use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
         if let Some(elem) = self.dyn_ref::<sys::Element>() {
@@ -110,6 +112,16 @@ impl crate::Dom for sys::Node {
     fn remove_attribute(&self, name: &str) {
         let e: &sys::Element = self.dyn_ref().unwrap();
         e.remove_attribute(name).ok();
+    }
+
+    fn query_selector(&self, selectors: &str) -> Option<Self> {
+        let e: &sys::Element = self.dyn_ref().unwrap();
+        sys::Element::query_selector(e, selectors).unwrap().map(Into::into)
+    }
+
+    fn query_selector_all(&self, selectors: &str) -> Self::NodeList {
+        let e: &sys::Element = self.dyn_ref().unwrap();
+        sys::Element::query_selector_all(e, selectors).unwrap()
     }
 }
 

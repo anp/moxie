@@ -12,6 +12,33 @@
 //! if called on a text node. This cost seems appropriate today because this is
 //! a dependency for other crates which enforce this requirement themselves.
 //! `web_sys` enforces this restriction statically.
+//!
+//! # Testing
+//!
+//! Quoting from [DOM Testing Library]'s motivations, as this crate's test
+//! utilities are similar in design:
+//!
+//! > The more your tests resemble the way your software is used, the more
+//! confidence they can give you.
+//!
+//! > As part of this goal, the utilities this library provides facilitate
+//! querying the DOM in the same way the user would. Finding form elements by
+//! their label text (just like a user would), finding links and buttons from
+//! their text (like a user would), and more.
+//!
+//! `augdom` provides test utilities in terms of three core user activities:
+//!
+//! | user                       | test                     |
+//! | -------------------------- | ------------------------ |
+//! | visually scan for elements | query for nodes          |
+//! | click, type, touch         | fire events on nodes     |
+//! | watch browser pane         | await expected mutations |
+//!
+//! TODO point to which APIs implement which activities
+//!
+//! [DOM]: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction
+//! [DOM Testing Library]: https://testing-library.com/docs/dom-testing-library/intro
+
 #![deny(clippy::all, missing_docs)]
 
 static_assertions::assert_cfg!(
@@ -53,6 +80,9 @@ pub fn document() -> sys::Document {
 
 /// A value which implements a subset of the web's document object model.
 pub trait Dom: Sized {
+    /// The type returned by `query_selector_all`.
+    type NodeList;
+
     /// Write this value as XML via the provided writer. Consider using
     /// [Dom::outer_html] or [Dom::pretty_outer_html] unless you need the
     /// performance.
@@ -108,6 +138,18 @@ pub trait Dom: Sized {
 
     /// Removes the provided child from this node.
     fn remove_child(&self, to_remove: &Self) -> Option<Self>;
+
+    /// Returns the first descendant of `self` which matches the specified
+    /// [selectors].
+    ///
+    /// [selectors]: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
+    fn query_selector(&self, selectors: &str) -> Option<Self>;
+
+    /// Returns a static (not live) Vec of descendents of `self` which match the
+    /// specified [selectors].
+    ///
+    /// [selectors]: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
+    fn query_selector_all(&self, selectors: &str) -> Self::NodeList;
 }
 
 /// A `Node` in the augmented DOM.
@@ -167,6 +209,8 @@ impl PartialEq for Node {
 }
 
 impl Dom for Node {
+    type NodeList = Vec<Self>;
+
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match self {
             #[cfg(feature = "webdom")]
@@ -291,6 +335,36 @@ impl Dom for Node {
             Node::Virtual(n) => n.remove_attribute(name),
         }
     }
+
+    fn query_selector(&self, selectors: &str) -> Option<Self> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => n.query_selector(selectors).map(Node::Concrete),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => n.query_selector(selectors).map(Node::Virtual),
+        }
+    }
+
+    fn query_selector_all(&self, selectors: &str) -> Self::NodeList {
+        let mut selected = Vec::new();
+
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => {
+                let raw_selected = n.query_selector_all(selectors);
+                selected.reserve(raw_selected.length() as usize);
+
+                for i in 0..raw_selected.length() {
+                    let raw_node = raw_selected.item(i).unwrap();
+                    selected.push(Node::Concrete(raw_node));
+                }
+            }
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(_) => todo!(),
+        }
+
+        selected
+    }
 }
 
 #[cfg(test)]
@@ -300,4 +374,82 @@ mod tests {
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
+
+    fn example_dom() -> Node {
+        let div = Node::new("div");
+
+        let label = Node::new("label");
+        label.set_attribute("for", "username");
+        label.append_child(&label.create_text_node("Username"));
+        div.append_child(&label);
+
+        let input = Node::new("input");
+        input.set_attribute("id", "username");
+        div.append_child(&input);
+
+        let button = Node::new("button");
+        button.append_child(&button.create_text_node("Print Username"));
+        div.append_child(&button);
+
+        let container_for_callback = div.clone();
+        let onclick = event::EventHandle::new(&button, move |_: event::Click| {
+            // on a click, add this dom node to the parent in a callback
+            let div = container_for_callback.clone();
+            let input = input.clone();
+            let cb = move || {
+                let printed_name_container = Node::new("div");
+                printed_name_container.set_attribute("data-testid", "printed-username");
+                let input_text = div.create_text_node(&input.get_attribute("value").unwrap());
+                printed_name_container.append_child(&input_text);
+                div.append_child(&printed_name_container);
+            };
+
+            // fire the callback on a timer
+            let cb = Closure::wrap(Box::new(cb) as Box<dyn FnMut()>);
+            let empty_args = js_sys::Array::new();
+            window()
+                .set_timeout_with_callback_and_timeout_and_arguments(
+                    cb.as_ref().unchecked_ref(),
+                    500,
+                    &empty_args,
+                )
+                .unwrap();
+            cleanup_with_test(cb);
+        });
+        cleanup_with_test(onclick);
+
+        div
+    }
+
+    #[wasm_bindgen_test]
+    async fn basic_matchers() {
+        let container = example_dom();
+
+        //   const famousWomanInHistory = 'Ada Lovelace'
+        //   const container = getExampleDOM()
+        //   const input = getByLabelText(container, 'Username')
+        //   input.value = famousWomanInHistory
+
+        //   getByText(container, 'Print Username').click()
+
+        //   await waitFor(() =>
+        //     expect(queryByTestId(container, 'printed-username')).toBeTruthy()
+        //   )
+
+        //   expect(getByTestId(container,
+        // 'printed-username')).toHaveTextContent(
+        //     famousWomanInHistory
+        //   )
+
+        // expect(container).toMatchSnapshot()
+        let container_html = container.to_string();
+        let expected = "<div>
+  <label for=\"username\">Username</label>
+  <input id=\"username\">
+  </input>
+  <button>Print Username</button>
+</div>";
+
+        assert_eq!(container_html, expected);
+    }
 }
