@@ -85,6 +85,9 @@ pub trait Dom: Sized {
     /// Create a new text node within the same tree as the method receiver.
     fn create_text_node(&self, contents: &str) -> Self;
 
+    /// Get an attribute from this DOM node.
+    fn get_attribute(&self, name: &str) -> Option<String>;
+
     /// Set an attribute on this DOM node.
     fn set_attribute(&self, name: &str, value: &str);
 
@@ -259,6 +262,15 @@ impl Dom for Node {
             Node::Virtual(n) => {
                 n.replace_child(new_child.expect_virtual(), existing.expect_virtual());
             }
+        }
+    }
+
+    fn get_attribute(&self, name: &str) -> Option<String> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => <sys::Node as Dom>::get_attribute(n, name),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => <Rc<VirtNode> as Dom>::get_attribute(n, name),
         }
     }
 

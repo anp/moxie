@@ -129,6 +129,16 @@ impl crate::Dom for Rc<VirtNode> {
         }
     }
 
+    fn get_attribute(&self, name: &str) -> Option<String> {
+        match &self.data {
+            VirtData::Text(_) => None,
+            VirtData::Elem { tag: _, attrs } => attrs
+                .borrow()
+                .iter()
+                .find_map(|(attr, value)| if attr == name { Some(value.clone()) } else { None }),
+        }
+    }
+
     fn set_attribute(&self, name: &str, value: &str) {
         let mut attrs = match &self.data {
             VirtData::Elem { ref attrs, .. } => attrs.borrow_mut(),

@@ -97,6 +97,11 @@ impl crate::Dom for sys::Node {
         self.replace_child(new_child, existing).unwrap();
     }
 
+    fn get_attribute(&self, name: &str) -> Option<String> {
+        let e: &sys::Element = self.dyn_ref().unwrap();
+        e.get_attribute(name)
+    }
+
     fn set_attribute(&self, name: &str, value: &str) {
         let e: &sys::Element = self.dyn_ref().unwrap();
         e.set_attribute(name, value).unwrap();
