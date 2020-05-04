@@ -114,6 +114,11 @@ impl crate::Dom for sys::Node {
         e.remove_attribute(name).ok();
     }
 
+    fn get_inner_text(&self) -> String {
+        let e: Option<&sys::HtmlElement> = self.dyn_ref();
+        e.map(sys::HtmlElement::inner_text).unwrap_or_default()
+    }
+
     fn dispatch<E: crate::event::Event>(&self) {
         E::dispatch(self);
     }
