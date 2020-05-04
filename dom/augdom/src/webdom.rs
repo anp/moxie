@@ -100,8 +100,8 @@ impl crate::Dom for sys::Node {
     }
 
     fn get_attribute(&self, name: &str) -> Option<String> {
-        let e: &sys::Element = self.dyn_ref().unwrap();
-        e.get_attribute(name)
+        let e: Option<&sys::Element> = self.dyn_ref();
+        e.map(|e| sys::Element::get_attribute(e, name)).flatten()
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
