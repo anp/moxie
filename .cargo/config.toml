@@ -30,7 +30,6 @@ fmt-project = "ofl fmt"
 
 dom-flow = """
 watch --clear
-    -x clippy-dom
     -x test-augdom
     -x test-dom-lib
     -x test-dom-lib-browser
@@ -40,6 +39,7 @@ watch --clear
     -x test-dom-hacking
     -x build-dom-todo
     -x test-dom-todo
+    -x clippy-dom
 """
 
 check-dom-lib = "check --package moxie-dom"
@@ -65,6 +65,7 @@ test-ssr-example = "test --package ssr-poc --all-targets"
 # dom utilities
 clippy-dom = """clippy
     --all-targets
+    --all-features
     --package moxie-dom
     --package dom-hacking
     --package todomvc-moxie

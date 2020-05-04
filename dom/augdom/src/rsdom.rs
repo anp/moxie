@@ -71,7 +71,7 @@ impl crate::Dom for Rc<VirtNode> {
     }
 
     fn first_child(&self) -> Option<Rc<VirtNode>> {
-        self.children.borrow().get(0).map(|n| n.clone())
+        self.children.borrow().get(0).cloned()
     }
 
     fn next_sibling(&self) -> Option<Rc<VirtNode>> {
@@ -84,7 +84,7 @@ impl crate::Dom for Rc<VirtNode> {
             for (i, child) in children.iter().enumerate() {
                 if Rc::ptr_eq(child, self) {
                     // we found ourselves! look one ahead of us and return them
-                    return children.get(i + 1).map(|c| c.clone());
+                    return children.get(i + 1).cloned();
                 }
             }
             None
@@ -147,12 +147,10 @@ impl crate::Dom for Rc<VirtNode> {
             data => panic!("expected VirtData::Elem, found {:?}", data),
         };
 
-        let new_value = value.to_string().into();
-
         if let Some(existing) = attrs.iter_mut().find(|(n, _)| n == name) {
-            existing.1 = new_value;
+            existing.1 = value.to_string();
         } else {
-            attrs.push((name.to_string(), new_value));
+            attrs.push((name.to_string(), value.to_string()));
         }
     }
 
