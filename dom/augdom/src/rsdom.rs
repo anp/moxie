@@ -162,6 +162,10 @@ impl crate::Dom for Rc<VirtNode> {
         attrs.retain(|(n, _)| n != name);
     }
 
+    fn dispatch<E: crate::event::Event>(&self) {
+        todo!("...need to add event handling to rsdom");
+    }
+
     fn query_selector(&self, _selectors: &str) -> Option<Self> {
         // TODO(#119) implement
         todo!("still need to integrate selectors crate")

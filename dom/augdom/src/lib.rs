@@ -139,6 +139,12 @@ pub trait Dom: Sized {
     /// Removes the provided child from this node.
     fn remove_child(&self, to_remove: &Self) -> Option<Self>;
 
+    /// Synchronously invokes the affected EventListeners in the appropriate
+    /// order. The normal event processing rules (including the capturing
+    /// and optional bubbling phase) also apply to events dispatched
+    /// manually with `dispatchEvent()`.
+    fn dispatch<E: event::Event>(&self);
+
     /// Returns the first descendant of `self` which matches the specified
     /// [selectors].
     ///
@@ -333,6 +339,15 @@ impl Dom for Node {
             Node::Concrete(n) => <sys::Node as Dom>::remove_attribute(n, name),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.remove_attribute(name),
+        }
+    }
+
+    fn dispatch<E: event::Event>(&self) {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => <sys::Node as Dom>::dispatch::<E>(n),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => <Rc<VirtNode> as Dom>::dispatch::<E>(n),
         }
     }
 

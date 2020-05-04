@@ -14,6 +14,9 @@ use {
 pub trait Event: AsRef<web_sys::Event> + JsCast {
     /// The name used to register for this event in `addEventListener`.
     const NAME: &'static str;
+
+    /// Dispatch a new event of this type to the provided target.
+    fn dispatch(target: &sys::EventTarget);
 }
 
 /// An event that can be received as the first argument to a handler callback.
@@ -131,6 +134,11 @@ macro_rules! event_ty {
 
         impl Event for $name {
             const NAME: &'static str = $ty_str;
+
+            fn dispatch(target: &sys::EventTarget) {
+                let event = <$parent_ty>::new($ty_str).unwrap();
+                sys::EventTarget::dispatch_event(target, event.as_ref()).unwrap();
+            }
         }
     };
 }
