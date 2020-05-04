@@ -162,6 +162,10 @@ impl crate::Dom for Rc<VirtNode> {
         attrs.retain(|(n, _)| n != name);
     }
 
+    fn get_inner_text(&self) -> String {
+        todo!("traverse the virtnode tree and accumulate text");
+    }
+
     fn dispatch<E: crate::event::Event>(&self) {
         todo!("...need to add event handling to rsdom");
     }

@@ -139,6 +139,12 @@ pub trait Dom: Sized {
     /// Removes the provided child from this node.
     fn remove_child(&self, to_remove: &Self) -> Option<Self>;
 
+    /// Represents the "rendered" text content of a node and its descendants. It
+    /// approximates the text the user would get if they highlighted the
+    /// contents of the element with the cursor and then copied it to the
+    /// clipboard.
+    fn get_inner_text(&self) -> String;
+
     /// Synchronously invokes the affected EventListeners in the appropriate
     /// order. The normal event processing rules (including the capturing
     /// and optional bubbling phase) also apply to events dispatched
@@ -339,6 +345,15 @@ impl Dom for Node {
             Node::Concrete(n) => <sys::Node as Dom>::remove_attribute(n, name),
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => n.remove_attribute(name),
+        }
+    }
+
+    fn get_inner_text(&self) -> String {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => <sys::Node as Dom>::get_inner_text(n),
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => <Rc<VirtNode> as Dom>::get_inner_text(n),
         }
     }
 
