@@ -223,17 +223,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// The input buffer of a [ScriptProcessorNode] is ready to be processed.
-    /// [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/audioprocess
-    /// [ScriptProcessorNode]: https://developer.mozilla.org/en-US/docs/Web/API/ScriptProcessorNode
-    AudioProcess,
-    "audioprocess",
-    sys::AudioProcessingEvent
-}
-
-event_ty! {
     /// The user agent has finished capturing audio for speech recognition. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/audioend
@@ -262,26 +251,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// The window, the document and its resources are about to be unloaded.
-    /// [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload
-    BeforeUnload,
-    "beforeunload",
-    sys::BeforeUnloadEvent
-}
-
-event_ty! {
-    /// A [SMIL] animation element begins. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/beginEvent
-    /// [SMIL]: https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL
-    SvgAnimationBegin,
-    "beginEvent",
-    sys::TimeEvent
-}
-
-event_ty! {
     /// An open connection to a database is blocking a versionchange transaction on the same
     /// database. [MDN documentation][mdn]
     ///
@@ -298,15 +267,6 @@ event_ty! {
     Blur,
     "blur",
     sys::FocusEvent
-}
-
-event_ty! {
-    /// The spoken utterance reaches a word or sentence boundary. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/boundary
-    SpeechBoundary,
-    "boundary",
-    sys::SpeechSynthesisEvent
 }
 
 event_ty! {
@@ -384,16 +344,6 @@ event_ty! {
     CloseWebsocket,
     "close",
     sys::Event
-}
-
-event_ty! {
-    /// The rendering of an [OfflineAudioContext] is terminated. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/complete
-    /// [OfflineAudioContext]: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext
-    AudioComplete,
-    "complete",
-    sys::OfflineAudioCompletionEvent
 }
 
 event_ty! {
@@ -626,15 +576,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// The utterance has finished being spoken. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/end_(SpeechSynthesis)
-    SpeechSynthesisEnd,
-    "end",
-    sys::SpeechSynthesisEvent
-}
-
-event_ty! {
     /// Playback has stopped because the end of the media was reached. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/ended
@@ -650,16 +591,6 @@ event_ty! {
     AudioEnded,
     "ended",
     sys::Event
-}
-
-event_ty! {
-    /// A [SMIL] animation element ends. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/endEvent
-    /// [SMIL]: https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL
-    SvgAnimationEnd,
-    "endEvent",
-    sys::TimeEvent
 }
 
 event_ty! {
@@ -724,16 +655,6 @@ event_ty! {
     SpeechRecognitionError,
     "error",
     sys::Event
-}
-
-event_ty! {
-    /// An error occurs that prevents the utterance from being successfully spoken.
-    /// [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/error_(SpeechSynthesisError)
-    SpeechError,
-    "error",
-    sys::SpeechSynthesisErrorEvent
 }
 
 event_ty! {
@@ -950,15 +871,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// The spoken utterance reaches a named SSML "mark" tag. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/mark
-    SpeechMark,
-    "mark",
-    sys::SpeechSynthesisEvent
-}
-
-event_ty! {
     /// A message is received through a WebSocket. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Reference/Events/message_websocket
@@ -1092,17 +1004,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// A system notification spawned by [ServiceWorkerRegistration.showNotification()][notif] has
-    /// been clicked. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/notificationclick
-    /// [notif]: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/showNotification
-    NotificationClick,
-    "notificationclick",
-    sys::NotificationEvent
-}
-
-event_ty! {
     /// The browser has lost access to the network. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/offline
@@ -1183,15 +1084,6 @@ event_ty! {
     Pause,
     "pause",
     sys::Event
-}
-
-event_ty! {
-    /// The utterance is paused part way through. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/pause_(SpeechSynthesis)
-    SpeechPause,
-    "pause",
-    sys::SpeechSynthesisEvent
 }
 
 event_ty! {
@@ -1362,16 +1254,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// A [SMIL] animation element is repeated. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/repeatEvent
-    /// [SMIL]: https://developer.mozilla.org/en-US/docs/SVG/SVG_animation_with_SMIL
-    AnimationRepeat,
-    "repeatEvent",
-    sys::TimeEvent
-}
-
-event_ty! {
     /// A form is reset. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/reset
@@ -1406,15 +1288,6 @@ event_ty! {
     SpeechRecognitionResult,
     "result",
     sys::SpeechRecognitionEvent
-}
-
-event_ty! {
-    /// A paused utterance is resumed. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/resume
-    SpeechResume,
-    "resume",
-    sys::SpeechSynthesisEvent
 }
 
 event_ty! {
@@ -1816,13 +1689,4 @@ event_ty! {
     TransactionComplete,
     "complete",
     sys::Event
-}
-
-event_ty! {
-    /// The utterance has begun to be spoken. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/start_(SpeechSynthesis)
-    SpeechStart,
-    "start",
-    sys::SpeechSynthesisEvent
 }
