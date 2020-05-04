@@ -144,7 +144,7 @@ impl crate::Dom for Rc<VirtNode> {
     fn set_attribute(&self, name: &str, value: &str) {
         let mut attrs = match &self.data {
             VirtData::Elem { ref attrs, .. } => attrs.borrow_mut(),
-            data @ _ => panic!("expected VirtData::Elem, found {:?}", data),
+            data => panic!("expected VirtData::Elem, found {:?}", data),
         };
 
         let new_value = value.to_string().into();
@@ -159,7 +159,7 @@ impl crate::Dom for Rc<VirtNode> {
     fn remove_attribute(&self, name: &str) {
         let mut attrs = match &self.data {
             VirtData::Elem { ref attrs, .. } => attrs.borrow_mut(),
-            data @ _ => panic!("expected VirtData::Elem, found {:?}", data),
+            data => panic!("expected VirtData::Elem, found {:?}", data),
         };
         attrs.retain(|(n, _)| n != name);
     }
