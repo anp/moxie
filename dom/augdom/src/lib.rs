@@ -81,7 +81,7 @@ pub fn document() -> sys::Document {
 /// A value which implements a subset of the web's document object model.
 pub trait Dom: Sized {
     /// The type returned by `query_selector_all`.
-    type NodeList;
+    type Nodes: IntoIterator<Item = Self>;
 
     /// Write this value as XML via the provided writer. Consider using
     /// [Dom::outer_html] or [Dom::pretty_outer_html] unless you need the
@@ -149,7 +149,7 @@ pub trait Dom: Sized {
     /// specified [selectors].
     ///
     /// [selectors]: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
-    fn query_selector_all(&self, selectors: &str) -> Self::NodeList;
+    fn query_selector_all(&self, selectors: &str) -> Self::Nodes;
 }
 
 /// A `Node` in the augmented DOM.
@@ -209,7 +209,7 @@ impl PartialEq for Node {
 }
 
 impl Dom for Node {
-    type NodeList = Vec<Self>;
+    type Nodes = Vec<Self>;
 
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match self {
@@ -345,25 +345,13 @@ impl Dom for Node {
         }
     }
 
-    fn query_selector_all(&self, selectors: &str) -> Self::NodeList {
-        let mut selected = Vec::new();
-
+    fn query_selector_all(&self, selectors: &str) -> Self::Nodes {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => {
-                let raw_selected = n.query_selector_all(selectors);
-                selected.reserve(raw_selected.length() as usize);
-
-                for i in 0..raw_selected.length() {
-                    let raw_node = raw_selected.item(i).unwrap();
-                    selected.push(Node::Concrete(raw_node));
-                }
-            }
+            Node::Concrete(n) => n.query_selector_all(selectors).map(Node::Concrete).collect(),
             #[cfg(feature = "rsdom")]
             Node::Virtual(_) => todo!(),
         }
-
-        selected
     }
 }
 

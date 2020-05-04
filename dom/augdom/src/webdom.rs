@@ -33,7 +33,7 @@ impl Callback {
 }
 
 impl crate::Dom for sys::Node {
-    type NodeList = sys::NodeList;
+    type Nodes = NodeList;
 
     fn write_xml<W: Write>(&self, writer: &mut quick_xml::Writer<W>) {
         use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -119,9 +119,9 @@ impl crate::Dom for sys::Node {
         sys::Element::query_selector(e, selectors).unwrap().map(Into::into)
     }
 
-    fn query_selector_all(&self, selectors: &str) -> Self::NodeList {
+    fn query_selector_all(&self, selectors: &str) -> Self::Nodes {
         let e: &sys::Element = self.dyn_ref().unwrap();
-        sys::Element::query_selector_all(e, selectors).unwrap()
+        NodeList { idx: 0, inner: sys::Element::query_selector_all(e, selectors).unwrap() }
     }
 }
 
@@ -159,5 +159,27 @@ impl Node {
             #[cfg(feature = "rsdom")]
             Node::Virtual(_) => panic!("expected a Node::Concrete, found a Node::Virtual"),
         }
+    }
+}
+
+/// Wraps [`sys::NodeList`] to implement `Iterator`.
+pub struct NodeList {
+    inner: sys::NodeList,
+    idx: u32,
+}
+
+impl Iterator for NodeList {
+    type Item = sys::Node;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ret = self.inner.item(self.idx);
+        self.idx += 1;
+        ret
+    }
+}
+
+impl std::iter::ExactSizeIterator for NodeList {
+    fn len(&self) -> usize {
+        self.inner.length() as _
     }
 }

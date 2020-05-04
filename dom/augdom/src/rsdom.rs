@@ -29,7 +29,7 @@ pub fn create_element(ty: &str) -> Rc<VirtNode> {
 }
 
 impl crate::Dom for Rc<VirtNode> {
-    type NodeList = ();
+    type Nodes = Vec<Self>;
 
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match &self.data {
@@ -167,7 +167,7 @@ impl crate::Dom for Rc<VirtNode> {
         todo!("still need to integrate selectors crate")
     }
 
-    fn query_selector_all(&self, _selectors: &str) -> Self::NodeList {
+    fn query_selector_all(&self, _selectors: &str) -> Self::Nodes {
         // TODO(#119) implement
         todo!("still need to integrate selectors crate")
     }
