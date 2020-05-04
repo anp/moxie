@@ -114,6 +114,10 @@ impl crate::Dom for sys::Node {
         e.remove_attribute(name).ok();
     }
 
+    fn dispatch<E: crate::event::Event>(&self) {
+        E::dispatch(self);
+    }
+
     fn query_selector(&self, selectors: &str) -> Option<Self> {
         let e: &sys::Element = self.dyn_ref().unwrap();
         sys::Element::query_selector(e, selectors).unwrap().map(Into::into)
