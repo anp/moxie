@@ -2,7 +2,7 @@
 //! `web-sys` crate and `wasm-bindgen`.
 
 use super::Node;
-use crate::{document, event::Event};
+use crate::document;
 use std::io::Write;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys as sys;
@@ -14,13 +14,13 @@ pub struct Callback {
 
 impl Callback {
     /// Allocate a new JS-compatible callback.
-    pub fn new<Ev>(mut cb: impl FnMut(Ev) + 'static) -> Self
+    pub fn new<T>(mut cb: impl FnMut(T) + 'static) -> Self
     where
-        Ev: Event,
+        T: JsCast,
     {
-        let cb = Closure::wrap(Box::new(move |ev: JsValue| {
-            let ev: Ev = ev.dyn_into().unwrap();
-            cb(ev);
+        let cb = Closure::wrap(Box::new(move |v: JsValue| {
+            let v: T = v.dyn_into().unwrap();
+            cb(v);
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
