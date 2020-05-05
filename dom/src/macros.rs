@@ -1,3 +1,22 @@
+/// Compute the name of the HTML attribute from the name of the builder method.
+macro_rules! attr_name {
+    (async_) => {
+        "async"
+    };
+    (for_) => {
+        "for"
+    };
+    (loop_) => {
+        "loop"
+    };
+    (type_) => {
+        "type"
+    };
+    ($attr:ident) => {
+        stringify!($attr)
+    };
+}
+
 /// Stamps a *string* attribute method with the provided identifier as the name,
 /// optionally passing docs.
 macro_rules! attr_method {
@@ -9,7 +28,7 @@ macro_rules! attr_method {
         #[topo::nested]
         $publicity fn $attr(&self, to_set: bool) -> &Self {
             if to_set {
-                self.attribute(stringify!($attr), "");
+                self.attribute(attr_name!($attr), "");
             }
             self
         }
@@ -30,7 +49,7 @@ macro_rules! attr_method {
         $(#[$outer])*
         #[topo::nested]
         $publicity fn $attr(&self, to_set: $arg) -> &Self {
-            self.attribute(stringify!($attr), to_set.to_string());
+            self.attribute(attr_name!($attr), to_set.to_string());
             self
         }
     };
@@ -88,7 +107,7 @@ macro_rules! attr_trait {
         pub trait $name: Element {
             $(#[$outer])*
             fn $attr(&self, to_set: impl ToString) -> &Self {
-                self.attribute(stringify!($attr), to_set)
+                self.attribute(attr_name!($attr), to_set)
             }
         }
 
