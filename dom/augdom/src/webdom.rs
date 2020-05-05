@@ -3,7 +3,12 @@
 
 use super::Node;
 use crate::document;
-use std::io::Write;
+use futures::{channel::mpsc::UnboundedReceiver, Stream};
+use std::{
+    io::Write,
+    pin::Pin,
+    task::{Context, Poll},
+};
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys as sys;
 
@@ -33,7 +38,9 @@ impl Callback {
 }
 
 impl crate::Dom for sys::Node {
+    type MutationRecord = sys::MutationRecord;
     type Nodes = NodeList;
+    type Observer = Mutations;
 
     fn write_xml<W: Write>(&self, writer: &mut quick_xml::Writer<W>) {
         use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -132,6 +139,10 @@ impl crate::Dom for sys::Node {
         let e: &sys::Element = self.dyn_ref().unwrap();
         NodeList { idx: 0, inner: sys::Element::query_selector_all(e, selectors).unwrap() }
     }
+
+    fn observe_mutations(&self) -> Self::Observer {
+        Mutations::new(self)
+    }
 }
 
 impl From<sys::Node> for Node {
@@ -190,5 +201,50 @@ impl Iterator for NodeList {
 impl std::iter::ExactSizeIterator for NodeList {
     fn len(&self) -> usize {
         self.inner.length() as _
+    }
+}
+
+/// Wraps a [`web_sys::MutationObserver`], providing a `Stream`.
+pub struct Mutations {
+    observer: crate::sys::MutationObserver,
+    _callback: super::webdom::Callback,
+    records: UnboundedReceiver<Vec<sys::MutationRecord>>,
+}
+
+impl Mutations {
+    fn new(node: &crate::sys::Node) -> Self {
+        let (sender, records) = futures::channel::mpsc::unbounded();
+        let _callback = crate::webdom::Callback::new(move |arr: js_sys::Array| {
+            let records = arr
+                .iter()
+                .map(|val| val.dyn_into::<crate::sys::MutationRecord>().unwrap())
+                .collect();
+            sender.unbounded_send(records).unwrap();
+        });
+        let observer = crate::sys::MutationObserver::new(_callback.as_fn()).unwrap();
+        let mut options = crate::sys::MutationObserverInit::new();
+        options.attributes(true);
+        options.character_data(true);
+        options.child_list(true);
+        options.subtree(true);
+        observer.observe_with_options(node, &options).unwrap();
+
+        Self { observer, _callback, records }
+    }
+}
+
+impl Stream for Mutations {
+    type Item = Vec<sys::MutationRecord>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let records = &mut self.get_mut().records;
+        futures::pin_mut!(records);
+        records.poll_next(cx)
+    }
+}
+
+impl Drop for Mutations {
+    fn drop(&mut self) {
+        self.observer.disconnect();
     }
 }

@@ -52,10 +52,13 @@ pub use {wasm_bindgen::JsCast, web_sys as sys};
 #[cfg(feature = "rsdom")]
 use {rsdom::VirtNode, std::rc::Rc};
 
+use futures::Stream;
 use quick_xml::Writer as XmlWriter;
 use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     io::{prelude::*, Cursor},
+    pin::Pin,
+    task::{Context, Poll},
 };
 
 #[cfg(feature = "rsdom")]
@@ -82,6 +85,12 @@ pub fn document() -> sys::Document {
 pub trait Dom: Sized {
     /// The type returned by `query_selector_all`.
     type Nodes: IntoIterator<Item = Self>;
+
+    /// The type returned in batches by [`Dom::Observer`].
+    type MutationRecord;
+
+    /// The type returned by `observe`.
+    type Observer: Stream<Item = Vec<Self::MutationRecord>> + Unpin;
 
     /// Write this value as XML via the provided writer. Consider using
     /// [Dom::outer_html] or [Dom::pretty_outer_html] unless you need the
@@ -162,6 +171,9 @@ pub trait Dom: Sized {
     ///
     /// [selectors]: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
     fn query_selector_all(&self, selectors: &str) -> Self::Nodes;
+
+    /// Return a stream of mutations related to the subtree under this node.
+    fn observe_mutations(&self) -> Self::Observer;
 }
 
 /// A `Node` in the augmented DOM.
@@ -221,7 +233,9 @@ impl PartialEq for Node {
 }
 
 impl Dom for Node {
+    type MutationRecord = MutationRecord;
     type Nodes = Vec<Self>;
+    type Observer = MutationObserver;
 
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match self {
@@ -383,6 +397,62 @@ impl Dom for Node {
             Node::Virtual(_) => todo!(),
         }
     }
+
+    fn observe_mutations(&self) -> Self::Observer {
+        match self {
+            #[cfg(feature = "webdom")]
+            Node::Concrete(n) => MutationObserver::Concrete(n.observe_mutations()),
+
+            #[cfg(feature = "rsdom")]
+            Node::Virtual(n) => MutationObserver::Virtual(n.observe_mutations()),
+}
+    }
+}
+
+/// Wraps streams of mutation events from a given DOM backend.
+pub enum MutationObserver {
+    /// Results from a MutationObserver.
+    #[cfg(feature = "webdom")]
+    Concrete(webdom::Mutations),
+
+    /// A stream of mutations from the virtual backend.
+    #[cfg(feature = "rsdom")]
+    Virtual(futures::channel::mpsc::UnboundedReceiver<Vec<rsdom::Mutation>>),
+}
+
+impl Stream for MutationObserver {
+    type Item = Vec<MutationRecord>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.get_mut() {
+            #[cfg(feature = "webdom")]
+            MutationObserver::Concrete(mutations) => {
+                futures::pin_mut!(mutations);
+                let next = futures::ready!(mutations.poll_next(cx));
+                let batch = next.map(|n| n.into_iter().map(MutationRecord::Concrete).collect());
+                Poll::Ready(batch)
+            }
+
+            #[cfg(feature = "rsdom")]
+            MutationObserver::Virtual(mutations) => {
+                futures::pin_mut!(mutations);
+                let next = futures::ready!(mutations.poll_next(cx));
+                let batch = next.map(|n| n.into_iter().map(MutationRecord::Virtual).collect());
+                Poll::Ready(batch)
+            }
+        }
+    }
+}
+
+/// Wraps individual mutation records from a given DOM backend.
+pub enum MutationRecord {
+    /// A mutation record from the web backend.
+    #[cfg(feature = "webdom")]
+    Concrete(sys::MutationRecord),
+
+    /// A mutation record from the virtual backend.
+    #[cfg(feature = "rsdom")]
+    Virtual(rsdom::Mutation),
 }
 
 #[cfg(test)]
