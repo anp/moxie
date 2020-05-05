@@ -12,32 +12,6 @@
 //! if called on a text node. This cost seems appropriate today because this is
 //! a dependency for other crates which enforce this requirement themselves.
 //! `web_sys` enforces this restriction statically.
-//!
-//! # Testing
-//!
-//! Quoting from [DOM Testing Library]'s motivations, as this crate's test
-//! utilities are similar in design:
-//!
-//! > The more your tests resemble the way your software is used, the more
-//! confidence they can give you.
-//!
-//! > As part of this goal, the utilities this library provides facilitate
-//! querying the DOM in the same way the user would. Finding form elements by
-//! their label text (just like a user would), finding links and buttons from
-//! their text (like a user would), and more.
-//!
-//! `augdom` provides test utilities in terms of three core user activities:
-//!
-//! | user                       | test                     |
-//! | -------------------------- | ------------------------ |
-//! | visually scan for elements | query for nodes          |
-//! | click, type, touch         | fire events on nodes     |
-//! | watch browser pane         | await expected mutations |
-//!
-//! TODO point to which APIs implement which activities
-//!
-//! [DOM]: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction
-//! [DOM Testing Library]: https://testing-library.com/docs/dom-testing-library/intro
 
 #![deny(clippy::all, missing_docs)]
 
@@ -67,6 +41,7 @@ pub mod rsdom;
 pub mod webdom;
 
 pub mod event;
+pub mod testing;
 
 /// Returns the current window. Panics if no window is available.
 #[cfg(feature = "webdom")]
@@ -405,7 +380,7 @@ impl Dom for Node {
 
             #[cfg(feature = "rsdom")]
             Node::Virtual(n) => MutationObserver::Virtual(n.observe_mutations()),
-}
+        }
     }
 }
 
@@ -457,7 +432,7 @@ pub enum MutationRecord {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{event::*, testing::Query, *};
     use std::mem::forget as cleanup_with_test;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_test::*;
@@ -513,29 +488,23 @@ mod tests {
     async fn basic_matchers() {
         let container = example_dom();
 
-        //   const famousWomanInHistory = 'Ada Lovelace'
-        //   const container = getExampleDOM()
-        //   const input = getByLabelText(container, 'Username')
-        //   input.value = famousWomanInHistory
+        let ada = "Ada Lovelace";
+        let input = container.find().by_label_text("Username").one().unwrap();
+        input.set_attribute("value", ada);
 
-        //   getByText(container, 'Print Username').click()
+        container.find().by_text("Print Username").one().unwrap().dispatch::<Click>();
+        let printed =
+            container.find().by_test_id("printed-username").wait_until().one().await.unwrap();
 
-        //   await waitFor(() =>
-        //     expect(queryByTestId(container, 'printed-username')).toBeTruthy()
-        //   )
+        assert_eq!(printed.get_inner_text(), ada);
 
-        //   expect(getByTestId(container,
-        // 'printed-username')).toHaveTextContent(
-        //     famousWomanInHistory
-        //   )
-
-        // expect(container).toMatchSnapshot()
         let container_html = container.to_string();
         let expected = "<div>
   <label for=\"username\">Username</label>
-  <input id=\"username\">
+  <input id=\"username\" value=\"Ada Lovelace\">
   </input>
   <button>Print Username</button>
+  <div data-testid=\"printed-username\">Ada Lovelace</div>
 </div>";
 
         assert_eq!(container_html, expected);
