@@ -2,6 +2,7 @@
 //! web's DOM.
 
 use super::*;
+use futures::channel::mpsc::UnboundedReceiver;
 use quick_xml::{
     events::{BytesEnd, BytesStart, BytesText, Event},
     Writer as XmlWriter,
@@ -29,7 +30,9 @@ pub fn create_element(ty: &str) -> Rc<VirtNode> {
 }
 
 impl crate::Dom for Rc<VirtNode> {
+    type MutationRecord = Mutation;
     type Nodes = Vec<Self>;
+    type Observer = UnboundedReceiver<Vec<Mutation>>;
 
     fn write_xml<W: Write>(&self, writer: &mut XmlWriter<W>) {
         match &self.data {
@@ -179,6 +182,10 @@ impl crate::Dom for Rc<VirtNode> {
         // TODO(#119) implement
         todo!("still need to integrate selectors crate")
     }
+
+    fn observe_mutations(&self) -> Self::Observer {
+        todo!("still need to do...this")
+    }
 }
 
 /// The data of a node in the virtual DOM tree.
@@ -212,3 +219,6 @@ impl Node {
         }
     }
 }
+
+/// Tracks a mutation in the virtual DOM tree. Currently unimplemented.
+pub struct Mutation {}

@@ -17,6 +17,7 @@ rsdom = []
 webdom = ["js-sys", "wasm-bindgen", "web-sys"]
 
 [dependencies]
+futures = "0.3.4"
 quick-xml = "0.18.1"
 static_assertions = "1"
 
@@ -79,6 +80,11 @@ features = [
     "UiEvent",
     "UserProximityEvent",
     "WheelEvent",
+
+    # testing types,
+    "MutationObserver",
+    "MutationObserverInit",
+    "MutationRecord",
 
     # TODO these are for examples only, move them there
     "HtmlInputElement",
