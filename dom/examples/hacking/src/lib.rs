@@ -37,19 +37,30 @@ fn root() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use augdom::{event::Click, testing::Query};
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
-    pub fn hello_browser() {
+    pub async fn hello_browser() {
         let test_root = augdom::Node::new("div");
-        moxie_dom::boot(test_root, root);
+        moxie_dom::boot(test_root.clone(), root);
 
-        // TODO wait until first animation frame callback done
-        // TODO assert HTML matches expected
-        // TODO find button
-        // TODO click button
-        // TODO assert HTML matches expected, all nodes identical
-        // TODO install mutation observer, enumerate exact mutations
+        let button = test_root.find().by_text("increment").wait_until().one().await.unwrap();
+        assert_eq!(
+            test_root.to_string(),
+            r#"<div>
+  <div>hello world from moxie! (0)</div>
+  <button type="button">increment</button>
+  <div>first</div>
+  <div>second</div>
+  <div>third</div>
+</div>"#
+        );
+
+        button.dispatch::<Click>();
+        test_root.find().by_text("hello world from moxie! (1)").wait_until().one().await.unwrap();
+        button.dispatch::<Click>();
+        test_root.find().by_text("hello world from moxie! (2)").wait_until().one().await.unwrap();
     }
 }
