@@ -493,8 +493,7 @@ mod tests {
         input.set_attribute("value", ada);
 
         container.find().by_text("Print Username").one().unwrap().dispatch::<Click>();
-        let printed =
-            container.find().by_test_id("printed-username").wait_until().one().await.unwrap();
+        let printed = container.find().by_test_id("printed-username").until().one().await.unwrap();
 
         assert_eq!(printed.get_inner_text(), ada);
 

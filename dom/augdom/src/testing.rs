@@ -128,7 +128,7 @@ where
     /// once the wrapped query could succeed or a large timeout has expired.
     ///
     /// [`MutationObserver`]: https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
-    pub fn wait_until(&self) -> Until<'_, 'find, 'pat, 'node, N> {
+    pub fn until(&self) -> Until<'_, 'find, 'pat, 'node, N> {
         Until::new(self)
     }
 
@@ -139,7 +139,7 @@ where
     ///
     /// If more than one matching node is found.
     pub fn one(&self) -> Option<N> {
-        let mut matches = self.all().into_iter();
+        let mut matches = self.many().into_iter();
         let first = matches.next();
         assert!(matches.next().is_none(), "`one()` returned more than one matching node");
         first
@@ -147,7 +147,7 @@ where
 
     /// Execute the query and return a `Vec` of matching nodes in the queried
     /// subtree.
-    pub fn all(&self) -> Vec<N> {
+    pub fn many(&self) -> Vec<N> {
         // first accumulate the subtree
         let mut candidates = Vec::new();
         collect_children_dfs_preorder(self.finder.target, &mut candidates);
@@ -231,7 +231,7 @@ where
     ///
     /// If more than one matching node is found.
     pub async fn one(&self) -> Option<N> {
-        let mut matches = self.all().await.into_iter();
+        let mut matches = self.many().await.into_iter();
         let first = matches.next();
         assert!(matches.next().is_none(), "`one()` returned more than one matching node");
         first
@@ -239,13 +239,13 @@ where
 
     /// Wait until the query can succeed then return a `Vec` of matching nodes
     /// in the queried subtree.
-    pub async fn all(&self) -> Vec<N> {
+    pub async fn many(&self) -> Vec<N> {
         let mut mutations = self.query.finder.target.observe_mutations();
 
         loop {
             // we don't yet do any minimization of the querying we do, just for waiting
             let _ = mutations.next().await;
-            let current_results = self.query.all();
+            let current_results = self.query.many();
             if !current_results.is_empty() {
                 return current_results;
             }

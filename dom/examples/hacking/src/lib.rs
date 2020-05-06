@@ -46,7 +46,7 @@ mod tests {
         let test_root = augdom::Node::new("div");
         moxie_dom::boot(test_root.clone(), root);
 
-        let button = test_root.find().by_text("increment").wait_until().one().await.unwrap();
+        let button = test_root.find().by_text("increment").until().one().await.unwrap();
         assert_eq!(
             test_root.to_string(),
             r#"<div>
@@ -59,8 +59,8 @@ mod tests {
         );
 
         button.dispatch::<Click>();
-        test_root.find().by_text("hello world from moxie! (1)").wait_until().one().await.unwrap();
+        test_root.find().by_text("hello world from moxie! (1)").until().one().await.unwrap();
         button.dispatch::<Click>();
-        test_root.find().by_text("hello world from moxie! (2)").wait_until().one().await.unwrap();
+        test_root.find().by_text("hello world from moxie! (2)").until().one().await.unwrap();
     }
 }
