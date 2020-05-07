@@ -13,10 +13,11 @@
 //!
 //! 1. setup test DOM
 //! 1. execute user-oriented queries to find nodes of interest (see
-//! [`Query::find`] and [`Finder::by_label_text`])
+//!    [`Query::find`] and [`Finder::by_label_text`])
 //! 1. fire events as a user would (see [`crate::Dom::dispatch`])
-//! 1. wait for async queries to complete (see [`Found::wait_until`] and
-//! [`Until`]) 1. assert on results
+//! 1. wait for async queries to complete (see [`Found::until`] and
+//!    [`Until`])
+//! 1. assert on results
 //!
 //! TODO write examples that work in doctests
 //!
