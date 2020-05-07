@@ -166,9 +166,23 @@ pub enum Node {
 }
 
 impl Node {
-    /// Make a new `Node` from web-sys' DOM APIs.
+    /// By default, make a new `Node` from web-sys' DOM APIs. Returns a new
+    /// virtual node if compiled without web-sys support.
     #[cfg(feature = "webdom")]
     pub fn new(ty: &str) -> Self {
+        Self::new_concrete(ty)
+    }
+
+    /// By default, make a new `Node` from web-sys' DOM APIs. Returns a new
+    /// virtual node if compiled without web-sys support.
+    #[cfg(not(feature = "webdom"))]
+    pub fn new(ty: &str) -> Self {
+        Self::new_virtual(ty)
+    }
+
+    /// Make a new `Node` from web-sys' DOM API.
+    #[cfg(feature = "webdom")]
+    pub fn new_concrete(ty: &str) -> Self {
         Node::Concrete(document().create_element(ty).unwrap().into())
     }
 
