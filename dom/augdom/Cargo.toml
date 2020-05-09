@@ -48,7 +48,6 @@ features = [
     "AudioProcessingEvent",
     "BeforeUnloadEvent",
     "BlobEvent",
-    "ClipboardEvent",
     "CloseEvent",
     "CompositionEvent",
     "DeviceMotionEvent",

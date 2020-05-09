@@ -394,15 +394,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// The text selection has been added to the clipboard. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/copy
-    Cp,
-    "copy",
-    sys::ClipboardEvent
-}
-
-event_ty! {
     /// The [cuechange][mdn] event fires when a TextTrack has changed the currently
     /// displaying cues. The event is fired at both the TextTrack and at the HTMLTrackElement in
     /// which it's being presented, if any.
@@ -411,16 +402,6 @@ event_ty! {
     CueChange,
     "cuechange",
     sys::Event
-}
-
-event_ty! {
-    /// The text selection has been removed from the document and added to the clipboard.
-    /// [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/cut
-    Cut,
-    "cut",
-    sys::ClipboardEvent
 }
 
 event_ty! {
@@ -1073,16 +1054,6 @@ event_ty! {
     PageShow,
     "pageshow",
     sys::PageTransitionEvent
-}
-
-event_ty! {
-    /// Data has been transferred from the system clipboard to the document.
-    /// [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/paste
-    Paste,
-    "paste",
-    sys::ClipboardEvent
 }
 
 event_ty! {
