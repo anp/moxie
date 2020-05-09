@@ -33,7 +33,7 @@ impl App {
     #[topo::nested]
     pub fn current(default_todos: &[Todo]) -> Self {
         let visibility = state(Visibility::default);
-        let todos = state(move || default_todos.into());
+        let todos = state(|| default_todos.into());
 
         Self { todos, visibility }
     }
