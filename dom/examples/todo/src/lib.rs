@@ -16,23 +16,46 @@ pub mod main_section;
 
 #[topo::nested]
 fn todo_app() {
-    let visibility = state(Visibility::default);
-    let todos = state(|| vec![Todo::new("whoaaa")]);
+    mox! {
+        <div class="todoapp">
+            <input_header/>
+            <main_section/>
+        </div>
+    };
+}
 
-    illicit::child_env![
-        Key<Vec<Todo>> => todos,
-        Key<Visibility> => visibility
-    ]
-    .enter(|| {
-        topo::call(|| {
-            mox! {
-                <div class="todoapp">
-                    <input_header/>
-                    <main_section/>
-                </div>
-            }
+pub(crate) struct App {
+    pub todos: Key<Vec<Todo>>,
+    pub visibility: Key<Visibility>,
+}
+
+impl App {
+    #[topo::nested]
+    pub fn current(default_todos: &[Todo]) -> Self {
+        let visibility = state(Visibility::default);
+        let todos = state(move || default_todos.into());
+
+        Self { todos, visibility }
+    }
+
+    pub fn enter(self, f: &mut dyn FnMut()) {
+        illicit::child_env![
+            Key<Vec<Todo>> => self.todos,
+            Key<Visibility> => self.visibility
+        ]
+        .enter(f);
+    }
+
+    pub fn boot(
+        default_todos: &[Todo],
+        node: impl Into<moxie_dom::raw::Node>,
+        mut root: impl FnMut() + 'static,
+    ) {
+        let defaults = default_todos.to_vec();
+        moxie_dom::boot(node, move || {
+            App::current(&defaults).enter(&mut root);
         });
-    });
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -55,7 +78,7 @@ pub fn begin() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    moxie_dom::boot(document().body().unwrap(), todo_app);
+    App::boot(&[Todo::new("whoaaa")], document().body().unwrap(), todo_app);
 }
 
 #[cfg(test)]
