@@ -47,7 +47,6 @@ members = [
     "topo/macro",
 ]
 exclude = [
-    "vendor/wasm-pack",
     "ofl",
 ]
 

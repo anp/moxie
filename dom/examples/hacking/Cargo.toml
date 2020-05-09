@@ -10,16 +10,6 @@ repository = "https://github.com/anp/moxie.git"
 [lib]
 crate-type = [ "cdylib" ]
 
-# TODO(https://github.com/rustwasm/wasm-pack/issues/696)
-[package.metadata.wasm-pack.profile.dev]
-wasm-opt = false
-
-[package.metadata.wasm-pack.profile.profiling]
-wasm-opt = false
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
-
 [dependencies]
 console_log = "0.2.0"
 moxie-dom = { path = "../../" }
