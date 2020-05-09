@@ -383,7 +383,9 @@ impl Dom for Node {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => n.query_selector_all(selectors).map(Node::Concrete).collect(),
             #[cfg(feature = "rsdom")]
-            Node::Virtual(_) => todo!(),
+            Node::Virtual(n) => {
+                n.query_selector_all(selectors).into_iter().map(Node::Virtual).collect()
+            }
         }
     }
 
