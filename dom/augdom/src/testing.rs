@@ -167,6 +167,7 @@ where
         use Strategy::*;
         match self.strat {
             Text => Some(node.get_inner_text()),
+            // TODO(#120) add tests and make sure this is correct
             LabelText => node
                 .get_attribute("id")
                 .map(|id| {
