@@ -39,6 +39,9 @@ pub mod prelude {
     };
 }
 
+/// [`augdom`] provides the underlying DOM implementation for moxie-dom.
+pub use augdom as raw;
+
 /// The "boot sequence" for a moxie-dom instance creates a
 /// [crate::embed::WebRuntime] with the provided arguments and begins scheduling
 /// its execution with `requestAnimationFrame` on state changes.
