@@ -126,7 +126,7 @@ where
     N: Dom,
 {
     /// Wrap the query in a [`MutationObserver`] with async methods that resolve
-    /// once the wrapped query could succeed or a large timeout has expired.
+    /// once the wrapped query could succeed or a 1 second timeout has expired.
     ///
     /// [`MutationObserver`]: https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
     pub fn until(&self) -> Until<'_, 'find, 'pat, 'node, N> {
@@ -232,6 +232,7 @@ where
     /// # Panics
     ///
     /// If more than one matching node is found.
+    #[cfg(feature = "webdom")]
     pub async fn one(&self) -> Option<N> {
         let mut matches = self.many().await.into_iter();
         let first = matches.next();
@@ -241,15 +242,20 @@ where
 
     /// Wait until the query can succeed then return a `Vec` of matching nodes
     /// in the queried subtree.
+    #[cfg(feature = "webdom")]
     pub async fn many(&self) -> Vec<N> {
         let mut mutations = self.query.finder.target.observe_mutations();
-
+        let timeout = gloo_timers::future::TimeoutFuture::new(1_000);
+        futures::pin_mut!(timeout);
         loop {
-            // we don't yet do any minimization of the querying we do, just for waiting
-            let _ = mutations.next().await;
-            let current_results = self.query.many();
-            if !current_results.is_empty() {
-                return current_results;
+            futures::select_biased! {
+                _ = timeout.as_mut().fuse() => return Vec::new(),
+                _ = mutations.next().fuse() => {
+                    let current_results = self.query.many();
+                    if !current_results.is_empty() {
+                        return current_results;
+                    }
+                }
             }
         }
     }

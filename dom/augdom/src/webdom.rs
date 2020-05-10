@@ -207,14 +207,14 @@ impl std::iter::ExactSizeIterator for NodeList {
 /// Wraps a [`web_sys::MutationObserver`], providing a `Stream`.
 pub struct Mutations {
     observer: crate::sys::MutationObserver,
-    _callback: super::webdom::Callback,
+    _callback: Callback,
     records: UnboundedReceiver<Vec<sys::MutationRecord>>,
 }
 
 impl Mutations {
     fn new(node: &crate::sys::Node) -> Self {
         let (sender, records) = futures::channel::mpsc::unbounded();
-        let _callback = crate::webdom::Callback::new(move |arr: js_sys::Array| {
+        let _callback = Callback::new(move |arr: js_sys::Array| {
             let records = arr
                 .iter()
                 .map(|val| val.dyn_into::<crate::sys::MutationRecord>().unwrap())
