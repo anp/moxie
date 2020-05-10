@@ -16,7 +16,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
     /// [forms]: https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms
-    button -> Button
+    <button>
 }
 
 html_element! {
@@ -25,7 +25,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
     /// [option]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
-    datalist -> DataList
+    <datalist>
 }
 
 html_element! {
@@ -34,7 +34,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
     /// [label]: <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label" title="The HTML <label> element represents a caption for an item in a user interface.">
-    fieldset -> FieldSet
+    <fieldset>
 }
 
 html_element! {
@@ -42,7 +42,7 @@ html_element! {
     /// controls for submitting information to a web server.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
-    form -> Form
+    <form>
 }
 
 impl Form {
@@ -81,7 +81,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
     /// [user agent]: https://developer.mozilla.org/en-US/docs/Glossary/user_agent
-    input -> Input
+    <input>
 }
 
 impl Input {
@@ -118,7 +118,7 @@ html_element! {
     /// The [HTML `<label>` element][mdn] represents a caption for an item in a user interface.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
-    label -> Label
+    <label>
 }
 
 html_element! {
@@ -127,7 +127,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
     /// [fieldset]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
-    legend -> Legend
+    <legend>
 }
 
 html_element! {
@@ -135,7 +135,7 @@ html_element! {
     /// fractional value.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
-    meter -> Meter
+    <meter>
 }
 
 impl Meter {
@@ -161,7 +161,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
     /// [select]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
-    optgroup -> OptionGroup
+    <optgroup>
 }
 
 html_element! {
@@ -174,10 +174,10 @@ html_element! {
     /// [select]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     /// [optgroup]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
     /// [datalist]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
-    option -> OptionItem
+    <option>
 }
 
-impl OptionItem {
+impl super::forms::Option {
     attr_method! {
         /// Defines a value which will be selected on page load.
         pub selected
@@ -189,7 +189,7 @@ html_element! {
     /// can inject the results of a calculation or the outcome of a user action.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
-    output -> Output
+    <output>
 }
 
 html_element! {
@@ -197,14 +197,14 @@ html_element! {
     /// progress of a task, typically displayed as a progress bar.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
-    progress -> Progress
+    <progress>
 }
 
 html_element! {
     /// The [HTML `<select>` element][mdn] represents a control that provides a menu of options.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
-    select -> Select
+    <select>
 }
 
 html_element! {
@@ -213,10 +213,10 @@ html_element! {
     /// example a comment on a review or feedback form.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
-    textarea -> TextArea
+    <textarea>
 }
 
-impl TextArea {
+impl Textarea {
     attr_method! {
         /// Indicates whether the text should be wrapped.
         pub wrap

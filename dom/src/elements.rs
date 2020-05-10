@@ -54,7 +54,7 @@ html_element! {
     /// this element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
-    html -> Root
+    <html>
 }
 
 html_element! {
@@ -62,7 +62,7 @@ html_element! {
     /// only one `<body>` element in a document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
-    body -> Body
+    <body>
 }
 
 html_element! {
@@ -72,7 +72,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
     /// [wc]: https://developer.mozilla.org/en-US/docs/Web/Web_Components
-    slot -> Slot
+    <slot>
 }
 
 html_element! {
@@ -82,5 +82,5 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
     /// [HTML]: https://developer.mozilla.org/en-US/docs/Glossary/HTML
-    template -> Template
+    <template>
 }

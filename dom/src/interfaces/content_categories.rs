@@ -30,25 +30,27 @@ use crate::{
 pub trait MetadataContent: Node {}
 mass_bare_impl! {
     MetadataContent for
-    Base, ExternalResourceLink, Meta, Style, Title, NoScript, Script,
+    <base>, <link>, <meta>, <noscript>, <script>, <style>, <title>
 }
 
 /// Elements belonging to the flow content category typically contain text or
 /// embedded content.
 pub trait FlowContent: Node {}
+impl FlowContent for Text {}
 mass_bare_impl! {
     FlowContent for
-    Anchor, Abbreviation, Address, Article, Aside, Audio, BringAttentionTo, BidirectionalOverride,
-    BlockQuote, LineBreak, Button, Canvas, Citation, Code, Data, DataList, Deleted, Details,
-    DescriptionDefinition, Div, DescriptionList, Emphasis, Embed, FieldSet, Figure, Footer, Form,
-    H1, H2, H3, H4, H5, H6, Header, HGroup, HorizontalRule, Italic, InlineFrame, Image, Input,
-    Inserted, KeyboardInput, Label, Main, Map, Mark, Menu, Meter, Nav, NoScript, Object,
-    OrderedList, Output, Paragraph, Picture, Preformatted, Progress, Quotation, Ruby, Strikethrough,
-    Sample, Script, Section, Select, Small, Span, Strong, Subscript, Superscript, Table,
-    Template, TextArea, Time, UnorderedList, Variable, Video, WordBreakOpportunity, Text,
-    Area, // if it is a descendant of a <map> element
-    ExternalResourceLink, // if the itemprop attribute is present
-    Meta, // if the itemprop attribute is present
+    <a>, <abbr>, <address>, <article>, <aside>, <audio>, <b>,<bdo>, <bdi>, <blockquote>, <br>,
+    <button>, <canvas>, <cite>, <code>, <data>, <datalist>, <del>, <details>, <dfn>, <div>, <dl>,
+    <em>, <embed>, <fieldset>, <figure>, <footer>, <form>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>,
+    <header>, <hgroup>, <hr>, <i>, <iframe>, <img>, <input>, <ins>, <kbd>, <label>, <main>, <map>,
+    <mark>, <menu>, <meter>, <nav>, <noscript>, <object>, <ol>, <output>, <p>, <picture>, <pre>,
+    <progress>, <q>, <ruby>, <s>, <samp>, <script>, <section>, <select>, <small>, <span>, <strong>,
+    <sub>, <sup>, <table>, <template>, <textarea>, <time>, <ul>, <var>, <video>,
+    <wbr>,
+    <area>, // if it is a descendant of a <map> element
+    <link>, // if the itemprop attribute is present
+    <meta>, // if the itemprop attribute is present
+    <style> // if the scoped attribute is present
 }
 
 /// Elements belonging to the sectioning content model create a section in the
@@ -57,7 +59,7 @@ mass_bare_impl! {
 pub trait SectioningContent: Node {}
 mass_bare_impl! {
     SectioningContent for
-    Article, Aside, Nav, Section,
+    <article>, <aside>, <nav>, <section>
 }
 
 /// Heading content defines the title of a section, whether marked by an
@@ -66,26 +68,26 @@ mass_bare_impl! {
 pub trait HeadingContent: Node {}
 mass_bare_impl! {
     HeadingContent for
-    H1, H2, H3, H4, H5, H6, HGroup,
+    <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <hgroup>
 }
 
 /// Phrasing content defines the text and the mark-up it contains. Runs of
 /// phrasing content make up paragraphs.
 pub trait PhrasingContent: Node {}
+impl PhrasingContent for Text {}
 mass_bare_impl! {
     PhrasingContent for
-    Abbreviation, Audio, BringAttentionTo, BidirectionalOverride, LineBreak, Button, Canvas,
-    Citation, Code, Data, DataList, DescriptionDefinition, Emphasis, Embed, Italic, InlineFrame,
-    Image, Input, KeyboardInput, Label, Mark, Meter, NoScript, Object, Output, Picture, Progress,
-    Quotation, Ruby, Sample, Script, Select, Small, Span, Strong, Subscript, Superscript, TextArea,
-    Time, Variable, Video, WordBreakOpportunity, Text,
-    Anchor, // if it contains only phrasing content
-    Area, // if it is a descendant of a <map> element
-    Deleted, // if it contains only phrasing content
-    Inserted, // if it contains only phrasing content
-    ExternalResourceLink, // if the itemprop attribute is present
-    Map, // if it contains only phrasing content
-    Meta, // if the itemprop attribute is present
+    <abbr>, <audio>, <b>, <bdo>, <br>, <button>, <canvas>, <cite>, <code>, <data>, <datalist>,
+    <dfn>, <em>, <embed>, <i>, <iframe>, <img>, <input>, <kbd>, <label>, <mark>, <meter>,
+    <noscript>, <object>, <output>, <picture>, <progress>, <q>, <ruby>, <samp>, <script>, <select>,
+    <small>, <span>, <strong>, <sub>, <sup>, <textarea>, <time>, <var>, <video>, <wbr>,
+    <a>, // if it contains only phrasing content
+    <area>, // if it is a descendant of a <map> element
+    <del>, // if it contains only phrasing content
+    <ins>, // if it contains only phrasing content
+    <link>, // if the itemprop attribute is present
+    <map>, // if it contains only phrasing content
+    <meta> // if the itemprop attribute is present
 }
 
 /// Embedded content imports another resource or inserts content from another
@@ -93,7 +95,7 @@ mass_bare_impl! {
 pub trait EmbeddedContent: Node {}
 mass_bare_impl! {
     EmbeddedContent for
-    Audio, Canvas, Embed, InlineFrame, Image, Object, Picture, Video,
+    <audio>, <canvas>, <embed>, <iframe>, <img>, <object>, <picture>, <video>
 }
 
 /// Interactive content includes elements that are specifically designed for
@@ -101,13 +103,13 @@ mass_bare_impl! {
 pub trait InteractiveContent: Node {}
 mass_bare_impl! {
     InteractiveContent for
-    Anchor, Button, Details, Embed, InlineFrame, Label, Select, TextArea,
-    Audio, // if the controls attribute is present
-    Image, // if the usemap attribute is present
-    Input, // if the type attribute is not in the hidden state
-    Menu, // if the type attribute is in the toolbar state
-    Object, // if the usemap attribute is present
-    Video, // if the controls attribute is present
+    <a>, <button>, <details>, <embed>, <iframe>, <label>, <select>, <textarea>,
+    <audio>, // if the controls attribute is present
+    <img>, // if the usemap attribute is present
+    <input>, // if the type attribute is not in the hidden state
+    <menu>, // if the type attribute is in the toolbar state
+    <object>, // if the usemap attribute is present
+    <video> // if the controls attribute is present
 }
 
 /// Form-associated content comprises elements that have a form owner, exposed
@@ -116,7 +118,8 @@ mass_bare_impl! {
 pub trait FormAssociatedContent: Node {}
 mass_bare_impl! {
     FormAssociatedContent for
-    Button, FieldSet, Input, Label, Meter, Object, Output, Progress, Select, TextArea,
+    <button>, <fieldset>, <input>, <label>, <meter>, <object>, <output>, <progress>, <select>,
+    <textarea>
 }
 
 /// Elements that are listed in the form.elements and fieldset.elements IDL
@@ -124,14 +127,14 @@ mass_bare_impl! {
 pub trait ListedFormContent: FormAssociatedContent {}
 mass_bare_impl! {
     ListedFormContent for
-    Button, FieldSet, Input, Object, Output, Select, TextArea,
+    <button>, <fieldset>, <input>, <object>, <output>, <select>, <textarea>
 }
 
 /// Elements that can be associated with <label> elements.
 pub trait LabelableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
     LabelableFormContent for
-    Button, Input, Meter, Output, Progress, Select, TextArea,
+    <button>, <input>, <meter>, <output>, <progress>, <select>, <textarea>
 }
 
 /// Elements that can be used for constructing the form data set when the form
@@ -139,12 +142,12 @@ mass_bare_impl! {
 pub trait SubmittableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
     SubmittableFormContent for
-    Button, Input, Object, Select, TextArea,
+    <button>, <input>, <object>, <select>, <textarea>
 }
 
 /// Elements that can be affected when a form is reset.
 pub trait ResettableFormContent: FormAssociatedContent {}
 mass_bare_impl! {
     ResettableFormContent for
-    Input, Output, Select, TextArea,
+    <input>, <output>,<select>, <textarea>
 }

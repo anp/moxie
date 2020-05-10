@@ -18,7 +18,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
     /// [cite]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
-    blockquote -> BlockQuote
+    <blockquote>
 }
 
 html_element! {
@@ -28,7 +28,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
     /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
-    dd -> DescriptionDefinition
+    <dd>
 }
 
 html_element! {
@@ -37,7 +37,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
     /// [CSS]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
-    div -> Div
+    <div>
 }
 
 html_element! {
@@ -49,7 +49,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dd]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
-    dl -> DescriptionList
+    <dl>
 }
 
 html_element! {
@@ -58,7 +58,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
-    dt -> DescriptionTerm
+    <dt>
 }
 
 html_element! {
@@ -67,7 +67,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     /// [figure]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
-    figcaption -> FigureCaption
+    <figcaption>
 }
 
 html_element! {
@@ -77,7 +77,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
     /// [figcaption]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
-    figure -> Figure
+    <figure>
 }
 
 html_element! {
@@ -85,14 +85,14 @@ html_element! {
     /// for example, a change of scene in a story, or a shift of topic within a section.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
-    hr -> HorizontalRule
+    <hr>
 }
 
 html_element! {
     /// The [HTML `<li>` element][mdn] is used to represent an item in a list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
-    li -> ListItem
+    <li>
 }
 
 html_element! {
@@ -100,10 +100,10 @@ html_element! {
     /// numbered list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
-    ol -> OrderedList
+    <ol>
 }
 
-impl OrderedList {
+impl Ol {
     attr_method! {
         /// Indicates whether the list should be displayed in a descending order instead of a ascending.
         pub reversed
@@ -119,7 +119,7 @@ html_element! {
     /// The [HTML `<p>` element][mdn] represents a paragraph.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
-    p -> Paragraph
+    <p>
 }
 
 html_element! {
@@ -127,7 +127,7 @@ html_element! {
     /// exactly as written in the HTML file.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-    pre -> Preformatted
+    <pre>
 }
 
 html_element! {
@@ -135,5 +135,5 @@ html_element! {
     /// a bulleted list.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
-    ul -> UnorderedList
+    <ul>
 }

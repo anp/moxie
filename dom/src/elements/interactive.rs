@@ -13,7 +13,7 @@ html_element! {
     /// information is visible only when the widget is toggled into an "open" state.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
-    details -> Details
+    <details>
 }
 
 impl Details {
@@ -28,7 +28,7 @@ html_element! {
     /// such as an inspector or window.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
-    dialog -> Dialog
+    <dialog>
 }
 
 html_element! {
@@ -38,7 +38,7 @@ html_element! {
     /// clicked.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
-    menu -> Menu
+    <menu>
 }
 
 html_element! {
@@ -47,5 +47,5 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
     /// [details]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
-    summary -> Summary
+    <summary>
 }

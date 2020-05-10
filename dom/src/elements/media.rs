@@ -15,7 +15,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
     /// [hypertext link]: https://developer.mozilla.org/en-US/docs/Glossary/Hyperlink
     /// [map]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
-    area -> Area
+    <area>
 }
 
 impl Area {
@@ -34,17 +34,17 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
     /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
     /// [stream]: https://developer.mozilla.org/en-US/docs/Web/API/MediaStream
-    audio -> Audio
+    <audio>
 }
 
 html_element! {
     /// The [HTML `<img>` element][mdn] embeds an image into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
-    img -> Image
+    <img>
 }
 
-impl Image {
+impl Img {
     attr_method! {
         /// Indicates the preferred method to decode the image.
         pub decoding
@@ -68,7 +68,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
     /// [area]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
-    map -> Map
+    <map>
 }
 
 html_element! {
@@ -83,7 +83,7 @@ html_element! {
     /// [video]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     /// [vtt]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Video_Text_Tracks_Format
     /// [ttml]: https://w3c.github.io/ttml2/index.html
-    track -> Track
+    <track>
 }
 
 impl Track {
@@ -112,7 +112,7 @@ html_element! {
     /// playback into the document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
-    video -> Video
+    <video>
 }
 
 impl Video {
