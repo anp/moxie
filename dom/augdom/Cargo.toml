@@ -14,10 +14,11 @@ all-features = true
 [features]
 default = ["webdom"]
 rsdom = []
-webdom = ["js-sys", "wasm-bindgen", "web-sys"]
+webdom = ["gloo-timers", "js-sys", "wasm-bindgen", "web-sys"]
 
 [dependencies]
 futures = "0.3.4"
+gloo-timers = { version = "0.2.1", features = ["futures"], optional = true }
 quick-xml = "0.18.1"
 static_assertions = "1"
 
