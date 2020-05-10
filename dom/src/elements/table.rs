@@ -13,7 +13,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
     /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
-    caption -> TableCaption
+    <caption>
 }
 
 html_element! {
@@ -23,14 +23,14 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
     /// [cg]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
-    col -> TableColumn
+    <col>
 }
 
 html_element! {
     /// The [HTML `<colgroup>` element][mdn] defines a group of columns within a table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
-    colgroup -> TableColumnGroup
+    <colgroup>
 }
 
 html_element! {
@@ -38,7 +38,7 @@ html_element! {
     /// in a two-dimensional table comprised of rows and columns of cells containing data.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
-    table -> Table
+    <table>
 }
 
 html_element! {
@@ -49,7 +49,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
     /// [tr]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
     /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
-    tbody -> TableBody
+    <tbody>
 }
 
 html_element! {
@@ -57,7 +57,7 @@ html_element! {
     /// in the *table model*.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
-    td -> TableCell
+    <td>
 }
 
 html_element! {
@@ -65,7 +65,7 @@ html_element! {
     /// table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
-    tfoot -> TableFooter
+    <tfoot>
 }
 
 html_element! {
@@ -75,10 +75,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
     /// [scope]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope
     /// [headers]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers
-    th -> TableHeaderCell
+    <th>
 }
 
-impl TableHeaderCell {
+impl Th {
     attr_method! {
         /// Defines the cells that the header test (defined in the th element) relates to.
         pub scope
@@ -90,7 +90,7 @@ html_element! {
     /// the table.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
-    thead -> TableHeader
+    <thead>
 }
 
 html_element! {
@@ -101,5 +101,5 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
     /// [td]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     /// [th]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
-    tr -> TableRow
+    <tr>
 }

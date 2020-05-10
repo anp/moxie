@@ -15,7 +15,7 @@ html_element! {
     /// information for a person or people, or for an organization.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
-    address -> Address
+    <address>
 }
 
 html_element! {
@@ -24,7 +24,7 @@ html_element! {
     /// (e.g., in syndication).
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
-    article -> Article
+    <article>
 }
 
 html_element! {
@@ -32,7 +32,7 @@ html_element! {
     /// indirectly related to the document's main content.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
-    aside -> Aside
+    <aside>
 }
 
 html_element! {
@@ -43,7 +43,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
     /// [sectioning content]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content
     /// [sectioning root]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots
-    footer -> Footer
+    <footer>
 }
 
 html_element! {
@@ -52,7 +52,7 @@ html_element! {
     /// search form, an author name, and other elements.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
-    header -> Header
+    <header>
 }
 
 html_element! {
@@ -60,7 +60,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
-    h1 -> H1
+    <h1>
 }
 
 html_element! {
@@ -68,7 +68,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2
-    h2 -> H2
+    <h2>
 }
 
 html_element! {
@@ -76,7 +76,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3
-    h3 -> H3
+    <h3>
 }
 
 html_element! {
@@ -84,7 +84,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4
-    h4 -> H4
+    <h4>
 }
 
 html_element! {
@@ -92,7 +92,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5
-    h5 -> H5
+    <h5>
 }
 
 html_element! {
@@ -100,7 +100,7 @@ html_element! {
     /// the highest section level and `<h6>` is the lowest.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6
-    h6 -> H6
+    <h6>
 }
 
 html_element! {
@@ -109,7 +109,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
     /// [heading]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
-    hgroup -> HGroup
+    <hgroup>
 }
 
 html_element! {
@@ -119,7 +119,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
     /// [body]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
-    main -> Main
+    <main>
 }
 
 html_element! {
@@ -128,7 +128,7 @@ html_element! {
     /// of navigation sections are menus, tables of contents, and indexes.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
-    nav -> Nav
+    <nav>
 }
 
 html_element! {
@@ -136,5 +136,5 @@ html_element! {
     /// more specific semantic element to represent it — contained within an HTML document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
-    section -> Section
+    <section>
 }

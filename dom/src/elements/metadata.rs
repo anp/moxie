@@ -15,7 +15,7 @@ html_element! {
     /// contained within a document. There can be only one `<base>` element in a document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-    base -> Base
+    <base>
 }
 
 html_element! {
@@ -27,7 +27,7 @@ html_element! {
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     /// [scripts]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     /// [style sheets]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-    head -> Head
+    <head>
 }
 
 html_element! {
@@ -38,7 +38,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
     /// [stylesheets]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
-    link -> ExternalResourceLink
+    <link>
 }
 
 html_element! {
@@ -53,7 +53,7 @@ html_element! {
     /// [script]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     /// [style]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
-    meta -> Meta
+    <meta>
 }
 
 impl Meta {
@@ -62,9 +62,9 @@ impl Meta {
         pub content
     }
 
-    /// Defines a pragma directive.
-    pub fn http_equiv(&self, to_set: impl ToString) -> &Self {
-        self.attribute("http-equiv", to_set)
+    attr_method! {
+        /// Defines a pragma directive.
+        pub http_equiv
     }
 }
 
@@ -73,7 +73,7 @@ html_element! {
     /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-    style -> Style
+    <style>
 }
 
 html_element! {
@@ -82,5 +82,5 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     /// [browser]: https://developer.mozilla.org/en-US/docs/Glossary/Browser
-    title -> Title
+    <title>
 }

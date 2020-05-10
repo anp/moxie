@@ -14,7 +14,7 @@ html_element! {
     /// content such as a browser plug-in.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
-    embed -> Embed
+    <embed>
 }
 
 html_element! {
@@ -23,10 +23,10 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
     /// [browsing context]: https://developer.mozilla.org/en-US/docs/Glossary/browsing_context
-    iframe -> InlineFrame
+    <iframe>
 }
 
-impl InlineFrame {
+impl Iframe {
     attr_method! {
         /// Specifies a feature-policy for the iframe.
         pub allow
@@ -50,7 +50,7 @@ html_element! {
     /// an image, a nested browsing context, or a resource to be handled by a plugin.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
-    object -> Object
+    <object>
 }
 
 impl Object {
@@ -65,7 +65,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
     /// [object]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
-    param -> Param
+    <param>
 }
 
 html_element! {
@@ -76,7 +76,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
     /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
     /// [img]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
-    picture -> Picture
+    <picture>
 }
 
 html_element! {
@@ -87,5 +87,5 @@ html_element! {
     /// [picture]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
     /// [audio]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
     /// [video]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
-    source -> Source
+    <source>
 }

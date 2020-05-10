@@ -6,6 +6,9 @@ macro_rules! attr_name {
     (for_) => {
         "for"
     };
+    (http_equiv) => {
+        "http-equiv"
+    };
     (loop_) => {
         "loop"
     };
@@ -59,7 +62,16 @@ macro_rules! attr_method {
 macro_rules! element {
     (
         $(#[$outer:meta])*
-        $name:ident -> $ret:ident
+        <$name:ident>
+    ) => {paste::item! {
+        element! {
+            $(#[$outer])*
+            <$name> -> [< $name:camel >]
+        }
+    }};
+    (
+        $(#[$outer:meta])*
+        <$name:ident> -> $ret:ident
     ) => {
         $(#[$outer])*
         #[topo::nested]
@@ -91,8 +103,8 @@ macro_rules! element {
 /// Implement the provided trait for all listed types. Requires the trait be a
 /// marker trait, i.e. without any functions or types.
 macro_rules! mass_bare_impl {
-    ($to_impl:ident for $($receives:ty,)+) => {
-        $(impl $to_impl for $receives {})+
+    ($to_impl:ident for $(< $receives:ty >),+) => {
+        paste::item! { $(impl $to_impl for [<$receives:camel>] {})+ }
     };
 }
 
@@ -100,11 +112,11 @@ macro_rules! mass_bare_impl {
 macro_rules! attr_trait {
     (
         $(#[$outer:meta])*
-        $name:ident :: $attr:ident for
-        $($receives:ident),+
-    ) => {
+        $attr:ident for
+        $( <$receives:ident> ),+
+    ) => { paste::item! {
         $(#[$outer])*
-        pub trait $name: Element {
+        pub trait [<$attr:camel Attr>]: Element {
             $(#[$outer])*
             fn $attr(&self, to_set: impl ToString) -> &Self {
                 self.attribute(attr_name!($attr), to_set)
@@ -112,9 +124,9 @@ macro_rules! attr_trait {
         }
 
         mass_bare_impl! {
-            $name for $($receives,)+
+            [<$attr:camel Attr>] for $( < [<$receives:camel>] >),+
         }
-    };
+    }};
 }
 
 /// Define an HTML element type, which is essentially an `element!` with the
@@ -122,11 +134,20 @@ macro_rules! attr_trait {
 macro_rules! html_element {
     (
         $(#[$outer:meta])*
-        $name:ident -> $ret:ident
+        <$name:ident>
+    ) => { paste::item! {
+        html_element! {
+            $(#[$outer])*
+            <$name> -> [< $name:camel >]
+        }
+    }};
+    (
+        $(#[$outer:meta])*
+        <$name:ident> -> $ret:ident
     ) => {
         element! {
             $(#[$outer])*
-            $name -> $ret
+            <$name> -> $ret
         }
 
         impl HtmlElement for $ret {}

@@ -17,7 +17,7 @@ html_element! {
     /// any other URL.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
-    a -> Anchor
+    <a>
 }
 
 html_element! {
@@ -27,7 +27,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-title
-    abbr -> Abbreviation
+    <abbr>
 }
 
 html_element! {
@@ -35,7 +35,7 @@ html_element! {
     /// the element's contents, which are not otherwise granted special importance.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
-    b -> BringAttentionTo
+    <b>
 }
 
 html_element! {
@@ -43,7 +43,7 @@ html_element! {
     /// algorithm to treat the text it contains in isolation from its surrounding text.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
-    bdi -> BidirectionalIsolate
+    <bdi>
 }
 
 html_element! {
@@ -51,7 +51,7 @@ html_element! {
     /// directionality of text, so that the text within is rendered in a different direction.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
-    bdo -> BidirectionalOverride
+    <bdo>
 }
 
 html_element! {
@@ -59,7 +59,7 @@ html_element! {
     /// for writing a poem or an address, where the division of lines is significant.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
-    br -> LineBreak
+    <br>
 }
 
 html_element! {
@@ -67,7 +67,7 @@ html_element! {
     /// creative work, and must include the title of that work.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
-    cite -> Citation
+    <cite>
 }
 
 html_element! {
@@ -75,7 +75,7 @@ html_element! {
     /// indicate that the text is a short fragment of computer code.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
-    code -> Code
+    <code>
 }
 
 html_element! {
@@ -84,7 +84,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
     /// [time]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
-    data -> Data
+    <data>
 }
 
 html_element! {
@@ -92,7 +92,7 @@ html_element! {
     /// within the context of a definition phrase or sentence.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
-    dfn -> Definition
+    <dfn>
 }
 
 html_element! {
@@ -100,7 +100,7 @@ html_element! {
     /// be nested, with each level of nesting indicating a greater degree of emphasis.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
-    em -> Emphasis
+    <em>
 }
 
 html_element! {
@@ -109,7 +109,7 @@ html_element! {
     /// fictional character thoughts. It is typically displayed in italic type.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
-    i -> Italic
+    <i>
 }
 
 html_element! {
@@ -117,7 +117,7 @@ html_element! {
     /// textual user input from a keyboard, voice input, or any other text entry device.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
-    kbd -> KeyboardInput
+    <kbd>
 }
 
 html_element! {
@@ -126,7 +126,7 @@ html_element! {
     /// the enclosing context.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
-    mark -> Mark
+    <mark>
 }
 
 html_element! {
@@ -134,7 +134,7 @@ html_element! {
     /// Most modern browsers implement this by surrounding the text in quotation marks.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
-    q -> Quotation
+    <q>
 }
 
 html_element! {
@@ -143,7 +143,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb
     /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
-    rb -> RubyBase
+    <rb>
 }
 
 html_element! {
@@ -153,7 +153,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
     /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
-    rp -> RubyFallbackParens
+    <rp>
 }
 
 html_element! {
@@ -164,7 +164,7 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
     /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
-    rt -> RubyText
+    <rt>
 }
 
 html_element! {
@@ -178,7 +178,7 @@ html_element! {
     /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     /// [rt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
     /// [rtc]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
-    rtc -> RubyTextContainer
+    <rtc>
 }
 
 html_element! {
@@ -186,7 +186,7 @@ html_element! {
     /// showing pronunciation of East Asian characters.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
-    ruby -> Ruby
+    <ruby>
 }
 
 html_element! {
@@ -198,7 +198,7 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
     /// [del]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     /// [ins]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
-    s -> Strikethrough
+    <s>
 }
 
 html_element! {
@@ -206,7 +206,7 @@ html_element! {
     /// sample (or quoted) output from a computer program.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
-    samp -> Sample
+    <samp>
 }
 
 html_element! {
@@ -215,7 +215,7 @@ html_element! {
     /// it one font-size small, such as from `small` to `x-small`.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
-    small -> Small
+    <small>
 }
 
 html_element! {
@@ -228,7 +228,7 @@ html_element! {
     /// [class]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-class
     /// [id]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-id
     /// [lang]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-lang
-    span -> Span
+    <span>
 }
 
 html_element! {
@@ -237,7 +237,7 @@ html_element! {
     /// type.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
-    strong -> Strong
+    <strong>
 }
 
 html_element! {
@@ -245,7 +245,7 @@ html_element! {
     /// as subscript for solely typographical reasons.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
-    sub -> Subscript
+    <sub>
 }
 
 html_element! {
@@ -253,14 +253,14 @@ html_element! {
     /// as superscript for solely typographical reasons.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
-    sup -> Superscript
+    <sup>
 }
 
 html_element! {
     /// The [HTML `<time>` element][mdn] represents a specific period in time.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
-    time -> Time
+    <time>
 }
 
 html_element! {
@@ -268,7 +268,7 @@ html_element! {
     /// which should be rendered in a way that indicates that it has a non-textual annotation.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
-    u -> Unarticulated
+    <u>
 }
 
 html_element! {
@@ -276,7 +276,7 @@ html_element! {
     /// mathematical expression or a programming context.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
-    var -> Variable
+    <var>
 }
 
 html_element! {
@@ -285,7 +285,7 @@ html_element! {
     /// otherwise create a break at that location.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
-    wbr -> WordBreakOpportunity
+    <wbr>
 }
 
 html_element! {
@@ -293,7 +293,7 @@ html_element! {
     /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
-    del -> Deleted
+    <del>
 }
 
 html_element! {
@@ -301,5 +301,5 @@ html_element! {
     /// document.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
-    ins -> Inserted
+    <ins>
 }
