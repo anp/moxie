@@ -67,9 +67,12 @@ html_element! {
 
 macro_rules! body_events {
     ($($property:ident <- $event:ident,)+) => {
-        $(impl crate::interfaces::event_target::EventTarget<augdom::event::$event> for Body {})+
+        $(
+            impl crate::interfaces::event_target::EventTarget<augdom::event::$event> for BodyBuilder
+            {}
+        )+
 
-        impl Body {$(
+        impl BodyBuilder {$(
             /// Set an event handler.
             pub fn $property(
                 self,

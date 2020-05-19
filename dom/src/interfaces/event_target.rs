@@ -31,7 +31,6 @@ where
     /// handlers don't typically affect the debugging experience and have
     /// not yet shown up in performance profiles.
     #[topo::nested]
-    #[must_use = "needs to be built"]
     fn on(self, callback: impl FnMut(Ev) + 'static) -> Self {
         memo_with(
             moxie::embed::Revision::current(),

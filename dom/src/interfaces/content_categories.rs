@@ -18,7 +18,7 @@
 use crate::{
     elements::{
         embedding::*, forms::*, interactive::*, media::*, metadata::*, scripting::*, sectioning::*,
-        table::*, text_content::*, text_semantics::*, Template,
+        table::*, text_content::*, text_semantics::*, TemplateBuilder,
     },
     memo_node::Text,
 };
