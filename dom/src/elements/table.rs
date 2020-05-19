@@ -7,6 +7,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
     /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     <caption>
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -31,6 +37,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     <colgroup>
 
+    children {
+        tags {
+            <col> // if the span attribute is present
+        }
+    }
+
     attributes {
         /// This attribute contains a positive integer indicating the number of consecutive columns
         /// the <colgroup> element spans. If not present, its default value is 1.
@@ -51,6 +63,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     <table>
+
+    categories {
+        Flow
+    }
+
+    children {
+        tags {
+            <caption>, <colgroup>, <thead>, <tbody>, <tr>, <tfoot>
+        }
+    }
 }
 
 html_element! {
@@ -62,6 +84,12 @@ html_element! {
     /// [tr]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
     /// [table]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
     <tbody>
+
+    children {
+        tags {
+            <tr>
+        }
+    }
 }
 
 html_element! {
@@ -70,6 +98,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     <td>
+
+    categories {
+        Sectioning
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 
     attributes {
         /// This attribute contains a non-negative integer value that indicates for how many columns
@@ -95,6 +133,12 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
     <tfoot>
+
+    children {
+        tags {
+            <tr>
+        }
+    }
 }
 
 html_element! {
@@ -105,6 +149,12 @@ html_element! {
     /// [scope]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope
     /// [headers]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers
     <th>
+
+    children {
+        categories {
+            Flow // no header, footer, sectioning, or heading descendants
+        }
+    }
 
     attributes {
         /// This attribute contains a short abbreviated description of the cell's content. Some
@@ -149,6 +199,12 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
     <thead>
+
+    children {
+        tags {
+            <tr>
+        }
+    }
 }
 
 html_element! {
@@ -160,4 +216,13 @@ html_element! {
     /// [td]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     /// [th]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
     <tr>
+
+    children {
+        tags {
+            <td>, <th>
+        }
+        categories {
+            ScriptSupporting
+        }
+    }
 }

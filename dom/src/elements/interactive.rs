@@ -8,6 +8,19 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     <details>
 
+    categories {
+        Flow, Sectioning, Interactive, Palpable
+    }
+
+    children {
+        tags {
+            <summary>
+        }
+        categories {
+            Flow
+        }
+    }
+
     attributes {
         /// Indicates whether the details will be shown on page load.
         open(bool)
@@ -20,6 +33,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
     <dialog>
+
+    categories {
+        Flow, Sectioning
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 
     attributes {
         /// Indicates that the dialog is active and can be interacted with. When the open attribute
@@ -36,6 +59,25 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
     <menu>
+
+    categories {
+        Flow,
+        Palpable // if the element's children include at least one <li> element
+    }
+
+    children {
+        tags {
+            // if in the list menu state
+            <li>, <script>, <template>,
+
+            // if in the context menu state
+            <menu>, <menuitem>, <hr>, <script>, <template>
+        }
+        categories {
+            // if in the list menu state
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -45,4 +87,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
     /// [details]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     <summary>
+
+    children {
+        categories {
+            Phrasing, Heading
+        }
+    }
 }

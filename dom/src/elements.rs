@@ -49,6 +49,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
     <html>
 
+    children {
+        tags {
+            <head>, <body>
+        }
+    }
+
     attributes {
         /// Specifies the XML Namespace of the document. Default value is
         /// "http://www.w3.org/1999/xhtml". This is required in documents parsed with XML parsers,
@@ -63,6 +69,15 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
     <body>
+
+    categories {
+        Sectioning
+    }
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 macro_rules! body_events {
@@ -106,6 +121,15 @@ html_element! {
     /// [wc]: https://developer.mozilla.org/en-US/docs/Web/Web_Components
     <slot>
 
+    categories {
+        Flow, Phrasing
+    }
+    children {
+        categories {
+            Transparent
+        }
+    }
+
     attributes {
         /// The slot's name.
         name
@@ -120,4 +144,13 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
     /// [HTML]: https://developer.mozilla.org/en-US/docs/Glossary/HTML
     <template>
+
+    categories {
+        Metadata, Flow, Phrasing
+    }
+    children {
+        categories {
+            Transparent
+        }
+    }
 }

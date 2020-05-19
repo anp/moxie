@@ -11,6 +11,16 @@ html_element! {
     /// [gl]: https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API
     <canvas>
 
+    categories {
+        Flow, Phrasing, Embedded, Palpable
+    }
+
+    children {
+        categories {
+            Transparent // with no interactives except a, button, input[checkbox,radio,button]
+        }
+    }
+
     attributes {
         /// The height of the coordinate space in CSS pixels. Defaults to 150.
         height
@@ -26,6 +36,21 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
     <noscript>
+
+    categories {
+        Metadata, Flow, Phrasing
+    }
+
+    children {
+        tags {
+            // when a descendant of <head> and scripting is disabled:
+            <link>, <style>, <meta>
+        }
+        categories {
+            Transparent, // when scripting disabled and it isn't descendant from <head>
+            Flow, Phrasing // otherwise
+        }
+    }
 }
 
 html_element! {
@@ -34,6 +59,10 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     <script>
+
+    categories {
+        Metadata, Flow, Phrasing
+    }
 
     attributes {
         /// For classic scripts, if the async attribute is present, then the classic script will be
@@ -111,3 +140,5 @@ html_element! {
         type_
     }
 }
+
+only_text_children! { <script> }

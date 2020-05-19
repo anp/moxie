@@ -13,6 +13,16 @@ html_element! {
     /// [cite]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     <blockquote>
 
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
+
     attributes {
         /// A URL that designates a source document or message for the information quoted. This
         /// attribute is intended to point to information explaining the context or the reference
@@ -29,6 +39,12 @@ html_element! {
     /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     <dd>
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -38,6 +54,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
     /// [CSS]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
     <div>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -50,6 +76,23 @@ html_element! {
     /// [dt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dd]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
     <dl>
+
+    categories {
+        Flow,
+        Palpable // if children include one name-value group
+    }
+
+    children {
+        tags {
+            <script>, <template>,
+
+            // and either:
+            <div>,
+
+            // or:
+            <dt>, <dd>
+        }
+    }
 }
 
 html_element! {
@@ -59,6 +102,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     /// [dl]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     <dt>
+
+    children {
+        categories {
+            Flow // no header, footer, sectioning, or heading descendants
+        }
+    }
 }
 
 html_element! {
@@ -68,6 +117,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     /// [figure]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
     <figcaption>
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -78,6 +133,19 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
     /// [figcaption]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
     <figure>
+
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        tags {
+            <figcaption>
+        }
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -86,6 +154,10 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
     <hr>
+
+    categories {
+        Flow
+    }
 }
 
 html_element! {
@@ -93,6 +165,12 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
     <li>
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -101,6 +179,17 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
     <ol>
+
+    categories {
+        Flow,
+        Palpable // if children include at least one <li>
+    }
+
+    children {
+        tags {
+            <li>, <script>, <template>
+        }
+    }
 
     attributes {
         /// Specifies that the list’s items are in reverse order. Items will be numbered from high
@@ -135,6 +224,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
     <p>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -143,6 +242,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
     <pre>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -151,4 +260,15 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
     <ul>
+
+    categories {
+        Flow,
+        Palpable // if children include at least 1 <li>
+    }
+
+    children {
+        tags {
+            <li>, <script>, <template>
+        }
+    }
 }

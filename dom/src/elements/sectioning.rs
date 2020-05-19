@@ -9,6 +9,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
     <address>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Flow // no nested address, no headings, no sectioning, no header/footer elems
+        }
+    }
 }
 
 html_element! {
@@ -18,6 +28,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
     <article>
+
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -26,6 +46,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
     <aside>
+
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -37,6 +67,16 @@ html_element! {
     /// [sectioning content]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Sectioning_content
     /// [sectioning root]: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Sections_and_Outlines_of_an_HTML5_document#Sectioning_roots
     <footer>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Flow // no footer or header descendants
+        }
+    }
 }
 
 html_element! {
@@ -46,6 +86,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
     <header>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Flow // no footer or header descendants
+        }
+    }
 }
 
 html_element! {
@@ -54,6 +104,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
     <h1>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -62,6 +122,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2
     <h2>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -70,6 +140,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3
     <h3>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -78,6 +158,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4
     <h4>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -86,6 +176,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5
     <h5>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -94,6 +194,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6
     <h6>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -103,6 +213,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
     /// [heading]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
     <hgroup>
+
+    categories {
+        Flow, Heading, Palpable
+    }
+
+    children {
+        tags {
+            <h1>, <h2>, <h3>, <h4>, <h5>, <h6>
+        }
+    }
 }
 
 html_element! {
@@ -113,6 +233,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
     /// [body]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
     <main>
+
+    categories {
+        Flow, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -122,6 +252,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
     <nav>
+
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
 
 html_element! {
@@ -130,4 +270,14 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
     <section>
+
+    categories {
+        Flow, Sectioning, Palpable
+    }
+
+    children {
+        categories {
+            Flow
+        }
+    }
 }
