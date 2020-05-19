@@ -24,7 +24,9 @@ pub trait Element: Node {
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
     #[topo::nested]
-    fn attribute(&self, #[slot] name: &str, value: impl ToString) -> &Self {
+    // TODO make `self` a slot too so we can remove topo::call from mox
+    #[must_use = "needs to be built"]
+    fn attribute(self, #[slot] name: &str, value: impl ToString) -> Self {
         self.node().memo_attribute(name, value.to_string());
         self
     }

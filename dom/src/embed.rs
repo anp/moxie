@@ -1,7 +1,6 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
-use crate::memo_node::MemoNode;
-use augdom::Node;
+use crate::{interfaces::node::Node, memo_node::MemoNode};
 use moxie::{embed::Runtime, prelude::topo};
 
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building
@@ -19,13 +18,23 @@ impl WebRuntime {
     /// On its own, a `WebRuntime` is inert and must either have its `run_once`
     /// method called when a re-render is needed, or be scheduled with
     /// [`WebRuntime::animation_frame_scheduler`].
-    pub fn new(parent: impl Into<Node>, mut root: impl FnMut() + 'static) -> Self {
+    pub fn new<Root: Node>(
+        parent: impl Into<augdom::Node>,
+        mut root: impl FnMut() -> Root + 'static,
+    ) -> Self {
         let parent = parent.into();
         WebRuntime {
             runtime: Runtime::new(),
             root: Box::new(move || {
-                illicit::child_env!(MemoNode => MemoNode::new(parent.clone()))
-                    .enter(|| topo::call(|| root()))
+                illicit::child_env!(MemoNode => MemoNode::new(parent.clone())).enter(|| {
+                    let new_root = topo::call(|| root());
+
+                    let parent = &*illicit::Env::expect::<MemoNode>();
+                    parent.ensure_child_attached(
+                        new_root.raw_node_that_has_sharp_edges_please_be_careful(),
+                    );
+                    parent.remove_trailing_children();
+                });
             }),
         }
     }
@@ -41,7 +50,9 @@ impl WebRuntime {
 impl WebRuntime {
     /// Create a new `div` and use that as the parent node for the runtime with
     /// which it is returned.
-    pub fn in_web_div(root: impl FnMut() + 'static) -> (Self, augdom::sys::Element) {
+    pub fn in_web_div<Root: Node + 'static>(
+        root: impl FnMut() -> Root + 'static,
+    ) -> (Self, augdom::sys::Element) {
         let container = augdom::document().create_element("div").unwrap();
         (WebRuntime::new(container.clone(), root), container)
     }
@@ -69,8 +80,8 @@ impl WebRuntime {
 impl WebRuntime {
     /// Create a new virtual `div` and use that as the parent node for the
     /// runtime with which it is returned.
-    pub fn in_rsdom_div(
-        root: impl FnMut() + 'static,
+    pub fn in_rsdom_div<Root: Node>(
+        root: impl FnMut() -> Root + 'static,
     ) -> (Self, std::rc::Rc<augdom::rsdom::VirtNode>) {
         let container = augdom::rsdom::create_element("div");
         (WebRuntime::new(container.clone(), root), container)

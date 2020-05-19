@@ -72,9 +72,9 @@ macro_rules! body_events {
         impl Body {$(
             /// Set an event handler.
             pub fn $property(
-                &self,
+                self,
                 callback: impl FnMut(augdom::event::$event) + 'static,
-            ) -> &Self {
+            ) -> Self {
                 use crate::interfaces::event_target::EventTarget;
                 self.on(callback)
             }

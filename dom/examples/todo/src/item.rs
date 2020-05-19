@@ -3,7 +3,7 @@ use moxie_dom::{elements::html::*, prelude::*};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_edit_input(todo: Todo, editing: Key<bool>) {
+fn item_edit_input(todo: Todo, editing: Key<bool>) -> impl Node {
     let todos = todos.clone();
     mox! {
         <text_input _=(
@@ -20,12 +20,12 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) {
                 });
             },
         )/>
-    };
+    }
 }
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_with_buttons(todo: Todo, editing: Key<bool>) {
+fn item_with_buttons(todo: Todo, editing: Key<bool>) -> impl Node {
     let id = todo.id;
     let todos = todos.clone();
     let toggle_todos = todos.clone();
@@ -60,11 +60,11 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) {
                 todos.update(|t| Some(t.iter().filter(|t| t.id != id).cloned().collect()));
             }} />
         </div>
-    };
+    }
 }
 
 #[topo::nested]
-pub fn todo_item(todo: &Todo) {
+pub fn todo_item(todo: &Todo) -> impl Node {
     let editing = state(|| false);
 
     let mut classes = String::new();
@@ -75,19 +75,51 @@ pub fn todo_item(todo: &Todo) {
         classes.push_str("editing");
     }
 
-    mox! {
-        <li class={classes}>
-        {
-            if *editing {
-                mox! {
-                    <item_edit_input _=(todo.clone(), editing) />
-                };
-            } else {
-                mox! {
-                    <item_with_buttons _=(todo.clone(), editing)/>
-                };
-            }
-        }
-        </li>
-    };
+    let mut item = li();
+    item = item.class(classes);
+
+    if *editing {
+        item = item.child(mox! {
+            <item_edit_input _=(todo.clone(), editing) />
+        });
+    } else {
+        item = item.child(mox! {
+            <item_with_buttons _=(todo.clone(), editing)/>
+        });
+    }
+
+    item.build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use moxie_dom::raw::testing::Query;
+    use pretty_assertions::assert_eq;
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
+    pub async fn single_item() {
+        let root = document().create_element("div").unwrap();
+        crate::App::boot(&[Todo::new("weeeee")], root.clone(), || {
+            let todo = &illicit::Env::get::<Key<Vec<Todo>>>().unwrap()[0];
+            mox! { <todo_item _=(todo)/> }
+        });
+
+        // gloo_timers::future::TimeoutFuture::new(1_000).await;
+        root.find().by_role("checkbox").until().one().await;
+        assert_eq!(
+            root.pretty_outer_html(2),
+            r#"<div>
+  <li class="">
+    <div class="view">
+      <input class="toggle" type="checkbox" checked="false">
+      </input>
+      <label>weeeee</label>
+      <button class="destroy">
+      </button>
+    </div>
+  </li>
+</div>"#
+        );
+    }
 }

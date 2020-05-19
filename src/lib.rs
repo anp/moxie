@@ -86,21 +86,25 @@ pub mod prelude {
 /// ## Tags
 ///
 /// Each tag expands to a function call with the same name as the tag, with the
-/// tag's arguments passed through as function arguments.
+/// tag's arguments passed through as function arguments. The function call and
+/// all attributes and children are wrapped in `#[topo::nested]` to create the
+/// correct topology.
 ///
 /// Each attribute expands to a method called on the value returned from the tag
-/// opening. The attribute name is used as the method name, with the attribute
-/// value passed as the argument.
+/// opening or the previous attribute. The attribute name is used as the method
+/// name, with the attribute value passed as the argument.
 ///
-/// A tag with children is treated as having an `inner` attribute to which a
-/// closure is passed. This closure contains calls to the tag's children, in
-/// order of declaration.
+/// A tag with children has each child passed as the argument to a call to
+/// `.child(...)`, one per child in order of declaration. The calls to `child`
+/// come after attributes.
+///
+/// After all attributes and children, `.build()` is called on the final value.
 ///
 /// ## Fragments
 ///
-/// Fragments expand to calls of each child tag in order of declaration.
+/// Fragments are not currently supported.
 ///
-/// ## Content
+/// ## Content/Text
 ///
 /// Content items are wrapped in calls to `text(...)`.
 ///

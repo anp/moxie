@@ -37,7 +37,7 @@ impl Visibility {
 
 #[topo::nested]
 #[illicit::from_env(visibility: &Key<Visibility>)]
-pub fn filter_link(to_set: Visibility) {
+pub fn filter_link(to_set: Visibility) -> impl Node {
     let visibility = visibility.clone();
     mox! {
         <li>
@@ -51,14 +51,12 @@ pub fn filter_link(to_set: Visibility) {
 }
 
 #[topo::nested]
-pub fn filter() {
-    mox! {
-        <ul class="filters">
-        {
-            for &to_set in &[All, Active, Completed] {
-                mox! { <filter_link _=(to_set) /> };
-            }
-        }
-        </ul>
-    };
+pub fn filter() -> impl Node {
+    let mut list = ul();
+    list = list.class("filters");
+    for &to_set in &[All, Active, Completed] {
+        list = list.child(filter_link(to_set).build());
+    }
+
+    list.build()
 }

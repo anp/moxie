@@ -3,7 +3,7 @@ use moxie_dom::{elements::html::*, prelude::*};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn toggle(default_checked: bool) {
+pub fn toggle(default_checked: bool) -> impl Node {
     let todos = todos.clone();
     let on_click = move |_| {
         todos.update(|t| {
@@ -24,51 +24,38 @@ pub fn toggle(default_checked: bool) {
             <input class="toggle-all" type="checkbox" checked={default_checked} />
             <label onclick={on_click}/>
         </span>
-    };
+    }
 }
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
-pub fn todo_list() {
-    mox! {
-        <ul class="todo-list">
-        {
-            for todo in todos.iter() {
-                if visibility.should_show(todo) {
-                    mox! { <todo_item _=(todo)/> };
-                }
-            }
+pub fn todo_list() -> impl Node {
+    let mut list = ul().class("todo-list");
+    for todo in todos.iter() {
+        if visibility.should_show(todo) {
+            list = list.child(mox! { <todo_item _=(todo)/> });
         }
-        </ul>
-    };
+    }
+    list.build()
 }
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn main_section() {
+pub fn main_section() -> impl Node {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
-    mox! {
-        <section class="main">
-        {
-            if !todos.is_empty() {
-                mox! {
-                    <toggle _=(num_complete == todos.len())/>
-                };
-            }
-        }
+    let mut section = section().class("main");
 
-        <todo_list/>
-
-        {
-            if !todos.is_empty() {
-                mox! {
-                    <filter_footer _=(num_complete, todos.len() - num_complete)/>
-                };
-            }
-        }
-        </section>
+    if !todos.is_empty() {
+        section = section.child(toggle(num_complete == todos.len()).build());
     }
+    section = section.child(mox!(<todo_list/>));
+
+    if !todos.is_empty() {
+        section = section.child(filter_footer(num_complete, todos.len() - num_complete).build());
+    }
+
+    section.build()
 }
 
 #[cfg(test)]
@@ -88,7 +75,6 @@ mod tests {
         );
 
         root.find().by_text("first").until().many().await;
-        // TODO write better tests for this...
         assert_eq!(
             root.pretty_outer_html(2),
             r#"<div>

@@ -30,7 +30,7 @@ fn mini_list() {
                 <li class="item">"second"</li>
                 <li>"third"</li>
             </ul>
-        };
+        }
     };
 
     let (mut web_tester, web_div) = WebRuntime::in_web_div(list);

@@ -31,7 +31,8 @@ where
     /// handlers don't typically affect the debugging experience and have
     /// not yet shown up in performance profiles.
     #[topo::nested]
-    fn on(&self, callback: impl FnMut(Ev) + 'static) -> &Self {
+    #[must_use = "needs to be built"]
+    fn on(self, callback: impl FnMut(Ev) + 'static) -> Self {
         memo_with(
             moxie::embed::Revision::current(),
             |_| EventHandle::new(self.raw_node_that_has_sharp_edges_please_be_careful(), callback),

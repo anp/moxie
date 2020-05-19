@@ -15,15 +15,7 @@ pub(crate) mod sealed {
 /// same set of methods, or being testable in the same way.
 ///
 /// Note: this trait cannot be implemented outside of this crate.
-pub trait Node: sealed::Memoized {
-    /// Run the provided closure in the "scope" of this node. Elements created
-    /// within that scope will be bound to `self` as children in the order
-    /// of their execution.
-    #[topo::nested]
-    fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
-        self.node().inner(children)
-    }
-
+pub trait Node: sealed::Memoized + Sized {
     /// Retrieves access to the raw HTML element underlying the (MemoNode).
     ///
     /// Because this offers an escape hatch around the memoized mutations, it
@@ -39,4 +31,26 @@ pub trait Node: sealed::Memoized {
     fn raw_node_that_has_sharp_edges_please_be_careful(&self) -> &augdom::Node {
         self.node().raw_node()
     }
+
+    /// Declare the element complete. This clears any trailing child nodes to
+    /// ensure the element's children are correct per the latest
+    /// declaration.
+    #[must_use = "needs to be bound to a parent"]
+    fn build(self) -> Self {
+        self.node().remove_trailing_children();
+        self
+    }
 }
+
+/// A node which accepts children.
+pub trait Parent<Child: Node>: Node {
+    /// Add a child to this node.
+    #[must_use = "needs to be built"]
+    fn child(self, child: Child) -> Self {
+        let new_child = child.raw_node_that_has_sharp_edges_please_be_careful();
+        self.node().ensure_child_attached(new_child);
+        self
+    }
+}
+
+impl<P: Node, N: Node> Parent<N> for P {}

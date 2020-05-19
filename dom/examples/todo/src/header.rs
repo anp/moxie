@@ -7,7 +7,7 @@ use tracing::info;
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn input_header() {
+pub fn input_header() -> impl Node {
     let todos = todos.clone();
     mox! {
         <header class="header">
@@ -25,5 +25,5 @@ pub fn input_header() {
                 },
             )/>
         </header>
-    };
+    }
 }
