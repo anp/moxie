@@ -10,6 +10,10 @@ html_element! {
     /// [map]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
     <area>
 
+    categories {
+        Flow, Phrasing
+    }
+
     attributes {
         /// A text string alternative to display on browsers that do not display images. The text
         /// should be phrased so that it presents the user with the same kind of choice as the image
@@ -81,6 +85,22 @@ html_element! {
     /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
     /// [stream]: https://developer.mozilla.org/en-US/docs/Web/API/MediaStream
     <audio>
+
+    categories {
+        Flow, Phrasing, Embedded,
+        // if it has a `controls` attribute:
+        Interactive, Palpable
+    }
+
+    children {
+        tags {
+            <track>,
+            <source> // if the element doesn't have a src attribute
+        }
+        categories {
+            Transparent // no audio or video elements though
+        }
+    }
 
     attributes {
         /// If specified, the audio will automatically begin playback as soon as it can do so,
@@ -190,6 +210,11 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     <img>
+
+    categories {
+        Flow, Phrasing, Embedded, Palpable,
+        Interactive // if it has the `usemap` attribute
+    }
 
     attributes {
         /// Defines an alternative text description of the image.
@@ -343,6 +368,16 @@ html_element! {
     /// [area]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
     <map>
 
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Transparent
+        }
+    }
+
     attributes {
         /// The name attribute gives the map a name so that it can be referenced. The attribute must
         /// be present and must have a non-empty value with no space characters. The value of the
@@ -420,6 +455,22 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
     <video>
+
+    categories {
+        Flow, Phrasing, Embedded,
+        // if it has a `controls` attribute:
+        Interactive, Palpable
+    }
+
+    children {
+        tags {
+            <track>,
+            <source> // if the element doesn't have a src attribute
+        }
+        categories {
+            Transparent // no audio or video elements though
+        }
+    }
 
     attributes {
         /// If specified, the video automatically begins to play back as soon as it can do so

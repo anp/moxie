@@ -76,6 +76,11 @@ macro_rules! element {
     (
         $(#[$outer:meta])*
         <$name:ident>
+        $(categories { $($category:ident),+ })?
+        $(children {
+            $(tags { $(< $child_tag:ident >),+ })?
+            $(categories { $($child_category:ident),+ })?
+        })?
         $(attributes {$(
             $(#[$attr_meta:meta])*
             $attr:ident $(( $attr_ty:ty ))?
@@ -148,6 +153,14 @@ macro_rules! html_element {
         impl<E> crate::interfaces::event_target::EventTarget<E> for [<$name:camel Builder>]
         where E: crate::interfaces::global_events::GlobalEvent {}
     }};
+}
+
+macro_rules! only_text_children {
+    (<$tag:ident>) => {
+        paste::item! {
+            // impl crate::interfaces::node::Parent<crate::memo_node::Text> for [<$name:camel Builder>] {}
+        }
+    };
 }
 
 macro_rules! content_category {

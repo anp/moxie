@@ -12,6 +12,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
     <a>
 
+    categories {
+        Flow, Phrasing, Interactive, Palpable
+    }
+
+    children {
+        categories {
+            Transparent, Flow, Phrasing // excluding interactive
+        }
+    }
+
     attributes {
         /// Prompts the user to save the linked URL instead of navigating to it. Can be used with or
         /// without a value:
@@ -92,6 +102,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-title
     <abbr>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -100,6 +120,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
     <b>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -108,6 +138,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
     <bdi>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -116,6 +156,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
     <bdo>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 
     attributes {
         /// The direction in which text should be rendered in this element's contents. Possible
@@ -133,6 +183,10 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
     <br>
+
+    categories {
+        Flow, Phrasing
+    }
 }
 
 html_element! {
@@ -141,6 +195,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     <cite>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -149,6 +213,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
     <code>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -158,6 +232,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
     /// [time]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     <data>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 
     attributes {
         /// This attribute specifies the machine-readable translation of the content of the element.
@@ -171,6 +255,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
     <dfn>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing // no <dfn> can be a descendant
+        }
+    }
 }
 
 html_element! {
@@ -179,6 +273,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     <em>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -188,6 +292,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
     <i>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -196,6 +310,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
     <kbd>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -205,6 +329,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
     <mark>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -213,6 +347,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
     <q>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 
     attributes {
         /// The value of this attribute is a URL that designates a source document or message for
@@ -241,6 +385,8 @@ html_element! {
     <rp>
 }
 
+only_text_children! { <rp> }
+
 html_element! {
     /// The [HTML Ruby Text (`<rt>`) element][mdn] specifies the ruby text component of a ruby
     /// annotation, which is used to provide pronunciation, translation, or transliteration
@@ -250,6 +396,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
     /// [ruby]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     <rt>
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -264,6 +416,15 @@ html_element! {
     /// [rt]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
     /// [rtc]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
     <rtc>
+
+    children {
+        tags {
+            <rt>
+        }
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -272,6 +433,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
     <ruby>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -284,6 +455,16 @@ html_element! {
     /// [del]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     /// [ins]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     <s>
+
+    categories {
+        Phrasing, Flow
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -292,6 +473,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
     <samp>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -301,6 +492,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
     <small>
+
+    categories {
+        Flow, Phrasing
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -314,6 +515,16 @@ html_element! {
     /// [id]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-id
     /// [lang]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-lang
     <span>
+
+    categories {
+        Flow, Phrasing
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -323,6 +534,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
     <strong>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -331,6 +552,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
     <sub>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -339,6 +570,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
     <sup>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -346,6 +587,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     <time>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 
     attributes {
         /// This attribute indicates the time and/or date of the element and must be in one of the
@@ -360,6 +611,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
     <u>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -368,6 +629,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
     <var>
+
+    categories {
+        Flow, Phrasing, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -377,6 +648,10 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
     <wbr>
+
+    categories {
+        Flow, Phrasing
+    }
 }
 
 html_element! {
@@ -385,6 +660,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     <del>
+
+    categories {
+        Phrasing, Flow
+    }
+
+    children {
+        categories {
+            Transparent
+        }
+    }
 
     attributes {
         /// A URI for a resource that explains the change (for example, meeting minutes).
@@ -405,6 +690,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     <ins>
+
+    categories {
+        Phrasing, Flow
+    }
+
+    children {
+        categories {
+            Transparent
+        }
+    }
 
     attributes {
         /// A URI for a resource that explains the change (for example, meeting minutes).

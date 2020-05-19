@@ -13,6 +13,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
     <base>
 
+    categories {
+        Metadata
+    }
+
     attributes {
         /// The base URL to be used throughout the document for relative URLs. Absolute and relative
         /// URLs are allowed.
@@ -48,6 +52,15 @@ html_element! {
     /// [scripts]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
     /// [style sheets]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     <head>
+
+    children {
+        tags {
+            <title>
+        }
+        categories {
+            Metadata
+        }
+    }
 }
 
 html_element! {
@@ -59,6 +72,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
     /// [stylesheets]: https://developer.mozilla.org/en-US/docs/Glossary/CSS
     <link>
+
+    categories {
+        Metadata,
+        // if `itemprop` is present:
+        Flow, Phrasing
+    }
 
     attributes {
         /// This attribute is only used when rel="preload" or rel="prefetch" has been set on the
@@ -190,6 +209,12 @@ html_element! {
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     <meta>
 
+    categories {
+        Metadata,
+        // if `itemprop` is present:
+        Flow, Phrasing
+    }
+
     attributes {
         /// This attribute declares the document's character encoding. If the attribute is present,
         /// its value must be an ASCII case-insensitive match for the string "utf-8".
@@ -244,6 +269,11 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
     <style>
 
+    categories {
+        Metadata,
+        Flow // if the `scoped` attribute is present
+    }
+
     attributes {
         /// This attribute defines which media the style should be applied to. Its value is a media
         /// query, which defaults to all if the attribute is missing.
@@ -260,6 +290,8 @@ html_element! {
     }
 }
 
+only_text_children! { <style> }
+
 html_element! {
     /// The [HTML Title element (`<title>`)][mdn] defines the document's title that is shown in a
     /// [browser]'s title bar or a page's tab.
@@ -267,4 +299,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     /// [browser]: https://developer.mozilla.org/en-US/docs/Glossary/Browser
     <title>
+
+    categories {
+        Metadata
+    }
 }
+
+only_text_children! { <title> }

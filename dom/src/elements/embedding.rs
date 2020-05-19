@@ -11,6 +11,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
     <embed>
 
+    categories {
+        Flow, Phrasing, Embedded, Interactive, Palpable
+    }
+
     attributes {
         /// The displayed height of the resource, in [CSS pixels]. This must be an absolute value;
         /// percentages are not allowed.
@@ -41,6 +45,10 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
     /// [browsing context]: https://developer.mozilla.org/en-US/docs/Glossary/browsing_context
     <iframe>
+
+    categories {
+        Flow, Phrasing, Embedded, Interactive, Palpable
+    }
 
     attributes {
         /// Specifies a feature policy for the <iframe>.
@@ -119,6 +127,21 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
     <object>
 
+    categories {
+        Flow,
+        Phrasing,
+        Embedded,
+        Palpable,
+        Listed,
+        Submittable,
+        Interactive // if the element has the usemap attribute
+    }
+
+    children {
+        tags { <param> }
+        categories { Transparent }
+    }
+
     attributes {
         /// Specifies the URL of the resource.
         data
@@ -175,6 +198,15 @@ html_element! {
     /// [source]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
     /// [img]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
     <picture>
+
+    categories {
+        Flow, Phrasing, Embedded
+    }
+    children {
+        tags {
+            <source>, <img>, <script>, <template>
+        }
+    }
 }
 
 html_element! {

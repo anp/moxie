@@ -11,6 +11,16 @@ html_element! {
     /// [forms]: https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms
     <button>
 
+    categories {
+        Flow, Phrasing, Interactive, Listed, Labelable, Submittable, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing // but there must be no interactive content
+        }
+    }
+
     attributes {
         /// Specifies that the button should have input focus when the page loads. Only one element
         /// in a document can have this attribute.
@@ -112,6 +122,14 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
     /// [option]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
     <datalist>
+
+    categories {
+        Flow, Phrasing
+    }
+    children {
+        tags { <option> }
+        categories { Phrasing }
+    }
 }
 
 html_element! {
@@ -121,6 +139,14 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
     /// [label]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
     <fieldset>
+
+    categories {
+        Flow, Sectioning, Listed, FormAssociated, Palpable
+    }
+    children {
+        tags { <legend> }
+        categories { Flow }
+    }
 
     attributes {
         /// If this Boolean attribute is set, all form controls that are descendants of the
@@ -147,6 +173,14 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
     <form>
+
+    categories {
+        Flow, Palpable
+    }
+    children {
+        categories { Flow }
+    }
+
     attributes {
         /// Space-separated [character encodings] the server accepts. The browser uses
         /// them in the order in which they are listed. The default value means
@@ -224,6 +258,13 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
     /// [user agent]: https://developer.mozilla.org/en-US/docs/Glossary/user_agent
     <input>
+
+    categories {
+        Flow, Listed, Submittable, Resettable, FormAssociated, Phrasing,
+        // if the type is `hidden`:
+        Labelable, Palpable
+    }
+
     attributes {
         /// Valid for the file input type only, the accept property defines which file types are
         /// selectable in a file upload control. See the file input type.
@@ -595,6 +636,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
     <label>
 
+    categories {
+        Flow, Phrasing, Interactive, FormAssociated, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
+
     attributes {
         /// The id of a labelable form-related element in the same document as the <label> element.
         /// The first element in the document with an id matching the value of the for attribute is
@@ -621,6 +672,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
     /// [fieldset]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
     <legend>
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 }
 
 html_element! {
@@ -629,6 +686,17 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
     <meter>
+
+    categories {
+        Flow, Phrasing, Labelable, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
+
     attributes {
         /// The current numeric value. This must be between the minimum and maximum values (min
         /// attribute and max attribute) if they are specified. If unspecified or malformed, the
@@ -685,6 +753,12 @@ html_element! {
     /// [select]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     <optgroup>
 
+    children {
+        tags {
+            <option>
+        }
+    }
+
     attributes {
         /// If set, none of the items in this option group is selectable. Often browsers grey out
         /// such control and it won't receive any browsing events, like mouse clicks or
@@ -708,6 +782,7 @@ html_element! {
     /// [optgroup]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
     /// [datalist]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
     <option>
+
     attributes {
         /// If set, this option is not checkable. Often browsers grey out such control and it won't
         /// receive any browsing event, like mouse clicks or focus-related ones. If this attribute
@@ -731,12 +806,24 @@ html_element! {
     }
 }
 
+only_text_children! { <option> }
+
 html_element! {
     /// The [HTML Output element (`<output>`)][mdn] is a container element into which a site or app
     /// can inject the results of a calculation or the outcome of a user action.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
     <output>
+
+    categories {
+        Flow, Phrasing, Listed, Labelable, Resettable, FormAssociated, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
 
     attributes {
         /// A space-separated list of other elements’ ids, indicating that those elements
@@ -763,6 +850,16 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
     <progress>
 
+    categories {
+        Flow, Phrasing, Labelable, Palpable
+    }
+
+    children {
+        categories {
+            Phrasing
+        }
+    }
+
     attributes {
         /// This attribute describes how much work the task indicated by the progress element
         /// requires. The max attribute, if present, must have a value greater than 0 and be a valid
@@ -782,6 +879,17 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
     <select>
+
+    categories {
+        Flow, Phrasing, Interactive, Listed, Labelable, Resettable, Submittable, FormAssociated
+    }
+
+    children {
+        tags {
+            <option>, <optgroup>
+        }
+    }
+
     attributes {
         /// A DOMString providing a hint for a user agent's autocomplete feature.
         autocomplete
@@ -830,6 +938,11 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
     <textarea>
+
+    categories {
+        Flow, Phrasing, Interactive, Listed, Labelable, Resettable, Submittable, FormAssociated
+    }
+
     attributes {
         /// This attribute indicates whether the value of the control can be automatically completed
         /// by the browser. Possible values are:
@@ -919,3 +1032,5 @@ html_element! {
         wrap
     }
 }
+
+only_text_children! { <textarea> }
