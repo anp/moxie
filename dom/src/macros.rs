@@ -38,7 +38,6 @@ macro_rules! attr_method {
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        #[must_use = "needs to be built"]
         $publicity fn $attr(self, to_set: bool) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::Element;
@@ -64,7 +63,6 @@ macro_rules! attr_method {
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        #[must_use = "needs to be built"]
         $publicity fn $attr(self, to_set: $arg) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::Element;
@@ -86,7 +84,7 @@ macro_rules! element {
         $(#[$outer])*
         #[topo::nested]
         #[illicit::from_env(parent: &crate::memo_node::MemoNode)]
-        pub fn $name() -> [< $name:camel >] {
+        pub fn $name() -> [<$name:camel Builder>] {
             #[allow(unused)]
             use augdom::Dom;
             #[allow(unused)]
@@ -95,25 +93,33 @@ macro_rules! element {
             let elem = moxie::prelude::memo(stringify!($name), |ty| {
                 parent.raw_node().create_element(ty)
             });
-            [< $name:camel >] { inner: crate::memo_node::MemoNode::new(elem) }
+            [<$name:camel Builder>] { inner: crate::memo_node::MemoNode::new(elem) }
         }
 
         $(#[$outer])*
-        #[must_use = "needs to be bound to a parent"]
-        pub struct [< $name:camel >] {
+        #[must_use = "needs to be built"]
+        pub struct [<$name:camel Builder>] {
             inner: crate::memo_node::MemoNode
         }
 
-        impl crate::interfaces::element::Element for [< $name:camel >] {}
-        impl crate::interfaces::node::Node for [< $name:camel >] {}
+        impl crate::interfaces::element::Element for [<$name:camel Builder>] {}
+        impl crate::interfaces::node::Node for [<$name:camel Builder>] {
+            type Output = Self;
 
-        impl crate::interfaces::node::sealed::Memoized for [< $name:camel >] {
+            fn build(self) -> Self::Output {
+                use crate::interfaces::node::sealed::Memoized;
+                self.node().remove_trailing_children();
+                self
+            }
+        }
+
+        impl crate::interfaces::node::sealed::Memoized for [<$name:camel Builder>] {
             fn node(&self) -> &crate::memo_node::MemoNode {
                 &self.inner
             }
         }
 
-        $(impl [< $name:camel >] {
+        $(impl [< $name:camel Builder >] {
             $(attr_method! {
                 $(#[$attr_meta])*
                 pub $attr $(($attr_ty))?
@@ -136,10 +142,10 @@ macro_rules! html_element {
             $($rem)*
         }
 
-        impl crate::interfaces::html_element::HtmlElement for [< $name:camel >] {}
-        impl crate::interfaces::global_events::GlobalEventHandler for [< $name:camel >] {}
+        impl crate::interfaces::html_element::HtmlElement for [<$name:camel Builder>] {}
+        impl crate::interfaces::global_events::GlobalEventHandler for [<$name:camel Builder>] {}
 
-        impl<E> crate::interfaces::event_target::EventTarget<E> for [< $name:camel >]
+        impl<E> crate::interfaces::event_target::EventTarget<E> for [<$name:camel Builder>]
         where E: crate::interfaces::global_events::GlobalEvent {}
     }};
 }
@@ -153,7 +159,7 @@ macro_rules! content_category {
             $(#[$outer])*
             pub trait $to_impl: crate::interfaces::node::Node {}
 
-            $(impl $to_impl for [<$receives:camel>] {})+
+            $(impl $to_impl for [< $receives:camel Builder >] {})+
         }
     };
 }

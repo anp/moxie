@@ -16,6 +16,9 @@ pub(crate) mod sealed {
 ///
 /// Note: this trait cannot be implemented outside of this crate.
 pub trait Node: sealed::Memoized + Sized {
+    /// The type returned by `build()`.
+    type Output: Node;
+
     /// Retrieves access to the raw HTML element underlying the (MemoNode).
     ///
     /// Because this offers an escape hatch around the memoized mutations, it
@@ -32,20 +35,13 @@ pub trait Node: sealed::Memoized + Sized {
         self.node().raw_node()
     }
 
-    /// Declare the element complete. This clears any trailing child nodes to
-    /// ensure the element's children are correct per the latest
-    /// declaration.
-    #[must_use = "needs to be bound to a parent"]
-    fn build(self) -> Self {
-        self.node().remove_trailing_children();
-        self
-    }
+    /// Declare the element complete.
+    fn build(self) -> Self::Output;
 }
 
 /// A node which accepts children.
 pub trait Parent<Child: Node>: Node {
     /// Add a child to this node.
-    #[must_use = "needs to be built"]
     fn child(self, child: Child) -> Self {
         let new_child = child.raw_node_that_has_sharp_edges_please_be_careful();
         self.node().ensure_child_attached(new_child);

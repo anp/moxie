@@ -22,7 +22,6 @@ macro_rules! global_events {
             $(+ EventTarget<$event>)+
         {$(
             /// Set an event handler.
-            #[must_use = "needs to be built"]
             fn $property(self, callback: impl FnMut(augdom::event::$event) + 'static) -> Self {
                 self.on(callback)
             }

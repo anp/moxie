@@ -25,7 +25,6 @@ pub trait Element: Node {
     /// recent (`moxie::Revision`).
     #[topo::nested]
     // TODO make `self` a slot too so we can remove topo::call from mox
-    #[must_use = "needs to be built"]
     fn attribute(self, #[slot] name: &str, value: impl ToString) -> Self {
         self.node().memo_attribute(name, value.to_string());
         self

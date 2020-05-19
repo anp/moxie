@@ -13,7 +13,13 @@ use super::prelude::*;
 #[must_use = "needs to be bound to a parent"]
 pub struct Text(MemoNode);
 
-impl crate::interfaces::node::Node for Text {}
+impl crate::interfaces::node::Node for Text {
+    type Output = Self;
+
+    fn build(self) -> Self {
+        self
+    }
+}
 
 impl crate::interfaces::node::sealed::Memoized for Text {
     fn node(&self) -> &MemoNode {
