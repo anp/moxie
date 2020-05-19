@@ -18,20 +18,23 @@ pub fn begin() {
 }
 
 #[topo::nested]
-fn root() {
+fn root() -> impl Node {
     let count = state(|| 0);
 
-    mox! {<>
-        <div>{% "hello world from moxie! ({})", &count }</div>
+    let mut root = div();
 
+    root = root.child(mox! { <div>{% "hello world from moxie! ({})", &count }</div> });
+    root = root.child(mox! {
         <button type="button" onclick={move |_| count.update(|c| Some(c + 1))}>
             "increment"
         </button>
-    </>};
+    });
 
     for t in &["first", "second", "third"] {
-        mox! { <div>{% "{}", t }</div> };
+        root = root.child(mox! { <div>{% "{}", t }</div> });
     }
+
+    root.build()
 }
 
 #[cfg(test)]
@@ -48,7 +51,7 @@ mod tests {
 
         let button = test_root.find().by_text("increment").until().one().await.unwrap();
         assert_eq!(
-            test_root.to_string(),
+            test_root.first_child().unwrap().to_string(),
             r#"<div>
   <div>hello world from moxie! (0)</div>
   <button type="button">increment</button>

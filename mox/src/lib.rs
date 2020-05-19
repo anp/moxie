@@ -1,6 +1,6 @@
 extern crate proc_macro;
 
-use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
+use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use proc_macro_error::{abort, emit_error, proc_macro_error, Diagnostic, Level, ResultExt};
 use proc_macro_hack::proc_macro_hack;
 use quote::{quote, ToTokens};
@@ -19,7 +19,18 @@ enum MoxItem {
     Tag(MoxTag),
     TagNoChildren(MoxTagNoChildren),
     Fragment(Vec<MoxItem>),
-    Content(TokenTree),
+    Content { span: Span, stream: TokenStream },
+}
+
+impl MoxItem {
+    fn span(&self) -> Span {
+        match self {
+            MoxItem::Tag(tag) => tag.span(),
+            MoxItem::TagNoChildren(tag) => tag.span(),
+            MoxItem::Content { span, .. } => *span,
+            MoxItem::Fragment(_children) => todo!(),
+        }
+    }
 }
 
 impl From<SnaxItem> for MoxItem {
@@ -30,12 +41,14 @@ impl From<SnaxItem> for MoxItem {
             SnaxItem::Fragment(SnaxFragment { children }) => {
                 MoxItem::Fragment(children.into_iter().map(MoxItem::from).collect())
             }
-            SnaxItem::Content(atom) => MoxItem::Content(wrap_content_tokens(atom)),
+            SnaxItem::Content(atom) => {
+                MoxItem::Content { span: atom.span(), stream: wrap_content_tokens(atom) }
+            }
         }
     }
 }
 
-fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
+fn wrap_content_tokens(tt: TokenTree) -> TokenStream {
     let mut new_stream = quote!(#tt);
     match tt {
         TokenTree::Group(g) => {
@@ -54,7 +67,7 @@ fn wrap_content_tokens(tt: TokenTree) -> TokenTree {
         }
         TokenTree::Punct(p) => emit_error!(p.span(), "'{}' not valid in item position", p),
     }
-    Group::new(Delimiter::Brace, new_stream).into()
+    new_stream
 }
 
 impl ToTokens for MoxItem {
@@ -62,17 +75,24 @@ impl ToTokens for MoxItem {
         match self {
             MoxItem::Tag(tag) => tag.to_tokens(tokens),
             MoxItem::TagNoChildren(tag) => tag.to_tokens(tokens),
-            MoxItem::Fragment(children) => tokens.extend(quote!({ #(#children;)* })),
-            MoxItem::Content(content) => content.to_tokens(tokens),
+            MoxItem::Content { stream, .. } => stream.to_tokens(tokens),
+            MoxItem::Fragment(_children) => todo!(),
         }
     }
 }
 
 struct MoxTag {
+    span: Span,
     name: Ident,
     fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
     children: Vec<MoxItem>,
+}
+
+impl MoxTag {
+    fn span(&self) -> Span {
+        self.span
+    }
 }
 
 impl ToTokens for MoxTag {
@@ -114,22 +134,14 @@ fn tag_to_tokens(
     // separately from stream
     let mut contents = quote!();
 
-    attributes.iter().map(ToTokens::to_token_stream).for_each(|ts| contents.extend(ts));
+    for attr in attributes {
+        attr.to_tokens(&mut contents);
+    }
 
     if let Some(items) = children {
-        let mut children = quote!();
-        items.iter().map(ToTokens::to_token_stream).for_each(|ts| children.extend(quote!(#ts;)));
-
-        contents.extend(quote!(
-            .inner(|| {
-                #children
-            })
-        ));
-    } else if !contents.is_empty() {
-        // if there were attributes or handlers installed but there isn't an inner
-        // function to call with its own return type, the previous calls
-        // probably return references that can't return
-        contents.extend(quote!(;));
+        for child in items {
+            MoxAttr::child(child).to_tokens(&mut contents);
+        }
     }
 
     let fn_args = fn_args.as_ref().map(|args| match &args.value {
@@ -151,24 +163,15 @@ fn tag_to_tokens(
         _ => unimplemented!("bare function args (without a paired delimiter) aren't supported yet"),
     });
 
-    let invocation = if contents.is_empty() {
-        quote!(#name(#fn_args))
-    } else {
-        if fn_args.is_some() {
-            unimplemented!(
-                "can't emit function arguments at the same time as attributes or children yet"
-            )
-        }
-        quote!(topo::call(|| { #name() #contents }))
-    };
-
-    stream.extend(invocation);
+    quote!(topo::call(|| { #name(#fn_args) #contents .build() })).to_tokens(stream);
 }
 
 impl From<SnaxTag> for MoxTag {
     fn from(SnaxTag { name, attributes, children }: SnaxTag) -> Self {
         let (fn_args, attributes) = args_and_attrs(attributes);
         Self {
+            // TODO get the span for the whole tag
+            span: name.span(),
             name,
             fn_args,
             attributes,
@@ -178,9 +181,16 @@ impl From<SnaxTag> for MoxTag {
 }
 
 struct MoxTagNoChildren {
+    span: Span,
     name: Ident,
     fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
+}
+
+impl MoxTagNoChildren {
+    fn span(&self) -> Span {
+        self.span
+    }
 }
 
 impl ToTokens for MoxTagNoChildren {
@@ -192,7 +202,7 @@ impl ToTokens for MoxTagNoChildren {
 impl From<SnaxSelfClosingTag> for MoxTagNoChildren {
     fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
         let (fn_args, attributes) = args_and_attrs(attributes);
-        Self { name, fn_args, attributes }
+        Self { span: name.span(), name, fn_args, attributes }
     }
 }
 
@@ -202,7 +212,13 @@ struct MoxArgs {
 
 struct MoxAttr {
     name: Ident,
-    value: TokenTree,
+    value: TokenStream,
+}
+
+impl MoxAttr {
+    fn child(item: &MoxItem) -> Self {
+        Self { name: Ident::new("child", item.span()), value: item.to_token_stream() }
+    }
 }
 
 impl ToTokens for MoxAttr {
@@ -243,7 +259,13 @@ impl From<SnaxAttribute> for MoxAttr {
                         "anonymous attributes are only allowed in the first position"
                     )
                 } else {
-                    MoxAttr { name, value }
+                    MoxAttr {
+                        name,
+                        value: match value {
+                            TokenTree::Group(g) => g.stream(),
+                            other => other.to_token_stream(),
+                        },
+                    }
                 }
             }
         }

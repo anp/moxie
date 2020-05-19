@@ -27,14 +27,12 @@ struct PathExtractor {
 }
 
 #[topo::nested]
-fn simple_list(items: &[String]) {
-    moxie::mox! {
-        <ul>{
-            for item in items {
-                moxie::mox!(<li>{% "{}", item }</li>)
-            }
-        }</ul>
+fn simple_list(items: &[String]) -> impl Node {
+    let mut list = ul();
+    for item in items {
+        list = list.child(moxie::mox!(<li>{% "{}", item }</li>));
     }
+    list.build()
 }
 
 fn parts_handler(state: State) -> (State, String) {
@@ -107,7 +105,7 @@ mod tests {
                     <li class="item">"second"</li>
                     <li>"third"</li>
                 </ul>
-            };
+            }
         });
 
         tester.run_once();

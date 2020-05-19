@@ -10,6 +10,7 @@ use std::{
 use super::prelude::*;
 
 /// A text node in the DOM.
+#[must_use = "needs to be bound to a parent"]
 pub struct Text(MemoNode);
 
 impl crate::interfaces::node::Node for Text {}
@@ -19,15 +20,13 @@ impl crate::interfaces::node::sealed::Memoized for Text {
         &self.0
     }
 }
-
-/// Create and mount a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
+/// Create a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoNode)]
 pub fn text(s: impl ToString) -> Text {
     // TODO(#99) avoid allocating this extra string when it hasn't changed
-    let text_node = memo(s.to_string(), |s| parent.node.create_text_node(s));
-    parent.ensure_child_attached(&text_node);
+    let text_node = memo(s.to_string(), |s| parent.raw_node().create_text_node(s));
     Text(MemoNode::new(text_node))
 }
 
@@ -37,13 +36,13 @@ pub fn text(s: impl ToString) -> Text {
 /// wrappers. Offers a "stringly-typed" API for mutating the contained DOM
 /// nodes, adhering fairly closely to the upstream web specs.
 pub struct MemoNode {
-    curr: Cell<Option<Node>>,
+    last_child: Cell<Option<Node>>,
     node: Node,
 }
 
 impl MemoNode {
     pub(crate) fn new(node: Node) -> Self {
-        Self { curr: Cell::new(None), node }
+        Self { last_child: Cell::new(None), node }
     }
 
     pub(crate) fn raw_node(&self) -> &Node {
@@ -64,7 +63,7 @@ impl MemoNode {
     }
 
     pub(crate) fn ensure_child_attached(&self, new_child: &Node) {
-        let prev_sibling = self.curr.replace(Some(new_child.clone()));
+        let prev_sibling = self.last_child.replace(Some(new_child.clone()));
 
         let existing = if prev_sibling.is_none() {
             self.node.first_child()
@@ -81,31 +80,24 @@ impl MemoNode {
         }
     }
 
-    /// Declare the inner contents of the element, usually declaring children
-    /// within the inner scope. After any children have been run and their
-    /// nodes attached, this clears any trailing child nodes to ensure the
-    /// element's children are correct per the latest declaration.
-    #[topo::nested]
-    pub fn inner<Ret>(&self, children: impl FnOnce() -> Ret) -> Ret {
-        let elem = self.node.clone();
-        let (ret, last_desired_child) =
-            illicit::child_env!(MemoNode => MemoNode::new(self.node.clone())).enter(|| {
-                // before this melement is dropped when the environment goes out of scope,
-                // we need to get the last recorded child from this revision
-                (children(), illicit::Env::expect::<MemoNode>().curr.replace(None))
-            });
+    pub(crate) fn remove_trailing_children(&self) {
+        let last_desired_child = self.last_child.replace(None);
 
-        // if there weren't any children declared this revision, we need to make sure we
-        // clean up any from the last revision
-        let mut next_to_remove =
-            if let Some(c) = last_desired_child { c.next_sibling() } else { elem.first_child() };
+        // if there weren't any children declared this revision, we need to
+        // make sure we clean up any from the last revision
+        let mut next_to_remove = if let Some(c) = last_desired_child {
+            // put back the last node we found this revision so this can be called multiple
+            // times
+            self.last_child.set(Some(c.clone()));
+            c.next_sibling()
+        } else {
+            self.node.first_child()
+        };
 
         while let Some(to_remove) = next_to_remove {
             next_to_remove = to_remove.next_sibling();
-            elem.remove_child(&to_remove).unwrap();
+            self.node.remove_child(&to_remove).unwrap();
         }
-
-        ret
     }
 }
 

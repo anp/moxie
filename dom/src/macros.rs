@@ -38,13 +38,15 @@ macro_rules! attr_method {
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        $publicity fn $attr(&self, to_set: bool) -> &Self {
+        #[must_use = "needs to be built"]
+        $publicity fn $attr(self, to_set: bool) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::Element;
             if to_set {
-                self.attribute(attr_name!($attr), "");
+                self.attribute(attr_name!($attr), "")
+            } else {
+                self
             }
-            self
         }
     };
     (
@@ -62,12 +64,11 @@ macro_rules! attr_method {
     ) => {
         $(#[$outer])*
         #[topo::nested]
-        $publicity fn $attr(&self, to_set: $arg) -> &Self {
+        #[must_use = "needs to be built"]
+        $publicity fn $attr(self, to_set: $arg) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::Element;
-
-            self.attribute(attr_name!($attr), to_set.to_string());
-            self
+            self.attribute(attr_name!($attr), to_set.to_string())
         }
     };
 }
@@ -94,11 +95,11 @@ macro_rules! element {
             let elem = moxie::prelude::memo(stringify!($name), |ty| {
                 parent.raw_node().create_element(ty)
             });
-            parent.ensure_child_attached(&elem);
             [< $name:camel >] { inner: crate::memo_node::MemoNode::new(elem) }
         }
 
         $(#[$outer])*
+        #[must_use = "needs to be bound to a parent"]
         pub struct [< $name:camel >] {
             inner: crate::memo_node::MemoNode
         }

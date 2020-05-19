@@ -15,13 +15,13 @@ pub mod item;
 pub mod main_section;
 
 #[topo::nested]
-fn todo_app() {
+fn todo_app() -> impl Node {
     mox! {
         <div class="todoapp">
             <input_header/>
             <main_section/>
         </div>
-    };
+    }
 }
 
 pub(crate) struct App {
@@ -38,23 +38,21 @@ impl App {
         Self { todos, visibility }
     }
 
-    pub fn enter(self, f: &mut dyn FnMut()) {
+    pub fn enter<T>(self, f: &mut dyn FnMut() -> T) -> T {
         illicit::child_env![
             Key<Vec<Todo>> => self.todos,
             Key<Visibility> => self.visibility
         ]
-        .enter(f);
+        .enter(f)
     }
 
-    pub fn boot(
+    pub fn boot<Root: Node + 'static>(
         default_todos: &[Todo],
         node: impl Into<moxie_dom::raw::Node>,
-        mut root: impl FnMut() + 'static,
+        mut root: impl FnMut() -> Root + 'static,
     ) {
         let defaults = default_todos.to_vec();
-        moxie_dom::boot(node, move || {
-            App::current(&defaults).enter(&mut root);
-        });
+        moxie_dom::boot(node, move || App::current(&defaults).enter(&mut root));
     }
 }
 

@@ -11,7 +11,7 @@ mod macros;
 pub mod elements;
 pub mod embed;
 pub mod interfaces;
-pub mod memo_node;
+pub(crate) mod memo_node;
 
 /// A module for glob-importing the most commonly used moxie-dom items.
 pub mod prelude {
@@ -32,7 +32,7 @@ pub mod prelude {
             event_target::EventTarget,
             global_events::{GlobalEvent, GlobalEventHandler},
             html_element::HtmlElement,
-            node::Node,
+            node::{Node, Parent},
         },
         memo_node::text,
     };
@@ -56,7 +56,10 @@ pub use augdom as raw;
 ///
 /// Requires the `webdom` feature.
 #[cfg(any(feature = "webdom", doc))]
-pub fn boot(new_parent: impl Into<augdom::Node>, root: impl FnMut() + 'static) {
+pub fn boot<Root>(new_parent: impl Into<augdom::Node>, root: impl FnMut() -> Root + 'static)
+where
+    Root: interfaces::node::Node + 'static,
+{
     embed::WebRuntime::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
 
@@ -68,7 +71,10 @@ pub fn boot(new_parent: impl Into<augdom::Node>, root: impl FnMut() + 'static) {
 ///
 /// Requires the `rsdom` feature.
 #[cfg(any(feature = "rsdom", doc))]
-pub fn render_html(root: impl FnMut() + 'static) -> String {
+pub fn render_html<Root>(root: impl FnMut() -> Root + 'static) -> String
+where
+    Root: interfaces::node::Node + 'static,
+{
     use augdom::Dom;
 
     let (mut tester, root) = embed::WebRuntime::in_rsdom_div(root);
@@ -90,16 +96,44 @@ pub fn render_html(root: impl FnMut() + 'static) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        boot,
+        elements::html::{b, div, p},
+        prelude::*,
+        raw::testing::Query,
+    };
+    use pretty_assertions::assert_eq;
     use wasm_bindgen_test::*;
+
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
-    pub fn hello_browser() {
-        println!("hello");
-    }
+    pub async fn hello_browser() {
+        let root = augdom::document().create_element("div").unwrap();
+        boot(root.clone(), || {
+            moxie::mox! {
+            <div>
+                <p>"hello browser"</p>
+                <div>
+                    <p><b>"looooool"</b></p>
+                </div>
+            </div>
+            }
+        });
 
-    #[test]
-    fn hello_world() {
-        println!("hello");
+        root.find().by_text("looooool").until().many().await;
+        assert_eq!(
+            root.pretty_outer_html(2),
+            r#"<div>
+  <div>
+    <p>hello browser</p>
+    <div>
+      <p>
+        <b>looooool</b>
+      </p>
+    </div>
+  </div>
+</div>"#
+        );
     }
 }
