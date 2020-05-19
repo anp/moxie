@@ -2,13 +2,6 @@
 //!
 //! [MDN]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 /// A module for glob-importing all element creation functions, similar to the
 /// global HTML namespace.
 pub mod html {
@@ -55,6 +48,13 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
     <html>
+
+    attributes {
+        /// Specifies the XML Namespace of the document. Default value is
+        /// "http://www.w3.org/1999/xhtml". This is required in documents parsed with XML parsers,
+        /// and optional in text/html documents.
+        xmlns
+    }
 }
 
 html_element! {
@@ -65,6 +65,35 @@ html_element! {
     <body>
 }
 
+macro_rules! body_events {
+    ($($property:ident <- $event:ident,)+) => {
+        $(impl crate::interfaces::event_target::EventTarget<augdom::event::$event> for Body {})+
+
+        impl Body {$(
+            /// Set an event handler.
+            pub fn $property(
+                &self,
+                callback: impl FnMut(augdom::event::$event) + 'static,
+            ) -> &Self {
+                use crate::interfaces::event_target::EventTarget;
+                self.on(callback)
+            }
+        )+}
+    };
+}
+
+body_events! {
+    onafterprint   <- AfterPrint,
+    onbeforeprint  <- BeforePrint,
+    onhashchange   <- HashChange,
+    onmessage      <- WebsocketMessage,
+    onoffline      <- Offline,
+    ononline       <- Online,
+    onpopstate     <- PopState,
+    onstorage      <- Storage,
+    onunload       <- Unload,
+}
+
 html_element! {
     /// The [HTML `<slot>` element][mdn]—part of the [Web Components][wc] technology suite—is a
     /// placeholder inside a web component that you can fill with your own markup, which lets you
@@ -73,6 +102,11 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
     /// [wc]: https://developer.mozilla.org/en-US/docs/Web/Web_Components
     <slot>
+
+    attributes {
+        /// The slot's name.
+        name
+    }
 }
 
 html_element! {

@@ -21,24 +21,20 @@ use crate::{
         table::*, text_content::*, text_semantics::*, Template,
     },
     memo_node::Text,
-    prelude::*,
 };
 
-/// Elements belonging to the metadata content category modify the presentation
-/// or the behavior of the rest of the document, set up links to other
-/// documents, or convey other out of band information.
-pub trait MetadataContent: Node {}
-mass_bare_impl! {
-    MetadataContent for
+content_category! {
+    /// Elements belonging to the metadata content category modify the presentation
+    /// or the behavior of the rest of the document, set up links to other
+    /// documents, or convey other out of band information.
+    MetadataContent:
     <base>, <link>, <meta>, <noscript>, <script>, <style>, <title>
 }
 
-/// Elements belonging to the flow content category typically contain text or
-/// embedded content.
-pub trait FlowContent: Node {}
-impl FlowContent for Text {}
-mass_bare_impl! {
-    FlowContent for
+content_category! {
+    /// Elements belonging to the flow content category typically contain text or
+    /// embedded content.
+    FlowContent:
     <a>, <abbr>, <address>, <article>, <aside>, <audio>, <b>,<bdo>, <bdi>, <blockquote>, <br>,
     <button>, <canvas>, <cite>, <code>, <data>, <datalist>, <del>, <details>, <dfn>, <div>, <dl>,
     <em>, <embed>, <fieldset>, <figure>, <footer>, <form>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>,
@@ -52,31 +48,28 @@ mass_bare_impl! {
     <meta>, // if the itemprop attribute is present
     <style> // if the scoped attribute is present
 }
+impl FlowContent for Text {}
 
-/// Elements belonging to the sectioning content model create a section in the
-/// current outline that defines the scope of <header> elements, <footer>
-/// elements, and heading content.
-pub trait SectioningContent: Node {}
-mass_bare_impl! {
-    SectioningContent for
+content_category! {
+    /// Elements belonging to the sectioning content model create a section in the
+    /// current outline that defines the scope of <header> elements, <footer>
+    /// elements, and heading content.
+    SectioningContent:
     <article>, <aside>, <nav>, <section>
 }
 
-/// Heading content defines the title of a section, whether marked by an
-/// explicit sectioning content element, or implicitly defined by the heading
-/// content itself.
-pub trait HeadingContent: Node {}
-mass_bare_impl! {
-    HeadingContent for
+content_category! {
+    /// Heading content defines the title of a section, whether marked by an
+    /// explicit sectioning content element, or implicitly defined by the heading
+    /// content itself.
+    HeadingContent:
     <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <hgroup>
 }
 
-/// Phrasing content defines the text and the mark-up it contains. Runs of
-/// phrasing content make up paragraphs.
-pub trait PhrasingContent: Node {}
-impl PhrasingContent for Text {}
-mass_bare_impl! {
-    PhrasingContent for
+content_category! {
+    /// Phrasing content defines the text and the mark-up it contains. Runs of
+    /// phrasing content make up paragraphs.
+    PhrasingContent:
     <abbr>, <audio>, <b>, <bdo>, <br>, <button>, <canvas>, <cite>, <code>, <data>, <datalist>,
     <dfn>, <em>, <embed>, <i>, <iframe>, <img>, <input>, <kbd>, <label>, <mark>, <meter>,
     <noscript>, <object>, <output>, <picture>, <progress>, <q>, <ruby>, <samp>, <script>, <select>,
@@ -89,20 +82,19 @@ mass_bare_impl! {
     <map>, // if it contains only phrasing content
     <meta> // if the itemprop attribute is present
 }
+impl PhrasingContent for Text {}
 
-/// Embedded content imports another resource or inserts content from another
-/// mark-up language or namespace into the document.
-pub trait EmbeddedContent: Node {}
-mass_bare_impl! {
-    EmbeddedContent for
+content_category! {
+    /// Embedded content imports another resource or inserts content from another
+    /// mark-up language or namespace into the document.
+    EmbeddedContent:
     <audio>, <canvas>, <embed>, <iframe>, <img>, <object>, <picture>, <video>
 }
 
-/// Interactive content includes elements that are specifically designed for
-/// user interaction.
-pub trait InteractiveContent: Node {}
-mass_bare_impl! {
-    InteractiveContent for
+content_category! {
+    /// Interactive content includes elements that are specifically designed for
+    /// user interaction.
+    InteractiveContent:
     <a>, <button>, <details>, <embed>, <iframe>, <label>, <select>, <textarea>,
     <audio>, // if the controls attribute is present
     <img>, // if the usemap attribute is present
@@ -112,42 +104,37 @@ mass_bare_impl! {
     <video> // if the controls attribute is present
 }
 
-/// Form-associated content comprises elements that have a form owner, exposed
-/// by a form attribute. A form owner is either the containing <form> element or
-/// the element whose id is specified in the form attribute.
-pub trait FormAssociatedContent: Node {}
-mass_bare_impl! {
-    FormAssociatedContent for
+content_category! {
+    /// Form-associated content comprises elements that have a form owner, exposed
+    /// by a form attribute. A form owner is either the containing <form> element or
+    /// the element whose id is specified in the form attribute.
+    FormAssociatedContent:
     <button>, <fieldset>, <input>, <label>, <meter>, <object>, <output>, <progress>, <select>,
     <textarea>
 }
 
-/// Elements that are listed in the form.elements and fieldset.elements IDL
-/// collections.
-pub trait ListedFormContent: FormAssociatedContent {}
-mass_bare_impl! {
-    ListedFormContent for
+content_category! {
+    /// Elements that are listed in the form.elements and fieldset.elements IDL
+    /// collections.
+    ListedFormContent:
     <button>, <fieldset>, <input>, <object>, <output>, <select>, <textarea>
 }
 
-/// Elements that can be associated with <label> elements.
-pub trait LabelableFormContent: FormAssociatedContent {}
-mass_bare_impl! {
-    LabelableFormContent for
+content_category! {
+    /// Elements that can be associated with <label> elements.
+    LabelableFormContent:
     <button>, <input>, <meter>, <output>, <progress>, <select>, <textarea>
 }
 
-/// Elements that can be used for constructing the form data set when the form
-/// is submitted.
-pub trait SubmittableFormContent: FormAssociatedContent {}
-mass_bare_impl! {
-    SubmittableFormContent for
+content_category! {
+    /// Elements that can be used for constructing the form data set when the form
+    /// is submitted.
+    SubmittableFormContent:
     <button>, <input>, <object>, <select>, <textarea>
 }
 
-/// Elements that can be affected when a form is reset.
-pub trait ResettableFormContent: FormAssociatedContent {}
-mass_bare_impl! {
-    ResettableFormContent for
+content_category! {
+    /// Elements that can be affected when a form is reset.
+    ResettableFormContent:
     <input>, <output>,<select>, <textarea>
 }

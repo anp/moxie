@@ -1,5 +1,11 @@
 /// Compute the name of the HTML attribute from the name of the builder method.
 macro_rules! attr_name {
+    (accept_charset) => {
+        "accept-charset"
+    };
+    (as_) => {
+        "as"
+    };
     (async_) => {
         "async"
     };
@@ -8,6 +14,9 @@ macro_rules! attr_name {
     };
     (http_equiv) => {
         "http-equiv"
+    };
+    (current_time) => {
+        "currentTime"
     };
     (loop_) => {
         "loop"
@@ -30,6 +39,8 @@ macro_rules! attr_method {
         $(#[$outer])*
         #[topo::nested]
         $publicity fn $attr(&self, to_set: bool) -> &Self {
+            #[allow(unused)]
+            use crate::interfaces::element::Element;
             if to_set {
                 self.attribute(attr_name!($attr), "");
             }
@@ -52,6 +63,9 @@ macro_rules! attr_method {
         $(#[$outer])*
         #[topo::nested]
         $publicity fn $attr(&self, to_set: $arg) -> &Self {
+            #[allow(unused)]
+            use crate::interfaces::element::Element;
+
             self.attribute(attr_name!($attr), to_set.to_string());
             self
         }
@@ -63,69 +77,47 @@ macro_rules! element {
     (
         $(#[$outer:meta])*
         <$name:ident>
-    ) => {paste::item! {
-        element! {
-            $(#[$outer])*
-            <$name> -> [< $name:camel >]
-        }
-    }};
-    (
-        $(#[$outer:meta])*
-        <$name:ident> -> $ret:ident
-    ) => {
+        $(attributes {$(
+            $(#[$attr_meta:meta])*
+            $attr:ident $(( $attr_ty:ty ))?
+        )*})?
+    ) => { paste::item! {
         $(#[$outer])*
         #[topo::nested]
-        #[illicit::from_env(parent: &MemoNode)]
-        pub fn $name() -> $ret {
-            let elem = memo(stringify!($name), |ty| {
+        #[illicit::from_env(parent: &crate::memo_node::MemoNode)]
+        pub fn $name() -> [< $name:camel >] {
+            #[allow(unused)]
+            use augdom::Dom;
+            #[allow(unused)]
+            use crate::interfaces::node::Node;
+
+            let elem = moxie::prelude::memo(stringify!($name), |ty| {
                 parent.raw_node().create_element(ty)
             });
             parent.ensure_child_attached(&elem);
-            $ret { inner: MemoNode::new(elem) }
+            [< $name:camel >] { inner: crate::memo_node::MemoNode::new(elem) }
         }
 
         $(#[$outer])*
-        pub struct $ret {
-            inner: MemoNode
+        pub struct [< $name:camel >] {
+            inner: crate::memo_node::MemoNode
         }
 
-        impl Element for $ret {}
-        impl Node for $ret {}
+        impl crate::interfaces::element::Element for [< $name:camel >] {}
+        impl crate::interfaces::node::Node for [< $name:camel >] {}
 
-        impl Memoized for $ret {
-            fn node(&self) -> &MemoNode {
+        impl crate::interfaces::node::sealed::Memoized for [< $name:camel >] {
+            fn node(&self) -> &crate::memo_node::MemoNode {
                 &self.inner
             }
         }
-    };
-}
 
-/// Implement the provided trait for all listed types. Requires the trait be a
-/// marker trait, i.e. without any functions or types.
-macro_rules! mass_bare_impl {
-    ($to_impl:ident for $(< $receives:ty >),+) => {
-        paste::item! { $(impl $to_impl for [<$receives:camel>] {})+ }
-    };
-}
-
-/// Define a trait which is responsible for implementing an HTML attribute.
-macro_rules! attr_trait {
-    (
-        $(#[$outer:meta])*
-        $attr:ident for
-        $( <$receives:ident> ),+
-    ) => { paste::item! {
-        $(#[$outer])*
-        pub trait [<$attr:camel Attr>]: Element {
-            $(#[$outer])*
-            fn $attr(&self, to_set: impl ToString) -> &Self {
-                self.attribute(attr_name!($attr), to_set)
-            }
-        }
-
-        mass_bare_impl! {
-            [<$attr:camel Attr>] for $( < [<$receives:camel>] >),+
-        }
+        $(impl [< $name:camel >] {
+            $(attr_method! {
+                $(#[$attr_meta])*
+                pub $attr $(($attr_ty))?
+            })*
+        })?
     }};
 }
 
@@ -135,94 +127,32 @@ macro_rules! html_element {
     (
         $(#[$outer:meta])*
         <$name:ident>
+        $($rem:tt)*
     ) => { paste::item! {
-        html_element! {
-            $(#[$outer])*
-            <$name> -> [< $name:camel >]
-        }
-    }};
-    (
-        $(#[$outer:meta])*
-        <$name:ident> -> $ret:ident
-    ) => {
         element! {
             $(#[$outer])*
-            <$name> -> $ret
+            <$name>
+            $($rem)*
         }
 
-        impl HtmlElement for $ret {}
-        impl GlobalEventHandler for $ret {}
-        impl EventTarget<event::Abort> for $ret {}
-        impl EventTarget<event::Blur> for $ret {}
-        impl EventTarget<event::Cancel> for $ret {}
-        impl EventTarget<event::ErrorEvent> for $ret {}
-        impl EventTarget<event::Focus> for $ret {}
-        impl EventTarget<event::CanPlay> for $ret {}
-        impl EventTarget<event::CanPlayThrough> for $ret {}
-        impl EventTarget<event::Change> for $ret {}
-        impl EventTarget<event::Click> for $ret {}
-        impl EventTarget<event::CloseWebsocket> for $ret {}
-        impl EventTarget<event::ContextMenu> for $ret {}
-        impl EventTarget<event::CueChange> for $ret {}
-        impl EventTarget<event::DoubleClick> for $ret {}
-        impl EventTarget<event::Drag> for $ret {}
-        impl EventTarget<event::DragEnd> for $ret {}
-        impl EventTarget<event::DragEnter> for $ret {}
-        impl EventTarget<event::DragExit> for $ret {}
-        impl EventTarget<event::DragLeave> for $ret {}
-        impl EventTarget<event::DragOver> for $ret {}
-        impl EventTarget<event::DragStart> for $ret {}
-        impl EventTarget<event::Dropped> for $ret {}
-        impl EventTarget<event::DurationChange> for $ret {}
-        impl EventTarget<event::Emptied> for $ret {}
-        impl EventTarget<event::PlaybackEnded> for $ret {}
-        impl EventTarget<event::GotPointerCapture> for $ret {}
-        impl EventTarget<event::Input> for $ret {}
-        impl EventTarget<event::Invalid> for $ret {}
-        impl EventTarget<event::KeyDown> for $ret {}
-        impl EventTarget<event::KeyPress> for $ret {}
-        impl EventTarget<event::KeyUp> for $ret {}
-        impl EventTarget<event::ResourceLoad> for $ret {}
-        impl EventTarget<event::DataLoaded> for $ret {}
-        impl EventTarget<event::MetadataLoaded> for $ret {}
-        impl EventTarget<event::LoadEnd> for $ret {}
-        impl EventTarget<event::LoadStart> for $ret {}
-        impl EventTarget<event::LostPointerCapture> for $ret {}
-        impl EventTarget<event::MouseEnter> for $ret {}
-        impl EventTarget<event::MouseLeave> for $ret {}
-        impl EventTarget<event::MouseMove> for $ret {}
-        impl EventTarget<event::MouseOut> for $ret {}
-        impl EventTarget<event::MouseOver> for $ret {}
-        impl EventTarget<event::MouseUp> for $ret {}
-        impl EventTarget<event::Wheel> for $ret {}
-        impl EventTarget<event::Pause> for $ret {}
-        impl EventTarget<event::Play> for $ret {}
-        impl EventTarget<event::Playing> for $ret {}
-        impl EventTarget<event::PointerDown> for $ret {}
-        impl EventTarget<event::PointerMove> for $ret {}
-        impl EventTarget<event::PointerUp> for $ret {}
-        impl EventTarget<event::PointerCancel> for $ret {}
-        impl EventTarget<event::PointerOver> for $ret {}
-        impl EventTarget<event::PointerOut> for $ret {}
-        impl EventTarget<event::PointerEnter> for $ret {}
-        impl EventTarget<event::PointerLeave> for $ret {}
-        impl EventTarget<event::Progress> for $ret {}
-        impl EventTarget<event::PlaybackRateChange> for $ret {}
-        impl EventTarget<event::FormReset> for $ret {}
-        impl EventTarget<event::ViewResize> for $ret {}
-        impl EventTarget<event::Scroll> for $ret {}
-        impl EventTarget<event::Seeked> for $ret {}
-        impl EventTarget<event::Seeking> for $ret {}
-        impl EventTarget<event::Select> for $ret {}
-        impl EventTarget<event::SelectionStart> for $ret {}
-        impl EventTarget<event::SelectionChange> for $ret {}
-        impl EventTarget<event::ContextMenuShow> for $ret {}
-        impl EventTarget<event::Stalled> for $ret {}
-        impl EventTarget<event::Submit> for $ret {}
-        impl EventTarget<event::Suspend> for $ret {}
-        impl EventTarget<event::TimeUpdate> for $ret {}
-        impl EventTarget<event::VolumeChange> for $ret {}
-        impl EventTarget<event::TransitionEnd> for $ret {}
-        impl EventTarget<event::Waiting> for $ret {}
+        impl crate::interfaces::html_element::HtmlElement for [< $name:camel >] {}
+        impl crate::interfaces::global_events::GlobalEventHandler for [< $name:camel >] {}
+
+        impl<E> crate::interfaces::event_target::EventTarget<E> for [< $name:camel >]
+        where E: crate::interfaces::global_events::GlobalEvent {}
+    }};
+}
+
+macro_rules! content_category {
+    (
+        $(#[$outer:meta])*
+        $to_impl:ident: $(< $receives:ty >),+
+    ) => {
+        paste::item! {
+            $(#[$outer])*
+            pub trait $to_impl: crate::interfaces::node::Node {}
+
+            $(impl $to_impl for [<$receives:camel>] {})+
+        }
     };
 }

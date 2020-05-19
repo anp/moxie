@@ -1,12 +1,5 @@
 //! The elements here are used to create and handle tabular data.
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 html_element! {
     /// The [HTML Table Caption element (`<caption>`)][mdn] specifies the caption (or title) of a
     /// table, and if used is *always* the first child of a [`<table>`][table].
@@ -24,6 +17,12 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
     /// [cg]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     <col>
+
+    attributes {
+        /// This attribute contains a positive integer indicating the number of consecutive columns
+        /// the <col> element spans. If not present, its default value is 1.
+        span
+    }
 }
 
 html_element! {
@@ -31,6 +30,19 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
     <colgroup>
+
+    attributes {
+        /// This attribute contains a positive integer indicating the number of consecutive columns
+        /// the <colgroup> element spans. If not present, its default value is 1.
+        ///
+        /// > Note: This attribute is applied on the attributes of the column group, it has no
+        /// > effect on the CSS styling rules associated with it or, even more, to the cells of the
+        /// > column's members of the group.
+        /// >
+        /// > The span attribute is not permitted if there are one or more <col> elements within the
+        /// > <colgroup>.
+        span
+    }
 }
 
 html_element! {
@@ -58,6 +70,23 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     <td>
+
+    attributes {
+        /// This attribute contains a non-negative integer value that indicates for how many columns
+        /// the cell extends. Its default value is 1. Values higher than 1000 will be considered as
+        /// incorrect and will be set to the default value (1).
+        colspan
+
+        /// This attribute contains a list of space-separated strings, each corresponding to the id
+        /// attribute of the <th> elements that apply to this element.
+        headers
+
+        /// This attribute contains a non-negative integer value that indicates for how many rows
+        /// the cell extends. Its default value is 1; if its value is set to 0, it extends until the
+        /// end of the table section (<thead>, <tbody>, <tfoot>, even if implicitly defined), that
+        /// the cell belongs to. Values higher than 65534 are clipped down to 65534.
+        rowspan
+    }
 }
 
 html_element! {
@@ -76,12 +105,41 @@ html_element! {
     /// [scope]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope
     /// [headers]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-headers
     <th>
-}
 
-impl Th {
-    attr_method! {
-        /// Defines the cells that the header test (defined in the th element) relates to.
-        pub scope
+    attributes {
+        /// This attribute contains a short abbreviated description of the cell's content. Some
+        /// user-agents, such as speech readers, may present this description before the content
+        /// itself.
+        abbr
+
+        /// This attribute contains a non-negative integer value that indicates for how many columns
+        /// the cell extends. Its default value is 1. Values higher than 1000 will be considered as
+        /// incorrect and will be set to the default value (1).
+        colspan
+
+        /// This attribute contains a list of space-separated strings, each corresponding to the id
+        /// attribute of the <th> elements that apply to this element.
+        headers
+
+        /// This attribute contains a non-negative integer value that indicates for how many rows
+        /// the cell extends. Its default value is 1; if its value is set to 0, it extends until the
+        /// end of the table section (<thead>, <tbody>, <tfoot>, even if implicitly defined), that
+        /// the cell belongs to. Values higher than 65534 are clipped down to 65534.
+        rowspan
+
+        /// This enumerated attribute defines the cells that the header (defined in the <th>)
+        /// element relates to. It may have the following values:
+        ///
+        /// * `row`: The header relates to all cells of the row it belongs to.
+        /// * `col`: The header relates to all cells of the column it belongs to.
+        /// * `rowgroup`: The header belongs to a rowgroup and relates to all of its cells. These
+        ///   cells can be placed to the right or the left of the header, depending on the value of
+        ///   the dir attribute in the <table> element.
+        /// * `colgroup`: The header belongs to a colgroup and relates to all of its cells.
+        /// * `auto`
+        ///
+        /// The default value when this attribute is not specified is auto.
+        scope
     }
 }
 

@@ -4,13 +4,6 @@
 //! Also includes elements that provide indications that specific parts of the
 //! text have been altered.
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 html_element! {
     /// The [HTML `<a>` element (or *anchor* element)][mdn], along with its href attribute, creates
     /// a hyperlink to other web pages, files, locations within the same page, email addresses, or
@@ -18,12 +11,83 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
     <a>
+
+    attributes {
+        /// Prompts the user to save the linked URL instead of navigating to it. Can be used with or
+        /// without a value:
+        ///
+        /// * Without a value, the browser will suggest a filename/extension, generated from various
+        ///   sources:
+        ///   * The Content-Disposition HTTP header
+        ///   * The final segment in the URL path
+        ///   * The media type (from the (Content-Type header, the start of a data: URL, or
+        ///     Blob.type for a blob: URL)
+        /// * Defining a value suggests it as the filename. `/` and `\` characters are converted to
+        ///   underscores (_). Filesystems may forbid other characters in filenames, so browsers
+        ///   will adjust the suggested name if necessary.
+        ///
+        /// > Notes:
+        /// > * download only works for same-origin URLs, or the blob: and data: schemes.
+        /// > * If Content-Disposition has a different filename than download, the header takes
+        /// >   priority. (If `Content-Disposition: inline`, Firefox prefers the header while Chrome
+        /// >   prefers download.)
+        download
+
+        /// The URL that the hyperlink points to. Links are not restricted to HTTP-based URLs —
+        /// they can use any URL scheme supported by browsers:
+        ///
+        /// * Sections of a page with fragment URLs
+        /// * Pieces of media files with media fragments
+        /// * Telephone numbers with tel: URLs
+        /// * Email addresses with mailto: URLs
+        /// * While web browsers may not support other URL schemes, web sites can with
+        ///   registerProtocolHandler()
+        href
+
+        /// Hints at the human language of the linked URL. No built-in functionality. Allowed values
+        /// are the same as the global lang attribute.
+        hreflang
+
+        /// A space-separated list of URLs. When the link is followed, the browser will send POST
+        /// requests with the body PING to the URLs. Typically for tracking.
+        ping
+
+        /// The relationship of the linked URL as space-separated link types.
+        rel
+
+        /// Where to display the linked URL, as the name for a browsing context (a tab, window, or
+        /// <iframe>). The following keywords have special meanings for where to load the URL:
+        ///
+        /// * `_self`: the current browsing context. (Default)
+        /// * `_blank`: usually a new tab, but users can configure browsers to open a new window
+        ///   instead.
+        /// * `_parent`: the parent browsing context of the current one. If no parent, behaves as
+        ///   _self.
+        /// * `_top`: the topmost browsing context (the "highest" context that’s an ancestor of the
+        ///   current one). If no ancestors, behaves as _self.
+        ///
+        /// > Note: When using target, add rel="noreferrer noopener" to avoid exploitation of the
+        /// window.opener API;
+        ///
+        /// > Note: Linking to another page with target="_blank" will run the new page in the same
+        /// process as your page. If the new page executes JavaScript, your page's performance may
+        /// suffer. This can also be avoided by using rel="noreferrer noopener".
+        target
+
+        /// Hints at the linked URL’s format with a MIME type. No built-in functionality.
+        type_
+    }
 }
 
 html_element! {
     /// The [HTML Abbreviation element (`<abbr>`)][mdn] represents an abbreviation or acronym; the
     /// optional [`title`][title] attribute can provide an expansion or description for the
     /// abbreviation.
+    ///
+    /// The title attribute has a specific semantic meaning when used with the <abbr> element; it
+    /// must contain a full human-readable description or expansion of the abbreviation. This text
+    /// is often presented by browsers as a tooltip when the mouse cursor is hovered over the
+    /// element.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
     /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-title
@@ -52,6 +116,15 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
     <bdo>
+
+    attributes {
+        /// The direction in which text should be rendered in this element's contents. Possible
+        /// values are:
+        ///
+        /// * `ltr`: Indicates that the text should go in a left-to-right direction.
+        /// * `rtl`: Indicates that the text should go in a right-to-left direction.
+        dir
+    }
 }
 
 html_element! {
@@ -85,6 +158,11 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
     /// [time]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     <data>
+
+    attributes {
+        /// This attribute specifies the machine-readable translation of the content of the element.
+        value
+    }
 }
 
 html_element! {
@@ -135,6 +213,13 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
     <q>
+
+    attributes {
+        /// The value of this attribute is a URL that designates a source document or message for
+        /// the information quoted. This attribute is intended to point to information explaining
+        /// the context or the reference for the quote.
+        cite
+    }
 }
 
 html_element! {
@@ -261,6 +346,12 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
     <time>
+
+    attributes {
+        /// This attribute indicates the time and/or date of the element and must be in one of the
+        /// formats described below.
+        datetime
+    }
 }
 
 html_element! {
@@ -294,6 +385,18 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
     <del>
+
+    attributes {
+        /// A URI for a resource that explains the change (for example, meeting minutes).
+        cite
+
+        /// This attribute indicates the time and date of the change and must be a valid date string
+        /// with an optional time. If the value cannot be parsed as a date with an optional time
+        /// string, the element does not have an associated time stamp. For the format of the string
+        /// without a time, see Date strings. The format of the string if it includes both date and
+        /// time is covered in Local date and time strings.
+        datetime
+    }
 }
 
 html_element! {
@@ -302,4 +405,16 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
     <ins>
+
+    attributes {
+        /// A URI for a resource that explains the change (for example, meeting minutes).
+        cite
+
+        /// This attribute indicates the time and date of the change and must be a valid date string
+        /// with an optional time. If the value cannot be parsed as a date with an optional time
+        /// string, the element does not have an associated time stamp. For the format of the string
+        /// without a time, see Date strings. The format of the string if it includes both date and
+        /// time is covered in Local date and time strings.
+        datetime
+    }
 }

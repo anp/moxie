@@ -1,25 +1,16 @@
 //! HTML offers a selection of elements which help to create interactive user
 //! interface objects.
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 html_element! {
     /// The [HTML Details Element (`<details>`)][mdn] creates a disclosure widget in which
     /// information is visible only when the widget is toggled into an "open" state.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
     <details>
-}
 
-impl Details {
-    attr_method! {
+    attributes {
         /// Indicates whether the details will be shown on page load.
-        pub open(bool)
+        open(bool)
     }
 }
 
@@ -29,6 +20,12 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
     <dialog>
+
+    attributes {
+        /// Indicates that the dialog is active and can be interacted with. When the open attribute
+        /// is not set, the dialog shouldn't be shown to the user.
+        open(bool)
+    }
 }
 
 html_element! {

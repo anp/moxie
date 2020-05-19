@@ -3,13 +3,6 @@
 //! accessibility and SEO, these elements identify the purpose or structure of
 //! that content.
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 html_element! {
     /// The [HTML `<blockquote>` element][mdn] (or *HTML Block Quotation Element*) indicates that
     /// the enclosed text is an extended quotation. Usually, this is rendered visually by
@@ -19,6 +12,13 @@ html_element! {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
     /// [cite]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
     <blockquote>
+
+    attributes {
+        /// A URL that designates a source document or message for the information quoted. This
+        /// attribute is intended to point to information explaining the context or the reference
+        /// for the quote.
+        cite
+    }
 }
 
 html_element! {
@@ -101,17 +101,32 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
     <ol>
-}
 
-impl Ol {
-    attr_method! {
-        /// Indicates whether the list should be displayed in a descending order instead of a ascending.
-        pub reversed
-    }
+    attributes {
+        /// Specifies that the list’s items are in reverse order. Items will be numbered from high
+        /// to low.
+        reversed(bool)
 
-    attr_method! {
-        /// Defines the first number if other than 1.
-        pub start
+        /// An integer to start counting from for the list items. Always an Arabic numeral (1, 2, 3,
+        /// etc.), even when the numbering type is letters or Roman numerals. For example, to start
+        /// numbering elements from the letter "d" or the Roman numeral "iv," use start="4".
+        start(u32)
+
+        /// Sets the numbering type:
+        ///
+        /// * `a` for lowercase letters
+        /// * `A` for uppercase letters
+        /// * `i` for lowercase Roman numerals
+        /// * `I` for uppercase Roman numerals
+        /// * `1` for numbers (default)
+        ///
+        /// The specified type is used for the entire list unless a different type attribute is used
+        /// on an enclosed <li> element.
+        ///
+        /// > Note: Unless the type of the list number matters (like legal or technical documents
+        /// where items are referenced by their number/letter), use the CSS list-style-type property
+        /// instead.
+        type_
     }
 }
 
