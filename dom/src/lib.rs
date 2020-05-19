@@ -23,7 +23,6 @@ pub mod prelude {
     pub use crate::{
         elements::html,
         interfaces::{
-            attributes::*,
             content_categories::{
                 EmbeddedContent, FlowContent, FormAssociatedContent, HeadingContent,
                 InteractiveContent, LabelableFormContent, ListedFormContent, MetadataContent,
@@ -31,7 +30,7 @@ pub mod prelude {
             },
             element::Element,
             event_target::EventTarget,
-            global_events::GlobalEventHandler,
+            global_events::{GlobalEvent, GlobalEventHandler},
             html_element::HtmlElement,
             node::Node,
         },

@@ -3,13 +3,6 @@
 //! your page content, including header and footer navigation, and heading
 //! elements to identify sections of content.
 
-use crate::{
-    interfaces::node::{sealed::Memoized, Node},
-    memo_node::MemoNode,
-    prelude::*,
-};
-use augdom::event;
-
 html_element! {
     /// The [HTML `<address>` element][mdn] indicates that the enclosed HTML provides contact
     /// information for a person or people, or for an organization.
