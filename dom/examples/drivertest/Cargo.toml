@@ -6,6 +6,7 @@ authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+augdom = { path = "../../augdom", features = ["rsdom"] }
 moxie = { path = "../../../" }
 moxie-dom = { path = "../../", features = ["rsdom"] }
 typed-html = "0.2.1"

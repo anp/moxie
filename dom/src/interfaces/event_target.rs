@@ -1,9 +1,8 @@
 //! EventTarget is a DOM interface implemented by objects that can receive
 //! events and may have listeners for them.
 
+use crate::{interfaces::node::Node, prelude::*};
 use augdom::event::{Event, EventHandle};
-
-use crate::prelude::*;
 
 /// EventTarget is a DOM interface implemented by objects that can receive
 /// events and may have listeners for them.

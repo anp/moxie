@@ -15,126 +15,70 @@
 //! 3. Specific content categories, which describe rare categories shared
 //!    only by a few elements, sometimes only in a specific context.
 
-use crate::{
-    elements::{
-        embedding::*, forms::*, interactive::*, media::*, metadata::*, scripting::*, sectioning::*,
-        table::*, text_content::*, text_semantics::*, TemplateBuilder,
-    },
-    memo_node::Text,
-};
+use crate::interfaces::node::Node;
 
-content_category! {
-    /// Elements belonging to the metadata content category modify the presentation
-    /// or the behavior of the rest of the document, set up links to other
-    /// documents, or convey other out of band information.
-    MetadataContent:
-    <base>, <link>, <meta>, <noscript>, <script>, <style>, <title>
-}
+/// Elements belonging to the metadata content category modify the presentation
+/// or the behavior of the rest of the document, set up links to other
+/// documents, or convey other out of band information.
+pub trait MetadataContent: Node {}
 
-content_category! {
-    /// Elements belonging to the flow content category typically contain text or
-    /// embedded content.
-    FlowContent:
-    <a>, <abbr>, <address>, <article>, <aside>, <audio>, <b>,<bdo>, <bdi>, <blockquote>, <br>,
-    <button>, <canvas>, <cite>, <code>, <data>, <datalist>, <del>, <details>, <dfn>, <div>, <dl>,
-    <em>, <embed>, <fieldset>, <figure>, <footer>, <form>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>,
-    <header>, <hgroup>, <hr>, <i>, <iframe>, <img>, <input>, <ins>, <kbd>, <label>, <main>, <map>,
-    <mark>, <menu>, <meter>, <nav>, <noscript>, <object>, <ol>, <output>, <p>, <picture>, <pre>,
-    <progress>, <q>, <ruby>, <s>, <samp>, <script>, <section>, <select>, <small>, <span>, <strong>,
-    <sub>, <sup>, <table>, <template>, <textarea>, <time>, <ul>, <var>, <video>,
-    <wbr>,
-    <area>, // if it is a descendant of a <map> element
-    <link>, // if the itemprop attribute is present
-    <meta>, // if the itemprop attribute is present
-    <style> // if the scoped attribute is present
-}
-impl FlowContent for Text {}
+/// Elements belonging to the flow content category typically contain text or
+/// embedded content.
+pub trait FlowContent: Node {}
 
-content_category! {
-    /// Elements belonging to the sectioning content model create a section in the
-    /// current outline that defines the scope of <header> elements, <footer>
-    /// elements, and heading content.
-    SectioningContent:
-    <article>, <aside>, <nav>, <section>
-}
+/// Elements belonging to the sectioning content model create a section in the
+/// current outline that defines the scope of <header> elements, <footer>
+/// elements, and heading content.
+pub trait SectioningContent: Node {}
 
-content_category! {
-    /// Heading content defines the title of a section, whether marked by an
-    /// explicit sectioning content element, or implicitly defined by the heading
-    /// content itself.
-    HeadingContent:
-    <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <hgroup>
-}
+/// Heading content defines the title of a section, whether marked by an
+/// explicit sectioning content element, or implicitly defined by the heading
+/// content itself.
+pub trait HeadingContent: Node {}
 
-content_category! {
-    /// Phrasing content defines the text and the mark-up it contains. Runs of
-    /// phrasing content make up paragraphs.
-    PhrasingContent:
-    <abbr>, <audio>, <b>, <bdo>, <br>, <button>, <canvas>, <cite>, <code>, <data>, <datalist>,
-    <dfn>, <em>, <embed>, <i>, <iframe>, <img>, <input>, <kbd>, <label>, <mark>, <meter>,
-    <noscript>, <object>, <output>, <picture>, <progress>, <q>, <ruby>, <samp>, <script>, <select>,
-    <small>, <span>, <strong>, <sub>, <sup>, <textarea>, <time>, <var>, <video>, <wbr>,
-    <a>, // if it contains only phrasing content
-    <area>, // if it is a descendant of a <map> element
-    <del>, // if it contains only phrasing content
-    <ins>, // if it contains only phrasing content
-    <link>, // if the itemprop attribute is present
-    <map>, // if it contains only phrasing content
-    <meta> // if the itemprop attribute is present
-}
-impl PhrasingContent for Text {}
+/// Phrasing content defines the text and the mark-up it contains. Runs of
+/// phrasing content make up paragraphs.
+pub trait PhrasingContent: Node {}
 
-content_category! {
-    /// Embedded content imports another resource or inserts content from another
-    /// mark-up language or namespace into the document.
-    EmbeddedContent:
-    <audio>, <canvas>, <embed>, <iframe>, <img>, <object>, <picture>, <video>
-}
+/// Embedded content imports another resource or inserts content from another
+/// mark-up language or namespace into the document.
+pub trait EmbeddedContent: Node {}
 
-content_category! {
-    /// Interactive content includes elements that are specifically designed for
-    /// user interaction.
-    InteractiveContent:
-    <a>, <button>, <details>, <embed>, <iframe>, <label>, <select>, <textarea>,
-    <audio>, // if the controls attribute is present
-    <img>, // if the usemap attribute is present
-    <input>, // if the type attribute is not in the hidden state
-    <menu>, // if the type attribute is in the toolbar state
-    <object>, // if the usemap attribute is present
-    <video> // if the controls attribute is present
-}
+/// Interactive content includes elements that are specifically designed for
+/// user interaction.
+pub trait InteractiveContent: Node {}
 
-content_category! {
-    /// Form-associated content comprises elements that have a form owner, exposed
-    /// by a form attribute. A form owner is either the containing <form> element or
-    /// the element whose id is specified in the form attribute.
-    FormAssociatedContent:
-    <button>, <fieldset>, <input>, <label>, <meter>, <object>, <output>, <progress>, <select>,
-    <textarea>
-}
+/// Form-associated content comprises elements that have a form owner, exposed
+/// by a form attribute. A form owner is either the containing <form> element or
+/// the element whose id is specified in the form attribute.
+pub trait FormAssociatedContent: Node {}
 
-content_category! {
-    /// Elements that are listed in the form.elements and fieldset.elements IDL
-    /// collections.
-    ListedFormContent:
-    <button>, <fieldset>, <input>, <object>, <output>, <select>, <textarea>
-}
+/// Elements that are listed in the form.elements and fieldset.elements IDL
+/// collections.
+pub trait ListedContent: Node {}
 
-content_category! {
-    /// Elements that can be associated with <label> elements.
-    LabelableFormContent:
-    <button>, <input>, <meter>, <output>, <progress>, <select>, <textarea>
-}
+/// Elements that can be associated with <label> elements.
+pub trait LabelableContent: Node {}
 
-content_category! {
-    /// Elements that can be used for constructing the form data set when the form
-    /// is submitted.
-    SubmittableFormContent:
-    <button>, <input>, <object>, <select>, <textarea>
-}
+/// Elements that can be used for constructing the form data set when the form
+/// is submitted.
+pub trait SubmittableContent: Node {}
 
-content_category! {
-    /// Elements that can be affected when a form is reset.
-    ResettableFormContent:
-    <input>, <output>,<select>, <textarea>
-}
+/// Elements that can be affected when a form is reset.
+pub trait ResettableContent: Node {}
+
+/// Content is palpable when it's neither empty or hidden; it is content that is
+/// rendered and is substantive. Elements whose model is flow content or
+/// phrasing content should have at least one node which is palpable.
+pub trait PalpableContent: Node {}
+
+/// If an element has a transparent content model, then its contents must be
+/// structured such that they would be valid HTML 5, even if the transparent
+/// element were removed and replaced by the child elements.
+pub trait TransparentContent: Node {}
+
+/// Script-supporting elements are elements which don't directly contribute to
+/// the rendered output of a document. Instead, they serve to support scripts,
+/// either by containing or specifying script code directly, or by specifying
+/// data that will be used by scripts.
+pub trait ScriptSupportingContent: Node {}

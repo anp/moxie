@@ -30,6 +30,13 @@ pub mod html {
     };
 }
 
+pub(crate) mod just_all_of_it_ok {
+    pub use super::{
+        embedding::*, forms::*, interactive::*, media::*, metadata::*, scripting::*, sectioning::*,
+        table::*, text_content::*, text_semantics::*, *,
+    };
+}
+
 pub mod embedding;
 pub mod forms;
 pub mod interactive;

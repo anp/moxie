@@ -1,13 +1,13 @@
 use crate::{input::text_input, Todo};
 use moxie_dom::{
-    elements::sectioning::{h1, header},
+    elements::sectioning::{h1, header, HeaderBuilder},
     prelude::*,
 };
 use tracing::info;
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn input_header() -> impl Node {
+pub fn input_header() -> HeaderBuilder {
     let todos = todos.clone();
     mox! {
         <header class="header">

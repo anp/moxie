@@ -1,7 +1,7 @@
 //! Element is the most general base class from which all element objects in a
 //! Document inherit.
 
-use crate::prelude::*;
+use crate::{interfaces::node::Node, prelude::*};
 
 /// Element is the most general base class from which all element objects (i.e.
 /// objects that represent elements) in a Document inherit. It only has methods

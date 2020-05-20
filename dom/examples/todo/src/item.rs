@@ -1,9 +1,16 @@
 use crate::{input::text_input, Todo};
-use moxie_dom::{elements::html::*, prelude::*};
+use moxie_dom::{
+    elements::{
+        forms::InputBuilder,
+        html::*,
+        text_content::{DivBuilder, LiBuilder},
+    },
+    prelude::*,
+};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_edit_input(todo: Todo, editing: Key<bool>) -> impl Node {
+fn item_edit_input(todo: Todo, editing: Key<bool>) -> InputBuilder {
     let todos = todos.clone();
     mox! {
         <text_input _=(
@@ -25,7 +32,7 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) -> impl Node {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_with_buttons(todo: Todo, editing: Key<bool>) -> impl Node {
+fn item_with_buttons(todo: Todo, editing: Key<bool>) -> DivBuilder {
     let id = todo.id;
     let todos = todos.clone();
     let toggle_todos = todos.clone();
@@ -64,7 +71,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> impl Node {
 }
 
 #[topo::nested]
-pub fn todo_item(todo: &Todo) -> impl Node {
+pub fn todo_item(todo: &Todo) -> LiBuilder {
     let editing = state(|| false);
 
     let mut classes = String::new();

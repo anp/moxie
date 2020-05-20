@@ -18,22 +18,23 @@ pub mod text;
 pub mod prelude {
     #[cfg(feature = "webdom")]
     pub use augdom::{document, sys};
-    pub use augdom::{event, Dom};
+    pub use augdom::{event, Dom as _};
     pub use moxie::{mox, prelude::*};
 
     pub use crate::{
         elements::html,
         interfaces::{
             content_categories::{
-                EmbeddedContent, FlowContent, FormAssociatedContent, HeadingContent,
-                InteractiveContent, LabelableFormContent, ListedFormContent, MetadataContent,
-                PhrasingContent, ResettableFormContent, SectioningContent, SubmittableFormContent,
+                EmbeddedContent as _, FlowContent as _, FormAssociatedContent as _,
+                HeadingContent as _, InteractiveContent as _, LabelableContent as _,
+                ListedContent as _, MetadataContent as _, PhrasingContent as _,
+                ResettableContent as _, SectioningContent as _, SubmittableContent as _,
             },
-            element::Element,
-            event_target::EventTarget,
-            global_events::{GlobalEvent, GlobalEventHandler},
-            html_element::HtmlElement,
-            node::{Node, Parent},
+            element::Element as _,
+            event_target::EventTarget as _,
+            global_events::{GlobalEvent as _, GlobalEventHandler as _},
+            html_element::HtmlElement as _,
+            node::{Node as _, Parent as _},
         },
         text::text,
     };

@@ -52,7 +52,7 @@ fn mini_list() {
 
     assert_eq!(
         expected_html,
-        &Dom::outer_html(web_root_node),
+        &augdom::Dom::outer_html(web_root_node),
         "our outer_html implementation must match the expected HTML",
     );
 
