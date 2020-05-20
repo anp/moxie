@@ -30,8 +30,8 @@ fmt-project = "ofl fmt"
 
 dom-flow = """
 watch --clear
-    -x test-augdom
     -x test-dom-lib
+    -x test-augdom
     -x test-dom-lib-browser
     -x test-dom-drivertest
     -x test-ssr-example
