@@ -66,15 +66,7 @@ html_element! {
     }
 
     children {
-        tags {
-            // if in the list menu state
-            <li>, <script>, <template>,
-
-            // if in the context menu state
-            <menu>, <menuitem>, <hr>, <script>, <template>
-        }
         categories {
-            // if in the list menu state
             Flow
         }
     }
