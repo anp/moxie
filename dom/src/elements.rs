@@ -131,11 +131,6 @@ html_element! {
     categories {
         Flow, Phrasing
     }
-    children {
-        categories {
-            Transparent
-        }
-    }
 
     attributes {
         /// The slot's name.
@@ -154,10 +149,5 @@ html_element! {
 
     categories {
         Metadata, Flow, Phrasing
-    }
-    children {
-        categories {
-            Transparent
-        }
     }
 }

@@ -81,8 +81,11 @@ html_element! {
     <summary>
 
     children {
+        tags {
+            <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <hgroup>
+        }
         categories {
-            Phrasing, Heading
+            Phrasing
         }
     }
 }

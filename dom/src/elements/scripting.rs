@@ -15,12 +15,6 @@ html_element! {
         Flow, Phrasing, Embedded, Palpable
     }
 
-    children {
-        categories {
-            Transparent // with no interactives except a, button, input[checkbox,radio,button]
-        }
-    }
-
     attributes {
         /// The height of the coordinate space in CSS pixels. Defaults to 150.
         height
@@ -43,8 +37,7 @@ html_element! {
 
     children {
         categories {
-            Transparent, // when scripting disabled and it isn't descendant from <head>
-            Flow, Phrasing // otherwise
+            Flow
         }
     }
 }

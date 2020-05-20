@@ -97,9 +97,6 @@ html_element! {
             <track>,
             <source> // if the element doesn't have a src attribute
         }
-        categories {
-            Transparent // no audio or video elements though
-        }
     }
 
     attributes {
@@ -372,12 +369,6 @@ html_element! {
         Flow, Phrasing, Palpable
     }
 
-    children {
-        categories {
-            Transparent
-        }
-    }
-
     attributes {
         /// The name attribute gives the map a name so that it can be referenced. The attribute must
         /// be present and must have a non-empty value with no space characters. The value of the
@@ -466,9 +457,6 @@ html_element! {
         tags {
             <track>,
             <source> // if the element doesn't have a src attribute
-        }
-        categories {
-            Transparent // no audio or video elements though
         }
     }
 
