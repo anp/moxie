@@ -1,5 +1,5 @@
 use moxie_dom::{
-    elements::forms::{input, InputBuilder},
+    elements::forms::{input, Input},
     prelude::*,
 };
 use wasm_bindgen::JsCast;
@@ -9,7 +9,7 @@ pub fn text_input(
     placeholder: &str,
     editing: bool,
     mut on_save: impl FnMut(String) + 'static,
-) -> InputBuilder {
+) -> Input {
     let text = state(|| if editing { placeholder.to_string() } else { String::new() });
 
     fn input_value(ev: impl AsRef<sys::Event>) -> String {

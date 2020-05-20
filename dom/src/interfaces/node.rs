@@ -16,9 +16,6 @@ pub(crate) mod sealed {
 ///
 /// Note: this trait cannot be implemented outside of this crate.
 pub trait Node: sealed::Memoized + Sized {
-    /// The type returned by `build()`.
-    type Output: Node;
-
     /// Retrieves access to the raw HTML element underlying the (MemoNode).
     ///
     /// Because this offers an escape hatch around the memoized mutations, it
@@ -34,9 +31,6 @@ pub trait Node: sealed::Memoized + Sized {
     fn raw_node_that_has_sharp_edges_please_be_careful(&self) -> &augdom::Node {
         self.node().raw_node()
     }
-
-    /// Declare the element complete.
-    fn build(self) -> Self::Output;
 }
 
 /// A node which accepts children.

@@ -1,38 +1,32 @@
 use crate::{input::text_input, Todo};
 use moxie_dom::{
     elements::{
-        forms::InputBuilder,
+        forms::Input,
         html::*,
-        text_content::{DivBuilder, LiBuilder},
+        text_content::{Div, Li},
     },
     prelude::*,
 };
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_edit_input(todo: Todo, editing: Key<bool>) -> InputBuilder {
+fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
     let todos = todos.clone();
-    mox! {
-        <text_input _=(
-            &todo.text.clone(),
-            true,
-            move |value: String| {
-                editing.set(false);
-                todos.update(|todos| {
-                    let mut todos = todos.to_vec();
-                    if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
-                        todo.text = value;
-                    }
-                    Some(todos)
-                });
-            },
-        )/>
-    }
+    text_input(&todo.text.clone(), true, move |value: String| {
+        editing.set(false);
+        todos.update(|todos| {
+            let mut todos = todos.to_vec();
+            if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
+                todo.text = value;
+            }
+            Some(todos)
+        });
+    })
 }
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-fn item_with_buttons(todo: Todo, editing: Key<bool>) -> DivBuilder {
+fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
     let id = todo.id;
     let todos = todos.clone();
     let toggle_todos = todos.clone();
@@ -71,7 +65,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> DivBuilder {
 }
 
 #[topo::nested]
-pub fn todo_item(todo: &Todo) -> LiBuilder {
+pub fn todo_item(todo: &Todo) -> Li {
     let editing = state(|| false);
 
     let mut classes = String::new();
@@ -86,13 +80,9 @@ pub fn todo_item(todo: &Todo) -> LiBuilder {
     item = item.class(classes);
 
     if *editing {
-        item = item.child(mox! {
-            <item_edit_input _=(todo.clone(), editing) />
-        });
+        item = item.child(item_edit_input(todo.clone(), editing));
     } else {
-        item = item.child(mox! {
-            <item_with_buttons _=(todo.clone(), editing)/>
-        });
+        item = item.child(item_with_buttons(todo.clone(), editing));
     }
 
     item.build()
@@ -109,11 +99,10 @@ mod tests {
         let root = document().create_element("div").unwrap();
         crate::App::boot(&[Todo::new("weeeee")], root.clone(), || {
             let todo = &illicit::Env::get::<Key<Vec<Todo>>>().unwrap()[0];
-            mox! { <todo_item _=(todo)/> }
+            todo_item(todo)
         });
 
-        // gloo_timers::future::TimeoutFuture::new(1_000).await;
-        root.find().by_role("checkbox").until().one().await;
+        root.find().by_label_text("weeeee").until().one().await;
         assert_eq!(
             root.pretty_outer_html(2),
             r#"<div>

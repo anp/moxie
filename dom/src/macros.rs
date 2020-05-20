@@ -87,6 +87,8 @@ macro_rules! element {
         )*})?
     ) => { paste::item! {
         $(#[$outer])*
+        ///
+        /// A function for creating a builder which will accept attributes and produce the element.
         #[topo::nested]
         #[illicit::from_env(parent: &crate::memo_node::MemoNode)]
         pub fn $name() -> [<$name:camel Builder>] {
@@ -102,19 +104,23 @@ macro_rules! element {
         }
 
         $(#[$outer])*
+        ///
+        /// A type for initializing the element's attributes before calling `build`.
         #[must_use = "needs to be built"]
         pub struct [<$name:camel Builder>] {
-            inner: crate::memo_node::MemoNode
+            inner: crate::memo_node::MemoNode,
         }
 
         impl crate::interfaces::element::Element for [<$name:camel Builder>] {}
-        impl crate::interfaces::node::Node for [<$name:camel Builder>] {
-            type Output = Self;
+        impl crate::interfaces::node::Node for [<$name:camel Builder>] {}
 
-            fn build(self) -> Self::Output {
+        impl [<$name:camel Builder>] {
+            /// Initialize the element with all of the attributes so far.
+            pub fn build(self) -> [<$name:camel>] {
                 use crate::interfaces::node::sealed::Memoized;
                 self.node().remove_trailing_children();
-                self
+
+                [<$name:camel>] { inner: self.inner }
             }
         }
 
@@ -124,18 +130,12 @@ macro_rules! element {
             }
         }
 
-        // content categories
-        $($(
-            impl crate::interfaces::content_categories::[<$category Content>]
-            for [< $name:camel Builder >] {}
-        )+)?
-
         // children
         $(
             // child tags
             $($(
                 impl crate::interfaces::node::Parent<
-                    crate::elements::just_all_of_it_ok::[<$child_tag:camel Builder>]>
+                    crate::elements::just_all_of_it_ok::[<$child_tag:camel>]>
                 for [< $name:camel Builder >] {}
             )+)?
 
@@ -154,6 +154,27 @@ macro_rules! element {
                 pub $attr $(($attr_ty))?
             })*
         })?
+
+        $(#[$outer])*
+        ///
+        /// The initialized element, ready to be bound to a parent.
+        #[must_use = "needs to be bound to a parent"]
+        pub struct [<$name:camel>] {
+            inner: crate::memo_node::MemoNode,
+        }
+
+        impl crate::interfaces::node::Node for [<$name:camel>] {}
+        impl crate::interfaces::node::sealed::Memoized for [<$name:camel>] {
+            fn node(&self) -> &crate::memo_node::MemoNode {
+                &self.inner
+            }
+        }
+
+        // content categories
+        $($(
+            impl crate::interfaces::content_categories::[<$category Content>]
+            for [< $name:camel >] {}
+        )+)?
     }};
 }
 

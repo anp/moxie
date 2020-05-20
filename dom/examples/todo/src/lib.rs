@@ -4,7 +4,7 @@ use filter::Visibility;
 use header::input_header;
 use main_section::main_section;
 use moxie_dom::{
-    elements::text_content::{div, DivBuilder},
+    elements::text_content::{div, Div},
     interfaces::node::Node,
     prelude::*,
 };
@@ -19,11 +19,11 @@ pub mod item;
 pub mod main_section;
 
 #[topo::nested]
-fn todo_app() -> DivBuilder {
+fn todo_app() -> Div {
     mox! {
         <div class="todoapp">
-            <input_header/>
-            <main_section/>
+            { input_header() }
+            { main_section() }
         </div>
     }
 }
