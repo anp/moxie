@@ -54,9 +54,6 @@ html_element! {
     <head>
 
     children {
-        tags {
-            <title>
-        }
         categories {
             Metadata
         }

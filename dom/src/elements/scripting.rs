@@ -42,10 +42,6 @@ html_element! {
     }
 
     children {
-        tags {
-            // when a descendant of <head> and scripting is disabled:
-            <link>, <style>, <meta>
-        }
         categories {
             Transparent, // when scripting disabled and it isn't descendant from <head>
             Flow, Phrasing // otherwise
