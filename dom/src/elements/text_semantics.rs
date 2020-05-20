@@ -18,7 +18,7 @@ html_element! {
 
     children {
         categories {
-            Transparent, Flow, Phrasing // excluding interactive
+            Flow
         }
     }
 
@@ -665,12 +665,6 @@ html_element! {
         Phrasing, Flow
     }
 
-    children {
-        categories {
-            Transparent
-        }
-    }
-
     attributes {
         /// A URI for a resource that explains the change (for example, meeting minutes).
         cite
@@ -693,12 +687,6 @@ html_element! {
 
     categories {
         Phrasing, Flow
-    }
-
-    children {
-        categories {
-            Transparent
-        }
     }
 
     attributes {

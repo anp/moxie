@@ -72,11 +72,6 @@ pub trait ResettableContent: Node {}
 /// phrasing content should have at least one node which is palpable.
 pub trait PalpableContent: Node {}
 
-/// If an element has a transparent content model, then its contents must be
-/// structured such that they would be valid HTML 5, even if the transparent
-/// element were removed and replaced by the child elements.
-pub trait TransparentContent: Node {}
-
 /// Script-supporting elements are elements which don't directly contribute to
 /// the rendered output of a document. Instead, they serve to support scripts,
 /// either by containing or specifying script code directly, or by specifying

@@ -138,8 +138,9 @@ html_element! {
     }
 
     children {
-        tags { <param> }
-        categories { Transparent }
+        tags {
+            <param>
+        }
     }
 
     attributes {
