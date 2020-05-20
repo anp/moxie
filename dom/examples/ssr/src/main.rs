@@ -10,7 +10,7 @@ use gotham::{
     state::{FromState, State},
 };
 use moxie_dom::{
-    elements::text_content::{li, ul, UlBuilder},
+    elements::text_content::{li, ul, Ul},
     prelude::*,
 };
 
@@ -27,7 +27,7 @@ struct PathExtractor {
 }
 
 #[topo::nested]
-fn simple_list(items: &[String]) -> UlBuilder {
+fn simple_list(items: &[String]) -> Ul {
     let mut list = ul();
     for item in items {
         list = list.child(moxie::mox!(<li>{% "{}", item }</li>));

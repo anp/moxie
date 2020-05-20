@@ -1,14 +1,12 @@
 use crate::{filter::*, footer::*, item::todo_item, Todo};
 use moxie_dom::{
-    elements::{
-        html::*, sectioning::SectionBuilder, text_content::UlBuilder, text_semantics::SpanBuilder,
-    },
+    elements::{html::*, sectioning::Section, text_content::Ul, text_semantics::Span},
     prelude::*,
 };
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn toggle(default_checked: bool) -> SpanBuilder {
+pub fn toggle(default_checked: bool) -> Span {
     let todos = todos.clone();
     let on_click = move |_| {
         todos.update(|t| {
@@ -34,11 +32,11 @@ pub fn toggle(default_checked: bool) -> SpanBuilder {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
-pub fn todo_list() -> UlBuilder {
+pub fn todo_list() -> Ul {
     let mut list = ul().class("todo-list");
     for todo in todos.iter() {
         if visibility.should_show(todo) {
-            list = list.child(mox! { <todo_item _=(todo)/> });
+            list = list.child(todo_item(todo));
         }
     }
     list.build()
@@ -46,18 +44,18 @@ pub fn todo_list() -> UlBuilder {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn main_section() -> SectionBuilder {
+pub fn main_section() -> Section {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
     let mut section = section().class("main");
 
     if !todos.is_empty() {
-        section = section.child(toggle(num_complete == todos.len()).build());
+        section = section.child(toggle(num_complete == todos.len()));
     }
-    section = section.child(mox!(<todo_list/>));
+    section = section.child(todo_list());
 
     if !todos.is_empty() {
-        section = section.child(filter_footer(num_complete, todos.len() - num_complete).build());
+        section = section.child(filter_footer(num_complete, todos.len() - num_complete));
     }
 
     section.build()
@@ -76,7 +74,7 @@ mod tests {
         crate::App::boot(
             &[Todo::new("first"), Todo::new("second"), Todo::new("third")],
             root.clone(),
-            || mox!( <main_section/> ),
+            main_section,
         );
 
         root.find().by_text("first").until().many().await;

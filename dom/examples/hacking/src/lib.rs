@@ -3,7 +3,7 @@
 use moxie_dom::{
     elements::{
         forms::button,
-        text_content::{div, DivBuilder},
+        text_content::{div, Div},
     },
     prelude::*,
 };
@@ -21,7 +21,7 @@ pub fn begin() {
 }
 
 #[topo::nested]
-fn root() -> DivBuilder {
+fn root() -> Div {
     let count = state(|| 0);
 
     let mut root = div();
