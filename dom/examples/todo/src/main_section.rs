@@ -1,9 +1,14 @@
 use crate::{filter::*, footer::*, item::todo_item, Todo};
-use moxie_dom::{elements::html::*, prelude::*};
+use moxie_dom::{
+    elements::{
+        html::*, sectioning::SectionBuilder, text_content::UlBuilder, text_semantics::SpanBuilder,
+    },
+    prelude::*,
+};
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn toggle(default_checked: bool) -> impl Node {
+pub fn toggle(default_checked: bool) -> SpanBuilder {
     let todos = todos.clone();
     let on_click = move |_| {
         todos.update(|t| {
@@ -29,7 +34,7 @@ pub fn toggle(default_checked: bool) -> impl Node {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
-pub fn todo_list() -> impl Node {
+pub fn todo_list() -> UlBuilder {
     let mut list = ul().class("todo-list");
     for todo in todos.iter() {
         if visibility.should_show(todo) {
@@ -41,7 +46,7 @@ pub fn todo_list() -> impl Node {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn main_section() -> impl Node {
+pub fn main_section() -> SectionBuilder {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
     let mut section = section().class("main");

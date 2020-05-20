@@ -3,7 +3,11 @@
 use filter::Visibility;
 use header::input_header;
 use main_section::main_section;
-use moxie_dom::{elements::text_content::div, prelude::*};
+use moxie_dom::{
+    elements::text_content::{div, DivBuilder},
+    interfaces::node::Node,
+    prelude::*,
+};
 use std::sync::atomic::{AtomicU32, Ordering};
 use wasm_bindgen::prelude::*;
 
@@ -15,7 +19,7 @@ pub mod item;
 pub mod main_section;
 
 #[topo::nested]
-fn todo_app() -> impl Node {
+fn todo_app() -> DivBuilder {
     mox! {
         <div class="todoapp">
             <input_header/>

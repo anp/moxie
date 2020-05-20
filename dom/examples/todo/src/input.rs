@@ -1,4 +1,7 @@
-use moxie_dom::{elements::forms::input, prelude::*};
+use moxie_dom::{
+    elements::forms::{input, InputBuilder},
+    prelude::*,
+};
 use wasm_bindgen::JsCast;
 
 #[topo::nested]
@@ -6,7 +9,7 @@ pub fn text_input(
     placeholder: &str,
     editing: bool,
     mut on_save: impl FnMut(String) + 'static,
-) -> impl Node {
+) -> InputBuilder {
     let text = state(|| if editing { placeholder.to_string() } else { String::new() });
 
     fn input_value(ev: impl AsRef<sys::Event>) -> String {

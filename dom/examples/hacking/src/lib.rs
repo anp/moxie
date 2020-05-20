@@ -1,7 +1,10 @@
 #![feature(track_caller)]
 
 use moxie_dom::{
-    elements::{forms::button, text_content::div},
+    elements::{
+        forms::button,
+        text_content::{div, DivBuilder},
+    },
     prelude::*,
 };
 use wasm_bindgen::prelude::*;
@@ -18,7 +21,7 @@ pub fn begin() {
 }
 
 #[topo::nested]
-fn root() -> impl Node {
+fn root() -> DivBuilder {
     let count = state(|| 0);
 
     let mut root = div();

@@ -48,5 +48,3 @@ pub trait Parent<Child: Node>: Node {
         self
     }
 }
-
-impl<P: Node, N: Node> Parent<N> for P {}

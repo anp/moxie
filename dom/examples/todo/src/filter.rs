@@ -1,5 +1,11 @@
 use crate::Todo;
-use moxie_dom::{elements::html::*, prelude::*};
+use moxie_dom::{
+    elements::{
+        html::*,
+        text_content::{LiBuilder, UlBuilder},
+    },
+    prelude::*,
+};
 use Visibility::{Active, All, Completed};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,7 +43,7 @@ impl Visibility {
 
 #[topo::nested]
 #[illicit::from_env(visibility: &Key<Visibility>)]
-pub fn filter_link(to_set: Visibility) -> impl Node {
+pub fn filter_link(to_set: Visibility) -> LiBuilder {
     let visibility = visibility.clone();
     mox! {
         <li>
@@ -51,7 +57,7 @@ pub fn filter_link(to_set: Visibility) -> impl Node {
 }
 
 #[topo::nested]
-pub fn filter() -> impl Node {
+pub fn filter() -> UlBuilder {
     let mut list = ul();
     list = list.class("filters");
     for &to_set in &[All, Active, Completed] {

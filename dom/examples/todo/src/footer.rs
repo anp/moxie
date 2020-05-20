@@ -1,8 +1,13 @@
 use crate::{filter::filter, Todo};
-use moxie_dom::{elements::html::*, prelude::*};
+use moxie_dom::{
+    elements::{
+        forms::ButtonBuilder, html::*, sectioning::FooterBuilder, text_semantics::SpanBuilder,
+    },
+    prelude::*,
+};
 
 #[topo::nested]
-pub fn items_remaining(num_active: usize) -> impl Node {
+pub fn items_remaining(num_active: usize) -> SpanBuilder {
     let bolded = if num_active == 0 { text("No") } else { text(num_active) };
     mox! {
         <span class="todo-count">
@@ -14,7 +19,7 @@ pub fn items_remaining(num_active: usize) -> impl Node {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn clear_completed_button(num_complete: usize) -> impl Node {
+pub fn clear_completed_button(num_complete: usize) -> ButtonBuilder {
     let todos = todos.clone();
     let remove_completed =
         move |_| todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()));
@@ -26,7 +31,7 @@ pub fn clear_completed_button(num_complete: usize) -> impl Node {
 }
 
 #[topo::nested]
-pub fn filter_footer(num_complete: usize, num_active: usize) -> impl Node {
+pub fn filter_footer(num_complete: usize, num_active: usize) -> FooterBuilder {
     let mut footer =
         footer().class("footer").child(items_remaining(num_active).build()).child(filter().build());
 

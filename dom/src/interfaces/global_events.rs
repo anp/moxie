@@ -1,7 +1,7 @@
 //! Trait for defining the methods related to the event handlers shared by all
 //! HTML elements.
 
-use crate::prelude::*;
+use crate::interfaces::{event_target::EventTarget, html_element::HtmlElement};
 use augdom::event::*;
 
 /// An event which can be handled on any element.

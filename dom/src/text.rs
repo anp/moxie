@@ -4,6 +4,7 @@ use crate::{
     interfaces::content_categories::{FlowContent, PhrasingContent},
     memo_node::MemoNode,
 };
+use augdom::Dom;
 use moxie::prelude::*;
 
 /// A text node in the DOM.
@@ -32,3 +33,6 @@ pub fn text(s: impl ToString) -> Text {
     let text_node = memo(s.to_string(), |s| parent.raw_node().create_text_node(s));
     Text(MemoNode::new(text_node))
 }
+
+impl FlowContent for Text {}
+impl PhrasingContent for Text {}

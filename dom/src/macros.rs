@@ -124,6 +124,30 @@ macro_rules! element {
             }
         }
 
+        // content categories
+        $($(
+            impl crate::interfaces::content_categories::[<$category Content>]
+            for [< $name:camel Builder >] {}
+        )+)?
+
+        // children
+        $(
+            // child tags
+            $($(
+                impl crate::interfaces::node::Parent<
+                    crate::elements::just_all_of_it_ok::[<$child_tag:camel Builder>]>
+                for [< $name:camel Builder >] {}
+            )+)?
+
+            // child categories
+            $($(
+                impl<Child> crate::interfaces::node::Parent<Child>
+                for [< $name:camel Builder >]
+                where Child: crate::interfaces::content_categories::[<$child_category Content>] {}
+            )+)?
+        )?
+
+        // attributes
         $(impl [< $name:camel Builder >] {
             $(attr_method! {
                 $(#[$attr_meta])*
@@ -156,23 +180,10 @@ macro_rules! html_element {
 }
 
 macro_rules! only_text_children {
-    (<$tag:ident>) => {
+    (<$name:ident>) => {
         paste::item! {
-            // impl crate::interfaces::node::Parent<crate::memo_node::Text> for [<$name:camel Builder>] {}
-        }
-    };
-}
-
-macro_rules! content_category {
-    (
-        $(#[$outer:meta])*
-        $to_impl:ident: $(< $receives:ty >),+
-    ) => {
-        paste::item! {
-            $(#[$outer])*
-            pub trait $to_impl: crate::interfaces::node::Node {}
-
-            $(impl $to_impl for [< $receives:camel Builder >] {})+
+            impl crate::interfaces::node::Parent<crate::text::Text>
+            for [<$name:camel Builder>] {}
         }
     };
 }
