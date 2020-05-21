@@ -32,7 +32,7 @@ impl MemoNode {
     pub(crate) fn memo_attribute(&self, name: &str, value: String) {
         let name = name.to_owned();
         memo_with(
-            value.to_string(),
+            value,
             |v| {
                 self.node.set_attribute(&name, v);
                 scopeguard::guard(self.node.clone(), move |node| node.remove_attribute(&name))
