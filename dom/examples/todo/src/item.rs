@@ -9,9 +9,8 @@ use moxie_dom::{
 };
 
 #[topo::nested]
-#[illicit::from_env(todos: &Key<Vec<Todo>>)]
+#[illicit::from_env(todos: Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
-    let todos = todos.clone();
     text_input(&todo.text.clone(), true, move |value: String| {
         editing.set(false);
         todos.update(|todos| {
@@ -25,10 +24,9 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
 }
 
 #[topo::nested]
-#[illicit::from_env(todos: &Key<Vec<Todo>>)]
+#[illicit::from_env(todos: Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
     let id = todo.id;
-    let todos = todos.clone();
     let toggle_todos = todos.clone();
 
     let on_click = move |_| {

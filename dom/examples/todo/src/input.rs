@@ -21,12 +21,11 @@ pub fn text_input(
         val
     }
 
-    let change_text = text.clone();
     let clear_text = text.clone();
     mox! {
-        <input type="text" placeholder={placeholder} value={text} autofocus={true}
+        <input type="text" placeholder={placeholder} value={&text} autofocus={true}
             class={if editing { "edit new-todo" } else { "new-todo"}}
-            onchange={move |change| change_text.set(input_value(change))}
+            onchange={move |change| text.set(input_value(change))}
             onkeydown={move |keypress| {
                 if keypress.key() == "Enter" {
                     let value = input_value(keypress);

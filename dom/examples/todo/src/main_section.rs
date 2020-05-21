@@ -5,9 +5,8 @@ use moxie_dom::{
 };
 
 #[topo::nested]
-#[illicit::from_env(todos: &Key<Vec<Todo>>)]
+#[illicit::from_env(todos: Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) -> Span {
-    let todos = todos.clone();
     let on_click = move |_| {
         todos.update(|t| {
             Some(
