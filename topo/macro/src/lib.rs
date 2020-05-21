@@ -5,7 +5,9 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use syn::{
-    punctuated::Punctuated, Attribute, Expr, FnArg, ItemFn, Lit, Meta, NestedMeta, Pat, Token,
+    parse_macro_input, parse_quote, punctuated::Punctuated, spanned::Spanned, AttrStyle, Attribute,
+    AttributeArgs, Expr, ExprTuple, FnArg, ItemFn, Lit, Meta, NestedMeta, Pat, PatIdent, Signature,
+    Token,
 };
 
 /// Transforms a function declaration into a topologically-nested function
@@ -14,32 +16,44 @@ use syn::{
 ///
 /// TODO document slots
 #[proc_macro_attribute]
-pub fn nested(attrs: TokenStream, input: TokenStream) -> TokenStream {
-    let attr_args: syn::AttributeArgs = syn::parse_macro_input!(attrs);
-    let mut input_fn: ItemFn = syn::parse_macro_input!(input);
+pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
+    let args: AttributeArgs = parse_macro_input!(args);
+    let mut input_fn: ItemFn = syn::parse(input).unwrap();
 
-    let mut slot_fields: Punctuated<Expr, Token![,]> =
-        slot_from_args(&attr_args).into_iter().collect();
-    for input in &mut input_fn.sig.inputs {
+    let inner_block = input_fn.block;
+    input_fn.block = if let Some(slot_expr) = slot_expr(args, &mut input_fn.sig) {
+        parse_quote! {{ topo::call_in_slot(#slot_expr, move || #inner_block) }}
+    } else {
+        parse_quote! {{ topo::call(move || #inner_block) }}
+    };
+
+    quote::quote_spanned!(input_fn.span()=>
+        #[track_caller]
+        #input_fn
+    )
+    .into()
+}
+
+/// collect all slot expressions into a single tuple to pass to topo
+fn slot_expr(attr_args: AttributeArgs, sig: &mut Signature) -> Option<ExprTuple> {
+    let mut elems: Punctuated<Expr, Token![,]> = slot_from_args(&attr_args).into_iter().collect();
+
+    for input in &mut sig.inputs {
         if is_slot(input) {
             let slot = match input {
                 FnArg::Receiver(_) => unimplemented!(),
                 FnArg::Typed(t) => pat_to_expr(&*t.pat),
             };
 
-            slot_fields.push(slot);
+            elems.push(slot);
         }
     }
 
-    let inner_block = input_fn.block;
-    if slot_fields.is_empty() {
-        input_fn.block = syn::parse_quote! {{ topo::call(|| #inner_block) }};
+    if !elems.is_empty() {
+        Some(ExprTuple { attrs: vec![], paren_token: sig.paren_token, elems })
     } else {
-        input_fn.block =
-            syn::parse_quote! {{ topo::call_in_slot((#slot_fields), || #inner_block) }};
+        None
     }
-
-    quote::quote!(#[track_caller] #input_fn).into()
 }
 
 /// parse the attribute arguments, retrieving an an expression to use as part of
@@ -65,9 +79,12 @@ fn slot_from_args(args: &[NestedMeta]) -> Option<Expr> {
 
 /// extract an expression from this pattern which references each binding
 /// exposed
-fn pat_to_expr(pat: &Pat) -> syn::Expr {
+fn pat_to_expr(pat: &Pat) -> Expr {
     match pat {
-        Pat::Ident(syn::PatIdent { ident, .. }) => syn::parse_quote!(&#ident),
+        Pat::Ident(PatIdent { ident, .. }) => {
+            let and = Token![&](ident.span());
+            parse_quote!(#and #ident)
+        }
         _ => unimplemented!("#[slot] only supported on simplest argument expressions"),
     }
 }
@@ -93,7 +110,7 @@ fn is_slot(arg: &mut FnArg) -> bool {
 }
 
 fn is_slot_attr(attr: &Attribute) -> bool {
-    if attr.style != syn::AttrStyle::Outer || !attr.tokens.is_empty() {
+    if attr.style != AttrStyle::Outer || !attr.tokens.is_empty() {
         false
     } else {
         attr.path.is_ident("slot")
