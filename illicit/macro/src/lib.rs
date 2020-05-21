@@ -45,7 +45,7 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
 fn bind_env_reference(arg: PatType) -> Local {
     let arg_span = arg.span();
 
-    let ty = match *arg.ty {
+    let init_expr = match *arg.ty {
         syn::Type::Reference(syn::TypeReference { lifetime, mutability, elem, .. }) => {
             if mutability.is_some() {
                 abort!(mutability.span(), "mutable references cannot be passed by environment");
@@ -58,19 +58,17 @@ fn bind_env_reference(arg: PatType) -> Local {
                 );
             }
 
-            elem
+            syn::parse_quote!(&*illicit::Env::expect::<#elem>())
         }
-        ty => abort!(ty.span(), "only references can be passed by environment"),
+
+        ty => syn::parse_quote!(illicit::Env::expect::<#ty>().clone()),
     };
 
     Local {
         attrs: vec![],
         let_token: Token![let](arg_span),
         pat: *arg.pat,
-        init: Some((
-            Token![=](arg_span),
-            Box::new(syn::parse_quote!(&*illicit::Env::expect::<#ty>())),
-        )),
+        init: Some((Token![=](arg_span), Box::new(init_expr))),
         semi_token: Token![;](arg_span),
     }
 }

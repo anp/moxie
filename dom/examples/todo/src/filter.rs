@@ -42,9 +42,8 @@ impl Visibility {
 }
 
 #[topo::nested]
-#[illicit::from_env(visibility: &Key<Visibility>)]
+#[illicit::from_env(visibility: Key<Visibility>)]
 pub fn filter_link(to_set: Visibility) -> Li {
-    let visibility = visibility.clone();
     mox! {
         <li>
             <a style="cursor: pointer;"
