@@ -11,7 +11,8 @@ use moxie_dom::{
 #[topo::nested]
 #[illicit::from_env(todos: Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
-    text_input(&todo.text.clone(), true, move |value: String| {
+    let text = todo.text.clone();
+    text_input(&text, true, move |value: String| {
         editing.set(false);
         todos.update(|todos| {
             let mut todos = todos.to_vec();
