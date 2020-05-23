@@ -128,8 +128,7 @@ impl crate::Dom for Rc<VirtNode> {
                 }
             }
 
-            let children = &mut *parent.children.borrow_mut();
-            std::mem::replace(&mut children[replace_idx.unwrap()], new_child.clone());
+            parent.children.borrow_mut()[replace_idx.unwrap()] = new_child.clone();
             new_child.parent.set(Some(Rc::downgrade(&parent)));
         }
     }
