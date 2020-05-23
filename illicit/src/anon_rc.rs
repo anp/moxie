@@ -68,14 +68,24 @@ impl AnonRc {
     }
 }
 
+/// compare the pointers by their data locations, ignoring vtables
+macro_rules! data_ptrs_eq {
+    ($trt:ident: $anon1:expr, $anon2:expr) => {
+        std::ptr::eq(
+            $anon1 as &dyn $trt as *const dyn $trt as *const u8,
+            $anon2 as &dyn $trt as *const dyn $trt as *const u8,
+        )
+    };
+}
+
 impl PartialEq for AnonRc {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
             && self.depth == other.depth
             && self.name == other.name
             && self.location == other.location
-            && Rc::ptr_eq(&self.inner, &other.inner)
-            && Rc::ptr_eq(&self.debug, &other.debug)
+            && data_ptrs_eq!(Any: &self.inner, &other.inner)
+            && data_ptrs_eq!(Debug: &self.debug, &other.debug)
     }
 }
 impl Eq for AnonRc {}
