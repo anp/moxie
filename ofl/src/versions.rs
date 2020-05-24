@@ -70,15 +70,18 @@ impl Versions {
         for (package, new_version, dependents) in updates {
             let manifest = &mut updated_manifests.get_mut(&package.name).unwrap().1;
 
-            let new_version: toml_edit::Value = new_version.to_string().into();
-
-            manifest["package"]["version"] = toml_edit::Item::Value(new_version.clone());
+            let new_version = toml_edit::value(new_version.to_string());
+            manifest["package"]["version"] = new_version.clone();
             to_write.insert(package.id.clone());
 
             for dependent in dependents {
                 let manifest = &mut updated_manifests.get_mut(&dependent.name).unwrap().1;
 
-                if update_dependency_version(manifest, &package.name, &new_version) {
+                if update_dependency_version(
+                    manifest,
+                    &package.name,
+                    new_version.as_value().unwrap(),
+                ) {
                     to_write.insert(dependent.id.clone());
                 } else {
                     debug!({ 
