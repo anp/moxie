@@ -7,6 +7,7 @@ use tracing_fmt::{filter::EnvFilter, FmtSubscriber};
 mod format;
 mod published;
 mod server;
+mod versions;
 mod website;
 mod workspace;
 
@@ -29,6 +30,7 @@ enum Command {
     Website(website::Website),
     /// Format all targets in the repository, including those under `ofl/`.
     Fmt(format::Format),
+    Versions(versions::Versions),
 }
 
 impl Default for Command {
@@ -52,6 +54,7 @@ fn main() -> Result<(), Error> {
                 Command::Published(opts) => opts.run(config.project_root),
                 Command::Serve(opts) => opts.run_server(config.project_root),
                 Command::Website(opts) => opts.run(config.project_root),
+                Command::Versions(opts) => opts.run(config.project_root),
             }
         },
     )
