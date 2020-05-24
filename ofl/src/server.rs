@@ -7,8 +7,10 @@ use actix_web::{
 use actix_web_actors::ws;
 use crossbeam::channel::{select, unbounded as chan, Receiver, Sender};
 use failure::Error;
-use futures::{compat::Compat, future::Ready, TryFutureExt};
-use futures01::{Async, Future as OldFuture};
+use futures::{
+    future::{LocalBoxFuture, Ready},
+    FutureExt, TryFutureExt,
+};
 use gumdrop::Options;
 use notify::Watcher;
 use session::{ChangeWatchSession, Changed};
@@ -16,6 +18,7 @@ use std::{
     net::IpAddr,
     path::{Path, PathBuf},
     sync::Arc,
+    task::{Context, Poll},
     thread::JoinHandle,
 };
 use tracing::*;
@@ -53,22 +56,25 @@ impl ServerOpts {
         HttpServer::new(move || {
             let session_tx = session_tx.clone();
             let watcher_middleware = watcher.clone();
-            App::new()
-                .wrap(middleware::Logger::default())
-                .service(web::resource("/ch-ch-ch-changes").route(web::get().to(
-                    move |req, stream: web::Payload| {
-                        let session_tx = session_tx.clone();
+            let changes_service = web::resource("/ch-ch-ch-changes").route(web::get().to(
+                move |req, stream: web::Payload| {
+                    let session_tx = session_tx.clone();
+                    async move {
                         let session = ChangeWatchSession::new(session_tx);
                         ws::start(session, &req, stream)
-                    },
-                )))
+                    }
+                },
+            ));
+
+            App::new()
+                .wrap(middleware::Logger::default())
+                .service(changes_service)
                 .wrap(watcher_middleware)
                 .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
         })
         .bind((self.addr, self.port))
         .unwrap()
-        .run()
-        .unwrap();
+        .run();
         Ok(())
     }
 }
@@ -81,7 +87,13 @@ fn pump_channels(
     let (event_tx, event_rx) = chan();
     let mut sessions = Vec::new();
 
-    let mut watcher = notify::watcher(event_tx, std::time::Duration::from_millis(500)).unwrap();
+    let mut watcher = notify::RecommendedWatcher::new_immediate(move |ev| {
+        event_tx.send(ev).unwrap();
+    })
+    .unwrap();
+    watcher
+        .configure(notify::Config::OngoingEvents(Some(std::time::Duration::from_millis(500))))
+        .unwrap();
 
     loop {
         select! {
@@ -173,14 +185,14 @@ where
     S::Future: 'static,
 {
     type Error = S::Error;
-    type Future = Compat<Ready<Result<Self::Transform, Self::InitError>>>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
     type InitError = ();
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
     type Transform = WatchHandle<S>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        futures::future::ok(WatchHandle { service, uri_tx: self.uri_tx.clone() }).compat()
+        futures::future::ok(WatchHandle { service, uri_tx: self.uri_tx.clone() })
     }
 }
 
@@ -193,33 +205,29 @@ impl<S, B> Service for WatchHandle<S>
 where
     B: MessageBody,
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>>,
-    S::Future: 'static,
+    S::Future: Future<Output = Result<S::Response, S::Error>> + 'static,
 {
     type Error = S::Error;
-    type Future = Box<
-        dyn OldFuture<
-                Item = <<S as Service>::Future as OldFuture>::Item,
-                Error = <<S as Service>::Future as OldFuture>::Error,
-            > + 'static,
-    >;
+    type Future = LocalBoxFuture<'static, Result<S::Response, S::Error>>;
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
 
-    fn poll_ready(&mut self) -> Result<Async<()>, Self::Error> {
-        Ok(Async::Ready(()))
+    fn poll_ready(&mut self, _cx: &mut Context) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, req: Self::Request) -> Self::Future {
         let result = self.service.call(req);
         let uri_tx = self.uri_tx.clone();
-        let mapped = result.map(move |response| {
-            if response.status().is_success() {
-                uri_tx
-                    .send(response.request().uri().clone())
-                    .unwrap_or_else(|_| warn!("wasn't able to send a new uri to watch"));
-            }
-            response
-        });
-        Box::new(mapped)
+        result
+            .map_ok(move |response| {
+                if response.status().is_success() {
+                    uri_tx
+                        .send(response.request().uri().clone())
+                        .unwrap_or_else(|_| warn!("wasn't able to send a new uri to watch"));
+                }
+                response
+            })
+            .boxed_local()
     }
 }
