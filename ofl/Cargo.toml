@@ -8,20 +8,20 @@ description = "outcome-oriented project task tool, as in 'all task runners are..
 repository = "https://github.com/anp/moxie/tree/master/ofl"
 
 [dependencies]
-actix = "0.8"
-actix-files = "0.1"
-actix-web = "1"
-actix-web-actors = "1"
+actix = "0.9"
+actix-files = "0.2"
+actix-web = "2"
+actix-web-actors = "2"
 cargo_metadata = "0.10.0"
 crates_io_api = "0.5"
 crossbeam = "=0.7.2"
 dialoguer = "0.6"
 failure = "0.1"
-futures01 = { version = "0.1", package = "futures" }
+futures = "0.3"
 gumdrop = "0.6"
-http = "0.1.19"
+http = "0.2"
 mdbook = "0.3.1"
-notify = "5.0.0-pre.1"
+notify = "5.0.0-pre.2"
 opener = "0.4"
 pathfinding = "1.1.12"
 pretty_env_logger = "0.3"
@@ -31,8 +31,3 @@ toml_edit = "0.1.5"
 tracing = { version = "^0.1", features = [ "log" ] }
 tracing-fmt = "0.0.1-alpha.3"
 walkdir = "2.2.9"
-
-[dependencies.futures]
-package = "futures-preview"
-version = "0.3.0-alpha.18"
-features = [ "compat" ]

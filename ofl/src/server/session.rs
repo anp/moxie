@@ -38,28 +38,30 @@ impl Handler<Changed> for ChangeWatchSession {
     }
 }
 
-impl StreamHandler<ws::Message, ws::ProtocolError> for ChangeWatchSession {
-    fn handle(&mut self, msg: ws::Message, cx: &mut Self::Context) {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChangeWatchSession {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, cx: &mut Self::Context) {
         match msg {
-            ws::Message::Ping(msg) => {
+            Ok(ws::Message::Ping(msg)) => {
                 self.tick_heartbeat();
                 cx.pong(&msg);
             }
-            ws::Message::Pong(_) => {
+            Ok(ws::Message::Pong(_)) => {
                 self.tick_heartbeat();
             }
-            ws::Message::Close(_) => {
+            Ok(ws::Message::Close(_)) => {
                 cx.stop();
             }
-            ws::Message::Nop => (),
-            ws::Message::Text(text) => {
+            Ok(ws::Message::Nop) => (),
+            Ok(ws::Message::Text(text)) => {
                 self.tick_heartbeat();
                 debug!("ignoring text ws message {:?}", text);
             }
-            ws::Message::Binary(_bin) => {
+            Ok(ws::Message::Binary(_bin)) => {
                 self.tick_heartbeat();
                 debug!("ignoring binary ws message");
             }
+            Ok(ws::Message::Continuation(_)) => self.tick_heartbeat(),
+            Err(e) => warn!({ %e }, "websocket protocol error"),
         }
     }
 }
@@ -75,7 +77,7 @@ impl Actor for ChangeWatchSession {
                 cx.stop();
                 return;
             }
-            cx.ping("");
+            cx.ping(b"");
         });
     }
 }
