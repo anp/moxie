@@ -1,4 +1,4 @@
-use cargo_metadata::{Metadata, PackageId};
+use cargo_metadata::{Metadata, Package, PackageId};
 use failure::{Error, ResultExt};
 use std::{
     collections::BTreeMap,
@@ -41,6 +41,26 @@ impl Workspace {
             .arg(&self.rustfmt_toolchain)
             .output()?)
     }
+
+    /// Returns a list of all crates which express a dependency upon `id` in
+    /// their manifest.
+    pub fn local_dependents(&self, id: &PackageId) -> Vec<Package> {
+        let name = &self.metadata[id].name;
+        self.metadata
+            .packages
+            .iter()
+            .filter(|p| p.dependencies.iter().any(|d| &d.name == name))
+            .cloned()
+            .collect()
+    }
+
+    pub fn get_member(&self, id: &PackageId) -> Option<&Package> {
+        if self.metadata.workspace_members.iter().any(|m| m == id) {
+            Some(&self.metadata[id])
+        } else {
+            None
+        }
+    }
 }
 
 /// Find which rustfmt we should use, falling back to the version in
@@ -64,7 +84,7 @@ fn rustfmt_toolchain(project_root: &Path) -> String {
 fn metadata_for_directory(dir: impl AsRef<Path>) -> Result<Metadata, Error> {
     Ok(cargo_metadata::MetadataCommand::new()
         .manifest_path(dir.as_ref().join("Cargo.toml"))
-        .current_dir(dir)
+        .current_dir(dir.as_ref())
         .exec()
         .context("collecting workspace metadata")?)
 }
