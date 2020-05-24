@@ -1,6 +1,6 @@
 [package]
 name = "moxie"
-version = "0.2.3"
+version = "0.3.0-pre"
 edition = "2018"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 license = "MIT/Apache-2.0"
@@ -16,15 +16,15 @@ scopeguard = "1"
 tracing = "^0.1"
 
 [dependencies.illicit]
-version = "0.9.2"
+version = "0.10.0-pre"
 path = "illicit"
 
 [dependencies.mox]
-version = "0.2.0"
+version = "0.3.0-pre"
 path = "mox"
 
 [dependencies.topo]
-version = "0.9.4"
+version = "0.10.0-pre"
 path = "topo"
 
 [dev-dependencies]

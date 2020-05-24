@@ -1,6 +1,6 @@
 [package]
 name = "illicit-macro"
-version = "0.9.0"
+version = "0.10.0-pre"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"

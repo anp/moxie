@@ -84,8 +84,8 @@ impl Versions {
                 ) {
                     to_write.insert(dependent.id.clone());
                 } else {
-                    debug!({ 
-                        crate = %dependent.name, 
+                    debug!({
+                        crate = %dependent.name,
                         searched_for = %package.name,
                     }, "skipping, no dependency or version found");
                     continue;
@@ -100,6 +100,7 @@ impl Versions {
             }
 
             info!({ crate = %package.name }, "writing updated manifest");
+            std::fs::write(&package.manifest_path, manifest.to_string())?;
         }
 
         Ok(())

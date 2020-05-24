@@ -1,6 +1,6 @@
 [package]
 name = "topo"
-version = "0.9.4"
+version = "0.10.0-pre"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -10,8 +10,8 @@ repository = "https://github.com/anp/moxie"
 include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]
 
 [dependencies]
-illicit = { path = "../illicit", version = "0.9.2" }
-topo-macro = { path = "macro", version = "0.9.0" }
+illicit = { path = "../illicit", version = "0.10.0-pre"}
+topo-macro = { path = "macro", version = "0.10.0-pre"}
 
 [dev-dependencies]
 criterion = "0.3"
