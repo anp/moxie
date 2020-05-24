@@ -128,22 +128,20 @@ fn update_dependency_version<'doc>(
                 // it's a table but it only specifies path or something else weird
                 return false;
             }
-        } else {
-            if let Some(dep) = dependencies[&package_name].as_value_mut() {
-                if let Some(inline) = dep.as_inline_table_mut() {
-                    if let Some(version) = inline.get_mut("version") {
-                        version
-                    } else {
-                        // it's an inline table but it only specifies path or something else weird
-                        return false;
-                    }
+        } else if let Some(dep) = dependencies[&package_name].as_value_mut() {
+            if let Some(inline) = dep.as_inline_table_mut() {
+                if let Some(version) = inline.get_mut("version") {
+                    version
                 } else {
-                    dep
+                    // it's an inline table but it only specifies path or something else weird
+                    return false;
                 }
             } else {
-                // its not a table, not an inline table, and not a value...???
-                return false;
+                dep
             }
+        } else {
+            // its not a table, not an inline table, and not a value...???
+            return false;
         };
 
     *dep_version = new_version.clone();
