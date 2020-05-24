@@ -2,7 +2,7 @@ use failure::Error;
 use gumdrop::Options;
 use std::path::{Path, PathBuf};
 use tracing::*;
-use tracing_fmt::{filter::EnvFilter, FmtSubscriber};
+use tracing_subscriber::{filter::EnvFilter, fmt::Subscriber};
 
 mod format;
 mod published;
@@ -43,7 +43,7 @@ fn main() -> Result<(), Error> {
     let config = Config::parse_args_default_or_exit();
     let level = if config.verbose { "debug" } else { "info" };
     tracing::subscriber::with_default(
-        FmtSubscriber::builder().with_filter(EnvFilter::new(level)).finish(),
+        Subscriber::builder().with_env_filter(EnvFilter::new(level)).finish(),
         || {
             debug!("logging init'd");
 
