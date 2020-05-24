@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use actix_rt::System;
 use actix_web::{
     dev::{MessageBody, Service, ServiceRequest, ServiceResponse, Transform},
     http::uri::Uri,
@@ -47,36 +48,46 @@ impl ServerOpts {
     pub fn run_server(self, root_path: PathBuf) -> Result<(), Error> {
         let (session_tx, session_rx) = chan();
         let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
-
-        let root_url = format!("http://[{}]:{}/index.html", &self.addr, &self.port);
-        std::thread::spawn(move || {
-            opener::open(&root_url).unwrap();
-        });
-
-        HttpServer::new(move || {
-            let session_tx = session_tx.clone();
-            let watcher_middleware = watcher.clone();
-            let changes_service = web::resource("/ch-ch-ch-changes").route(web::get().to(
-                move |req, stream: web::Payload| {
-                    let session_tx = session_tx.clone();
-                    async move {
-                        let session = ChangeWatchSession::new(session_tx);
-                        ws::start(session, &req, stream)
-                    }
-                },
-            ));
-
-            App::new()
-                .wrap(middleware::Logger::default())
-                .service(changes_service)
-                .wrap(watcher_middleware)
-                .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
-        })
-        .bind((self.addr, self.port))
-        .unwrap()
-        .run();
+        let mut runner = System::new("ofl");
+        runner.block_on(http_server(self.addr, self.port, root_path, session_tx, watcher))?;
         Ok(())
     }
+}
+
+fn http_server(
+    addr: IpAddr,
+    port: u16,
+    root_path: PathBuf,
+    session_tx: Sender<Addr<ChangeWatchSession>>,
+    watcher: Arc<FilesWatcher>,
+) -> impl Future<Output = std::io::Result<()>> {
+    let root_url = format!("http://[{}]:{}/index.html", addr, port);
+    std::thread::spawn(move || {
+        opener::open(&root_url).unwrap();
+    });
+
+    HttpServer::new(move || {
+        let session_tx = session_tx.clone();
+        let watcher_middleware = watcher.clone();
+        let changes_service = web::resource("/ch-ch-ch-changes").route(web::get().to(
+            move |req, stream: web::Payload| {
+                let session_tx = session_tx.clone();
+                async move {
+                    let session = ChangeWatchSession::new(session_tx);
+                    ws::start(session, &req, stream)
+                }
+            },
+        ));
+
+        App::new()
+            .wrap(middleware::Logger::default())
+            .service(changes_service)
+            .wrap(watcher_middleware)
+            .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
+    })
+    .bind((addr, port))
+    .unwrap()
+    .run()
 }
 
 #[allow(clippy::drop_copy, clippy::zero_ptr)] // wtf crossbeam
