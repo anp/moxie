@@ -84,7 +84,7 @@ fn http_server(
             .wrap(middleware::Logger::default())
             .service(changes_service)
             .wrap(watcher_middleware)
-            .wrap_fn(|req, srv| srv.call(req).map_ok(inject::reload_on_changes_into_html))
+            .wrap_fn(|req, srv| srv.call(req).and_then(inject::reload_on_changes_into_html))
             .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
     })
     .bind((addr, port))

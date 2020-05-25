@@ -1,59 +1,53 @@
 use actix_web::{
-    dev::{BodySize, MessageBody, ResponseBody, ServiceResponse},
+    dev::{MessageBody, ResponseBody, ServiceResponse},
     error::Error as WebError,
     web,
 };
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
-};
+use futures::stream::{Stream, StreamExt};
 use tracing::*;
 
-pub fn reload_on_changes_into_html<B>(
-    response: ServiceResponse<B>,
-) -> ServiceResponse<XmlRewritingBody<B>>
+pub async fn reload_on_changes_into_html<B>(
+    mut response: ServiceResponse<B>,
+) -> Result<ServiceResponse<B>, actix_web::error::Error>
 where
-    B: MessageBody,
+    B: MessageBody + Unpin,
 {
     if let Some(content_type) = response.headers().get("content-type") {
         if content_type != "text/html" {
-            return XmlRewritingBody::nop(response);
+            return Ok(response);
         }
     }
 
     let path = response.request().path();
     if path == "/ch-ch-ch-changes" {
-        return XmlRewritingBody::nop(response);
+        return Ok(response);
     }
     info!({ %path }, "serving html page");
 
-    XmlRewritingBody::nop(response)
-}
+    let mut body = collect_body(response.take_body()).await;
 
-pub struct XmlRewritingBody<B> {
-    inner: ResponseBody<B>,
-}
-
-impl<B> XmlRewritingBody<B> {
-    pin_utils::unsafe_pinned!(inner: ResponseBody<B>);
-
-    fn nop(response: ServiceResponse<B>) -> ServiceResponse<Self> {
-        response.map_body(|_, inner| ResponseBody::Body(Self { inner }))
-    }
-}
-
-impl<B> MessageBody for XmlRewritingBody<B>
-where
-    B: MessageBody + Unpin,
-{
-    fn size(&self) -> BodySize {
-        self.inner.size()
+    if let Some(head_end) = body.find("</head>") {
+        info!({ position = head_end }, "inserting script tag");
+        body.insert_str(head_end, RELOAD_ON_CHANGES);
     }
 
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
-    ) -> Poll<Option<Result<web::Bytes, WebError>>> {
-        <ResponseBody<B> as MessageBody>::poll_next(self.inner(), cx)
-    }
+    Ok(response.map_body(|_, _| ResponseBody::Other(body.into())))
 }
+
+async fn collect_body(
+    mut body: impl Stream<Item = Result<web::Bytes, WebError>> + Unpin,
+) -> String {
+    let mut buf = Vec::new();
+
+    while let Some(Ok(bytes)) = body.next().await {
+        buf.extend(bytes);
+    }
+
+    String::from_utf8(buf).unwrap()
+}
+
+const RELOAD_ON_CHANGES: &str = concat!(
+    "<script>",
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/reloadOnChanges.js")),
+    "</script>"
+);
