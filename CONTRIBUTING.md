@@ -63,8 +63,8 @@ $ cargo server
 
 This will start a local HTTP server providing access to the project directory. It also watches the
 filesystem for changes to files it has served, delivering notifications when any of them
-change. The examples include `project-project/reloadOnChanges.js` which opens a websocket and
-reloads the page when changes to the examples are detected.
+change. The server injects the necessary JavaScript into each HTML page to open a websocket
+connection to listen for changes, reloading when changes occur.
 
 #### Releases
 
