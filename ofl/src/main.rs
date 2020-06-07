@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use tracing::*;
 use tracing_subscriber::{filter::LevelFilter, fmt::Subscriber, Layer};
 
+mod coverage;
 mod format;
 mod published;
 mod server;
@@ -25,6 +26,7 @@ struct Config {
 
 #[derive(Debug, Options)]
 enum Command {
+    Coverage(coverage::Coverage),
     Published(published::EnsurePublished),
     Serve(server::ServerOpts),
     Website(website::Website),
@@ -48,6 +50,7 @@ fn main() -> Result<(), Error> {
     let command = config.command.unwrap_or_default();
 
     match command {
+        Command::Coverage(opts) => opts.run(config.project_root),
         Command::Fmt(opts) => opts.run(config.project_root),
         Command::Published(opts) => opts.run(config.project_root),
         Command::Serve(opts) => opts.run_server(config.project_root),
