@@ -57,6 +57,9 @@ jobs:
     - run: cargo docs-ofl
     - run: cargo build-website
 
+    - name: assert the git repo hasn't changed
+      if: runner.os == 'Linux'
+      run: output=$(git status --porcelain) && [ -z "$output" ]
     - name: archive website
       if: runner.os == 'Linux'
       uses: actions/upload-artifact@v2
