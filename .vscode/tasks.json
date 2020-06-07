@@ -7,6 +7,7 @@
             "label": "core crates",
             "type": "shell",
             "presentation": {
+                "group": "main",
                 "panel": "dedicated"
             },
             "runOptions": {
@@ -25,6 +26,7 @@
             "label": "dom crates",
             "type": "shell",
             "presentation": {
+                "group": "main",
                 "panel": "dedicated"
             },
             "runOptions": {
@@ -43,6 +45,7 @@
             "label": "project website",
             "type": "shell",
             "presentation": {
+                "group": "tools",
                 "panel": "dedicated"
             },
             "runOptions": {
@@ -61,6 +64,7 @@
             "label": "project server",
             "type": "shell",
             "presentation": {
+                "group": "tools",
                 "panel": "dedicated"
             },
             "runOptions": {
@@ -70,13 +74,15 @@
             "command": "cargo",
             "args": [
                 "server"
-            ]
+            ],
+            "problemMatcher": []
         },
         {
             "label": "ofl crates",
             "type": "shell",
             "presentation": {
-                "panel": "dedicated"
+                "group": "tools",
+                "panel": "dedicated",
             },
             "runOptions": {
                 "runOn": "folderOpen"
@@ -89,6 +95,6 @@
             "problemMatcher": [
                 "$rustc-watch"
             ]
-        },
+        }
     ]
 }
