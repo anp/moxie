@@ -32,6 +32,15 @@ jobs:
 
     - run: rustup update
 
+    # build all crates, collect timings
+    - run: cargo build-times --manifest-path ofl/Cargo.toml
+    - run: cargo build-times
+    - name: archive build timings
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-times
+        path: "**/cargo-timing.html"
+
     # tests
     - run: cargo test-core
     - run: cargo test-augdom
@@ -43,12 +52,16 @@ jobs:
     - run: cargo test-dom-drivertest
 
     # examples, docs, website
-    - run: cargo build-dom-hacking
-    - run: cargo build-dom-todo
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: cargo build-website
 
+    - name: archive website
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v2
+      with:
+        name: website
+        path: target/website
     - name: promote website to prod, ensure crates published
       if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
       env:

@@ -23,6 +23,7 @@ test-core = "test --all-targets --package illicit --package moxie --package topo
 docs-all = "doc --workspace --no-deps --all-features"
 docs-clean = "clean --doc"
 
+build-times = "build --workspace --all-targets --all-features -Z timings"
 fmt-project = "ofl fmt"
 
 ####################################################################################################
