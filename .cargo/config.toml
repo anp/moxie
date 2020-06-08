@@ -84,7 +84,7 @@ build-website = "ofl website build target/website"
 ####################################################################################################
 # ofl
 
-ofl = "run --manifest-path ofl/Cargo.toml --"
+ofl = "run --manifest-path ofl/Cargo.toml --release --"
 server = "watch -w ofl/ -x ofl"
 
 ofl-flow = """
