@@ -38,6 +38,12 @@ jobs:
     # tests with coverage
     - run: cargo ofl coverage collect test-core
     - run: cargo ofl coverage collect test-dom
+    - run: cargo ofl coverage report
+    - name: archive coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: target/coverage/html
 
     # browser tests -- no coverage
     - run: cargo test-augdom

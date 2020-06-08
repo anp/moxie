@@ -27,8 +27,11 @@ notify = "5.0.0-pre.2"
 opener = "0.4"
 pathfinding = "2.0.4"
 pin-utils = "0.1.0"
+rustc-hash = "1.1.0"
 semver = "0.9"
+serde_json = "1.0.53"
 spongedown = "0.4.1"
+tempfile = "3.1.0"
 toml_edit = "0.1.5"
 tracing = { version = "^0.1", features = [ "log" ] }
 tracing-subscriber = { version = "0.2.5", features = [ "fmt" ] }
