@@ -92,7 +92,7 @@ stdout:
 fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
     info!({ %name, %version }, "checking crates.io for");
 
-    let client = crates::SyncClient::new();
+    let client = crates::SyncClient::new("ofl", std::time::Duration::from_secs(1))?;
     let krate = client.full_crate(name, true /* all_versions */)?;
     let versions = &krate.versions;
 

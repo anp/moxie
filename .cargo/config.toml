@@ -1,3 +1,11 @@
+[profile.coverage]
+inherits = "dev"
+codegen-units = 1
+incremental = false
+opt-level = 0
+overflow-checks = false
+panic = "abort"
+
 [alias]
 ####################################################################################################
 # core crates:
@@ -9,20 +17,19 @@ core-flow = """
 watch --clear
     -x fmt-project
     -x clippy-core
-    -x check-core
     -x test-core
     -x docs-clean
     -x docs-all
 """
 
 bench-core = "bench --all-targets --package illicit --package moxie --package topo"
-check-core = "check --all-targets --package illicit --package moxie --package topo"
 clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro"
 test-core = "test --all-targets --package illicit --package moxie --package topo --package topo-macro"
 
 docs-all = "doc --workspace --no-deps --all-features"
 docs-clean = "clean --doc"
 
+build-times = "build --workspace --all-targets --all-features -Z timings"
 fmt-project = "ofl fmt"
 
 ####################################################################################################
@@ -30,21 +37,16 @@ fmt-project = "ofl fmt"
 
 dom-flow = """
 watch --clear
-    -x test-dom-lib
+    -x test-dom
     -x test-augdom
     -x test-dom-lib-browser
     -x test-dom-drivertest
-    -x test-ssr-example
     -x build-dom-hacking
     -x test-dom-hacking
     -x build-dom-todo
     -x test-dom-todo
     -x clippy-dom
 """
-
-check-dom-lib = "check --package moxie-dom"
-check-dom-hacking = "check --package dom-hacking"
-check-dom-todo = "check --package todomvc-moxie"
 
 wa-pack = "run --manifest-path dom/local-wasm-pack/Cargo.toml --"
 wa-pack-build = "wa-pack build --target web --out-name index"
@@ -54,13 +56,15 @@ build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
+# browser tests
 test-augdom = "wa-test dom/augdom -- --all-features"
-test-dom-lib = "test --package moxie-dom --all-targets"
 test-dom-lib-browser = "wa-test dom"
 test-dom-drivertest = "wa-test dom/examples/drivertest"
 test-dom-hacking = "wa-test dom/examples/hacking"
 test-dom-todo = "wa-test dom/examples/todo"
-test-ssr-example = "test --package ssr-poc --all-targets"
+
+# standalones
+test-dom = "test --package moxie-dom --package ssr-poc --all-targets"
 
 # dom utilities
 clippy-dom = """clippy
@@ -80,18 +84,16 @@ build-website = "ofl website build target/website"
 ####################################################################################################
 # ofl
 
-ofl = "run --manifest-path ofl/Cargo.toml --"
+ofl = "run --manifest-path ofl/Cargo.toml --release --"
 server = "watch -w ofl/ -x ofl"
 
 ofl-flow = """
 watch --clear -w ofl
     -x clippy-ofl
-    -x check-ofl
     -x test-ofl
     -x docs-ofl
 """
 
-check-ofl = "check --manifest-path ofl/Cargo.toml --workspace"
 clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --workspace"
 test-ofl = "test --manifest-path ofl/Cargo.toml --workspace"
 docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"

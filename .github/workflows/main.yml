@@ -13,42 +13,63 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-
-    # WALL'O'CACHE!
-    - name: cache cargo registry
-      uses: actions/cache@v1
+    - uses: actions/cache@v2
       with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-registry-
-    - name: cache cargo index
-      uses: actions/cache@v1
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-index-
+          ${{ runner.os }}-cargo-
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ofl/target
 
     - run: rustup update
 
-    # tests
-    - run: cargo test-core
+    # build all crates, collect timings
+    - run: cargo build-times
+      working-directory: ofl
+    - run: cargo build-times
+    - name: archive build timings
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-times
+        path: "**/cargo-timing.html"
+
+    # tests with coverage
+    - run: cargo ofl coverage collect test-core
+    - run: cargo ofl coverage collect test-dom
+    - run: cargo ofl coverage report
+    - name: archive coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: target/coverage/html
+    - uses: codecov/codecov-action@v1
+      with:
+        file: ./target/coverage/lcov.info
+        fail_ci_if_error: true
+
+    # browser tests -- no coverage
     - run: cargo test-augdom
-    - run: cargo test-dom-lib
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-hacking
     - run: cargo test-dom-todo
-    - run: cargo test-ssr-example
     - run: cargo test-dom-drivertest
 
     # examples, docs, website
-    - run: cargo build-dom-hacking
-    - run: cargo build-dom-todo
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: cargo build-website
 
+    - name: assert the git repo hasn't changed
+      if: runner.os == 'Linux'
+      run: output=$(git status --porcelain) && [ -z "$output" ]
+    - name: archive website
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v2
+      with:
+        name: website
+        path: target/website
     - name: promote website to prod, ensure crates published
       if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
       env:
