@@ -60,7 +60,7 @@ pub use augdom as raw;
 #[cfg(any(feature = "webdom", doc))]
 pub fn boot<Root>(new_parent: impl Into<augdom::Node>, root: impl FnMut() -> Root + 'static)
 where
-    Root: interfaces::node::Node + 'static,
+    Root: interfaces::node::Child + 'static,
 {
     embed::WebRuntime::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
@@ -75,7 +75,7 @@ where
 #[cfg(any(feature = "rsdom", doc))]
 pub fn render_html<Root>(root: impl FnMut() -> Root + 'static) -> String
 where
-    Root: interfaces::node::Node + 'static,
+    Root: interfaces::node::Child + 'static,
 {
     use augdom::Dom;
 
