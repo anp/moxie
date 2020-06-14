@@ -33,12 +33,29 @@ pub trait Node: sealed::Memoized + Sized {
     }
 }
 
+/// A value which can be bound as a child to a DOM node.
+pub trait Child {
+    /// Returns the "raw" node for this child to bind to its parent.
+    fn to_bind(&self) -> &augdom::Node;
+}
+
+impl<N> Child for N
+where
+    N: Node,
+{
+    fn to_bind(&self) -> &augdom::Node {
+        self.raw_node_that_has_sharp_edges_please_be_careful()
+    }
+}
+
 /// A node which accepts children.
-pub trait Parent<Child: Node>: Node {
+///
+/// > Note: `C` is constrained by `Child` rather than `Node` to allow custom
+/// components to be bound directly to DOM types.
+pub trait Parent<C: Child>: Node {
     /// Add a child to this node.
-    fn child(self, child: Child) -> Self {
-        let new_child = child.raw_node_that_has_sharp_edges_please_be_careful();
-        self.node().ensure_child_attached(new_child);
+    fn child(self, child: C) -> Self {
+        self.node().ensure_child_attached(child.to_bind());
         self
     }
 }

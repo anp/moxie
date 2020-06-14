@@ -15,65 +15,65 @@
 //! 3. Specific content categories, which describe rare categories shared
 //!    only by a few elements, sometimes only in a specific context.
 
-use crate::interfaces::node::Node;
+use crate::interfaces::node::Child;
 
 /// Elements belonging to the metadata content category modify the presentation
 /// or the behavior of the rest of the document, set up links to other
 /// documents, or convey other out of band information.
-pub trait MetadataContent: Node {}
+pub trait MetadataContent: Child {}
 
 /// Elements belonging to the flow content category typically contain text or
 /// embedded content.
-pub trait FlowContent: Node {}
+pub trait FlowContent: Child {}
 
 /// Elements belonging to the sectioning content model create a section in the
 /// current outline that defines the scope of <header> elements, <footer>
 /// elements, and heading content.
-pub trait SectioningContent: Node {}
+pub trait SectioningContent: Child {}
 
 /// Heading content defines the title of a section, whether marked by an
 /// explicit sectioning content element, or implicitly defined by the heading
 /// content itself.
-pub trait HeadingContent: Node {}
+pub trait HeadingContent: Child {}
 
 /// Phrasing content defines the text and the mark-up it contains. Runs of
 /// phrasing content make up paragraphs.
-pub trait PhrasingContent: Node {}
+pub trait PhrasingContent: Child {}
 
 /// Embedded content imports another resource or inserts content from another
 /// mark-up language or namespace into the document.
-pub trait EmbeddedContent: Node {}
+pub trait EmbeddedContent: Child {}
 
 /// Interactive content includes elements that are specifically designed for
 /// user interaction.
-pub trait InteractiveContent: Node {}
+pub trait InteractiveContent: Child {}
 
 /// Form-associated content comprises elements that have a form owner, exposed
 /// by a form attribute. A form owner is either the containing <form> element or
 /// the element whose id is specified in the form attribute.
-pub trait FormAssociatedContent: Node {}
+pub trait FormAssociatedContent: Child {}
 
 /// Elements that are listed in the form.elements and fieldset.elements IDL
 /// collections.
-pub trait ListedContent: Node {}
+pub trait ListedContent: Child {}
 
 /// Elements that can be associated with <label> elements.
-pub trait LabelableContent: Node {}
+pub trait LabelableContent: Child {}
 
 /// Elements that can be used for constructing the form data set when the form
 /// is submitted.
-pub trait SubmittableContent: Node {}
+pub trait SubmittableContent: Child {}
 
 /// Elements that can be affected when a form is reset.
-pub trait ResettableContent: Node {}
+pub trait ResettableContent: Child {}
 
 /// Content is palpable when it's neither empty or hidden; it is content that is
 /// rendered and is substantive. Elements whose model is flow content or
 /// phrasing content should have at least one node which is palpable.
-pub trait PalpableContent: Node {}
+pub trait PalpableContent: Child {}
 
 /// Script-supporting elements are elements which don't directly contribute to
 /// the rendered output of a document. Instead, they serve to support scripts,
 /// either by containing or specifying script code directly, or by specifying
 /// data that will be used by scripts.
-pub trait ScriptSupportingContent: Node {}
+pub trait ScriptSupportingContent: Child {}
