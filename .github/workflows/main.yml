@@ -26,9 +26,11 @@ jobs:
     - run: rustup update
 
     # build all crates, collect timings
-    - run: cargo build-times
+    - name: build ofl
+      run: cargo build-times --release
       working-directory: ofl
-    - run: cargo build-times
+    - name: build moxie
+      run: cargo build-times
     - name: archive build timings
       uses: actions/upload-artifact@v2
       with:
@@ -36,8 +38,10 @@ jobs:
         path: "**/cargo-timing.html"
 
     # tests with coverage
-    - run: cargo ofl coverage collect test-core
-    - run: cargo ofl coverage collect test-dom
+    - name: core tests
+      run: cargo ofl coverage collect test-core
+    - name: dom tests
+      run: cargo ofl coverage collect test-dom
     - run: cargo ofl coverage report
     - name: archive coverage
       uses: actions/upload-artifact@v2
