@@ -1,11 +1,22 @@
 #![feature(track_caller)]
 
 use augdom::{event::Click, testing::Query};
-use moxie_dom::{elements::html::button, prelude::*};
+use moxie_dom::{
+    elements::html::{button, div},
+    prelude::*,
+};
 use wasm_bindgen_test::*;
 
 struct Counter {
     button: moxie_dom::elements::forms::Button,
+}
+
+impl moxie_dom::interfaces::content_categories::FlowContent for Counter {}
+
+impl moxie_dom::interfaces::node::Child for Counter {
+    fn to_bind(&self) -> &augdom::Node {
+        self.button.to_bind()
+    }
 }
 
 fn counter() -> CounterBuilder {
@@ -16,12 +27,6 @@ fn counter() -> CounterBuilder {
 struct CounterBuilder {
     default_value: Option<i32>,
     text: Option<String>,
-}
-
-impl moxie_dom::interfaces::node::Child for Counter {
-    fn to_bind(&self) -> &augdom::Node {
-        self.button.to_bind()
-    }
 }
 
 impl CounterBuilder {
@@ -53,6 +58,21 @@ impl CounterBuilder {
 }
 
 wasm_bindgen_test_configure!(run_in_browser);
+
+#[wasm_bindgen_test]
+pub async fn binds_to_div() {
+    let render_counter_as_child = || mox!(<div><counter button_text="child" value=9/></div>);
+    let test_root = augdom::Node::new("div");
+    moxie_dom::boot(test_root.clone(), render_counter_as_child);
+
+    test_root.find().by_text("child (9)").until().many().await;
+    assert_eq!(
+        test_root.first_child().unwrap().to_string(),
+        "<div>
+  <button>child (9)</button>
+</div>",
+    );
+}
 
 #[wasm_bindgen_test]
 pub async fn renders_and_interacts() {
