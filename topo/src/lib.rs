@@ -104,6 +104,14 @@ impl Id {
     pub fn current() -> Self {
         Point::with_current(|current| current.id)
     }
+
+    fn child(&self, callsite: &Callsite, slot: impl Hash) -> Self {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        callsite.hash(&mut hasher);
+        slot.hash(&mut hasher);
+        Id(hasher.finish())
+    }
 }
 
 impl std::fmt::Debug for Id {
@@ -127,18 +135,14 @@ struct Point {
 }
 
 impl Point {
-    /// Mark a child Point in the topology.
+    /// Mark a child Point in the topology, calling `child` within it.
     fn enter_child<R>(&self, callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
         self.increment_count(callsite);
-
-        let mut hasher = DefaultHasher::new();
-        self.id.hash(&mut hasher);
-        callsite.hash(&mut hasher);
-        slot.hash(&mut hasher);
-        let id = Id(hasher.finish());
-
-        let child_point = Self { id, callsite, callsite_counts: RefCell::new(Default::default()) };
-
+        let child_point = Self {
+            callsite,
+            callsite_counts: RefCell::new(Default::default()),
+            id: self.id.child(&callsite, slot),
+        };
         illicit::child_env!(Point => child_point).enter(child)
     }
 
