@@ -117,9 +117,8 @@ impl std::fmt::Debug for Id {
 ///
 /// The current `Point` contains the local [`Id`] and a count of how often each
 /// of its children has been called.
-#[doc(hidden)]
 #[derive(Debug)]
-pub struct Point {
+struct Point {
     id: Id,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this
@@ -160,18 +159,6 @@ impl Point {
         } else {
             counts.push((callsite, 1));
         }
-    }
-
-    /// Returns the number of times the provided [`Callsite`] has been called
-    /// within this Point.
-    #[doc(hidden)]
-    pub fn unstable_callsite_count(&self, callsite: Callsite) -> u32 {
-        self.callsite_counts
-            .borrow()
-            .iter()
-            .find(|(site, _)| site == &callsite)
-            .map(|(_, count)| *count)
-            .unwrap_or(0)
     }
 }
 
