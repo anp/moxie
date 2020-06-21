@@ -36,6 +36,7 @@
 //! whether this is appropriate for your use case before taking it on as a
 //! dependency.
 
+#![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
@@ -49,6 +50,7 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
+    panic::Location,
     rc::Rc,
 };
 
@@ -60,7 +62,7 @@ thread_local! {
     static CURRENT_SCOPE: RefCell<Rc<Env>> = RefCell::new(Rc::new(
         Env {
             depth: 0,
-            location: (file!(), column!(), line!()),
+            location: Location::caller(),
             values: Default::default(),
         }
     ));
@@ -71,9 +73,8 @@ thread_local! {
 #[macro_export]
 macro_rules! child_env {
     ($($env_item_ty:ty => $env_item:expr),*) => {{
-        let location = (file!(), line!(), column!());
         #[allow(unused_mut)]
-        let mut _new_env = $crate::Env::unstable_new(location);
+        let mut _new_env = $crate::Env::unstable_new(core::panic::Location::caller());
         $( _new_env.unstable_insert::<$env_item_ty>($env_item); )*
         _new_env
     }}
@@ -93,16 +94,16 @@ macro_rules! child_env {
 /// useful for runtimes to offer themselves execution-local values in functions
 /// which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct Env {
     depth: u32,
-    location: (&'static str, u32, u32),
+    location: &'static Location<'static>,
     values: Vec<(TypeId, AnonRc)>,
 }
 
 impl Env {
     #[doc(hidden)]
-    pub fn unstable_new(location: (&'static str, u32, u32)) -> Self {
+    pub fn unstable_new(location: &'static Location<'static>) -> Self {
         let mut values = Vec::new();
         let mut depth = 0;
 
@@ -137,6 +138,12 @@ impl Env {
     /// The number of parent environments from which this environment descends.
     pub fn depth(&self) -> u32 {
         self.depth
+    }
+
+    // TODO(#135) remove
+    #[cfg(test)]
+    fn raw_location(&self) -> (&'static str, u32, u32) {
+        (self.location.file(), self.location.line(), self.location.column())
     }
 
     /// Call `child_fn` with this environment as the current scope.
@@ -225,8 +232,7 @@ impl Env {
 
 impl Debug for Env {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let (file, line, col) = self.location;
-        let env_w_loc = format!("Env @ {}:{}:{}", file, line, col);
+        let env_w_loc = format!("Env @ {}", self.location);
 
         let mut f = f.debug_struct(&env_w_loc);
         for (ty, anon) in self.values.iter().map(|(_, v)| (v.ty(), v)).collect::<BTreeMap<_, _>>() {
@@ -283,7 +289,7 @@ mod tests {
 
         let (_, first_layer) = u8_present.0.by_depth.into_iter().next().unwrap();
         assert_eq!(first_layer.depth, 1);
-        assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
+        assert_eq!(first_layer.raw_location(), (file!(), u8_present.1, 9));
         assert_eq!(first_layer.values.len(), 1);
         let first_u8 = first_layer
             .values
@@ -292,8 +298,8 @@ mod tests {
             .map(|(_, v)| v)
             .unwrap();
         assert_eq!(
-            (first_u8.location(), first_u8.depth()),
-            (first_layer.location, first_layer.depth),
+            (first_u8.raw_location(), first_u8.depth()),
+            (first_layer.raw_location(), first_layer.depth),
         );
 
         // on to the snapshot that includes both u8 and string
@@ -302,7 +308,7 @@ mod tests {
             (u8_and_string_layers.next().unwrap(), u8_and_string_layers.next().unwrap());
 
         assert_eq!(first_layer.depth, 1);
-        assert_eq!(first_layer.location, (file!(), u8_present.1, 9));
+        assert_eq!(first_layer.raw_location(), (file!(), u8_present.1, 9));
         assert_eq!(first_layer.values.len(), 1);
         let first_u8 = first_layer
             .values
@@ -311,12 +317,12 @@ mod tests {
             .map(|(_, v)| v)
             .unwrap();
         assert_eq!(
-            (first_u8.location(), first_u8.depth()),
-            (first_layer.location, first_layer.depth),
+            (first_u8.raw_location(), first_u8.depth()),
+            (first_layer.raw_location(), first_layer.depth),
         );
 
         assert_eq!(second_layer.depth, 2);
-        assert_eq!(second_layer.location, (file!(), u8_and_string_present.1, 13));
+        assert_eq!(second_layer.raw_location(), (file!(), u8_and_string_present.1, 13));
         assert_eq!(second_layer.values.len(), 1);
         let second_string = second_layer
             .values
@@ -325,8 +331,8 @@ mod tests {
             .map(|(_, v)| v)
             .unwrap();
         assert_eq!(
-            (second_string.location(), second_string.depth()),
-            (second_layer.location, second_layer.depth),
+            (second_string.raw_location(), second_string.depth()),
+            (second_layer.raw_location(), second_layer.depth),
         );
     }
 
