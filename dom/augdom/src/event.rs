@@ -37,7 +37,6 @@ pub struct EventHandle {
 }
 
 #[cfg(not(feature = "webdom"))]
-#[doc(hidden)]
 pub(crate) struct EventHandle;
 
 impl EventHandle {
