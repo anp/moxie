@@ -1,3 +1,5 @@
+#![feature(track_caller)]
+
 #[macro_use]
 extern crate criterion;
 

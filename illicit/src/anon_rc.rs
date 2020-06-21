@@ -3,6 +3,7 @@ use std::{
     any::{type_name, Any, TypeId},
     fmt::{Debug, Formatter, Result as FmtResult},
     ops::Deref,
+    panic::Location,
     rc::Rc,
 };
 
@@ -10,7 +11,7 @@ use std::{
 pub(crate) struct AnonRc {
     name: &'static str,
     id: TypeId,
-    location: (&'static str, u32, u32),
+    location: &'static Location<'static>,
     depth: u32,
     inner: Rc<dyn Any>,
     debug: Rc<dyn Debug>,
@@ -20,7 +21,7 @@ impl AnonRc {
     /// Construct a new `AnonArc` from the provided value.
     pub fn new<T: Debug + 'static>(
         inner: T,
-        location: (&'static str, u32, u32),
+        location: &'static Location<'static>,
         depth: u32,
     ) -> Self {
         let inner = Rc::new(inner);
@@ -63,8 +64,13 @@ impl AnonRc {
     }
 
     /// The source location at which this was initialized for an environment.
-    pub fn location(&self) -> (&'static str, u32, u32) {
+    pub fn location(&self) -> &'static Location<'static> {
         self.location
+    }
+
+    // TODO(#135) remove
+    pub(crate) fn raw_location(&self) -> (&'static str, u32, u32) {
+        (self.location.file(), self.location.line(), self.location.column())
     }
 }
 
@@ -83,7 +89,7 @@ impl PartialEq for AnonRc {
         self.id == other.id
             && self.depth == other.depth
             && self.name == other.name
-            && self.location == other.location
+            && self.raw_location() == other.raw_location()
             && data_ptrs_eq!(Any: &self.inner, &other.inner)
             && data_ptrs_eq!(Debug: &self.debug, &other.debug)
     }
