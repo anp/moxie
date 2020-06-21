@@ -1,7 +1,7 @@
 //! State variables are memoized values that can be updated, signalling the
 //! runtime that a new Revision should be executed.
 
-use crate::{embed::RunLoopWaker, memo::*};
+use crate::embed::RunLoopWaker;
 use parking_lot::Mutex;
 use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
@@ -45,12 +45,12 @@ impl<State> Var<State> {
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable.
 #[topo::nested]
-pub fn state<Init, Output>(initializer: Init) -> Key<Output>
+pub fn state<Init, Output>(init: Init) -> Key<Output>
 where
     Output: 'static,
     Init: FnOnce() -> Output,
 {
-    memo_state((), |&()| initializer())
+    memo_state((), |&()| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -63,7 +63,7 @@ where
     Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let var = memo(arg, |a| {
+    let var = super::memo(arg, |a| {
         let var = Var {
             point: topo::Id::current(),
             current: Commit { point: topo::Id::current(), inner: Arc::new(initializer(a)) },

@@ -4,7 +4,7 @@ version = "0.10.0-pre"
 authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
-description = "Reified activation records and scoped thread-locals for UI runtimes."
+description = "Stable runtime identifiers for repetitive dynamic callgraphs"
 repository = "https://github.com/anp/moxie"
 
 include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]

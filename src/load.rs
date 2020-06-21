@@ -1,6 +1,10 @@
 //! Asynchronous loading primitives.
 
-use crate::{embed::Spawner, memo::memo_with, state::*};
+use crate::{
+    embed::Spawner,
+    memo_with,
+    state::{state, Key},
+};
 use futures::future::{AbortHandle, Abortable};
 use std::{future::Future, task::Poll};
 
@@ -20,7 +24,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    let result: Key<Poll<Stored>> = memo_state((), |()| Poll::Pending);
+    let result: Key<Poll<Stored>> = state(|| Poll::Pending);
     let result2 = result.clone();
     memo_with(
         capture,
