@@ -11,8 +11,8 @@
 //! will perform memoization specific to the current position within the
 //! function call topology, as other topologically-nested functions do.
 //!
-//! During [run_once] the memoization storage is an  [environment
-//! value](illicit::Env). Memoization calls write to this storage to store
+//! During [run_once] the memoization storage is an [environment
+//! value](illicit::Layer). Memoization calls write to this storage to store
 //! results. At the end of [run_once], this storage is garbage-collected,
 //! dropping values which were not referenced, marking them as live.
 //!

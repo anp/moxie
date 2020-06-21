@@ -40,7 +40,7 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     quote::quote!(#input_fn).into()
 }
 
-/// Create a local Env::expect assignment expression from the `pattern: &type`
+/// Create a local expect assignment expression from the `pattern: &type`
 /// pair which is passed.
 fn bind_env_reference(arg: PatType) -> Local {
     let arg_span = arg.span();
@@ -58,10 +58,10 @@ fn bind_env_reference(arg: PatType) -> Local {
                 );
             }
 
-            syn::parse_quote!(&*illicit::Env::expect::<#elem>())
+            syn::parse_quote!(&*illicit::expect::<#elem>())
         }
 
-        ty => syn::parse_quote!(illicit::Env::expect::<#ty>().clone()),
+        ty => syn::parse_quote!(illicit::expect::<#ty>().clone()),
     };
 
     Local {
