@@ -51,7 +51,6 @@ jobs:
     - uses: codecov/codecov-action@v1
       with:
         file: ./target/coverage/lcov.info
-        fail_ci_if_error: true
 
     # browser tests -- no coverage
     - run: cargo test-augdom
