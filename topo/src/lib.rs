@@ -143,12 +143,12 @@ impl Point {
             callsite_counts: RefCell::new(Default::default()),
             id: self.id.child(&callsite, slot),
         };
-        illicit::child_env!(Point => child_point).enter(child)
+        illicit::Layer::new().with(child_point).enter(child)
     }
 
     /// Runs the provided closure with access to the current [`Point`].
     fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
-        if let Some(current) = illicit::Env::get::<Point>() {
+        if let Some(current) = illicit::get::<Point>() {
             op(&*current)
         } else {
             op(&Point::default())

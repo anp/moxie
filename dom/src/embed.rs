@@ -26,10 +26,10 @@ impl WebRuntime {
         WebRuntime {
             runtime: Runtime::new(),
             root: Box::new(move || {
-                illicit::child_env!(MemoNode => MemoNode::new(parent.clone())).enter(|| {
+                illicit::Layer::new().with(MemoNode::new(parent.clone())).enter(|| {
                     let new_root = topo::call(|| root());
 
-                    let parent = &*illicit::Env::expect::<MemoNode>();
+                    let parent = &*illicit::expect::<MemoNode>();
                     parent.ensure_child_attached(new_root.to_bind());
                     parent.remove_trailing_children();
                 });

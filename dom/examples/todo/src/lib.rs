@@ -43,11 +43,7 @@ impl App {
     }
 
     pub fn enter<T>(self, f: &mut dyn FnMut() -> T) -> T {
-        illicit::child_env![
-            Key<Vec<Todo>> => self.todos,
-            Key<Visibility> => self.visibility
-        ]
-        .enter(f)
+        illicit::Layer::new().with(self.todos).with(self.visibility).enter(f)
     }
 
     pub fn boot<Root: Node + 'static>(

@@ -36,7 +36,7 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called
     /// outside of a Runtime's execution.
     pub fn current() -> Self {
-        if let Some(r) = illicit::Env::get::<Revision>() { *r } else { Revision::default() }
+        if let Some(r) = illicit::get::<Revision>() { *r } else { Revision::default() }
     }
 }
 
@@ -118,22 +118,21 @@ impl Runtime {
     pub fn run_once<Out>(&mut self, func: impl FnOnce() -> Out) -> Out {
         self.revision.0 += 1;
 
-        let ret = illicit::child_env! {
-            MemoStore => self.store.clone(),
-            Revision => self.revision,
-            RunLoopWaker => RunLoopWaker(self.wk.clone()),
-            Spawner => self.spawner.clone()
-        }
-        .enter(|| {
-            topo::call(|| {
-                self.handlers.run_until_stalled(&self.wk);
-                let ret = func();
+        let ret = illicit::Layer::new()
+            .with(self.store.clone())
+            .with(self.revision)
+            .with(RunLoopWaker(self.wk.clone()))
+            .with(self.spawner.clone())
+            .enter(|| {
+                topo::call(|| {
+                    self.handlers.run_until_stalled(&self.wk);
+                    let ret = func();
 
-                // run handlers again to make sure that newly spawned ones can install wakers
-                self.handlers.run_until_stalled(&self.wk);
-                ret
-            })
-        });
+                    // run handlers again to make sure that newly spawned ones can install wakers
+                    self.handlers.run_until_stalled(&self.wk);
+                    ret
+                })
+            });
 
         self.store.gc();
         ret
@@ -221,15 +220,15 @@ mod tests {
         let mut runtime = Runtime::new();
 
         let run = || {
-            let from_env: u8 = *illicit::Env::expect();
+            let from_env: u8 = *illicit::expect();
             assert_eq!(from_env, first_byte);
         };
 
-        assert!(illicit::Env::get::<u8>().is_none());
-        illicit::child_env!(u8 => first_byte).enter(|| {
+        assert!(illicit::get::<u8>().is_none());
+        illicit::Layer::new().with(first_byte).enter(|| {
             topo::call(|| runtime.run_once(run));
         });
-        assert!(illicit::Env::get::<u8>().is_none());
+        assert!(illicit::get::<u8>().is_none());
     }
 
     #[test]

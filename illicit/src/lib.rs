@@ -1,4 +1,4 @@
-//! Type-indexed scoped singletons, propagated through an implicit backing
+//! Type-indexed dynamically-scoped singletons, propagated through an implicit
 //! context.
 //!
 //! # Requiring references from the environment
@@ -13,7 +13,7 @@
 //!     num + 1
 //! }
 //!
-//! illicit::child_env!(u8 => 1).enter(|| {
+//! illicit::Layer::new().with(1u8).enter(|| {
 //!     assert_eq!(env_num_plus_one(), 2u8);
 //! });
 //! ```
@@ -59,8 +59,8 @@ pub use illicit_macro::from_env;
 
 thread_local! {
     /// The current dynamic scope.
-    static CURRENT_SCOPE: RefCell<Rc<Env>> = RefCell::new(Rc::new(
-        Env {
+    static CURRENT_SCOPE: RefCell<Rc<Layer>> = RefCell::new(Rc::new(
+        Layer {
             depth: 0,
             location: Location::caller(),
             values: Default::default(),
@@ -68,16 +68,71 @@ thread_local! {
     ));
 }
 
-/// Declare additional environment values to expose to a child topological
-/// function's call tree.
-#[macro_export]
-macro_rules! child_env {
-    ($($env_item_ty:ty => $env_item:expr),*) => {{
-        #[allow(unused_mut)]
-        let mut _new_env = $crate::Env::unstable_new(core::panic::Location::caller());
-        $( _new_env.unstable_insert::<$env_item_ty>($env_item); )*
-        _new_env
-    }}
+/// Returns a snapshot of the current dynamic scope. Most useful for debugging
+/// the contained `Layer`s.
+pub fn snapshot() -> EnvSnapshot {
+    let mut stacked = EnvSnapshot { by_depth: BTreeMap::new() };
+    CURRENT_SCOPE.with(|e| {
+        for (_, anon) in &e.borrow().values {
+            stacked
+                .by_depth
+                .entry(anon.depth())
+                .or_insert_with(|| Layer {
+                    values: Default::default(),
+                    depth: anon.depth(),
+                    location: anon.location(), // depth -> location is 1:1
+                })
+                .add_anon(anon.clone());
+        }
+    });
+    stacked
+}
+
+/// Returns a reference to a value in the current environment if it is
+/// present.
+pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
+where
+    E: Any + 'static,
+{
+    let key = TypeId::of::<E>();
+    let anon = CURRENT_SCOPE.with(|current| {
+        current.borrow().values.iter().find(|(id, _)| id == &key).map(|(_, a)| a.clone())
+    });
+    if let Some(anon) = anon {
+        Some(anon.downcast_deref().expect("used type for storage and lookup, should match"))
+    } else {
+        None
+    }
+}
+
+/// Returns a reference to a value in the current environment, as
+/// [`get`] does, but panics if the value has not been set.
+pub fn expect<E>() -> impl Deref<Target = E> + 'static
+where
+    E: Any + 'static,
+{
+    if let Some(val) = get() {
+        val
+    } else {
+        panic!(
+            "expected a `{}` from the environment, did not find it in current env: {:#?}",
+            std::any::type_name::<E>(),
+            snapshot(),
+        )
+    }
+}
+
+/// Removes the provided type from the current environment for the remainder
+/// of its scope. Parent environments may still possess a reference to
+/// the value.
+pub fn hide<E: 'static>() {
+    CURRENT_SCOPE.with(|current| {
+        let mut env = current.borrow_mut();
+        let mut without_e = env.values.clone();
+        let excluded_ty = TypeId::of::<E>();
+        without_e.retain(|(ty, _)| ty != &excluded_ty);
+        *env = Rc::new(Layer { values: without_e, depth: env.depth, location: env.location });
+    })
 }
 
 /// Immutable environment container for the current scope. Environment values
@@ -95,15 +150,25 @@ macro_rules! child_env {
 /// which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
 #[derive(Clone)]
-pub struct Env {
+pub struct Layer {
     depth: u32,
     location: &'static Location<'static>,
     values: Vec<(TypeId, AnonRc)>,
 }
 
-impl Env {
-    #[doc(hidden)]
-    pub fn unstable_new(location: &'static Location<'static>) -> Self {
+impl Default for Layer {
+    #[track_caller]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Layer {
+    /// Construct a blank layer. Call [`Layer::with`] to add values to the new
+    /// layer before calling [`Layer::enter`] to run a closure with access
+    /// to the new values.
+    #[track_caller]
+    pub fn new() -> Self {
         let mut values = Vec::new();
         let mut depth = 0;
 
@@ -113,16 +178,16 @@ impl Env {
             values = current.values.clone();
         });
 
-        Self { values, depth, location }
+        Self { values, depth, location: std::panic::Location::caller() }
     }
 
-    #[doc(hidden)]
-    pub fn unstable_insert<E>(&mut self, new_item: E)
+    /// Adds the new item and returns the modified layer.
+    pub fn with<E>(mut self, v: E) -> Self
     where
         E: Debug + 'static,
     {
-        let anon = AnonRc::new(new_item, self.location, self.depth);
-        self.add_anon(anon);
+        self.add_anon(AnonRc::new(v, self.location, self.depth));
+        self
     }
 
     fn add_anon(&mut self, anon: AnonRc) {
@@ -160,77 +225,9 @@ impl Env {
         // call this out here so these calls can be nested
         child_fn()
     }
-
-    /// Returns a reference to a value in the current environment if it is
-    /// present.
-    pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
-    where
-        E: Any + 'static,
-    {
-        let key = TypeId::of::<E>();
-        let anon = CURRENT_SCOPE.with(|current| {
-            current.borrow().values.iter().find(|(id, _)| id == &key).map(|(_, a)| a.clone())
-        });
-        if let Some(anon) = anon {
-            Some(anon.downcast_deref().expect("used type for storage and lookup, should match"))
-        } else {
-            None
-        }
-    }
-
-    /// Returns a reference to a value in the current environment, as
-    /// [`Env::get`] does, but panics if the value has not been set in the
-    /// environment.
-    pub fn expect<E>() -> impl Deref<Target = E> + 'static
-    where
-        E: Any + 'static,
-    {
-        if let Some(val) = Self::get() {
-            val
-        } else {
-            panic!(
-                "expected a `{}` from the environment, did not find it in current env: {:#?}",
-                std::any::type_name::<E>(),
-                Env::snapshot(),
-            )
-        }
-    }
-
-    /// Returns a snapshot of the current dynamic scope. Most useful for
-    /// debugging the contained `Env`.
-    pub fn snapshot() -> EnvSnapshot {
-        let mut stacked = EnvSnapshot { by_depth: BTreeMap::new() };
-        CURRENT_SCOPE.with(|e| {
-            for (_, anon) in &e.borrow().values {
-                stacked
-                    .by_depth
-                    .entry(anon.depth())
-                    .or_insert_with(|| Env {
-                        values: Default::default(),
-                        depth: anon.depth(),
-                        location: anon.location(), // depth -> location is 1:1
-                    })
-                    .add_anon(anon.clone());
-            }
-        });
-        stacked
-    }
-
-    /// Removes the provided type from the current environment for the remainder
-    /// of its scope. Parent environments may still possess a reference to
-    /// the value.
-    pub fn hide<E: 'static>() {
-        CURRENT_SCOPE.with(|current| {
-            let mut env = current.borrow_mut();
-            let mut without_e = env.values.clone();
-            let excluded_ty = TypeId::of::<E>();
-            without_e.retain(|(ty, _)| ty != &excluded_ty);
-            *env = Rc::new(Env { values: without_e, depth: env.depth, location: env.location });
-        })
-    }
 }
 
-impl Debug for Env {
+impl Debug for Layer {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         let env_w_loc = format!("Env @ {}", self.location);
 
@@ -246,7 +243,7 @@ impl Debug for Env {
 /// for debug printing.
 #[derive(Clone)]
 pub struct EnvSnapshot {
-    by_depth: BTreeMap<u32, Env>,
+    by_depth: BTreeMap<u32, Layer>,
 }
 
 impl Debug for EnvSnapshot {
@@ -261,21 +258,21 @@ mod tests {
 
     #[test]
     fn snapshot_has_correct_structure() {
-        let empty_scope = Env::snapshot();
+        let empty_scope = snapshot();
         let mut u8_present = (empty_scope.clone(), 0);
         let mut u8_and_string_present = u8_present.clone();
 
         // generate our test values
-        child_env!(u8 => 42).enter(|| {
-            u8_present = (Env::snapshot(), line!() - 1);
+        Layer::new().with(42u8).enter(|| {
+            u8_present = (snapshot(), line!() - 1);
 
-            child_env!(String => String::from("owo")).enter(|| {
-                u8_and_string_present = (Env::snapshot(), line!() - 1);
+            Layer::new().with(String::from("owo")).enter(|| {
+                u8_and_string_present = (snapshot(), line!() - 1);
             });
         });
 
         // check the empty scopes
-        let empty_scope_after = Env::snapshot();
+        let empty_scope_after = snapshot();
         assert_eq!(empty_scope.by_depth.len(), 0, "environment should be empty without additions");
         assert_eq!(
             empty_scope.by_depth.len(),
@@ -341,14 +338,14 @@ mod tests {
         let mut first_called = false;
         let mut second_called = false;
 
-        assert!(Env::get::<u8>().is_none());
-        child_env!(u8 => 0u8).enter(|| {
-            let curr_byte = *Env::expect::<u8>();
+        assert!(get::<u8>().is_none());
+        Layer::new().with(0u8).enter(|| {
+            let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
             first_called = true;
 
-            child_env!(u8 => 1u8).enter(|| {
-                let curr_byte = *Env::expect::<u8>();
+            Layer::new().with(1u8).enter(|| {
+                let curr_byte = *expect::<u8>();
                 assert_eq!(curr_byte, 1);
                 second_called = true;
             });
@@ -357,46 +354,46 @@ mod tests {
             assert_eq!(curr_byte, 0);
         });
         assert!(first_called);
-        assert!(Env::get::<u8>().is_none());
+        assert!(get::<u8>().is_none());
     }
 
     #[test]
     fn child_sees_parent_env() {
-        assert!(Env::get::<u8>().is_none());
-        child_env!(u8 => 0u8).enter(|| {
-            let curr_byte = *Env::expect::<u8>();
+        assert!(get::<u8>().is_none());
+        Layer::new().with(0u8).enter(|| {
+            let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
 
-            child_env!(u16 => 1u16).enter(|| {
-                let curr_byte = *Env::expect::<u8>();
+            Layer::new().with(1u16).enter(|| {
+                let curr_byte = *expect::<u8>();
                 assert_eq!(curr_byte, 0, "must see u8 from enclosing environment");
 
-                let curr_uh_twobyte = *Env::expect::<u16>();
+                let curr_uh_twobyte = *expect::<u16>();
                 assert_eq!(curr_uh_twobyte, 1, "must see locally installed u16");
             });
 
             assert_eq!(curr_byte, 0, "must see 0");
         });
-        assert!(Env::get::<u8>().is_none());
+        assert!(get::<u8>().is_none());
     }
 
     #[test]
     fn removing_from_env() {
-        assert!(Env::get::<u8>().is_none());
+        assert!(get::<u8>().is_none());
 
-        child_env!(u8 => 2).enter(|| {
-            assert_eq!(*Env::expect::<u8>(), 2, "just added 2u8");
+        Layer::new().with(2u8).enter(|| {
+            assert_eq!(*expect::<u8>(), 2, "just added 2u8");
 
-            child_env!().enter(|| {
-                assert_eq!(*Env::expect::<u8>(), 2, "parent added 2u8");
-                Env::hide::<u8>();
-                assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
+            Layer::new().enter(|| {
+                assert_eq!(*expect::<u8>(), 2, "parent added 2u8");
+                hide::<u8>();
+                assert!(get::<u8>().is_none(), "just removed u8 from Env");
             });
 
-            assert_eq!(*Env::get::<u8>().unwrap(), 2, "returned to parent Env with 2u8");
+            assert_eq!(*get::<u8>().unwrap(), 2, "returned to parent Env with 2u8");
 
-            Env::hide::<u8>();
-            assert!(Env::get::<u8>().is_none(), "just removed u8 from Env");
+            hide::<u8>();
+            assert!(get::<u8>().is_none(), "just removed u8 from Env");
         })
     }
 }
