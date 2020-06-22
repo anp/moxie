@@ -11,21 +11,31 @@ use std::{
 
 /// The underlying container of state variables. Vends copies of the latest
 /// [`Commit`] for [`Key`]s.
-struct Var<State> {
+pub(crate) struct Var<State> {
     current: Commit<State>,
-    point: topo::Id,
+    id: topo::Id,
     pending: Option<Commit<State>>,
     waker: RunLoopWaker,
 }
 
 impl<State> Var<State> {
+    pub fn new(id: topo::Id, waker: RunLoopWaker, inner: State) -> Arc<Mutex<Self>> {
+        let current = Commit { id, inner: Arc::new(inner) };
+        Arc::new(Mutex::new(Var { id, current, waker, pending: None }))
+    }
+
     /// Attach this `Var` to its callsite, performing any pending commit and
     /// returning the resulting latest commit.
-    fn root(&mut self) -> (topo::Id, Commit<State>) {
-        if let Some(pending) = self.pending.take() {
-            self.current = pending;
-        }
-        (self.point, self.current.clone())
+    pub fn root(var: Arc<Mutex<Self>>) -> Key<State> {
+        let (id, commit_at_root) = {
+            let mut var = var.lock();
+            if let Some(pending) = var.pending.take() {
+                var.current = pending;
+            }
+            (var.id, var.current.clone())
+        };
+
+        Key { id, commit_at_root, var }
     }
 
     /// Returns a reference to the latest value, pending or committed.
@@ -37,46 +47,9 @@ impl<State> Var<State> {
     /// complete asynchronously when the state variable is next rooted in a
     /// topological function, flushing the pending commit.
     fn enqueue_commit(&mut self, state: State) {
-        self.pending = Some(Commit { inner: Arc::new(state), point: self.point });
+        self.pending = Some(Commit { inner: Arc::new(state), id: self.id });
         self.waker.wake();
     }
-}
-
-/// Root a state variable at this callsite, returning a [`Key`] to the state
-/// variable.
-#[topo::nested]
-pub fn state<Init, Output>(init: Init) -> Key<Output>
-where
-    Output: 'static,
-    Init: FnOnce() -> Output,
-{
-    memo_state((), |&()| init())
-}
-
-/// Root a state variable at this callsite, returning a [`Key`] to the state
-/// variable. Re-initializes the state variable if the capture `arg` changes.
-#[topo::nested]
-#[illicit::from_env(waker: &RunLoopWaker)]
-pub fn memo_state<Arg, Init, Output>(arg: Arg, initializer: Init) -> Key<Output>
-where
-    Arg: PartialEq + 'static,
-    Output: 'static,
-    for<'a> Init: FnOnce(&'a Arg) -> Output,
-{
-    let var = super::memo(arg, |a| {
-        let var = Var {
-            point: topo::Id::current(),
-            current: Commit { point: topo::Id::current(), inner: Arc::new(initializer(a)) },
-            pending: None,
-            waker: waker.to_owned(),
-        };
-
-        Arc::new(Mutex::new(var))
-    });
-
-    let (id, commit_at_root) = var.lock().root();
-
-    Key { id, commit_at_root, var }
 }
 
 /// A read-only pointer to the value of a state variable *at a particular
@@ -87,13 +60,13 @@ where
 /// single [`Revision`], being re-loaded from the state variable each time.
 #[derive(Debug, Eq, PartialEq)]
 struct Commit<State> {
-    point: topo::Id,
+    id: topo::Id,
     inner: Arc<State>,
 }
 
 impl<State> Clone for Commit<State> {
     fn clone(&self) -> Self {
-        Self { point: self.point, inner: Arc::clone(&self.inner) }
+        Self { id: self.id, inner: Arc::clone(&self.inner) }
     }
 }
 
@@ -118,7 +91,7 @@ where
 /// variable through a snapshot taken when the `Key` was created. Writes are
 /// supported with [Key::update] and [Key::set].
 ///
-/// They are created with the [`memo_state`] and [`state`] macros.
+/// They are created with the `memo_state` and `state` functions.
 pub struct Key<State> {
     id: topo::Id,
     commit_at_root: Commit<State>,
