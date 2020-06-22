@@ -69,14 +69,13 @@ pub mod state;
 
 /// A module for glob-importing the most commonly used moxie items.
 pub mod prelude {
-    pub use crate::{
-        memo, memo_with, once, once_with,
-        state::{memo_state, state, Key},
-    };
+    pub use crate::{memo, memo_state, memo_with, once, once_with, state, state::Key};
     pub use topo;
 }
 
+use embed::RunLoopWaker;
 use memo::MemoStore;
+use state::{Key, Var};
 
 /// Memoizes the provided function, caching the intermediate `Stored` value in
 /// memoization storage and only re-initializing it if `Arg` has changed since
@@ -152,6 +151,31 @@ where
     Stored: Clone + 'static,
 {
     store.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+}
+
+/// Root a state variable at this callsite, returning a [`Key`] to the state
+/// variable.
+#[topo::nested]
+pub fn state<Init, Output>(init: Init) -> Key<Output>
+where
+    Output: 'static,
+    Init: FnOnce() -> Output,
+{
+    memo_state((), |_| init())
+}
+
+/// Root a state variable at this callsite, returning a [`Key`] to the state
+/// variable. Re-initializes the state variable if the capture `arg` changes.
+#[topo::nested]
+#[illicit::from_env(waker: &RunLoopWaker)]
+pub fn memo_state<Arg, Init, Output>(arg: Arg, init: Init) -> Key<Output>
+where
+    Arg: PartialEq + 'static,
+    Output: 'static,
+    for<'a> Init: FnOnce(&'a Arg) -> Output,
+{
+    let var = memo(arg, |arg| Var::new(topo::Id::current(), waker.clone(), init(arg)));
+    Var::root(var)
 }
 
 // TODO(#115) add examples
