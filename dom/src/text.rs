@@ -5,7 +5,7 @@ use crate::{
     memo_node::MemoNode,
 };
 use augdom::Dom;
-use moxie::prelude::*;
+use moxie::memo;
 
 /// Create a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the `moxie::mox!` macro.

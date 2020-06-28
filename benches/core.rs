@@ -4,7 +4,7 @@ extern crate criterion;
 use criterion::{Criterion, ParameterizedBenchmark};
 use moxie::{
     embed::{Revision, Runtime},
-    prelude::*,
+    once,
 };
 use std::rc::Rc;
 

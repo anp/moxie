@@ -11,19 +11,19 @@ use std::{
 
 /// A shared pointer to the memoization storage singleton for a given runtime.
 #[derive(Clone, Debug)]
-pub(crate) struct MemoStore<Id = topo::Id>(Rc<RefCell<MemoStorage<Id>>>);
+pub(crate) struct LocalCache<Id = topo::Id>(Rc<RefCell<Cache<Id>>>);
 
-impl<Id> Default for MemoStore<Id> {
+impl<Id> Default for LocalCache<Id> {
     fn default() -> Self {
-        MemoStore(Rc::new(RefCell::new(MemoStorage::default())))
+        LocalCache(Rc::new(RefCell::new(Cache::default())))
     }
 }
 
-impl<Id> MemoStore<Id>
+impl<Id> LocalCache<Id>
 where
     Id: Clone + Eq + Hash,
 {
-    /// Provides a closure-based memoization API on top of [`MemoStorage`]'s
+    /// Provides a closure-based memoization API on top of [`Cache`]'s
     /// mutable API. Steps:
     ///
     /// 1. if matching cached value, mark live and return
@@ -45,54 +45,54 @@ where
         Stored: 'static,
         Ret: 'static,
     {
-        if let Some(stored) = { self.0.borrow_mut().get_if_arg_eq(id.clone(), &arg) } {
+        if let Some(stored) = { self.0.borrow_mut().get(id.clone(), &arg) } {
             return with(stored);
         }
 
         let to_store = init(&arg);
         let to_return = with(&to_store);
-        self.0.borrow_mut().insert(id, arg, to_store);
+        self.0.borrow_mut().store(id, arg, to_store);
         to_return
     }
 
     /// Drops memoized values that were not referenced during the last
-    /// `Revision`.
+    /// revision.
     pub fn gc(&self) {
         self.0.borrow_mut().gc();
     }
 }
 
-/// The memoization storage for a `Runtime`. Stores memoized values by a
-/// `MemoIndex`, exposing a garbage collection API to the embedding `Runtime`.
+/// A `Cache` holds results from arbitrary queries for later retrieval. Each
+/// query is indexed by a "scope" and the type of the query's inputs and
+/// outputs. When collecting garbage, values are retained if they were
+/// referenced since the last GC.
 #[derive(Debug)]
-pub(crate) struct MemoStorage<Id> {
-    memos: HashMap<MemoIndex<Id>, (Liveness, Box<dyn Any>)>,
+pub struct Cache<Scope> {
+    inner: HashMap<Query<Scope>, (Liveness, Box<dyn Any>)>,
 }
-type MemoIndex<Id> = (Id, TypeId, TypeId);
 
-impl<Id> Default for MemoStorage<Id> {
+impl<Scope> Default for Cache<Scope> {
     fn default() -> Self {
-        MemoStorage { memos: HashMap::new() }
+        Cache { inner: HashMap::new() }
     }
 }
 
-impl<Id> MemoStorage<Id>
+impl<Scope> Cache<Scope>
 where
-    Id: Eq + Hash,
+    Scope: Eq + Hash,
 {
-    /// Return a reference to the stored value if `arg` equals the
-    /// previously-stored argument. If a reference is returned the storage
-    /// is marked [`Liveness::Live`] and will not be GC'd at the end of the
-    /// current [`crate::embed::Revision`].
-    fn get_if_arg_eq<Arg, Stored>(&mut self, id: Id, arg: &Arg) -> Option<&Stored>
+    /// Return a reference to the stored output if `input` equals the
+    /// previously-stored input. If a reference is returned, the storage
+    /// is marked [`Liveness::Live`] and will not be GC'd this revision.
+    fn get<Input, Output>(&mut self, scope: Scope, input: &Input) -> Option<&Output>
     where
-        Arg: PartialEq + 'static,
-        Stored: 'static,
+        Input: PartialEq + 'static,
+        Output: 'static,
     {
-        let key = (id, TypeId::of::<Arg>(), TypeId::of::<Stored>());
-        let (ref mut liveness, erased) = self.memos.get_mut(&key)?;
-        let (ref stored_arg, ref stored): &(Arg, Stored) = erased.downcast_ref().unwrap();
-        if stored_arg == arg {
+        let query = Query::new::<Input, Output>(scope);
+        let (ref mut liveness, erased) = self.inner.get_mut(&query)?;
+        let (ref stored_input, ref stored): &(Input, Output) = erased.downcast_ref().unwrap();
+        if stored_input == input {
             *liveness = Liveness::Live;
             Some(stored)
         } else {
@@ -100,23 +100,44 @@ where
         }
     }
 
-    /// Store the new value. It will be `Live` for the current revision.
-    fn insert<Arg, Stored>(&mut self, id: Id, arg: Arg, to_store: Stored)
+    /// Store the result of a query. It will not be GC'd this revision.
+    fn store<Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
     where
-        Arg: 'static,
-        Stored: 'static,
+        Input: 'static,
+        Output: 'static,
     {
-        let key = (id, TypeId::of::<Arg>(), TypeId::of::<Stored>());
-        let erased = Box::new((arg, to_store)) as Box<dyn Any>;
-        self.memos.insert(key, (Liveness::Live, erased));
+        let query = Query::new::<Input, Output>(scope);
+        let erased = Box::new((input, output)) as Box<dyn Any>;
+        self.inner.insert(query, (Liveness::Live, erased));
     }
 
-    /// Drops memoized values that were not referenced during the last revision,
-    /// removing all `Dead` storage values and sets all remaining values to
-    /// `Dead` for the next GC execution.
+    /// Drops memoized values that were not referenced since the last call
+    /// and sets all remaining values to be dropped by default in the next call.
     fn gc(&mut self) {
-        self.memos.retain(|_, (liveness, _)| liveness == &Liveness::Live);
-        self.memos.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
+        self.inner.retain(|_, (liveness, _)| liveness == &Liveness::Live);
+        self.inner.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
+    }
+}
+
+/// Each query has a `Scope`, an `Input`, and an `Output` which together can be
+/// thought of as defining a function: `scope(input) -> output`.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+struct Query<Scope> {
+    /// The query's scope or its namespace.
+    scope: Scope,
+    /// The type of input the query accepts.
+    input: TypeId,
+    /// The type of output the query returns.
+    output: TypeId,
+}
+
+impl<Scope> Query<Scope> {
+    fn new<Input, Output>(scope: Scope) -> Self
+    where
+        Input: 'static,
+        Output: 'static,
+    {
+        Self { scope, input: TypeId::of::<Input>(), output: TypeId::of::<Output>() }
     }
 }
 

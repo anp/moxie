@@ -14,6 +14,7 @@ crate-type = [ "cdylib" ]
 console_log = "0.2.0"
 illicit = { path = "../../../illicit" }
 moxie-dom = { path = "../../" }
+topo = { path = "../../../topo" }
 tracing = { version = "^0.1", features = [ "log" ] }
 wasm-bindgen = "0.2"
 
