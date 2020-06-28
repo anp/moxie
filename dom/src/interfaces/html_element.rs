@@ -1,6 +1,6 @@
 //! Trait for the base class of HTML elements.
 
-use crate::{interfaces::element::Element, prelude::*};
+use crate::interfaces::element::Element;
 
 /// The HTMLElement interface represents any HTML element.
 ///

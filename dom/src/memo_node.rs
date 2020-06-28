@@ -1,13 +1,11 @@
 //! Nodes which memoize mutations.
 
 use augdom::{Dom, Node};
-
+use moxie::memo_with;
 use std::{
     cell::Cell,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-
-use super::prelude::*;
 
 /// A topologically-nested "incremental smart pointer" for an HTML element.
 ///

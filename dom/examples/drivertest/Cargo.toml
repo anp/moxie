@@ -9,6 +9,7 @@ edition = "2018"
 augdom = { path = "../../augdom", features = ["rsdom"] }
 moxie = { path = "../../../" }
 moxie-dom = { path = "../../", features = ["rsdom"] }
+topo = { path = "../../../topo" }
 wasm-bindgen = "0.2.51"
 wasm-bindgen-test = "0.3"
 

@@ -1,14 +1,13 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
 use crate::{interfaces::node::Child, memo_node::MemoNode};
-use moxie::{embed::Runtime, prelude::topo};
+use moxie::embed::RootedRuntime;
 
 /// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building
 /// trees of DOM nodes.
 #[must_use]
 pub struct WebRuntime {
-    runtime: Runtime,
-    root: Box<dyn FnMut()>,
+    inner: RootedRuntime<Box<dyn FnMut()>>,
 }
 
 impl WebRuntime {
@@ -24,8 +23,7 @@ impl WebRuntime {
     ) -> Self {
         let parent = parent.into();
         WebRuntime {
-            runtime: Runtime::new(),
-            root: Box::new(move || {
+            inner: RootedRuntime::new(Box::new(move || {
                 illicit::Layer::new().with(MemoNode::new(parent.clone())).enter(|| {
                     let new_root = topo::call(|| root());
 
@@ -33,44 +31,63 @@ impl WebRuntime {
                     parent.ensure_child_attached(new_root.to_bind());
                     parent.remove_trailing_children();
                 });
-            }),
+            })),
         }
     }
 
     /// Run the root function in a fresh `moxie::Revision`. See
     /// `moxie::embed::Runtime::run_once` for details.
     pub fn run_once(&mut self) {
-        self.runtime.run_once(&mut self.root);
+        self.inner.run_once();
     }
 }
 
 #[cfg(feature = "webdom")]
-impl WebRuntime {
-    /// Create a new `div` and use that as the parent node for the runtime with
-    /// which it is returned.
-    pub fn in_web_div<Root: Child + 'static>(
-        root: impl FnMut() -> Root + 'static,
-    ) -> (Self, augdom::sys::Element) {
-        let container = augdom::document().create_element("div").unwrap();
-        (WebRuntime::new(container.clone(), root), container)
+mod web_impl {
+    use super::*;
+    use futures::{
+        future::LocalFutureObj,
+        task::{LocalSpawn, SpawnError},
+    };
+
+    impl WebRuntime {
+        /// Create a new `div` and use that as the parent node for the runtime
+        /// with which it is returned.
+        pub fn in_web_div<Root: Child + 'static>(
+            root: impl FnMut() -> Root + 'static,
+        ) -> (Self, augdom::sys::Element) {
+            let container = augdom::document().create_element("div").unwrap();
+            let mut rt = WebRuntime::new(container.clone(), root);
+            rt.inner.set_task_executor(WebSpawner);
+            (rt, container)
+        }
+
+        /// Pass ownership of this runtime to a "loop" which runs with
+        /// `requestAnimationFrame`.
+        pub fn animation_frame_scheduler(self) -> raf::AnimationFrameScheduler<Self> {
+            raf::AnimationFrameScheduler::new(self)
+        }
     }
 
-    /// Pass ownership of this runtime to a "loop" which runs with
-    /// `requestAnimationFrame`.
-    pub fn animation_frame_scheduler(self) -> raf::AnimationFrameScheduler<Self> {
-        impl raf::Tick for WebRuntime {
-            fn tick(&mut self) {
-                self.runtime.run_once(&mut self.root);
-            }
+    impl raf::Tick for WebRuntime {
+        fn tick(&mut self) {
+            self.inner.run_once();
         }
+    }
 
-        impl raf::Waking for WebRuntime {
-            fn set_waker(&mut self, wk: std::task::Waker) {
-                self.runtime.set_state_change_waker(wk);
-            }
+    impl raf::Waking for WebRuntime {
+        fn set_waker(&mut self, wk: std::task::Waker) {
+            self.inner.set_state_change_waker(wk);
         }
+    }
 
-        raf::AnimationFrameScheduler::new(self)
+    struct WebSpawner;
+
+    impl LocalSpawn for WebSpawner {
+        fn spawn_local_obj(&self, fut: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
+            wasm_bindgen_futures::spawn_local(fut);
+            Ok(())
+        }
     }
 }
 

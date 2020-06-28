@@ -64,17 +64,10 @@
 
 pub mod embed;
 pub mod load;
-pub mod memo;
+mod memo;
 pub mod state;
 
-/// A module for glob-importing the most commonly used moxie items.
-pub mod prelude {
-    pub use crate::{memo, memo_state, memo_with, once, once_with, state, state::Key};
-    pub use topo;
-}
-
-use embed::RunLoopWaker;
-use memo::MemoStore;
+use embed::RuntimeHandle;
 use state::{Key, Var};
 
 /// Memoizes the provided function, caching the intermediate `Stored` value in
@@ -98,7 +91,7 @@ use state::{Key, Var};
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(store: &MemoStore)]
+#[illicit::from_env(rt: &RuntimeHandle)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,
@@ -109,12 +102,12 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    store.memo_with(topo::Id::current(), arg, init, with)
+    rt.store.memo_with(topo::Id::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
 #[topo::nested]
-#[illicit::from_env(store: &MemoStore)]
+#[illicit::from_env(rt: &RuntimeHandle)]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
     with: impl FnOnce(&Stored) -> Ret,
@@ -123,7 +116,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    store.memo_with(topo::Id::current(), (), |&()| expr(), with)
+    rt.store.memo_with(topo::Id::current(), (), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
@@ -132,25 +125,25 @@ where
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(store: &MemoStore)]
+#[illicit::from_env(rt: &RuntimeHandle)]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
     Arg: PartialEq + 'static,
     Stored: Clone + 'static,
 {
-    store.memo_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.store.memo_with(topo::Id::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will
 /// always be cloned on subsequent calls unless dropped from storage and
 /// reinitialized in a later `Revision`.
 #[topo::nested]
-#[illicit::from_env(store: &MemoStore)]
+#[illicit::from_env(rt: &RuntimeHandle)]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,
 {
-    store.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+    rt.store.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -167,14 +160,14 @@ where
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
 #[topo::nested]
-#[illicit::from_env(waker: &RunLoopWaker)]
+#[illicit::from_env(rt: &RuntimeHandle)]
 pub fn memo_state<Arg, Init, Output>(arg: Arg, init: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
     Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let var = memo(arg, |arg| Var::new(topo::Id::current(), waker.clone(), init(arg)));
+    let var = memo(arg, |arg| Var::new(topo::Id::current(), rt.waker.clone(), init(arg)));
     Var::root(var)
 }
 
