@@ -67,7 +67,7 @@ pub mod load;
 mod memo;
 pub mod state;
 
-use embed::RuntimeHandle;
+use embed::RuntimeContext;
 use state::{Key, Var};
 
 /// Memoizes the provided function, caching the intermediate `Stored` value in
@@ -91,7 +91,7 @@ use state::{Key, Var};
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,
@@ -102,12 +102,12 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.store.memo_with(topo::Id::current(), arg, init, with)
+    rt.cache.memo_with(topo::Id::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
     with: impl FnOnce(&Stored) -> Ret,
@@ -116,7 +116,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.store.memo_with(topo::Id::current(), (), |&()| expr(), with)
+    rt.cache.memo_with(topo::Id::current(), (), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
@@ -125,25 +125,25 @@ where
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
     Arg: PartialEq + 'static,
     Stored: Clone + 'static,
 {
-    rt.store.memo_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.cache.memo_with(topo::Id::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will
 /// always be cloned on subsequent calls unless dropped from storage and
 /// reinitialized in a later `Revision`.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,
 {
-    rt.store.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+    rt.cache.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -160,7 +160,7 @@ where
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn memo_state<Arg, Init, Output>(arg: Arg, init: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,

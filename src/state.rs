@@ -1,12 +1,12 @@
 //! State variables are memoized values that can be updated, signalling the
 //! runtime that a new Revision should be executed.
 
-use crate::embed::RunLoopWaker;
 use parking_lot::Mutex;
 use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     ops::Deref,
     sync::Arc,
+    task::Waker,
 };
 
 /// The underlying container of state variables. Vends copies of the latest
@@ -15,11 +15,11 @@ pub(crate) struct Var<State> {
     current: Commit<State>,
     id: topo::Id,
     pending: Option<Commit<State>>,
-    waker: RunLoopWaker,
+    waker: Waker,
 }
 
 impl<State> Var<State> {
-    pub fn new(id: topo::Id, waker: RunLoopWaker, inner: State) -> Arc<Mutex<Self>> {
+    pub fn new(id: topo::Id, waker: Waker, inner: State) -> Arc<Mutex<Self>> {
         let current = Commit { id, inner: Arc::new(inner) };
         Arc::new(Mutex::new(Var { id, current, waker, pending: None }))
     }
@@ -48,7 +48,7 @@ impl<State> Var<State> {
     /// topological function, flushing the pending commit.
     fn enqueue_commit(&mut self, state: State) {
         self.pending = Some(Commit { inner: Arc::new(state), id: self.id });
-        self.waker.wake();
+        self.waker.wake_by_ref();
     }
 }
 

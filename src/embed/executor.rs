@@ -1,7 +1,6 @@
 //! An executor for futures that need to run with low latency relative to the
 //! runtime.
 
-use super::Spawner;
 use futures::{
     future::{FutureObj, LocalFutureObj},
     stream::{FuturesUnordered, StreamExt},
@@ -61,8 +60,8 @@ impl InBandExecutor {
         }
     }
 
-    pub(crate) fn spawner(&self) -> Spawner {
-        Spawner(Rc::new(InBandSpawner(Rc::downgrade(&self.incoming))))
+    pub(crate) fn spawner(&self) -> Rc<dyn LocalSpawn> {
+        Rc::new(InBandSpawner(Rc::downgrade(&self.incoming)))
     }
 
     #[cfg(test)]
