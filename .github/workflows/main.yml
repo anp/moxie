@@ -6,7 +6,7 @@ on:
     branches:
     - master
 jobs:
-  main:
+  ofl:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -15,44 +15,95 @@ jobs:
     - uses: actions/checkout@master
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
         path: |
-          ~/.cargo/registry
           ~/.cargo/git
-          ofl/target
+          ~/.cargo/registry
+          ofl/target/release
 
-    - run: rustup update
-
-    # build all crates, collect timings
-    - name: build ofl
-      run: cargo build-times --release
+    - run: cargo build-times --release
       working-directory: ofl
-    - name: build moxie
-      run: cargo build-times
-    - name: archive build timings
-      uses: actions/upload-artifact@v2
-      with:
-        name: build-times
-        path: "**/cargo-timing.html"
+    - run: cargo test-ofl
 
-    # tests with coverage
-    - name: core tests
-      run: cargo ofl coverage collect test-core
-    - name: dom tests
-      run: cargo ofl coverage collect test-dom
-    - run: cargo ofl coverage report
-    - name: archive coverage
-      uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v2
       with:
-        name: coverage
-        path: target/coverage/html
+        name: ofl-timing-${{ runner.os }}
+        path: ofl/cargo-timing.html
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: |
+          ofl/target/release/ofl
+          ofl/target/release/ofl.exe
+
+  coverage:
+    needs: ofl
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/download-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: bin/
+    # TODO(actions/download-artifact#14) undo hack
+    - run: chmod +x bin/ofl
+      if: runner.os != 'Windows'
+
+    - run: cargo generate-lockfile
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          target/coverage
+
+    - name: core tests
+      run: bin/ofl coverage collect test-core
+    - name: dom tests
+      run: bin/ofl coverage collect test-dom
+    - run: bin/ofl coverage report
     - uses: codecov/codecov-action@v1
       with:
         file: ./target/coverage/lcov.info
 
-    # browser tests -- no coverage
+  main:
+    needs: ofl
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/download-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: bin/
+    # TODO(actions/download-artifact#14) undo hack
+    - run: chmod +x bin/ofl
+      if: runner.os != 'Windows'
+
+    - run: cargo generate-lockfile
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-moxie-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          target/debug
+          target/wasm32-unknown-unknown/release
+    
+    - run: cargo build-times
+    - name: upload build timings
+      uses: actions/upload-artifact@v2
+      with:
+        name: moxie-build-times
+        path: "cargo-timing.html"
+
+    # browser tests w/o coverage
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-hacking
@@ -62,38 +113,57 @@ jobs:
     # examples, docs, website
     - run: cargo docs-all
     - run: cargo docs-ofl
-    - run: cargo build-website
+    - run: bin/ofl website build target/website
+    - uses: actions/upload-artifact@v2
+      if: runner.os == 'Linux'
+      with:
+        name: website
+        path: target/website
 
-    - name: assert the git repo hasn't changed
-      if: runner.os == 'Linux'
-      run: output=$(git status --porcelain) && [ -z "$output" ]
-    - name: archive website
-      if: runner.os == 'Linux'
-      uses: actions/upload-artifact@v2
+  fmt:
+    needs: ofl
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/download-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: bin/
+    # TODO(actions/download-artifact#14) undo hack
+    - run: chmod +x bin/ofl
+    - run: bin/ofl fmt --check
+
+  clippy:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - run: rustup component add clippy
+    - run: cargo clippy-ofl
+    - run: cargo clippy-core
+    - run: cargo clippy-dom
+
+  publish:
+    needs: [coverage, fmt, clippy, main, ofl]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: bin/
+    # TODO(actions/download-artifact#14) undo hack
+    - run: chmod +x bin/ofl
+    - uses: actions/download-artifact@v2
       with:
         name: website
         path: target/website
     - name: promote website to prod, ensure crates published
-      if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
+      if: github.ref == 'refs/heads/master'
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       run: |
         npx netlify-cli deploy --prod
         cargo login ${{ secrets.CARGO_API_TOKEN }}
-        cargo ofl published
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - run: rustup update
-    - run: rustup component add clippy
-    - run: cargo clippy-core
-    - run: cargo clippy-dom
-    - run: cargo clippy-ofl
-
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - run: cargo fmt-project --check
+        bin/ofl published
