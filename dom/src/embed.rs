@@ -1,13 +1,13 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
 use crate::{interfaces::node::Child, memo_node::MemoNode};
-use moxie::embed::RootedRuntime;
+use moxie::runtime::RunLoop;
 
-/// Wrapper around `moxie::embed::Runtime` which provides an `Env` for building
-/// trees of DOM nodes.
+/// Wrapper around `moxie::runtime::RunLoop` which provides an environment for
+/// building trees of DOM nodes.
 #[must_use]
 pub struct WebRuntime {
-    inner: RootedRuntime<Box<dyn FnMut()>>,
+    inner: RunLoop<Box<dyn FnMut()>>,
 }
 
 impl WebRuntime {
@@ -23,7 +23,7 @@ impl WebRuntime {
     ) -> Self {
         let parent = parent.into();
         WebRuntime {
-            inner: RootedRuntime::new(Box::new(move || {
+            inner: RunLoop::new(Box::new(move || {
                 illicit::Layer::new().with(MemoNode::new(parent.clone())).enter(|| {
                     let new_root = topo::call(|| root());
 
@@ -36,7 +36,7 @@ impl WebRuntime {
     }
 
     /// Run the root function in a fresh `moxie::Revision`. See
-    /// `moxie::embed::Runtime::run_once` for details.
+    /// `moxie::runtime::RunLoop::run_once` for details.
     pub fn run_once(&mut self) {
         self.inner.run_once();
     }
