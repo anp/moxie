@@ -117,8 +117,8 @@ impl<State> Key<State> {
     /// outside of a `Revision`'s execution, otherwise unpredictable waker
     /// behavior may be obtained.
     ///
-    /// [Runtime]: crate::embed::Runtime
-    /// [run_once]: crate::embed::Runtime::run_once
+    /// [Runtime]: crate::runtime::Runtime
+    /// [run_once]: crate::runtime::Runtime::run_once
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) {
         let mut var = self.var.lock();
         if let Some(new) = updater(var.latest()) {

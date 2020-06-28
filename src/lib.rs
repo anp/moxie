@@ -55,20 +55,18 @@
 //! a loop, iterating either once per fixed interval (e.g. 60 frames per second
 //! or every 16.67 milliseconds) or when activated by the occurrence of events.
 //!
-//! [run_once]: crate::embed::Runtime::run_once
+//! [run_once]: crate::runtime::Runtime::run_once
 //! [topo]: https://docs.rs/topo
 
 #![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-pub mod embed;
-pub mod load;
-mod memo;
+pub mod runtime;
 pub mod state;
 
-use embed::RuntimeContext;
-use state::{Key, Var};
+use crate::{runtime::Context, state::Key};
+use std::{future::Future, task::Poll};
 
 /// Memoizes the provided function, caching the intermediate `Stored` value in
 /// memoization storage and only re-initializing it if `Arg` has changed since
@@ -91,7 +89,7 @@ use state::{Key, Var};
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeContext)]
+#[illicit::from_env(rt: &Context)]
 pub fn memo_with<Arg, Stored, Ret>(
     arg: Arg,
     init: impl FnOnce(&Arg) -> Stored,
@@ -102,12 +100,12 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), arg, init, with)
+    rt.memo_with(topo::Id::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeContext)]
+#[illicit::from_env(rt: &Context)]
 pub fn once_with<Stored, Ret>(
     expr: impl FnOnce() -> Stored,
     with: impl FnOnce(&Stored) -> Ret,
@@ -116,7 +114,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), (), |&()| expr(), with)
+    rt.memo_with(topo::Id::current(), (), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
@@ -125,50 +123,110 @@ where
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeContext)]
+#[illicit::from_env(rt: &Context)]
 pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
 where
     Arg: PartialEq + 'static,
     Stored: Clone + 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.memo_with(topo::Id::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will
 /// always be cloned on subsequent calls unless dropped from storage and
 /// reinitialized in a later `Revision`.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeContext)]
+#[illicit::from_env(rt: &Context)]
 pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+    rt.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable.
 #[topo::nested]
+#[illicit::from_env(rt: &Context)]
 pub fn state<Init, Output>(init: Init) -> Key<Output>
 where
     Output: 'static,
     Init: FnOnce() -> Output,
 {
-    memo_state((), |_| init())
+    rt.memo_state(topo::Id::current(), (), |_| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeContext)]
+#[illicit::from_env(rt: &Context)]
 pub fn memo_state<Arg, Init, Output>(arg: Arg, init: Init) -> Key<Output>
 where
     Arg: PartialEq + 'static,
     Output: 'static,
     for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
-    let var = memo(arg, |arg| Var::new(topo::Id::current(), rt.waker.clone(), init(arg)));
-    Var::root(var)
+    rt.memo_state(topo::Id::current(), arg, init)
+}
+
+/// Load a value from the future returned by `init` whenever `capture` changes,
+/// returning the result of calling `with` with the loaded value. Cancels the
+/// running future after any revision during which this call was not made.
+#[topo::nested]
+#[illicit::from_env(rt: &Context)]
+pub fn load_with<Arg, Fut, Stored, Ret>(
+    arg: Arg,
+    init: impl FnOnce(&Arg) -> Fut,
+    with: impl FnOnce(&Stored) -> Ret,
+) -> Poll<Ret>
+where
+    Arg: PartialEq + 'static,
+    Fut: Future<Output = Stored> + 'static,
+    Stored: 'static,
+    Ret: 'static,
+{
+    rt.load_with(topo::Id::current(), arg, init, with)
+}
+
+/// Calls [`load_with`] but never re-initializes the loading future.
+#[topo::nested]
+#[illicit::from_env(rt: &Context)]
+pub fn load_once_with<Fut, Stored, Ret>(
+    init: impl FnOnce() -> Fut,
+    with: impl FnOnce(&Stored) -> Ret,
+) -> Poll<Ret>
+where
+    Fut: Future<Output = Stored> + 'static,
+    Stored: 'static,
+    Ret: 'static,
+{
+    rt.load_with(topo::Id::current(), (), |()| init(), with)
+}
+
+/// Calls [`load_with`], never re-initializes the loading future, and clones the
+/// returned value on each revision once the future has completed and returned.
+#[topo::nested]
+#[illicit::from_env(rt: &Context)]
+pub fn load_once<Fut, Stored>(init: impl FnOnce() -> Fut) -> Poll<Stored>
+where
+    Fut: Future<Output = Stored> + 'static,
+    Stored: Clone + 'static,
+{
+    rt.load_with(topo::Id::current(), (), |()| init(), Clone::clone)
+}
+
+/// Load a value from a future, cloning it on subsequent revisions after it is
+/// first returned. Re-initializes the loading future if the capture argument
+/// changes from previous revisions.
+#[topo::nested]
+#[illicit::from_env(rt: &Context)]
+pub fn load<Arg, Fut, Stored>(capture: Arg, init: impl FnOnce(&Arg) -> Fut) -> Poll<Stored>
+where
+    Arg: PartialEq + 'static,
+    Fut: Future<Output = Stored> + 'static,
+    Stored: Clone + 'static,
+{
+    rt.load_with(topo::Id::current(), capture, init, Clone::clone)
 }
 
 // TODO(#115) add examples
@@ -260,8 +318,8 @@ pub use mox::mox;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::embed::{Revision, Runtime};
-    use std::{cell::Cell, collections::HashSet};
+    use crate::runtime::{Revision, RunLoop};
+    use std::{cell::Cell, collections::HashSet, rc::Rc};
 
     fn with_test_logs(test: impl FnOnce()) {
         tracing::subscriber::with_default(
@@ -282,8 +340,7 @@ mod tests {
 
             let mut prev_revision = None;
             let mut comp_skipped_count = 0;
-            let mut rt = Runtime::new();
-            let mut run = || {
+            let mut rt = RunLoop::new(|| {
                 let revision = Revision::current();
 
                 if let Some(pr) = prev_revision {
@@ -302,12 +359,12 @@ mod tests {
 
                 assert_eq!(current_call_count, 1);
                 assert_eq!(call_count, 1);
-            };
+            });
 
             for i in 0..5 {
                 assert_eq!(rt.revision().0, i);
 
-                rt.run_once(&mut run);
+                rt.run_once();
 
                 assert_eq!(rt.revision().0, i + 1);
             }
@@ -324,14 +381,14 @@ mod tests {
             }
             assert_eq!(ids.len(), 10);
 
-            let mut rt = Runtime::new();
-            rt.run_once(|| {
+            let mut rt = RunLoop::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
                     memo(i, |_| ids.insert(topo::Id::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
+            rt.run_once();
         });
     }
 
@@ -339,19 +396,18 @@ mod tests {
     fn memo_in_a_loop() {
         with_test_logs(|| {
             let num_iters = 10;
-            let mut rt = Runtime::new();
-            let run = || {
+            let mut rt = RunLoop::new(|| {
                 let mut counts = vec![];
                 for i in 0..num_iters {
                     topo::call(|| once(|| counts.push(i)));
                 }
                 counts
-            };
+            });
 
-            let first_counts = rt.run_once(run);
+            let first_counts = rt.run_once();
             assert_eq!(first_counts.len(), num_iters, "each mutation must be called exactly once");
 
-            let second_counts = rt.run_once(run);
+            let second_counts = rt.run_once();
             assert_eq!(
                 second_counts.len(),
                 0,
@@ -366,13 +422,12 @@ mod tests {
             let loop_ct = Cell::new(0);
             let raw_exec = Cell::new(0);
             let memo_exec = Cell::new(0);
-            let mut rt = Runtime::new();
-            let run = || {
+            let mut rt = RunLoop::new(|| {
                 raw_exec.set(raw_exec.get() + 1);
                 memo(loop_ct.get(), |_| {
                     memo_exec.set(memo_exec.get() + 1);
                 });
-            };
+            });
 
             for i in 0..10 {
                 loop_ct.set(i);
@@ -389,9 +444,87 @@ mod tests {
                     "runtime's root block should run exactly twice per loop_ct value"
                 );
 
-                rt.run_once(run);
-                rt.run_once(run);
+                rt.run_once();
+                rt.run_once();
             }
         })
+    }
+
+    #[test]
+    fn basic_loading_phases() {
+        let mut pool = futures::executor::LocalPool::new();
+        let (send, recv) = futures::channel::oneshot::channel();
+        // this is uh weird, but we know up front how much we'll poll this
+        let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
+
+        let mut rt = RunLoop::new(move || -> Poll<u8> {
+            let recv = recv.clone();
+            load_once(|| async move {
+                recv.lock()
+                    .await
+                    .take()
+                    .expect("load_once should only allow us to take from the option once")
+                    .await
+                    .expect("we control the channel and won't drop it")
+            })
+        });
+        rt.set_task_executor(pool.spawner());
+
+        assert_eq!(rt.run_once(), Poll::Pending, "no values received when nothing sent");
+        assert_eq!(rt.run_once(), Poll::Pending, "no values received, and we aren't blocking");
+
+        send.send(5u8).unwrap();
+        pool.run_until_stalled();
+        assert_eq!(rt.run_once(), Poll::Ready(5), "we need to receive the value we sent");
+        assert_eq!(
+            rt.run_once(),
+            Poll::Ready(5),
+            "the value we sent must be cached because its from a oneshot channel"
+        );
+    }
+
+    #[test]
+    fn interest_loss_cancels_task() {
+        let mut pool = futures::executor::LocalPool::new();
+        let (send, recv) = futures::channel::oneshot::channel();
+        let recv = Rc::new(futures::lock::Mutex::new(Some(recv)));
+
+        let mut rt = RunLoop::new(move || -> Option<Poll<u8>> {
+            if Revision::current().0 < 3 {
+                let recv = recv.clone();
+                Some(load_once(|| async move {
+                    recv.lock()
+                        .await
+                        .take()
+                        .expect("load_once should only allow us to take from the option once")
+                        .await
+                        .expect("we control the channel and won't drop it")
+                }))
+            } else {
+                None
+            }
+        });
+        rt.set_task_executor(pool.spawner());
+
+        pool.run_until_stalled();
+        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert!(!send.is_canceled(), "interest expressed, receiver must be live");
+
+        pool.run_until_stalled();
+        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert!(!send.is_canceled(), "interest still expressed, receiver must be live");
+
+        pool.run_until_stalled();
+        assert_eq!(rt.run_once(), None);
+        assert!(!send.is_canceled(), "interest dropped, task live for another revision");
+
+        pool.run_until_stalled();
+        assert_eq!(rt.run_once(), None);
+        assert!(send.is_canceled(), "interest dropped, task dropped");
+
+        assert!(
+            send.send(4u8).is_err(),
+            "must be no task holding the channel and able to receive a message"
+        );
     }
 }
