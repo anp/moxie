@@ -1,6 +1,6 @@
 //! Asynchronous loading primitives.
 
-use crate::{embed::RuntimeHandle, memo_with, state::Key};
+use crate::{embed::RuntimeContext, memo_with, state::Key};
 use futures::future::{AbortHandle, Abortable};
 use std::{future::Future, task::Poll};
 
@@ -8,7 +8,7 @@ use std::{future::Future, task::Poll};
 /// returning the result of calling `with` with the loaded value. Cancels the
 /// running future after any revision during which this call was not made.
 #[topo::nested]
-#[illicit::from_env(rt: &RuntimeHandle)]
+#[illicit::from_env(rt: &RuntimeContext)]
 pub fn load_with<Arg, Fut, Stored, Ret>(
     capture: Arg,
     init: impl FnOnce(&Arg) -> Fut,
@@ -28,7 +28,6 @@ where
             let (cancel, register_cancel) = AbortHandle::new_pair();
             let fut = init(arg);
             rt.spawner
-                .0
                 .spawn_local_obj(
                     Box::pin(async move {
                         if let Ok(to_store) = Abortable::new(fut, register_cancel).await {

@@ -40,7 +40,11 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called
     /// outside of a Runtime's execution.
     pub fn current() -> Self {
-        if let Some(r) = illicit::get::<RuntimeHandle>() { r.revision } else { Revision::default() }
+        if let Some(r) = illicit::get::<RuntimeContext>() {
+            r.revision
+        } else {
+            Revision::default()
+        }
     }
 }
 
@@ -70,10 +74,10 @@ impl std::fmt::Debug for Revision {
 /// ```
 pub struct Runtime {
     revision: Revision,
-    store: LocalCache,
-    spawner: Spawner,
+    cache: LocalCache,
+    spawner: Rc<dyn LocalSpawn>,
     executor: InBandExecutor,
-    wk: RunLoopWaker,
+    wk: Waker,
 }
 
 impl Default for Runtime {
@@ -86,11 +90,10 @@ impl Runtime {
     /// Construct a new [`Runtime`] with blank storage and no external waker or
     /// task executor.
     ///
-    /// By default the task executor used for `load` and its siblings is the
-    /// same single-threaded one as the executor used for `handler` futures.
-    /// It is strongly recommended that outside of testing users of this
-    /// struct call `set_task_executor` with a reference to a more robust
-    /// I/O- or compute-oriented executor.
+    /// By default the task executor used for `load` and its siblings is a
+    /// simple single-threaded one. It is strongly recommended that outside of
+    /// testing, users of this struct call `set_task_executor` with a reference
+    /// to a more robust executor.
     pub fn new() -> Self {
         let executor = InBandExecutor::default();
         let spawner = executor.spawner();
@@ -98,8 +101,8 @@ impl Runtime {
             executor,
             spawner,
             revision: Revision(0),
-            store: LocalCache::default(),
-            wk: RunLoopWaker(noop_waker()),
+            cache: LocalCache::default(),
+            wk: noop_waker(),
         }
     }
 
@@ -117,16 +120,16 @@ impl Runtime {
 
         let ret = illicit::Layer::new().with(self.handle()).enter(|| {
             topo::call(|| {
-                self.executor.run_until_stalled(&self.wk.0);
+                self.executor.run_until_stalled(&self.wk);
                 let ret = func();
 
                 // run executor again to make sure that newly spawned ones can install wakers
-                self.executor.run_until_stalled(&self.wk.0);
+                self.executor.run_until_stalled(&self.wk);
                 ret
             })
         });
 
-        self.store.gc();
+        self.cache.gc();
         ret
     }
 
@@ -135,12 +138,12 @@ impl Runtime {
     /// which is probably the desired behavior if the embedding system will
     /// call `Runtime::run_once` on a regular interval regardless.
     pub fn set_state_change_waker(&mut self, wk: Waker) {
-        self.wk = RunLoopWaker(wk);
+        self.wk = wk;
     }
 
     /// Sets the executor that will be used to spawn normal priority tasks.
     pub fn set_task_executor(&mut self, sp: impl LocalSpawn + 'static) {
-        self.spawner = Spawner(Rc::new(sp));
+        self.spawner = Rc::new(sp);
     }
 
     /// Calls `run_once` in a loop until `filter` returns `Poll::Ready`,
@@ -174,11 +177,11 @@ impl Runtime {
         }
     }
 
-    fn handle(&self) -> RuntimeHandle {
-        RuntimeHandle {
+    fn handle(&self) -> RuntimeContext {
+        RuntimeContext {
             revision: self.revision,
             spawner: self.spawner.clone(),
-            store: self.store.clone(),
+            cache: self.cache.clone(),
             waker: self.wk.clone(),
         }
     }
@@ -245,33 +248,21 @@ where
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
 /// contexts and provides access to the current revision, memoization storage,
 /// task spawning, and the waker for the loop.
-#[derive(Debug)]
-pub(crate) struct RuntimeHandle {
+pub(crate) struct RuntimeContext {
     pub(crate) revision: Revision,
-    pub(crate) spawner: Spawner,
-    pub(crate) store: LocalCache,
-    pub(crate) waker: RunLoopWaker,
+    pub(crate) cache: LocalCache,
+    pub(crate) spawner: Rc<dyn LocalSpawn>,
+    pub(crate) waker: Waker,
 }
 
-#[derive(Clone)]
-pub(crate) struct Spawner(pub Rc<dyn LocalSpawn>);
-
-impl Debug for Spawner {
+impl Debug for RuntimeContext {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "Spawner({:p})", self.0)
-    }
-}
-
-/// Responsible for waking the Runtime task. Because the illicit environment is
-/// namespaced by type, we create a newtype here so that other crates don't
-/// accidentally cause strange behavior by overriding our access to it when
-/// passing their own wakers down.
-#[derive(Clone, Debug)]
-pub(crate) struct RunLoopWaker(Waker);
-
-impl RunLoopWaker {
-    pub(crate) fn wake(&self) {
-        self.0.wake_by_ref();
+        f.debug_struct("RuntimeContext")
+            .field("revision", &self.revision)
+            .field("cache", &self.cache)
+            .field("spawner", &format_args!("{:p}", &self.spawner)) // TODO print the pointer
+            .field("waker", &self.waker)
+            .finish()
     }
 }
 

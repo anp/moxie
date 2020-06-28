@@ -58,6 +58,9 @@ use std::{
     panic::Location,
 };
 
+mod cache;
+pub use cache::Cache;
+
 /// Calls the provided expression with an [`Id`] specific to the callsite.
 ///
 /// ```
