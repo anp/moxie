@@ -15,7 +15,7 @@ panic = "abort"
 
 core-flow = """
 watch --clear
-    -x fmt-project
+    -x ofl-fmt-project
     -x clippy-core
     -x test-core
     -x docs-clean
@@ -30,7 +30,6 @@ docs-all = "doc --workspace --no-deps --all-features"
 docs-clean = "clean --doc"
 
 build-times = "build --workspace --all-targets --all-features -Z timings"
-fmt-project = "ofl fmt"
 
 ####################################################################################################
 # dom crates and examples
@@ -76,12 +75,6 @@ clippy-dom = """clippy
 """
 
 ####################################################################################################
-# website
-
-site-flow = "watch --clear -x build-website"
-build-website = "ofl website build target/website"
-
-####################################################################################################
 # ofl
 
 ofl = "run --manifest-path ofl/Cargo.toml --release --"
@@ -93,7 +86,11 @@ watch --clear -w ofl
     -x test-ofl
     -x docs-ofl
 """
+site-flow = "watch --clear -x ofl-build-website"
 
+
+ofl-build-website = "ofl website build target/website"
+ofl-fmt-project = "ofl fmt"
 clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --workspace"
 test-ofl = "test --manifest-path ofl/Cargo.toml --workspace"
 docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"
