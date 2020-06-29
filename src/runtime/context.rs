@@ -2,6 +2,7 @@ use super::{LocalCache, Revision, Var};
 use crate::{Commit, Key};
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
+    cell::RefCell,
     fmt::{Debug, Formatter, Result as FmtResult},
     future::Future,
     rc::Rc,
@@ -13,7 +14,7 @@ use std::{
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
-    cache: LocalCache,
+    cache: Rc<RefCell<LocalCache>>,
     spawner: Rc<dyn LocalSpawn>,
     waker: Waker,
 }

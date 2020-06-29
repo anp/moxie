@@ -24,7 +24,7 @@ use futures::{
     task::{noop_waker, LocalSpawn, SpawnError},
 };
 use std::{cell::RefCell, rc::Rc, task::Waker};
-use topo::Cache;
+use topo::LocalCache;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;
@@ -70,12 +70,10 @@ impl std::fmt::Debug for Revision {
 /// ```
 pub struct Runtime {
     revision: Revision,
-    cache: LocalCache,
+    cache: Rc<RefCell<LocalCache>>,
     spawner: Rc<dyn LocalSpawn>,
     wk: Waker,
 }
-
-type LocalCache = Rc<RefCell<Cache>>;
 
 impl Default for Runtime {
     fn default() -> Runtime {
@@ -92,7 +90,7 @@ impl Runtime {
         Self {
             spawner: Rc::new(JunkSpawner),
             revision: Revision(0),
-            cache: Rc::new(RefCell::new(Cache::default())),
+            cache: Rc::new(RefCell::new(LocalCache::default())),
             wk: noop_waker(),
         }
     }
