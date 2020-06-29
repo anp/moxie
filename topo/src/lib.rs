@@ -55,7 +55,7 @@ use std::{cell::RefCell, hash::Hash};
 
 mod cache;
 mod id;
-pub use cache::Cache;
+pub use cache::{Cache, LocalCache};
 pub use id::{Callsite, Id};
 
 /// Calls the provided expression with an [`Id`] specific to the callsite.

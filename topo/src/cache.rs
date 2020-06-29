@@ -7,24 +7,26 @@ use std::{
     hash::Hash,
 };
 
-/// A `Cache` holds results from arbitrary queries for later retrieval. Each
-/// query is indexed by a "scope" and the type of the query's inputs and
-/// outputs. When collecting garbage, values are retained if they were
-/// referenced since the last GC.
+macro_rules! define_cache {
+    ($name:ident $(: $bound:ident)?) => {
+/// Holds results from arbitrary queries for later retrieval. Each query is indexed
+/// by the type and value of a "scope" and the type of the query's inputs and outputs.
+///
+/// When collecting garbage, values are retained if they were referenced since the last GC.
 #[derive(Debug, Default)]
-pub struct Cache {
-    inner: HashMap<Query, Box<dyn Gc>>,
+pub struct $name {
+    inner: HashMap<Query, Box<dyn Gc $(+ $bound)?>>,
 }
 
-impl Cache {
+impl $name {
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
     /// is marked [`Liveness::Live`] and will not be GC'd this revision.
     pub fn get<Scope, Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
     where
-        Scope: Eq + Hash + 'static,
-        Input: PartialEq + 'static,
-        Output: 'static,
+        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Input: 'static + PartialEq $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
     {
         self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(scope, input)
     }
@@ -32,20 +34,20 @@ impl Cache {
     /// Store the result of a query. It will not be GC'd this revision.
     pub fn store<Scope, Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
     where
-        Scope: Eq + Hash + 'static,
-        Input: PartialEq + 'static,
-        Output: 'static,
+        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Input: 'static + PartialEq $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
     {
         self.get_namespace_mut().insert(scope, input, output);
     }
 
     fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
     where
-        Scope: Eq + Hash + 'static,
-        Input: PartialEq + 'static,
-        Output: 'static,
+        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Input: 'static + PartialEq $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
     {
-        let gc: &mut (dyn Gc) = &mut **self
+        let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
             .inner
             .entry(Query::get::<Scope, Input, Output>())
             .or_insert_with(|| Box::new(Namespace::<Scope, Input, Output>::default()));
@@ -60,6 +62,11 @@ impl Cache {
         }
     }
 }
+    };
+}
+
+define_cache!(LocalCache);
+define_cache!(Cache: Send);
 
 struct Namespace<Scope, Input, Output> {
     inner: HashMap<Scope, (Liveness, Input, Output)>,
