@@ -68,7 +68,10 @@ pub use cache::Cache;
 /// topo::call(|| assert_ne!(prev, topo::Id::current()));
 /// ```
 #[track_caller]
-pub fn call<R>(op: impl FnOnce() -> R) -> R {
+pub fn call<F, R>(op: F) -> R
+where
+    F: FnOnce() -> R,
+{
     let callsite = Callsite::here();
     Point::with_current(|p| p.enter_child(callsite, callsite.current_count(), op))
 }
@@ -77,7 +80,11 @@ pub fn call<R>(op: impl FnOnce() -> R) -> R {
 /// has executed. You can override that by providing an arbitrary slot in
 /// this call.
 #[track_caller]
-pub fn call_in_slot<R>(slot: impl Hash, op: impl FnOnce() -> R) -> R {
+pub fn call_in_slot<F, R, S>(slot: S, op: F) -> R
+where
+    F: FnOnce() -> R,
+    S: Eq + Hash,
+{
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
 
@@ -108,7 +115,11 @@ impl Id {
         Point::with_current(|current| current.id)
     }
 
-    fn child(&self, callsite: &Callsite, slot: impl Hash) -> Self {
+    // TODO ensure we don't have to worry about slot hash collisions
+    fn child<S>(&self, callsite: &Callsite, slot: S) -> Self
+    where
+        S: Eq + Hash,
+    {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
         callsite.hash(&mut hasher);
@@ -139,7 +150,11 @@ struct Point {
 
 impl Point {
     /// Mark a child Point in the topology, calling `child` within it.
-    fn enter_child<R>(&self, callsite: Callsite, slot: impl Hash, child: impl FnOnce() -> R) -> R {
+    fn enter_child<C, R, S>(&self, callsite: Callsite, slot: S, child: C) -> R
+    where
+        C: FnOnce() -> R,
+        S: Eq + Hash,
+    {
         self.increment_count(callsite);
         let child_point = Self {
             callsite,
@@ -150,7 +165,10 @@ impl Point {
     }
 
     /// Runs the provided closure with access to the current [`Point`].
-    fn with_current<Out>(op: impl FnOnce(&Point) -> Out) -> Out {
+    fn with_current<F, Out>(op: F) -> Out
+    where
+        F: FnOnce(&Point) -> Out,
+    {
         if let Some(current) = illicit::get::<Point>() {
             op(&*current)
         } else {
