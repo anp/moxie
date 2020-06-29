@@ -19,7 +19,7 @@ pub mod prelude {
     #[cfg(feature = "webdom")]
     pub use augdom::{document, sys};
     pub use augdom::{event, Dom as _};
-    pub use moxie::{memo, memo_state, memo_with, mox, once, once_with, state, state::Key};
+    pub use moxie::{memo, memo_state, memo_with, mox, once, once_with, state, Key};
 
     pub use crate::{
         elements::html,

@@ -17,6 +17,7 @@
 
 mod context;
 mod runloop;
+mod var;
 
 use futures::{
     future::LocalFutureObj,
@@ -27,6 +28,7 @@ use topo::Cache;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;
+pub(crate) use var::Var;
 
 /// Revisions measure moxie's notion of time passing. Each `Runtime` increments
 /// its Revision on every iteration. `crate::Commit`s to state variables are

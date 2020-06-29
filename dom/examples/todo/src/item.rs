@@ -65,7 +65,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
 
 #[topo::nested]
 pub fn todo_item(todo: &Todo) -> Li {
-    let editing = state(|| false);
+    let (editing, set_editing) = state(|| false);
 
     let mut classes = String::new();
     if todo.completed {
@@ -79,9 +79,9 @@ pub fn todo_item(todo: &Todo) -> Li {
     item = item.class(classes);
 
     if *editing {
-        item = item.child(item_edit_input(todo.clone(), editing));
+        item = item.child(item_edit_input(todo.clone(), set_editing));
     } else {
-        item = item.child(item_with_buttons(todo.clone(), editing));
+        item = item.child(item_with_buttons(todo.clone(), set_editing));
     }
 
     item.build()

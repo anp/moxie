@@ -36,8 +36,8 @@ pub(crate) struct App {
 impl App {
     #[topo::nested]
     pub fn current(default_todos: &[Todo]) -> Self {
-        let visibility = state(Visibility::default);
-        let todos = state(|| default_todos.into());
+        let (_, visibility) = state(Visibility::default);
+        let (_, todos) = state(|| default_todos.into());
 
         Self { todos, visibility }
     }

@@ -1,5 +1,5 @@
-use super::{LocalCache, Revision};
-use crate::state::{Key, Var};
+use super::{LocalCache, Revision, Var};
+use crate::{Commit, Key};
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -58,7 +58,12 @@ impl Context {
 
     /// Load a [`crate::state::Var`] with the provided argument and initializer.
     /// Re-initializes the `Var` whenever `arg` changes.
-    pub fn memo_state<Arg, Init, Output>(&self, id: topo::Id, arg: Arg, init: Init) -> Key<Output>
+    pub fn memo_state<Arg, Init, Output>(
+        &self,
+        id: topo::Id,
+        arg: Arg,
+        init: Init,
+    ) -> (Commit<Output>, Key<Output>)
     where
         Arg: PartialEq + 'static,
         Output: 'static,
@@ -96,8 +101,8 @@ impl Context {
         Stored: 'static,
         Ret: 'static,
     {
-        let result: Key<Poll<Stored>> = self.memo_state(id, (), |()| Poll::Pending);
-        let result2 = result.clone();
+        let (result, set_result): (_, Key<Poll<Stored>>) =
+            self.memo_state(id, (), |()| Poll::Pending);
         self.memo_with(
             id,
             arg,
@@ -105,7 +110,7 @@ impl Context {
                 let (fut, aborter) = abortable(init(arg));
                 let task = async move {
                     if let Ok(to_store) = fut.await {
-                        result.update(|_| Some(Poll::Ready(to_store)));
+                        set_result.update(|_| Some(Poll::Ready(to_store)));
                     }
                 };
                 self.spawner
@@ -116,7 +121,7 @@ impl Context {
             |_| {},
         );
 
-        match &*result2 {
+        match &*result {
             Poll::Ready(ref stored) => Poll::Ready(with(stored)),
             Poll::Pending => Poll::Pending,
         }

@@ -43,8 +43,7 @@ impl CounterBuilder {
     #[topo::nested]
     pub fn build(self) -> Counter {
         let Self { text, default_value } = self;
-        let value = state(|| default_value.unwrap_or(0));
-        let set_value = value.clone();
+        let (value, set_value) = state(|| default_value.unwrap_or(0));
         let text = text.unwrap_or_default();
 
         let button = mox! {

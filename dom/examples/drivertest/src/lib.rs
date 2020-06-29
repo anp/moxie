@@ -74,13 +74,10 @@ fn mutiple_event_listeners() {
     // Create a button with two click event listeners
     let (mut web_tester, web_div) = WebRuntime::in_web_div(move || {
         // Each event listener increments a counter
-        let counter1 = moxie::state(|| 0u8);
-        let counter2 = moxie::state(|| 0u8);
+        let (counter1_val, counter1) = moxie::state(|| 0u8);
+        let (counter2_val, counter2) = moxie::state(|| 0u8);
 
         let increment = |n: &u8| Some(n + 1);
-
-        // Clone the counters so they can be displayed later
-        let (counter1_val, counter2_val) = (counter1.clone(), counter2.clone());
 
         moxie::mox! {
             <button
