@@ -46,7 +46,7 @@ impl Context {
         Stored: 'static,
         Ret: 'static,
     {
-        if let Some(stored) = { self.cache.borrow_mut().get(id, &arg) } {
+        if let Some(stored) = { self.cache.borrow_mut().get(&id, &arg) } {
             return with(stored);
         }
 
