@@ -11,8 +11,9 @@ use std::{
 /// referenced since the last GC.
 #[derive(Debug)]
 pub struct Cache<Scope> {
-    inner: HashMap<Query<Scope>, (Liveness, Box<dyn Any>)>,
+    inner: HashMap<Scope, Namespace>,
 }
+type Namespace = HashMap<Query, (Liveness, Box<dyn Any>)>;
 
 impl<Scope> Default for Cache<Scope> {
     fn default() -> Self {
@@ -27,13 +28,14 @@ where
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
     /// is marked [`Liveness::Live`] and will not be GC'd this revision.
-    pub fn get<Input, Output>(&mut self, scope: Scope, input: &Input) -> Option<&Output>
+    pub fn get<Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
     where
         Input: PartialEq + 'static,
         Output: 'static,
     {
-        let query = Query::new::<Input, Output>(scope);
-        let (ref mut liveness, erased) = self.inner.get_mut(&query)?;
+        let namespace = self.inner.get_mut(scope)?;
+        let query = Query::get::<Input, Output>();
+        let (ref mut liveness, erased) = namespace.get_mut(&query)?;
         let (ref stored_input, ref stored): &(Input, Output) = erased.downcast_ref().unwrap();
         if stored_input == input {
             *liveness = Liveness::Live;
@@ -49,38 +51,47 @@ where
         Input: 'static,
         Output: 'static,
     {
-        let query = Query::new::<Input, Output>(scope);
-        let erased = Box::new((input, output)) as Box<dyn Any>;
-        self.inner.insert(query, (Liveness::Live, erased));
+        let (query, erased) = Query::insert(input, output);
+        self.inner.entry(scope).or_default().insert(query, (Liveness::Live, erased));
     }
 
     /// Drops memoized values that were not referenced since the last call
     /// and sets all remaining values to be dropped by default in the next call.
     pub fn gc(&mut self) {
-        self.inner.retain(|_, (liveness, _)| liveness == &Liveness::Live);
-        self.inner.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
+        for namespace in self.inner.values_mut() {
+            namespace.retain(|_, (liveness, _)| liveness == &Liveness::Live);
+            namespace.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
+        }
+
+        self.inner.retain(|_, namespace| !namespace.is_empty());
     }
 }
 
-/// Each query has a `Scope`, an `Input`, and an `Output` which together can be
-/// thought of as defining a function: `scope(input) -> output`.
+/// Each query has an `Input`, and an `Output` which together can be
+/// thought of as defining a function: `(input) -> output`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-struct Query<Scope> {
-    /// The query's scope or its namespace.
-    scope: Scope,
+struct Query {
     /// The type of input the query accepts.
     input: TypeId,
     /// The type of output the query returns.
     output: TypeId,
 }
 
-impl<Scope> Query<Scope> {
-    fn new<Input, Output>(scope: Scope) -> Self
+impl Query {
+    fn get<Input, Output>() -> Self
     where
         Input: 'static,
         Output: 'static,
     {
-        Self { scope, input: TypeId::of::<Input>(), output: TypeId::of::<Output>() }
+        Self { input: TypeId::of::<Input>(), output: TypeId::of::<Output>() }
+    }
+
+    fn insert<Input, Output>(input: Input, output: Output) -> (Self, Box<dyn Any>)
+    where
+        Input: 'static,
+        Output: 'static,
+    {
+        (Query::get::<Input, Output>(), Box::new((input, output)) as Box<dyn Any>)
     }
 }
 
