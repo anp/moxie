@@ -21,9 +21,9 @@ pub trait Element: crate::interfaces::node::Node {
     /// removes the attribute when `drop`ped, to ensure that the attribute
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
-    #[topo::nested]
+    #[topo::nested(slot = "name")]
     // TODO make `self` a slot too so we can remove topo::call from mox
-    fn attribute(self, #[slot] name: &str, value: impl ToString) -> Self {
+    fn attribute(self, name: &str, value: impl ToString) -> Self {
         self.node().memo_attribute(name, value.to_string());
         self
     }
