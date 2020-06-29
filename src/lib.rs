@@ -84,13 +84,12 @@ use std::{
 /// `Revision`.
 ///
 /// If a previous value was cached for this callsite but the argument has
-/// changed and it must be re-initialized, the previous value will be dropped
-/// before the new one is initialized.
+/// changed and it must be re-initialized.
 ///
-/// It is currently possible to nest calls to `memo_with` and other functions in
-/// this module, but the values they store won't be correctly retained across
+/// It is technically possible to nest calls to `memo_with` and other functions
+/// in this module, but the values they store won't be correctly retained across
 /// `Revision`s until we track dependency information. As a result, it's not
-/// recommended to nest calls to `memo_with!`.
+/// recommended.
 ///
 /// `init` takes a reference to `Arg` so that the memoization store can compare
 /// future calls' arguments against the one used to produce the stored value.
