@@ -10,7 +10,8 @@ pub fn text_input(
     editing: bool,
     mut on_save: impl FnMut(String) + 'static,
 ) -> Input {
-    let text = state(|| if editing { placeholder.to_string() } else { String::new() });
+    let (text, set_text) = state(|| if editing { placeholder.to_string() } else { String::new() });
+    let clear_text = set_text.clone();
 
     fn input_value(ev: impl AsRef<sys::Event>) -> String {
         let event: &sys::Event = ev.as_ref();
@@ -21,11 +22,10 @@ pub fn text_input(
         val
     }
 
-    let clear_text = text.clone();
     mox! {
         <input type="text" placeholder={placeholder} value={&text} autofocus={true}
             class={if editing { "edit new-todo" } else { "new-todo"}}
-            onchange={move |change| text.set(input_value(change))}
+            onchange={move |change| set_text.set(input_value(change))}
             onkeydown={move |keypress| {
                 if keypress.key() == "Enter" {
                     let value = input_value(keypress);
