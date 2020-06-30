@@ -12,6 +12,8 @@ include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]
 [dependencies]
 illicit = { path = "../illicit", version = "0.10.0-pre"}
 downcast-rs = "1.1.1"
+once_cell = "1.4.0"
+parking_lot = "0.11.0"
 topo-macro = { path = "macro", version = "0.10.0-pre"}
 
 [dev-dependencies]
