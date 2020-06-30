@@ -105,7 +105,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.memo_with(topo::Id::current(), arg, init, with)
+    rt.cache.memo_with(topo::Id::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
@@ -119,7 +119,7 @@ where
     Stored: 'static,
     Ret: 'static,
 {
-    rt.memo_with(topo::Id::current(), (), |&()| expr(), with)
+    rt.cache.memo_with(topo::Id::current(), (), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
@@ -134,7 +134,7 @@ where
     Arg: PartialEq + 'static,
     Stored: Clone + 'static,
 {
-    rt.memo_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.cache.memo_with(topo::Id::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will
@@ -146,7 +146,7 @@ pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
 where
     Stored: Clone + 'static,
 {
-    rt.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+    rt.cache.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state

@@ -23,8 +23,8 @@ use futures::{
     future::LocalFutureObj,
     task::{noop_waker, LocalSpawn, SpawnError},
 };
-use std::{cell::RefCell, rc::Rc, task::Waker};
-use topo::LocalCache;
+use std::{rc::Rc, task::Waker};
+use topo::LocalCacheHandle;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;
@@ -70,7 +70,7 @@ impl std::fmt::Debug for Revision {
 /// ```
 pub struct Runtime {
     revision: Revision,
-    cache: Rc<RefCell<LocalCache>>,
+    cache: LocalCacheHandle,
     spawner: Rc<dyn LocalSpawn>,
     wk: Waker,
 }
@@ -90,7 +90,7 @@ impl Runtime {
         Self {
             spawner: Rc::new(JunkSpawner),
             revision: Revision(0),
-            cache: Rc::new(RefCell::new(LocalCache::default())),
+            cache: LocalCacheHandle::default(),
             wk: noop_waker(),
         }
     }
@@ -109,7 +109,7 @@ impl Runtime {
 
         let ret = illicit::Layer::new().with(self.context_handle()).enter(|| topo::call(op));
 
-        self.cache.borrow_mut().gc();
+        self.cache.gc();
         ret
     }
 

@@ -1,14 +1,18 @@
 use downcast_rs::{impl_downcast, Downcast};
+use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
+    cell::RefCell,
     cmp::Eq,
     collections::HashMap,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::Hash,
+    rc::Rc,
+    sync::Arc,
 };
 
 macro_rules! define_cache {
-    ($name:ident $(: $bound:ident)?) => {
+    ($name:ident $(: $bound:ident)?, $($rest:tt)*) => {
 /// Holds results from arbitrary queries for later retrieval. Each query is indexed
 /// by the type and value of a "scope" and the type of the query's inputs and outputs.
 ///
@@ -62,11 +66,88 @@ impl $name {
         }
     }
 }
+
+paste::item! {
+    define_cache! {
+        @handle $name $(: $bound)?, [<$name Handle>], $($rest)*
+    }
+}
+    };
+    (
+        @handle
+        $name:ident $(: $bound:ident)?,
+        $handle:ident,
+        $shared:ident,
+        $lock:ident :: $acquire:ident
+    ) => {
+
+/// Provides access to a shared cache which stores results from arbitrary queries
+/// for later retrieval.
+#[derive(Clone)]
+pub struct $handle {
+    inner: $shared<$lock<$name>>,
+}
+
+impl Default for $handle {
+    fn default() -> Self {
+        Self {
+            inner: $shared::new($lock::new($name::default()))
+        }
+    }
+}
+
+impl $handle {
+    /// Provides a closure-based memoization API on top of the underlying
+    /// mutable API. Steps:
+    ///
+    /// 1. if matching cached value, mark live and return
+    /// 2. no cached value, initialize new one
+    /// 3. store new value as live, return
+    ///
+    /// Both (1) and (3) require mutable access to storage. We want to allow
+    /// nested memoization eventually so it's important that (2) *doesn't*
+    /// use mutable access to storage.
+    pub fn memo_with<Scope, Arg, Stored, Ret>(
+        &self,
+        scope: Scope,
+        arg: Arg,
+        init: impl FnOnce(&Arg) -> Stored,
+        with: impl FnOnce(&Stored) -> Ret,
+    ) -> Ret
+    where
+        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Arg: 'static + PartialEq $(+ $bound)?,
+        Stored: 'static $(+ $bound)?,
+        Ret: 'static $(+ $bound)?,
+    {
+        if let Some(stored) = { self.inner.$acquire().get(&scope, &arg) } {
+            return with(stored);
+        }
+
+        let to_store = init(&arg);
+        let to_return = with(&to_store);
+        self.inner.$acquire().store(scope, arg, to_store);
+        to_return
+    }
+
+    /// See `gc` on the inner cache type.
+    pub fn gc(&mut self) {
+        self.inner.$acquire().gc()
+    }
+}
+
+impl Debug for $handle {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_tuple(stringify!($handle))
+            .field(&*self.inner.$acquire())
+            .finish()
+    }
+}
     };
 }
 
-define_cache!(LocalCache);
-define_cache!(Cache: Send);
+define_cache!(LocalCache, Rc, RefCell::borrow_mut);
+define_cache!(Cache: Send, Arc, Mutex::lock);
 
 struct Namespace<Scope, Input, Output> {
     inner: HashMap<Scope, (Liveness, Input, Output)>,

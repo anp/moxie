@@ -1,8 +1,7 @@
-use super::{LocalCache, Revision, Var};
+use super::{Revision, Var};
 use crate::{Commit, Key};
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
-    cell::RefCell,
     fmt::{Debug, Formatter, Result as FmtResult},
     future::Future,
     rc::Rc,
@@ -14,7 +13,7 @@ use std::{
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
-    cache: Rc<RefCell<LocalCache>>,
+    pub cache: topo::LocalCacheHandle,
     spawner: Rc<dyn LocalSpawn>,
     waker: Waker,
 }
@@ -23,38 +22,6 @@ impl Context {
     /// Returns the revision for which this context was created.
     pub fn revision(&self) -> Revision {
         self.revision
-    }
-
-    /// Provides a closure-based memoization API on top of [`Cache`]'s
-    /// mutable API. Steps:
-    ///
-    /// 1. if matching cached value, mark live and return
-    /// 2. no cached value, initialize new one
-    /// 3. store new value as live, return
-    ///
-    /// Both (1) and (3) require mutable access to storage. We want to allow
-    /// nested memoization eventually so it's important that (2) *doesn't*
-    /// use mutable access to storage.
-    pub fn memo_with<Arg, Stored, Ret>(
-        &self,
-        id: topo::Id,
-        arg: Arg,
-        init: impl FnOnce(&Arg) -> Stored,
-        with: impl FnOnce(&Stored) -> Ret,
-    ) -> Ret
-    where
-        Arg: PartialEq + 'static,
-        Stored: 'static,
-        Ret: 'static,
-    {
-        if let Some(stored) = { self.cache.borrow_mut().get(&id, &arg) } {
-            return with(stored);
-        }
-
-        let to_store = init(&arg);
-        let to_return = with(&to_store);
-        self.cache.borrow_mut().store(id, arg, to_store);
-        to_return
     }
 
     /// Load a [`crate::state::Var`] with the provided argument and initializer.
@@ -70,7 +37,7 @@ impl Context {
         Output: 'static,
         for<'a> Init: FnOnce(&'a Arg) -> Output,
     {
-        let var = self.memo_with(
+        let var = self.cache.memo_with(
             id,
             arg,
             |arg| Var::new(topo::Id::current(), self.waker.clone(), init(arg)),
@@ -104,7 +71,7 @@ impl Context {
     {
         let (result, set_result): (_, Key<Poll<Stored>>) =
             self.memo_state(id, (), |()| Poll::Pending);
-        self.memo_with(
+        self.cache.memo_with(
             id,
             arg,
             |arg| {
