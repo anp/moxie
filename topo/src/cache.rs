@@ -1,7 +1,9 @@
+use downcast_rs::{impl_downcast, Downcast};
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, TypeId},
     cmp::Eq,
     collections::HashMap,
+    fmt::{Debug, Formatter, Result as FmtResult},
     hash::Hash,
 };
 
@@ -9,34 +11,68 @@ use std::{
 /// query is indexed by a "scope" and the type of the query's inputs and
 /// outputs. When collecting garbage, values are retained if they were
 /// referenced since the last GC.
-#[derive(Debug)]
-pub struct Cache<Scope> {
-    inner: HashMap<Scope, Namespace>,
-}
-type Namespace = HashMap<Query, (Liveness, Box<dyn Any>)>;
-
-impl<Scope> Default for Cache<Scope> {
-    fn default() -> Self {
-        Cache { inner: HashMap::new() }
-    }
+#[derive(Debug, Default)]
+pub struct Cache {
+    inner: HashMap<Query, Box<dyn Gc>>,
 }
 
-impl<Scope> Cache<Scope>
-where
-    Scope: Eq + Hash,
-{
+impl Cache {
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
     /// is marked [`Liveness::Live`] and will not be GC'd this revision.
-    pub fn get<Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
+    pub fn get<Scope, Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
     where
+        Scope: Eq + Hash + 'static,
         Input: PartialEq + 'static,
         Output: 'static,
     {
-        let namespace = self.inner.get_mut(scope)?;
-        let query = Query::get::<Input, Output>();
-        let (ref mut liveness, erased) = namespace.get_mut(&query)?;
-        let (ref stored_input, ref stored): &(Input, Output) = erased.downcast_ref().unwrap();
+        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(scope, input)
+    }
+
+    /// Store the result of a query. It will not be GC'd this revision.
+    pub fn store<Scope, Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
+    where
+        Scope: Eq + Hash + 'static,
+        Input: PartialEq + 'static,
+        Output: 'static,
+    {
+        self.get_namespace_mut().insert(scope, input, output);
+    }
+
+    fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
+    where
+        Scope: Eq + Hash + 'static,
+        Input: PartialEq + 'static,
+        Output: 'static,
+    {
+        let gc: &mut (dyn Gc) = &mut **self
+            .inner
+            .entry(Query::get::<Scope, Input, Output>())
+            .or_insert_with(|| Box::new(Namespace::<Scope, Input, Output>::default()));
+        gc.as_any_mut().downcast_mut().unwrap()
+    }
+
+    /// Drops memoized values that were not referenced since the last call
+    /// and sets all remaining values to be dropped by default in the next call.
+    pub fn gc(&mut self) {
+        for namespace in self.inner.values_mut() {
+            namespace.gc();
+        }
+    }
+}
+
+struct Namespace<Scope, Input, Output> {
+    inner: HashMap<Scope, (Liveness, Input, Output)>,
+}
+
+impl<Scope, Input, Output> Namespace<Scope, Input, Output>
+where
+    Scope: Eq + Hash + 'static,
+    Input: PartialEq + 'static,
+    Output: 'static,
+{
+    fn get_if_input_eq(&mut self, scope: &Scope, input: &Input) -> Option<&Output> {
+        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(scope)?;
         if stored_input == input {
             *liveness = Liveness::Live;
             Some(stored)
@@ -45,25 +81,46 @@ where
         }
     }
 
-    /// Store the result of a query. It will not be GC'd this revision.
-    pub fn store<Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
-    where
-        Input: 'static,
-        Output: 'static,
-    {
-        let (query, erased) = Query::insert(input, output);
-        self.inner.entry(scope).or_default().insert(query, (Liveness::Live, erased));
+    fn insert(&mut self, scope: Scope, input: Input, output: Output) {
+        self.inner.insert(scope, (Liveness::Live, input, output));
     }
+}
 
-    /// Drops memoized values that were not referenced since the last call
-    /// and sets all remaining values to be dropped by default in the next call.
-    pub fn gc(&mut self) {
-        for namespace in self.inner.values_mut() {
-            namespace.retain(|_, (liveness, _)| liveness == &Liveness::Live);
-            namespace.values_mut().for_each(|(liveness, _)| *liveness = Liveness::Dead);
-        }
+impl<Scope, Input, Output> Gc for Namespace<Scope, Input, Output>
+where
+    Scope: Eq + Hash + 'static,
+    Input: 'static,
+    Output: 'static,
+{
+    fn gc(&mut self) {
+        self.inner.retain(|_, (l, _, _)| *l == Liveness::Live);
+        self.inner.values_mut().for_each(|(l, _, _)| *l = Liveness::Dead);
+    }
+}
 
-        self.inner.retain(|_, namespace| !namespace.is_empty());
+impl<Scope, Input, Output> Default for Namespace<Scope, Input, Output>
+where
+    Scope: Eq + Hash + 'static,
+    Input: 'static,
+    Output: 'static,
+{
+    fn default() -> Self {
+        Self { inner: Default::default() }
+    }
+}
+
+impl<Scope, Input, Output> Debug for Namespace<Scope, Input, Output>
+where
+    Scope: Eq + Hash + 'static,
+    Input: 'static,
+    Output: 'static,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_map()
+            .entry(&"scope", &type_name::<Scope>())
+            .entry(&"input", &type_name::<Input>())
+            .entry(&"output", &type_name::<Output>())
+            .finish()
     }
 }
 
@@ -71,6 +128,8 @@ where
 /// thought of as defining a function: `(input) -> output`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct Query {
+    /// The type of scope by which the query is namespaced.
+    scope: TypeId,
     /// The type of input the query accepts.
     input: TypeId,
     /// The type of output the query returns.
@@ -78,22 +137,27 @@ struct Query {
 }
 
 impl Query {
-    fn get<Input, Output>() -> Self
+    fn get<Scope, Input, Output>() -> Self
     where
+        Scope: 'static,
         Input: 'static,
         Output: 'static,
     {
-        Self { input: TypeId::of::<Input>(), output: TypeId::of::<Output>() }
-    }
-
-    fn insert<Input, Output>(input: Input, output: Output) -> (Self, Box<dyn Any>)
-    where
-        Input: 'static,
-        Output: 'static,
-    {
-        (Query::get::<Input, Output>(), Box::new((input, output)) as Box<dyn Any>)
+        Self {
+            scope: TypeId::of::<Scope>(),
+            input: TypeId::of::<Input>(),
+            output: TypeId::of::<Output>(),
+        }
     }
 }
+
+/// A type which can contain values of varying liveness.
+trait Gc: Downcast + Debug {
+    /// Remove dead entries.
+    fn gc(&mut self);
+}
+
+impl_downcast!(Gc);
 
 /// Describes the outcome for a memoization value if a garbage collection were
 /// to occur when observed. During the run of a `Revision` any memoized values

@@ -75,7 +75,7 @@ pub struct Runtime {
     wk: Waker,
 }
 
-type LocalCache = Rc<RefCell<Cache<topo::Id>>>;
+type LocalCache = Rc<RefCell<Cache>>;
 
 impl Default for Runtime {
     fn default() -> Runtime {
