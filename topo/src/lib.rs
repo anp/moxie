@@ -55,8 +55,10 @@ use std::{cell::RefCell, hash::Hash};
 
 mod cache;
 mod id;
+mod token;
 pub use cache::{Cache, LocalCache};
 pub use id::{Callsite, Id};
+pub use token::{OpaqueToken, Token};
 
 /// Calls the provided expression with an [`Id`] specific to the callsite.
 ///
@@ -70,17 +72,18 @@ where
     F: FnOnce() -> R,
 {
     let callsite = Callsite::here();
-    Point::with_current(|p| p.enter_child(callsite, callsite.current_count(), op))
+    let slot = Token::get(callsite.current_count());
+    Point::with_current(|p| p.enter_child(callsite, slot, op))
 }
 
 /// The default "slot" for a topo call is the number of times that callsite
 /// has executed. You can override that by providing an arbitrary slot in
 /// this call.
 #[track_caller]
-pub fn call_in_slot<F, R, S>(slot: S, op: F) -> R
+pub fn call_in_slot<F, R, S>(slot: Token<S>, op: F) -> R
 where
     F: FnOnce() -> R,
-    S: Eq + Hash,
+    S: Eq + Hash + Send + 'static,
 {
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
@@ -101,16 +104,16 @@ struct Point {
 
 impl Point {
     /// Mark a child Point in the topology, calling `child` within it.
-    fn enter_child<C, R, S>(&self, callsite: Callsite, slot: S, child: C) -> R
+    fn enter_child<C, R, S>(&self, callsite: Callsite, slot: Token<S>, child: C) -> R
     where
         C: FnOnce() -> R,
-        S: Eq + Hash,
+        S: Eq + Hash + Send + 'static,
     {
         self.increment_count(callsite);
         let child_point = Self {
             callsite,
             callsite_counts: RefCell::new(Default::default()),
-            id: self.id.child(&callsite, slot),
+            id: self.id.child(callsite, slot),
         };
         illicit::Layer::new().with(child_point).enter(child)
     }
@@ -225,7 +228,7 @@ mod tests {
             call(|| {
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
-                    call_in_slot(s, || {
+                    call_in_slot(Token::get_str(s), || {
                         let current = Id::current();
                         unique_ids.insert(current);
                     });
