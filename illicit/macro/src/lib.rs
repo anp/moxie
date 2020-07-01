@@ -23,18 +23,15 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let args = Punctuated::<FnArg, Token![,]>::parse_terminated.parse(args).unwrap();
 
-    let binding_statements = args
-        .iter()
-        .map(|arg| match arg {
+    // iterate args in reverse so we can push onto the front of the block
+    for arg in args.into_iter().rev() {
+        let arg = match arg {
             FnArg::Receiver(rec) => abort!(rec.span(), "can't receive self by-environment"),
             FnArg::Typed(pt) => pt,
-        })
-        .map(bind_env_reference)
-        .map(Stmt::Local)
-        .collect();
-
-    let mut previous_statements = std::mem::replace(&mut input_fn.block.stmts, binding_statements);
-    input_fn.block.stmts.append(&mut previous_statements);
+        };
+        let stmt = bind_env_reference(&arg);
+        input_fn.block.stmts.insert(0, Stmt::Local(stmt));
+    }
 
     quote::quote!(#input_fn).into()
 }
