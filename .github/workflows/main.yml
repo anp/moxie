@@ -23,7 +23,11 @@ jobs:
 
     - run: cargo build-times --release
       working-directory: ofl
-    - run: cargo test-ofl
+    - name: archive build timings
+      uses: actions/upload-artifact@v2
+      with:
+        name: ofl-build-times
+        path: "ofl/cargo-timing.html"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -32,9 +36,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: ofl-${{ runner.os }}
-        path: |
-          ofl/target/release/ofl
-          ofl/target/release/ofl.exe
+        path: ofl/target/release/ofl*
 
   coverage:
     needs: ofl
@@ -61,11 +63,14 @@ jobs:
           ~/.cargo/registry
           target/coverage
 
-    - name: core tests
-      run: bin/ofl coverage collect test-core
-    - name: dom tests
-      run: bin/ofl coverage collect test-dom
+    # collect ofl coverage with the root target dir to get into the same report
+    - run: bin/ofl coverage collect test-ofl
+      env:
+        CARGO_TARGET_DIR: target/
+    - run: bin/ofl coverage collect test-core
+    - run: bin/ofl coverage collect test-dom
     - run: bin/ofl coverage report
+
     - uses: codecov/codecov-action@v1
       with:
         file: ./target/coverage/lcov.info
