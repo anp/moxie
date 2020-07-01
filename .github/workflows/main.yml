@@ -154,6 +154,7 @@ jobs:
     needs: [coverage, fmt, clippy, main, ofl]
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@master
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
