@@ -69,7 +69,7 @@ connection to listen for changes, reloading when changes occur.
 #### Releases
 
 During development all non-tool crate versions should be suffixed with `-pre` indicating a
-pre-release of some kind. To release a version of a crate, publish a commit to `origin/master/HEAD`
+pre-release of some kind. To release a version of a crate, publish a commit to `origin/main/HEAD`
 without the pre-release suffix. The project's continuous integration ensures that any "release"
 versions (without `-pre`) have been published to crates.io.
 
