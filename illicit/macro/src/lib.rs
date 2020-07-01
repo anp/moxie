@@ -18,14 +18,13 @@ use syn::{
 /// requested type in its `topo::Env`.
 #[proc_macro_attribute]
 #[proc_macro_error]
-// TODO(#97) support optional binding
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
     let args = Punctuated::<FnArg, Token![,]>::parse_terminated.parse(args).unwrap();
 
     let binding_statements = args
-        .into_iter()
+        .iter()
         .map(|arg| match arg {
             FnArg::Receiver(rec) => abort!(rec.span(), "can't receive self by-environment"),
             FnArg::Typed(pt) => pt,
@@ -42,10 +41,10 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
 
 /// Create a local expect assignment expression from the `pattern: &type`
 /// pair which is passed.
-fn bind_env_reference(arg: PatType) -> Local {
+fn bind_env_reference(arg: &PatType) -> Local {
     let arg_span = arg.span();
 
-    let init_expr = match *arg.ty {
+    let init_expr = match &*arg.ty {
         syn::Type::Reference(syn::TypeReference { lifetime, mutability, elem, .. }) => {
             if mutability.is_some() {
                 abort!(mutability.span(), "mutable references cannot be passed by environment");
@@ -67,7 +66,7 @@ fn bind_env_reference(arg: PatType) -> Local {
     Local {
         attrs: vec![],
         let_token: Token![let](arg_span),
-        pat: *arg.pat,
+        pat: *arg.pat.clone(),
         init: Some((Token![=](arg_span), Box::new(init_expr))),
         semi_token: Token![;](arg_span),
     }
