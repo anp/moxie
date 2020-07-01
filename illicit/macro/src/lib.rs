@@ -4,7 +4,7 @@
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use proc_macro_error::{abort, proc_macro_error};
+use proc_macro_error::{abort, abort_call_site, proc_macro_error};
 use syn::{
     parse::Parser, punctuated::Punctuated, spanned::Spanned, FnArg, Local, PatType, Stmt, Token,
 };
@@ -22,6 +22,9 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
 
     let args = Punctuated::<FnArg, Token![,]>::parse_terminated.parse(args).unwrap();
+    if args.is_empty() {
+        abort_call_site!("must specify >=1 one argument");
+    }
 
     // iterate args in reverse so we can push onto the front of the block
     for arg in args.into_iter().rev() {
