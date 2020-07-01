@@ -7,7 +7,7 @@ authors = ["Adam Perry <adam.n.perry@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
 description = "outcome-oriented project task tool, as in 'all task runners are...'"
-repository = "https://github.com/anp/moxie/tree/master/ofl"
+repository = "https://github.com/anp/moxie/tree/main/ofl"
 
 [dependencies]
 actix = "0.10.0-alpha.3"
