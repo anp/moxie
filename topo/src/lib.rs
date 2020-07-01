@@ -88,6 +88,29 @@ where
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
 
+/// Calls the provided expression as the root of a new call tree, ignoring the
+/// current `Id`.
+///
+/// # Example
+///
+/// ```
+/// // a call to root() here ensures the child is always treated as the same tree
+/// // no matter from where the function is called
+/// let independent = || root(Id::current);
+/// assert_eq!(call(independent), call(independent));
+///
+/// // this is a normal topo call, it returns `Id`s based on the parent state
+/// let dependent = || call(Id::current);
+/// assert_ne!(call(dependent), call(dependent));
+/// ```
+pub fn root<F, R>(op: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    illicit::hide::<Point>();
+    call(op)
+}
+
 /// The root of a sub-graph within the overall topology formed at runtime by the
 /// call-graph of topologically-nested functions.
 ///
@@ -218,6 +241,15 @@ mod tests {
                 }
             }
         });
+    }
+
+    #[test]
+    fn reuse_same_root_two_places() {
+        let dependent = || call(Id::current);
+        let independent = || root(Id::current);
+
+        assert_ne!(call(dependent), call(dependent));
+        assert_eq!(call(independent), call(independent));
     }
 
     #[test]
