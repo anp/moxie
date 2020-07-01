@@ -43,7 +43,7 @@ fn inject_script_tag(body: &str) -> Option<String> {
         element_content_handlers: vec![element!("head", |head| {
             info!("inserting script tag");
             head.append("<script>", ContentType::Html);
-            head.append(RELOAD_ON_CHANGES, ContentType::Text);
+            head.append(RELOAD_ON_CHANGES, ContentType::Html);
             head.append("</script>", ContentType::Html);
             Ok(())
         })],
@@ -74,6 +74,7 @@ mod tests {
             let injected = inject_script_tag(base).unwrap();
             assert!(!base.contains(CHANGES_URL), "original shouldn't have reload URL");
             assert!(injected.contains(CHANGES_URL), "must have injected reload URL");
+            assert!(injected.contains("=>"), "must preserve lambda notation without escaping")
         }};
     }
 
