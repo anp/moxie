@@ -5,8 +5,10 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, abort_call_site, proc_macro_error};
+use quote::quote;
 use syn::{
-    parse::Parser, punctuated::Punctuated, spanned::Spanned, FnArg, Local, PatType, Stmt, Token,
+    parse::Parser, parse_macro_input, parse_quote, punctuated::Punctuated, spanned::Spanned,
+    Attribute, FnArg, ItemFn, Local, PatType, Stmt, Token, Type, TypeReference,
 };
 
 /// Defines required [topo::Env] values for a function. Binds the provided types
@@ -19,21 +21,32 @@ use syn::{
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut input_fn: syn::ItemFn = syn::parse_macro_input!(input);
+    let mut input_fn: ItemFn = parse_macro_input!(input);
 
     let args = Punctuated::<FnArg, Token![,]>::parse_terminated.parse(args).unwrap();
     if args.is_empty() {
         abort_call_site!("must specify >=1 one argument");
     }
 
-    // iterate args in reverse so we can push onto the front of the block
-    for arg in args.into_iter().rev() {
+    let doc_prelude = "
+# Environment Expectations
+
+This function requires the following types to be visible to [`illicit::get`] and will
+panic otherwise:
+";
+
+    for line in doc_prelude.lines() {
+        input_fn.attrs.push(parse_quote!(#[doc = #line]));
+    }
+
+    for arg in args {
         let arg = match arg {
             FnArg::Receiver(rec) => abort!(rec.span(), "can't receive self by-environment"),
             FnArg::Typed(pt) => pt,
         };
-        let stmt = bind_env_reference(&arg);
+        let (stmt, doc_attr) = bind_env_reference(&arg);
         input_fn.block.stmts.insert(0, Stmt::Local(stmt));
+        input_fn.attrs.push(doc_attr);
     }
 
     quote::quote!(#input_fn).into()
@@ -41,11 +54,11 @@ pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
 
 /// Create a local expect assignment expression from the `pattern: &type`
 /// pair which is passed.
-fn bind_env_reference(arg: &PatType) -> Local {
+fn bind_env_reference(arg: &PatType) -> (Local, Attribute) {
     let arg_span = arg.span();
 
-    let init_expr = match &*arg.ty {
-        syn::Type::Reference(syn::TypeReference { lifetime, mutability, elem, .. }) => {
+    let (init_expr, ty_tokens) = match &*arg.ty {
+        Type::Reference(TypeReference { lifetime, mutability, elem, .. }) => {
             if mutability.is_some() {
                 abort!(mutability.span(), "mutable references cannot be passed by environment");
             }
@@ -57,17 +70,22 @@ fn bind_env_reference(arg: &PatType) -> Local {
                 );
             }
 
-            syn::parse_quote!(&*illicit::expect::<#elem>())
+            (parse_quote!(&*illicit::expect::<#elem>()), quote!(#elem))
         }
 
-        ty => syn::parse_quote!(illicit::expect::<#ty>().clone()),
+        ty => (parse_quote!(illicit::expect::<#ty>().clone()), quote!(#ty)),
     };
 
-    Local {
-        attrs: vec![],
-        let_token: Token![let](arg_span),
-        pat: *arg.pat.clone(),
-        init: Some((Token![=](arg_span), Box::new(init_expr))),
-        semi_token: Token![;](arg_span),
-    }
+    let ty_bullet = format!("* `{}`", ty_tokens);
+
+    (
+        Local {
+            attrs: vec![],
+            let_token: Token![let](arg_span),
+            pat: *arg.pat.clone(),
+            init: Some((Token![=](arg_span), Box::new(init_expr))),
+            semi_token: Token![;](arg_span),
+        },
+        parse_quote!(#[doc = #ty_bullet]),
+    )
 }
