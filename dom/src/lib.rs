@@ -2,7 +2,6 @@
 //! trees on the web. Based on the [`moxie`] UI runtime.
 
 #![deny(clippy::all, missing_docs)]
-#![feature(track_caller)]
 
 /// Internal macros for stamping out types to match stringly-typed web APIs.
 #[macro_use]

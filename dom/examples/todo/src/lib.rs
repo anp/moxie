@@ -1,5 +1,3 @@
-#![feature(track_caller)]
-
 use filter::Visibility;
 use header::input_header;
 use main_section::main_section;

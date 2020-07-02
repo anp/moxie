@@ -58,7 +58,6 @@
 //! [run_once]: crate::runtime::Runtime::run_once
 //! [topo]: https://docs.rs/topo
 
-#![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 

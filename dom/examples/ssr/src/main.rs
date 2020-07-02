@@ -1,5 +1,3 @@
-#![feature(track_caller)]
-
 #[macro_use]
 extern crate gotham_derive;
 #[macro_use]
