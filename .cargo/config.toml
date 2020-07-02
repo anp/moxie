@@ -18,6 +18,7 @@ watch --clear
     -x ofl-fmt-project
     -x clippy-core
     -x test-core
+    -x test-core-doc
     -x docs-clean
     -x docs-all
 """
@@ -25,6 +26,7 @@ watch --clear
 bench-core = "bench --all-targets --package illicit --package moxie --package topo"
 clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro"
 test-core = "test --all-targets --package illicit --package moxie --package topo --package topo-macro"
+test-core-doc = "test --doc --package illicit --package moxie --package topo --package topo-macro"
 
 docs-all = "doc --workspace --no-deps --all-features"
 docs-clean = "clean --doc"
@@ -37,6 +39,7 @@ build-times = "build --workspace --all-targets --all-features -Z timings"
 dom-flow = """
 watch --clear
     -x test-dom
+    -x test-dom-doc
     -x test-augdom
     -x test-dom-lib-browser
     -x test-dom-drivertest
@@ -64,6 +67,7 @@ test-dom-todo = "wa-test dom/examples/todo"
 
 # standalones
 test-dom = "test --package moxie-dom --package ssr-poc --all-targets"
+test-dom-doc = "test --package moxie-dom --package ssr-poc --doc"
 
 # dom utilities
 clippy-dom = """clippy

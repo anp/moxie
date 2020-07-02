@@ -60,7 +60,7 @@ impl std::fmt::Debug for Revision {
 /// state variables which might require mutation wakeups.
 ///
 /// ```
-/// # use moxie::embed::{Revision, Runtime};
+/// # use moxie::runtime::{Revision, Runtime};
 /// let mut rt = Runtime::new();
 /// assert_eq!(rt.revision().0, 0);
 /// for i in 1..10 {

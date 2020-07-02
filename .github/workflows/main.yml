@@ -68,7 +68,9 @@ jobs:
       env:
         CARGO_TARGET_DIR: target/
     - run: bin/ofl coverage collect test-core
+    - run: bin/ofl coverage collect test-core-doc
     - run: bin/ofl coverage collect test-dom
+    - run: bin/ofl coverage collect test-dom-doc
     - run: bin/ofl coverage report
 
     - uses: codecov/codecov-action@v1
