@@ -96,12 +96,12 @@ where
 /// ```
 /// // a call to root() here ensures the child is always treated as the same tree
 /// // no matter from where the function is called
-/// let independent = || root(Id::current);
-/// assert_eq!(call(independent), call(independent));
+/// let independent = || topo::root(topo::Id::current);
+/// assert_eq!(topo::call(independent), topo::call(independent));
 ///
 /// // this is a normal topo call, it returns `Id`s based on the parent state
-/// let dependent = || call(Id::current);
-/// assert_ne!(call(dependent), call(dependent));
+/// let dependent = || topo::call(topo::Id::current);
+/// assert_ne!(topo::call(dependent), topo::call(dependent));
 /// ```
 pub fn root<F, R>(op: F) -> R
 where

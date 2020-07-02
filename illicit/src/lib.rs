@@ -13,23 +13,35 @@
 //!     num + 1
 //! }
 //!
-//! illicit::Layer::new().with(1u8).enter(|| {
+//! illicit::Layer::new().offer(1u8).enter(|| {
 //!     assert_eq!(env_num_plus_one(), 2u8);
+//!
+//!     illicit::Layer::new().offer(7u8).enter(|| {
+//!         assert_eq!(env_num_plus_one(), 8u8);
+//!     });
 //! });
 //! ```
 //!
-//! This provides convenient sugar for values stored in the current `Env` as an
-//! alternative to thread-locals or a manually propagated context object.
+//! Here, both calls see a `u8` in their environment.
+//!
+//! # Caution
+//!
+//! This provides convenient sugar for values stored in the current environment
+//! as an alternative to thread-locals or a manually propagated context object.
 //! However this approach incurs a significant cost in that the following code
 //! will panic without the right type having been added to the environment:
 //!
-//! ```should_panic
+//! ```
+//! # use assert_panic::assert_panic;
 //! # #[illicit::from_env(num: &u8)]
 //! # fn env_num_plus_one() -> u8 {
 //! #    num + 1
 //! # }
-//! // thread 'main' panicked at 'expected a value from the environment, found none'
-//! env_num_plus_one();
+//! assert_panic!(
+//!     { env_num_plus_one(); },
+//!     String,
+//!     starts with "expected a `u8` from the environment",
+//! );
 //! ```
 //!
 //! See the attribute's documentation for more details, and please consider
@@ -118,13 +130,12 @@ pub fn hide<E: 'static>() {
     })
 }
 
-/// Immutable environment container for the current scope. Environment values
-/// can be provided by parent environments, but child functions can only mutate
-/// their environment through interior mutability.
+/// A pending addition to the local environment.
 ///
-/// The environment is type-indexed, and each `Scope` holds 0-1 references to
-/// every `[std::any::Any] + 'static` type. Access is provided through read-only
-/// references.
+/// The environment is type-indexed, and access is provided through read-only
+/// references. Call [`Layer::offer`] to include new values in the environment
+/// for called functions and [`get`] or [`expect`] to retrieve references to the
+/// offered values.
 ///
 /// Aside: one interesting implication of the above is the ability to define
 /// "private scoped global values" which are private to functions which are
@@ -189,7 +200,7 @@ impl Layer {
         (self.location.file(), self.location.line(), self.location.column())
     }
 
-    /// Call `child_fn` with this environment as the current scope.
+    /// Call `child_fn` with this layer added to the environment.
     pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
