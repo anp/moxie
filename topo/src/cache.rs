@@ -25,7 +25,7 @@ pub struct $name {
 impl $name {
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
-    /// is marked [`Liveness::Live`] and will not be GC'd this revision.
+    /// is marked live and will not be GC'd this revision.
     pub fn get<Scope, Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
     where
         Scope: 'static + Eq + Hash $(+ $bound)?,
