@@ -133,7 +133,7 @@ fn consume_fs_event(
             return;
         }
     };
-    if let Some(path) = event.paths.iter().next() {
+    if let Some(path) = event.paths.get(0) {
         let changed = path.display().to_string();
 
         info!("file change detected at {}", &changed);
