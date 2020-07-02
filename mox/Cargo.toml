@@ -2,7 +2,7 @@
 name = "mox"
 version = "0.3.0-pre"
 edition = "2018"
-authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+authors = ["Adam Perry <lol@anp.lol>"]
 license = "MIT/Apache-2.0"
 description = "Mockery Of X(ML): a JSX-like macro for moxie."
 repository = "https://github.com/anp/moxie"

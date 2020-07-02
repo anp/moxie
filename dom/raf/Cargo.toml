@@ -2,7 +2,7 @@
 name = "raf"
 version = "0.2.0-pre"
 edition = "2018"
-authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+authors = ["Adam Perry <lol@anp.lol>"]
 license = "MIT/Apache-2.0"
 description = "browser event loop scheduler using requestAnimationFrame"
 repository = "https://github.com/anp/moxie"
