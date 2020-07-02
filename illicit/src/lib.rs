@@ -68,26 +68,6 @@ thread_local! {
     ));
 }
 
-/// Returns a snapshot of the current dynamic scope. Most useful for debugging
-/// the contained `Layer`s.
-pub fn snapshot() -> EnvSnapshot {
-    let mut stacked = EnvSnapshot { by_depth: BTreeMap::new() };
-    CURRENT_SCOPE.with(|e| {
-        for (_, anon) in &e.borrow().values {
-            stacked
-                .by_depth
-                .entry(anon.depth())
-                .or_insert_with(|| Layer {
-                    values: Default::default(),
-                    depth: anon.depth(),
-                    location: anon.location(), // depth -> location is 1:1
-                })
-                .add_anon(anon.clone());
-        }
-    });
-    stacked
-}
-
 /// Returns a reference to a value in the current environment if it is
 /// present.
 pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
@@ -107,6 +87,9 @@ where
 
 /// Returns a reference to a value in the current environment, as
 /// [`get`] does, but panics if the value has not been set.
+///
+/// The panic message includes the stack of current [`Layer`]s
+/// and their contents.
 pub fn expect<E>() -> impl Deref<Target = E> + 'static
 where
     E: Any + 'static,
@@ -117,7 +100,7 @@ where
         panic!(
             "expected a `{}` from the environment, did not find it in current env: {:#?}",
             std::any::type_name::<E>(),
-            snapshot(),
+            Snapshot::get(),
         )
     }
 }
@@ -200,11 +183,6 @@ impl Layer {
         }
     }
 
-    /// The number of parent environments from which this environment descends.
-    pub fn depth(&self) -> u32 {
-        self.depth
-    }
-
     // TODO(#135) remove
     #[cfg(test)]
     fn raw_location(&self) -> (&'static str, u32, u32) {
@@ -239,14 +217,36 @@ impl Debug for Layer {
     }
 }
 
-/// An alternative representation of the current scope's environment, optimized
-/// for debug printing.
+/// A point-in-time representation of the implicit environment, intended for
+/// debug printing.
 #[derive(Clone)]
-pub struct EnvSnapshot {
+pub struct Snapshot {
     by_depth: BTreeMap<u32, Layer>,
 }
 
-impl Debug for EnvSnapshot {
+impl Snapshot {
+    /// Returns a snapshot of the current dynamic scope. Most useful for
+    /// debugging the contained `Layer`s.
+    pub fn get() -> Snapshot {
+        let mut stacked = Snapshot { by_depth: BTreeMap::new() };
+        CURRENT_SCOPE.with(|e| {
+            for (_, anon) in &e.borrow().values {
+                stacked
+                    .by_depth
+                    .entry(anon.depth())
+                    .or_insert_with(|| Layer {
+                        values: Default::default(),
+                        depth: anon.depth(),
+                        location: anon.location(), // depth -> location is 1:1
+                    })
+                    .add_anon(anon.clone());
+            }
+        });
+        stacked
+    }
+}
+
+impl Debug for Snapshot {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         f.debug_list().entries(self.by_depth.values()).finish()
     }
@@ -258,21 +258,21 @@ mod tests {
 
     #[test]
     fn snapshot_has_correct_structure() {
-        let empty_scope = snapshot();
+        let empty_scope = Snapshot::get();
         let mut u8_present = (empty_scope.clone(), 0);
         let mut u8_and_string_present = u8_present.clone();
 
         // generate our test values
         Layer::new().offer(42u8).enter(|| {
-            u8_present = (snapshot(), line!() - 1);
+            u8_present = (Snapshot::get(), line!() - 1);
 
             Layer::new().offer(String::from("owo")).enter(|| {
-                u8_and_string_present = (snapshot(), line!() - 1);
+                u8_and_string_present = (Snapshot::get(), line!() - 1);
             });
         });
 
         // check the empty scopes
-        let empty_scope_after = snapshot();
+        let empty_scope_after = Snapshot::get();
         assert_eq!(empty_scope.by_depth.len(), 0, "environment should be empty without additions");
         assert_eq!(
             empty_scope.by_depth.len(),
@@ -339,12 +339,12 @@ mod tests {
         let mut second_called = false;
 
         assert!(get::<u8>().is_none());
-        Layer::new().with(0u8).enter(|| {
+        Layer::new().offer(0u8).enter(|| {
             let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
             first_called = true;
 
-            Layer::new().with(1u8).enter(|| {
+            Layer::new().offer(1u8).enter(|| {
                 let curr_byte = *expect::<u8>();
                 assert_eq!(curr_byte, 1);
                 second_called = true;
@@ -360,11 +360,11 @@ mod tests {
     #[test]
     fn child_sees_parent_env() {
         assert!(get::<u8>().is_none());
-        Layer::new().with(0u8).enter(|| {
+        Layer::new().offer(0u8).enter(|| {
             let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
 
-            Layer::new().with(1u16).enter(|| {
+            Layer::new().offer(1u16).enter(|| {
                 let curr_byte = *expect::<u8>();
                 assert_eq!(curr_byte, 0, "must see u8 from enclosing environment");
 
@@ -381,7 +381,7 @@ mod tests {
     fn removing_from_env() {
         assert!(get::<u8>().is_none());
 
-        Layer::new().with(2u8).enter(|| {
+        Layer::new().offer(2u8).enter(|| {
             assert_eq!(*expect::<u8>(), 2, "just added 2u8");
 
             Layer::new().enter(|| {
