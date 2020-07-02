@@ -176,6 +176,11 @@ impl Layer {
     }
 
     /// Adds the new item and returns the modified layer.
+    ///
+    /// The offered type must implement `Debug` to allow [`Snapshot`]
+    /// to display the contents of the illicit environment. It must also satisfy
+    /// the `'static` lifetime because [`get`] is unable to express any
+    /// lifetime constraints at its callsite.
     pub fn offer<E>(mut self, v: E) -> Self
     where
         E: Debug + 'static,
