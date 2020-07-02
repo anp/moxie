@@ -40,7 +40,7 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called
     /// outside of a Runtime's execution.
     pub fn current() -> Self {
-        if let Some(r) = illicit::get::<Context>() { r.revision() } else { Revision::default() }
+        if let Ok(r) = illicit::get::<Context>() { r.revision() } else { Revision::default() }
     }
 }
 
@@ -151,11 +151,11 @@ mod tests {
             assert_eq!(from_env, first_byte);
         });
 
-        assert!(illicit::get::<u8>().is_none());
+        assert!(illicit::get::<u8>().is_err());
         illicit::Layer::new().offer(first_byte).enter(|| {
             topo::call(|| runtime.run_once());
         });
-        assert!(illicit::get::<u8>().is_none());
+        assert!(illicit::get::<u8>().is_err());
     }
 
     #[test]

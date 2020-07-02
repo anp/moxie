@@ -19,7 +19,6 @@ owning_ref = "0.4"
 scopeguard = "1"
 
 [dev-dependencies]
-assert-panic = "1.0.1"
 criterion = "0.3"
 
 [[bench]]
