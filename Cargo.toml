@@ -3,11 +3,17 @@ cargo-features = ["named-profiles"] # for coverage
 [package]
 name = "moxie"
 version = "0.3.0-pre"
-edition = "2018"
-authors = ["Adam Perry <lol@anp.lol>"]
+description = "Incremental runtime for interactive software."
+categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
+keywords = ["incremental", "memoize", "intern", "reactive"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
 license = "MIT/Apache-2.0"
-description = "Declarative, asynchronous, incremental UI runtime."
-repository = "https://github.com/anp/moxie"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
 
 [dependencies]
 futures = "0.3.5"

@@ -1,11 +1,17 @@
 [package]
 name = "raf"
 version = "0.2.0-pre"
-edition = "2018"
-authors = ["Adam Perry <lol@anp.lol>"]
-license = "MIT/Apache-2.0"
 description = "browser event loop scheduler using requestAnimationFrame"
-repository = "https://github.com/anp/moxie"
+categories = ["asynchronous", "concurrency", "gui", "wasm", "web-programming"]
+keywords = ["scheduler", "events", "requestAnimationFrame"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
 
 [dependencies]
 futures = "0.3"

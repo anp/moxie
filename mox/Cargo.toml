@@ -1,11 +1,17 @@
 [package]
 name = "mox"
 version = "0.3.0-pre"
-edition = "2018"
-authors = ["Adam Perry <lol@anp.lol>"]
+description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
+categories = ["gui", "rust-patterns"]
+keywords = ["jsx", "xml", "builder"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
 license = "MIT/Apache-2.0"
-description = "Mockery Of X(ML): a JSX-like macro for moxie."
-repository = "https://github.com/anp/moxie"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
 
 [lib]
 proc-macro = true

@@ -1,13 +1,15 @@
 [package]
 name = "topo-macro"
 version = "0.10.0-pre"
+description = "procedural macros for the topo crate"
+readme = "../CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
-description = "procedural macros for the topo crate"
-repository = "https://github.com/anp/moxie"
-
-include = ["Cargo.toml", "src/**/*.rs"]
 
 [lib]
 proc-macro = true
