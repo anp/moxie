@@ -70,11 +70,13 @@ connection to listen for changes, reloading when changes occur.
 
 During development all non-tool crate versions should be suffixed with `-pre` indicating a
 pre-release of some kind. To release a version of a crate, publish a commit to `origin/main/HEAD`
-without the pre-release suffix. The project's continuous integration ensures that any "release"
-versions (without `-pre`) have been published to crates.io.
+without the pre-release suffix, making sure to update CHANGELOGs appropriately. The project's
+continuous integration ensures that any "release" versions (without `-pre`) have been published to
+crates.io.
 
 After a release, all version numbers should be incremented and have `-pre` re-appended. PRs are
-expected to bump the version number of the crate they're modifying behind the `-pre` suffix.
+expected to bump the version number of the crate they're modifying behind the `-pre` suffix as well
+as updating the relevant CHANGELOGs.
 
 #### New crates
 

@@ -1,13 +1,17 @@
 [package]
 name = "topo"
 version = "0.10.0-pre"
+description = "Caching and runtime identifiers for dynamic callgraphs"
+categories = ["caching", "data-structures", "gui", "memory-management", "rust-patterns"]
+keywords = ["cache", "memoize", "intern", "topology", "incremental"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
-description = "Stable runtime identifiers for repetitive dynamic callgraphs"
-repository = "https://github.com/anp/moxie"
-
-include = ["Cargo.toml", "src/**/*.rs", "benches/**/*.rs", "tests/**/*.rs"]
 
 [dependencies]
 illicit = { path = "../illicit", version = "0.10.0-pre"}

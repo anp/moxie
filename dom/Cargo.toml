@@ -1,11 +1,17 @@
 [package]
 name = "moxie-dom"
 version = "0.3.0-pre"
+description = "Incrementally interactive HTML applications."
+categories = ["asynchronous", "concurrency", "gui", "wasm", "web-programming"]
+keywords = ["dom", "web", "incremental", "interactive"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
-description = "TBA"
-repository = "https://github.com/anp/moxie"
 
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"

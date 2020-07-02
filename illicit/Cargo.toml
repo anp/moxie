@@ -1,11 +1,17 @@
 [package]
 name = "illicit"
 version = "0.10.0-pre"
-edition = "2018"
-authors = ["Adam Perry <lol@anp.lol>"]
+description = "Type-indexed, dynamically-scoped, thread-local singletons."
+categories = ["development-tools::testing", "gui", "rust-patterns"]
+keywords = ["context", "global", "singleton"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
 license = "MIT/Apache-2.0"
-description = "Type-indexed dynamically-scoped singletons."
-repository = "https://github.com/anp/moxie"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
 
 [dependencies]
 illicit-macro = { path = "macro", version = "0.10.0-pre"}
