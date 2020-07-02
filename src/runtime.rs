@@ -107,7 +107,7 @@ impl Runtime {
     pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
         self.revision.0 += 1;
 
-        let ret = illicit::Layer::new().with(self.context_handle()).enter(|| topo::call(op));
+        let ret = illicit::Layer::new().offer(self.context_handle()).enter(|| topo::call(op));
 
         self.cache.gc();
         ret
@@ -152,7 +152,7 @@ mod tests {
         });
 
         assert!(illicit::get::<u8>().is_none());
-        illicit::Layer::new().with(first_byte).enter(|| {
+        illicit::Layer::new().offer(first_byte).enter(|| {
             topo::call(|| runtime.run_once());
         });
         assert!(illicit::get::<u8>().is_none());

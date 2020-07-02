@@ -138,7 +138,7 @@ impl Point {
             callsite_counts: RefCell::new(Default::default()),
             id: self.id.child(callsite, slot),
         };
-        illicit::Layer::new().with(child_point).enter(child)
+        illicit::Layer::new().offer(child_point).enter(child)
     }
 
     /// Runs the provided closure with access to the current [`Point`].

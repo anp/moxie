@@ -7,7 +7,7 @@ use criterion::Criterion;
 
 fn enter_small_env(c: &mut Criterion) {
     c.bench_function("enter a small illicit env", |b| {
-        b.iter(|| illicit::Layer::new().with(10u128).enter(|| ()));
+        b.iter(|| illicit::Layer::new().offer(10u128).enter(|| ()));
     });
 }
 
