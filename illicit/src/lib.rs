@@ -31,17 +31,12 @@
 //! However this approach incurs a significant cost in that the following code
 //! will panic without the right type having been added to the environment:
 //!
-//! ```
-//! # use assert_panic::assert_panic;
+//! ```should_panic
 //! # #[illicit::from_env(num: &u8)]
 //! # fn env_num_plus_one() -> u8 {
 //! #    num + 1
 //! # }
-//! assert_panic!(
-//!     { env_num_plus_one(); },
-//!     String,
-//!     starts with "expected a `u8` from the environment",
-//! );
+//! env_num_plus_one();
 //! ```
 //!
 //! See the attribute's documentation for more details, and please consider
@@ -58,7 +53,7 @@ use std::{
     any::{Any, TypeId},
     cell::RefCell,
     collections::BTreeMap,
-    fmt::{Debug, Formatter, Result as FmtResult},
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
     panic::Location,
@@ -81,7 +76,7 @@ thread_local! {
 
 /// Returns a reference to a value in the current environment if it is
 /// present.
-pub fn get<E>() -> Option<impl Deref<Target = E> + 'static>
+pub fn get<E>() -> Result<impl Deref<Target = E> + 'static, GetFailed>
 where
     E: Any + 'static,
 {
@@ -90,9 +85,9 @@ where
         current.borrow().values.iter().find(|(id, _)| id == &key).map(|(_, a)| a.clone())
     });
     if let Some(anon) = anon {
-        Some(anon.downcast_deref().expect("used type for storage and lookup, should match"))
+        Ok(anon.downcast_deref().expect("used type for storage and lookup, should match"))
     } else {
-        None
+        Err(GetFailed::here::<E>())
     }
 }
 
@@ -101,19 +96,12 @@ where
 ///
 /// The panic message includes the stack of current [`Layer`]s
 /// and their contents.
+#[track_caller]
 pub fn expect<E>() -> impl Deref<Target = E> + 'static
 where
     E: Any + 'static,
 {
-    if let Some(val) = get() {
-        val
-    } else {
-        panic!(
-            "expected a `{}` from the environment, did not find it in current env: {:#?}",
-            std::any::type_name::<E>(),
-            Snapshot::get(),
-        )
-    }
+    get().unwrap()
 }
 
 /// Removes the provided type from the current environment for the remainder
@@ -267,6 +255,28 @@ impl Debug for Snapshot {
     }
 }
 
+/// A failure to find a particular type in the local context.
+#[derive(Debug)]
+pub struct GetFailed {
+    looked_up: &'static str,
+    current_snapshot: Snapshot,
+}
+
+impl GetFailed {
+    fn here<E: 'static>() -> Self {
+        Self { looked_up: std::any::type_name::<E>(), current_snapshot: Snapshot::get() }
+    }
+}
+
+impl Display for GetFailed {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_fmt(format_args!(
+            "expected a `{}` from the environment, did not find it in current env: {:#?}",
+            self.looked_up, &self.current_snapshot,
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,7 +363,7 @@ mod tests {
         let mut first_called = false;
         let mut second_called = false;
 
-        assert!(get::<u8>().is_none());
+        assert!(get::<u8>().is_err());
         Layer::new().offer(0u8).enter(|| {
             let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
@@ -369,12 +379,12 @@ mod tests {
             assert_eq!(curr_byte, 0);
         });
         assert!(first_called);
-        assert!(get::<u8>().is_none());
+        assert!(get::<u8>().is_err());
     }
 
     #[test]
     fn child_sees_parent_env() {
-        assert!(get::<u8>().is_none());
+        assert!(get::<u8>().is_err());
         Layer::new().offer(0u8).enter(|| {
             let curr_byte = *expect::<u8>();
             assert_eq!(curr_byte, 0);
@@ -389,12 +399,12 @@ mod tests {
 
             assert_eq!(curr_byte, 0, "must see 0");
         });
-        assert!(get::<u8>().is_none());
+        assert!(get::<u8>().is_err());
     }
 
     #[test]
     fn removing_from_env() {
-        assert!(get::<u8>().is_none());
+        assert!(get::<u8>().is_err());
 
         Layer::new().offer(2u8).enter(|| {
             assert_eq!(*expect::<u8>(), 2, "just added 2u8");
@@ -402,13 +412,26 @@ mod tests {
             Layer::new().enter(|| {
                 assert_eq!(*expect::<u8>(), 2, "parent added 2u8");
                 hide::<u8>();
-                assert!(get::<u8>().is_none(), "just removed u8 from Env");
+                assert!(get::<u8>().is_err(), "just removed u8 from Env");
             });
 
             assert_eq!(*get::<u8>().unwrap(), 2, "returned to parent Env with 2u8");
 
             hide::<u8>();
-            assert!(get::<u8>().is_none(), "just removed u8 from Env");
+            assert!(get::<u8>().is_err(), "just removed u8 from Env");
         })
+    }
+
+    #[test]
+    fn failure_error() {
+        let message = if let Err(e) = get::<u8>() {
+            e.to_string()
+        } else {
+            panic!("got a u8 from the environment when we shouldn't have");
+        };
+        assert_eq!(
+            &message,
+            "expected a `u8` from the environment, did not find it in current env: []"
+        );
     }
 }

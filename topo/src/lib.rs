@@ -143,7 +143,7 @@ impl Point {
     where
         F: FnOnce(&Point) -> Out,
     {
-        if let Some(current) = illicit::get::<Point>() {
+        if let Ok(current) = illicit::get::<Point>() {
             op(&*current)
         } else {
             op(&Point::default())
