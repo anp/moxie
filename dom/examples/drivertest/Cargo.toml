@@ -2,7 +2,7 @@
 name = "drivertest"
 publish = false
 version = "0.1.0-pre"
-authors = ["Adam Perry <adam.n.perry@gmail.com>"]
+authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
 [dependencies]
