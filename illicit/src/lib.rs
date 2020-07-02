@@ -164,7 +164,7 @@ impl Default for Layer {
 }
 
 impl Layer {
-    /// Construct a blank layer. Call [`Layer::with`] to add values to the new
+    /// Construct a blank layer. Call [`Layer::offer`] to add values to the new
     /// layer before calling [`Layer::enter`] to run a closure with access
     /// to the new values.
     #[track_caller]
@@ -182,7 +182,7 @@ impl Layer {
     }
 
     /// Adds the new item and returns the modified layer.
-    pub fn with<E>(mut self, v: E) -> Self
+    pub fn offer<E>(mut self, v: E) -> Self
     where
         E: Debug + 'static,
     {
@@ -263,10 +263,10 @@ mod tests {
         let mut u8_and_string_present = u8_present.clone();
 
         // generate our test values
-        Layer::new().with(42u8).enter(|| {
+        Layer::new().offer(42u8).enter(|| {
             u8_present = (snapshot(), line!() - 1);
 
-            Layer::new().with(String::from("owo")).enter(|| {
+            Layer::new().offer(String::from("owo")).enter(|| {
                 u8_and_string_present = (snapshot(), line!() - 1);
             });
         });

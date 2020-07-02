@@ -24,7 +24,7 @@ impl WebRuntime {
         let parent = parent.into();
         WebRuntime {
             inner: RunLoop::new(Box::new(move || {
-                illicit::Layer::new().with(MemoNode::new(parent.clone())).enter(|| {
+                illicit::Layer::new().offer(MemoNode::new(parent.clone())).enter(|| {
                     let new_root = topo::call(|| root());
 
                     let parent = &*illicit::expect::<MemoNode>();
