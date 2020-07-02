@@ -48,7 +48,6 @@
 //! whether this is appropriate for your use case before taking it on as a
 //! dependency.
 
-#![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 

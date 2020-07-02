@@ -1,5 +1,3 @@
-#![feature(track_caller)]
-
 use moxie_dom::{
     elements::{
         forms::button,

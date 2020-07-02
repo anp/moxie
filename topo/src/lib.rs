@@ -1,4 +1,3 @@
-#![feature(track_caller)]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
@@ -20,8 +19,6 @@
 //! Define a topologically-nested function with the `topo::nested` attribute:
 //!
 //! ```
-//! #![feature(track_caller)]
-//!
 //! #[topo::nested]
 //! fn basic_topo() -> topo::Id {
 //!     topo::Id::current()

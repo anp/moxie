@@ -1,5 +1,3 @@
-#![feature(track_caller)]
-
 use augdom::{event::Click, testing::Query};
 use moxie_dom::{
     elements::html::{button, div},
