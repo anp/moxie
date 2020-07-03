@@ -150,10 +150,17 @@ impl Default for Layer {
     }
 }
 
+impl From<Snapshot> for Layer {
+    fn from(snapshot: Snapshot) -> Self {
+        snapshot.current
+    }
+}
+
 impl Layer {
-    /// Construct a blank layer. Call [`Layer::offer`] to add values to the new
-    /// layer before calling [`Layer::enter`] to run a closure with access
-    /// to the new values.
+    /// Construct a new layer which defaults to the contents of the current one.
+    /// Call [`Layer::offer`] to add values to the new layer before calling
+    /// [`Layer::enter`] to run a closure with access to the new and old
+    /// values.
     #[track_caller]
     pub fn new() -> Self {
         let mut values = Vec::new();
@@ -228,18 +235,14 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
-    /// Returns a snapshot of the current context.
+    /// Returns a snapshot of the current context. Suitable for debug printing,
+    /// or can be converted into a [`Layer`] for reuse.
     pub fn get() -> Self {
         let mut current: Layer = CURRENT_SCOPE.with(|s| (**s.borrow()).clone());
 
         current.values.sort_by_key(|(_, anon)| anon.depth());
 
         Snapshot { current }
-    }
-
-    /// Call `child_fn` with this as its context.
-    pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
-        self.current.enter(child_fn)
     }
 }
 
