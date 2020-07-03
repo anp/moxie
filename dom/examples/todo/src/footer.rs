@@ -16,8 +16,9 @@ pub fn items_remaining(num_active: usize) -> Span {
 }
 
 #[topo::nested]
-#[illicit::from_env(todos: Key<Vec<Todo>>)]
+#[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn clear_completed_button(num_complete: usize) -> Button {
+    let todos = todos.to_owned();
     let remove_completed =
         move |_| todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()));
     mox! {
