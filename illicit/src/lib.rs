@@ -228,14 +228,18 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
-    /// Returns a snapshot of the current dynamic scope. Most useful for
-    /// debugging the contained `Layer`s.
+    /// Returns a snapshot of the current context.
     pub fn get() -> Self {
         let mut current: Layer = CURRENT_SCOPE.with(|s| (**s.borrow()).clone());
 
         current.values.sort_by_key(|(_, anon)| anon.depth());
 
         Snapshot { current }
+    }
+
+    /// Call `child_fn` with this as its context.
+    pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
+        self.current.enter(child_fn)
     }
 }
 
