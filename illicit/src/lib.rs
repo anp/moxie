@@ -321,7 +321,7 @@ impl Layer {
 
     /// Adds the new item and returns the modified layer.
     ///
-    /// The offered type must implement `Debug` to allow [`Snapshot`]
+    /// The offered type must implement `Debug` to allow [`get`]'s errors
     /// to display the contents of the illicit environment. It must also satisfy
     /// the `'static` lifetime because [`get`] is unable to express any
     /// lifetime constraints at its callsite.
@@ -329,18 +329,16 @@ impl Layer {
     where
         E: Debug + 'static,
     {
-        self.add_anon(AnonRc::new(v, self.location, self.depth));
-        self
-    }
+        let anon = AnonRc::new(v, self.location, self.depth);
+        let existing = self.values.iter_mut().find(|(id, _)| *id == anon.id());
 
-    fn add_anon(&mut self, anon: AnonRc) {
-        if let Some(existing) =
-            self.values.iter_mut().find(|(id, _)| *id == anon.id()).map(|(_, e)| e)
-        {
+        if let Some((_, existing)) = existing {
             *existing = anon;
         } else {
             self.values.push((anon.id(), anon));
         }
+
+        self
     }
 
     /// Call `child_fn` with this layer added to the environment.
