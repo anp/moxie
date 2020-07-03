@@ -68,7 +68,7 @@ where
     F: FnOnce() -> R,
 {
     let callsite = Callsite::here();
-    let slot = Token::get(callsite.current_count());
+    let slot = Token::get(&callsite.current_count());
     Point::with_current(|p| p.enter_child(callsite, slot, op))
 }
 
@@ -256,7 +256,7 @@ mod tests {
             call(|| {
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
-                    call_in_slot(Token::get_str(s), || {
+                    call_in_slot(Token::get(s), || {
                         let current = Id::current();
                         unique_ids.insert(current);
                     });

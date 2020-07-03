@@ -48,7 +48,7 @@ impl Id {
     where
         S: Eq + Hash + Send + 'static,
     {
-        Self { callsite, parent: Token::get(*self), slot: slot.opaque() }
+        Self { callsite, parent: Token::get(self), slot: slot.opaque() }
     }
 }
 

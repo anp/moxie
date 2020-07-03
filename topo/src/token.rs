@@ -3,6 +3,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
+    borrow::Borrow,
     collections::HashMap,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
@@ -23,15 +24,18 @@ where
     S: Eq + Hash + Send + 'static,
 {
     /// Get the token for the provided slot.
-    // TODO(#140) ToOwned
-    pub fn get(slot: S) -> Token<S> {
+    pub fn get<Q>(slot: &Q) -> Token<S>
+    where
+        Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
+        S: Borrow<Q>,
+    {
         let mut existing_tokens = TOKENS.lock();
 
-        if let Some(token) = existing_tokens.get(&slot, &()) {
+        if let Some(token) = existing_tokens.get::<_, S, _, _>(slot, &()) {
             *token
         } else {
             let new_token = Self::next();
-            existing_tokens.store(slot, (), new_token);
+            existing_tokens.store(slot.to_owned(), (), new_token);
             new_token
         }
     }
@@ -56,13 +60,6 @@ where
     /// resulting [`OpaqueToken`].
     pub fn opaque(self) -> OpaqueToken {
         OpaqueToken { index: self.index, ty: TypeId::of::<S>() }
-    }
-}
-
-impl Token<String> {
-    /// Get the token for the provided string reference.
-    pub fn get_str(slot: &str) -> Self {
-        Token::get(slot.to_string())
     }
 }
 
