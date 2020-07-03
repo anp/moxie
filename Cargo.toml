@@ -24,7 +24,7 @@ scopeguard = "1"
 tracing = "^0.1"
 
 [dependencies.illicit]
-version = "1.0.0-pre"
+version = "1.0.0"
 path = "illicit"
 
 [dependencies.mox]
