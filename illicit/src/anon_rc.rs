@@ -67,11 +67,6 @@ impl AnonRc {
     pub fn location(&self) -> &'static Location<'static> {
         self.location
     }
-
-    // TODO(#135) remove
-    pub(crate) fn raw_location(&self) -> (&'static str, u32, u32) {
-        (self.location.file(), self.location.line(), self.location.column())
-    }
 }
 
 /// compare the pointers by their data locations, ignoring vtables
@@ -86,10 +81,11 @@ macro_rules! data_ptrs_eq {
 
 impl PartialEq for AnonRc {
     fn eq(&self, other: &Self) -> bool {
+        let raw_loc = |a: &Self| (a.location.file(), a.location.line(), a.location.column());
         self.id == other.id
             && self.depth == other.depth
             && self.name == other.name
-            && self.raw_location() == other.raw_location()
+            && raw_loc(self) == raw_loc(other)
             && data_ptrs_eq!(Any: &self.inner, &other.inner)
             && data_ptrs_eq!(Debug: &self.debug, &other.debug)
     }

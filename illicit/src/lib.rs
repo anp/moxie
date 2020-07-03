@@ -76,6 +76,11 @@ thread_local! {
 
 /// Returns a reference to a value in the current environment if it is
 /// present.
+///
+/// # Errors
+///
+/// Returns an error if the requested type is not available in the local
+/// environment.
 pub fn get<E>() -> Result<impl Deref<Target = E> + 'static, GetFailed>
 where
     E: Any + 'static,
@@ -117,7 +122,8 @@ pub fn hide<E: 'static>() {
     })
 }
 
-/// A pending addition to the local environment.
+/// A container for the local environment, usually used to represent a pending
+/// addition to it.
 ///
 /// The environment is type-indexed, and access is provided through read-only
 /// references. Call [`Layer::offer`] to include new values in the environment
@@ -186,12 +192,6 @@ impl Layer {
         }
     }
 
-    // TODO(#135) remove
-    #[cfg(test)]
-    fn raw_location(&self) -> (&'static str, u32, u32) {
-        (self.location.file(), self.location.line(), self.location.column())
-    }
-
     /// Call `child_fn` with this layer added to the environment.
     pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
@@ -224,34 +224,26 @@ impl Debug for Layer {
 /// debug printing.
 #[derive(Clone)]
 pub struct Snapshot {
-    by_depth: BTreeMap<u32, Layer>,
+    current: Layer,
 }
 
 impl Snapshot {
     /// Returns a snapshot of the current dynamic scope. Most useful for
     /// debugging the contained `Layer`s.
-    pub fn get() -> Snapshot {
-        let mut stacked = Snapshot { by_depth: BTreeMap::new() };
-        CURRENT_SCOPE.with(|e| {
-            for (_, anon) in &e.borrow().values {
-                stacked
-                    .by_depth
-                    .entry(anon.depth())
-                    .or_insert_with(|| Layer {
-                        values: Default::default(),
-                        depth: anon.depth(),
-                        location: anon.location(), // depth -> location is 1:1
-                    })
-                    .add_anon(anon.clone());
-            }
-        });
-        stacked
+    pub fn get() -> Self {
+        let mut current: Layer = CURRENT_SCOPE.with(|s| (**s.borrow()).clone());
+
+        current.values.sort_by_key(|(_, anon)| anon.depth());
+
+        Snapshot { current }
     }
 }
 
 impl Debug for Snapshot {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_list().entries(self.by_depth.values()).finish()
+        f.debug_list()
+            .entries(self.current.values.iter().map(|(_, a)| (a.location(), a.debug())))
+            .finish()
     }
 }
 
@@ -280,83 +272,6 @@ impl Display for GetFailed {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn snapshot_has_correct_structure() {
-        let empty_scope = Snapshot::get();
-        let mut u8_present = (empty_scope.clone(), 0);
-        let mut u8_and_string_present = u8_present.clone();
-
-        // generate our test values
-        Layer::new().offer(42u8).enter(|| {
-            u8_present = (Snapshot::get(), line!() - 1);
-
-            Layer::new().offer(String::from("owo")).enter(|| {
-                u8_and_string_present = (Snapshot::get(), line!() - 1);
-            });
-        });
-
-        // check the empty scopes
-        let empty_scope_after = Snapshot::get();
-        assert_eq!(empty_scope.by_depth.len(), 0, "environment should be empty without additions");
-        assert_eq!(
-            empty_scope.by_depth.len(),
-            empty_scope_after.by_depth.len(),
-            "snapshots must be the same before and after calls"
-        );
-
-        // our generates scopes must have
-        assert_eq!(u8_present.0.by_depth.len(), 1);
-        assert_eq!(u8_and_string_present.0.by_depth.len(), 2);
-
-        let (_, first_layer) = u8_present.0.by_depth.into_iter().next().unwrap();
-        assert_eq!(first_layer.depth, 1);
-        assert_eq!(first_layer.raw_location(), (file!(), u8_present.1, 9));
-        assert_eq!(first_layer.values.len(), 1);
-        let first_u8 = first_layer
-            .values
-            .iter()
-            .find(|(id, _)| id == &TypeId::of::<u8>())
-            .map(|(_, v)| v)
-            .unwrap();
-        assert_eq!(
-            (first_u8.raw_location(), first_u8.depth()),
-            (first_layer.raw_location(), first_layer.depth),
-        );
-
-        // on to the snapshot that includes both u8 and string
-        let mut u8_and_string_layers = u8_and_string_present.0.by_depth.values();
-        let (first_layer, second_layer) =
-            (u8_and_string_layers.next().unwrap(), u8_and_string_layers.next().unwrap());
-
-        assert_eq!(first_layer.depth, 1);
-        assert_eq!(first_layer.raw_location(), (file!(), u8_present.1, 9));
-        assert_eq!(first_layer.values.len(), 1);
-        let first_u8 = first_layer
-            .values
-            .iter()
-            .find(|(id, _)| id == &TypeId::of::<u8>())
-            .map(|(_, v)| v)
-            .unwrap();
-        assert_eq!(
-            (first_u8.raw_location(), first_u8.depth()),
-            (first_layer.raw_location(), first_layer.depth),
-        );
-
-        assert_eq!(second_layer.depth, 2);
-        assert_eq!(second_layer.raw_location(), (file!(), u8_and_string_present.1, 13));
-        assert_eq!(second_layer.values.len(), 1);
-        let second_string = second_layer
-            .values
-            .iter()
-            .find(|(id, _)| id == &TypeId::of::<String>())
-            .map(|(_, v)| v)
-            .unwrap();
-        assert_eq!(
-            (second_string.raw_location(), second_string.depth()),
-            (second_layer.raw_location(), second_layer.depth),
-        );
-    }
 
     #[test]
     fn child_env_replaces_parent_env_values() {
