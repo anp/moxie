@@ -164,6 +164,21 @@ thread_local! {
 ///
 /// Returns an error if the requested type is not available in the local
 /// environment.
+///
+/// # Examples
+///
+/// ```
+/// let msg = "hello!";
+/// illicit::Layer::new().offer(String::from(msg)).enter(|| {
+///     assert_eq!(&*illicit::get::<String>().unwrap(), msg);
+/// });
+/// ```
+///
+/// Returns [`GetFailed`] if the requested type is not in the environment:
+///
+/// ```
+/// assert!(illicit::get::<String>().is_err());
+/// ```
 pub fn get<E>() -> Result<impl Deref<Target = E> + 'static, GetFailed>
 where
     E: Any + 'static,
@@ -184,6 +199,21 @@ where
 ///
 /// The panic message includes the stack of current [`Layer`]s
 /// and their contents.
+///
+/// # Examples
+///
+/// ```
+/// let msg = "hello!";
+/// illicit::Layer::new().offer(String::from(msg)).enter(|| {
+///     assert_eq!(&*illicit::expect::<String>(), msg);
+/// });
+/// ```
+///
+/// Panics if the requested type is not in the environment:
+///
+/// ```should_panic
+/// println!("{}", &*illicit::expect::<String>());
+/// ```
 #[track_caller]
 pub fn expect<E>() -> impl Deref<Target = E> + 'static
 where
@@ -195,6 +225,18 @@ where
 /// Removes the provided type from the current environment for the remainder
 /// of its scope. Parent environments may still possess a reference to
 /// the value.
+///
+/// # Example
+///
+/// ```
+/// let msg = "hello!";
+/// illicit::Layer::new().offer(String::from(msg)).enter(|| {
+///     assert_eq!(&*illicit::expect::<String>(), msg);
+///
+///     illicit::hide::<String>();
+///     assert!(illicit::get::<String>().is_err());
+/// });
+/// ```
 pub fn hide<E: 'static>() {
     CURRENT_SCOPE.with(|current| {
         let mut env = current.borrow_mut();
@@ -219,6 +261,25 @@ pub fn hide<E: 'static>() {
 /// useful for runtimes to offer themselves execution-local values in functions
 /// which are invoked by external code. It can also be severely abused, like any
 /// implicit state, and should be used with caution.
+///
+/// # Examples
+///
+/// Code always sees the contents of the "bottom-most" `Layer`:
+///
+/// ```
+/// illicit::Layer::new().offer(String::new()).offer(5u16).enter(|| {
+///     assert!(illicit::expect::<String>().is_empty());
+///     assert_eq!(*illicit::expect::<u16>(), 5);
+///
+///     illicit::Layer::new().offer(10u16).enter(|| {
+///         assert!(illicit::expect::<String>().is_empty());
+///         assert_eq!(*illicit::expect::<u16>(), 10);
+///     });
+///
+///     assert!(illicit::expect::<String>().is_empty());
+///     assert_eq!(*illicit::expect::<u16>(), 5);
+/// });
+/// ```
 #[derive(Clone)]
 pub struct Layer {
     depth: u32,
@@ -310,8 +371,32 @@ impl Debug for Layer {
     }
 }
 
-/// A point-in-time representation of the implicit environment, intended for
-/// debug printing.
+/// A point-in-time representation of the implicit environment.
+///
+/// # Examples
+///
+/// Collecting a `Snapshot` is useful for debugging:
+///
+/// ```
+/// illicit::Layer::new().offer(5u16).enter(|| {
+///     println!("{:#?}", illicit::Snapshot::get());
+/// });
+/// ```
+///
+/// `Snapshot`s can also be converted back into [`Layer`]s for re-use:
+///
+/// ```
+/// let mut snapshot = None;
+/// illicit::Layer::new().offer(5u16).enter(|| {
+///     assert_eq!(*illicit::expect::<u16>(), 5);
+///     snapshot = Some(illicit::Snapshot::get());
+/// });
+/// assert!(illicit::get::<u16>().is_err());
+///
+/// illicit::Layer::from(snapshot.unwrap()).enter(|| {
+///     assert_eq!(*illicit::expect::<u16>(), 5);
+/// });
+/// ```
 #[derive(Clone)]
 pub struct Snapshot {
     current: Layer,
