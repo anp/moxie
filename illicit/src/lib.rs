@@ -1,47 +1,130 @@
-//! Type-indexed dynamically-scoped singletons, propagated through an implicit
-//! context.
+//! An implicit environment which is indexed by type.
 //!
-//! # Requiring references from the environment
+//! # Offering references to the local environment
 //!
-//! The `from_env` macro provides an attribute for functions that require access
-//! to a singleton in their environment. Here, the contrived function requires a
-//! `u8` to add one to:
+//! Add types to the local environment by creating and `enter`ing a [`Layer`],
+//! and retrieve them using [`get`] or [`expect`]:
 //!
 //! ```
-//! #[illicit::from_env(num: &u8)]
-//! fn env_num_plus_one() -> u8 {
-//!     num + 1
+//! #[derive(Copy, Clone, Debug, PartialEq)]
+//! enum Theme {
+//!     Light,
+//!     Dark,
 //! }
 //!
-//! illicit::Layer::new().offer(1u8).enter(|| {
-//!     assert_eq!(env_num_plus_one(), 2u8);
+//! // no theme has been set yet
+//! assert!(illicit::get::<Theme>().is_err());
 //!
-//!     illicit::Layer::new().offer(7u8).enter(|| {
-//!         assert_eq!(env_num_plus_one(), 8u8);
-//!     });
+//! illicit::Layer::new().offer(Theme::Light).enter(|| {
+//!     assert_eq!(*illicit::expect::<Theme>(), Theme::Light,);
+//! });
+//!
+//! // previous theme "expired"
+//! assert!(illicit::get::<Theme>().is_err());
+//! ```
+//!
+//! # Receiving arguments "by environment"
+//!
+//! Annotate functions which require access to types in the environment with
+//! [`from_env`]:
+//!
+//! ```
+//! # #[derive(Copy, Clone, Debug, PartialEq)]
+//! # enum Theme {
+//! #     Light,
+//! #     Dark,
+//! # }
+//! #
+//! impl Theme {
+//!     /// Calls `child` with this theme set as current.
+//!     fn set<R>(self, child: impl FnOnce() -> R) -> R {
+//!         illicit::Layer::new().offer(self).enter(child)
+//!     }
+//!
+//!     /// Retrieves the current theme. Panics if none has been set.
+//!     #[illicit::from_env(current_theme: &Theme)]
+//!     fn current() -> Self {
+//!         *current_theme
+//!     }
+//! }
+//!
+//! Theme::Light.set(|| {
+//!     assert_eq!(Theme::current(), Theme::Light);
+//!
+//!     // we can set a temporary override for part of our call tree
+//!     Theme::Dark.set(|| assert_eq!(Theme::current(), Theme::Dark));
+//!
+//!     // but it only lasts as long as the inner `enter` call
+//!     assert_eq!(Theme::current(), Theme::Light);
 //! });
 //! ```
 //!
-//! Here, both calls see a `u8` in their environment.
-//!
-//! # Caution
+//! ## Caution
 //!
 //! This provides convenient sugar for values stored in the current environment
 //! as an alternative to thread-locals or a manually propagated context object.
 //! However this approach incurs a significant cost in that the following code
-//! will panic without the right type having been added to the environment:
+//! will panic:
 //!
 //! ```should_panic
-//! # #[illicit::from_env(num: &u8)]
-//! # fn env_num_plus_one() -> u8 {
-//! #    num + 1
+//! # #[derive(Copy, Clone, Debug, PartialEq)]
+//! # enum Theme {
+//! #     Light,
+//! #     Dark,
 //! # }
-//! env_num_plus_one();
+//! #
+//! # impl Theme {
+//! #     #[illicit::from_env(current_theme: &Theme)]
+//! #     fn current() -> Self {
+//! #         *current_theme
+//! #     }
+//! # }
+//! println!("{:?}", Theme::current());
 //! ```
 //!
 //! See the attribute's documentation for more details, and please consider
 //! whether this is appropriate for your use case before taking it on as a
 //! dependency.
+//!
+//! # Debugging
+//!
+//! Use [`Snapshot::get`] to retrieve a copy of the current local environment.
+//!
+//! # Comparisons
+//!
+//! ## execution-context
+//!
+//! `illicit` provides capabilities very similar in ways to
+//! `[execution-context]`. Both crates allow one to propagate implicit values to
+//! "downstream" code, and they both allow that downstream code to provide its
+//! own additional values to the context. Both crates prevent mutation of
+//! contained types without interior mutability.
+//!
+//! One notable difference is how they handle multi-threading.
+//! `execution-context` requires types contained in a "flow-local" to implement
+//! `Send` so that contexts can be sent between threads. In contrast, while
+//! `illicit` supports the reuse of contexts, it prioritizes the single-threaded
+//! use case and does not require `Send`.
+//!
+//! The other noteworthy difference is in how they're "addressed":
+//! `execution-context` defines static variables that are referenced by
+//! name/symbol, whereas `illicit` allows the definition of a single local value
+//! per type and does not rely on naming. This offers some nice properties but
+//! it also sacrifices the static guarantee that there will always be a default
+//! value.
+//!
+//! ## `thread_local!`
+//!
+//! This crate is implemented on top of a thread-local variable which stores the
+//! context, and can be seen as utilities for dynamically creating and
+//! destroying thread-locals for arbitrary types. The other key difference is
+//! that the ability to temporarily override a thread-local is built-in.
+//!
+//! The main cost over writing one's own thread-local is that this does incur
+//! the additional overhead of a `HashMap` access, some `TypeId` comparison, and
+//! some pointer dereferences.
+//!
+//! [execution-context]: https://docs.rs/execution-context
 
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
