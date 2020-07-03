@@ -1,7 +1,7 @@
 [package]
 name = "topo"
 version = "0.10.0-pre"
-description = "Caching and runtime identifiers for dynamic callgraphs"
+description = "Tools for incrementally computing repeated callgraphs."
 categories = ["caching", "data-structures", "gui", "memory-management", "rust-patterns"]
 keywords = ["cache", "memoize", "intern", "topology", "incremental"]
 readme = "CHANGELOG.md"
