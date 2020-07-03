@@ -1,6 +1,6 @@
 [package]
 name = "illicit-macro"
-version = "0.10.0-pre"
+version = "0.10.0"
 description = "procedural macros for the illicit crate"
 readme = "../CHANGELOG.md"
 

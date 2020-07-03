@@ -1,8 +1,8 @@
 [package]
 name = "illicit"
-version = "0.10.0-pre"
-description = "Type-indexed, dynamically-scoped, thread-local singletons."
-categories = ["development-tools::testing", "gui", "rust-patterns"]
+version = "0.10.0"
+description = "An implicit thread-local environment which is indexed by type."
+categories = ["rust-patterns"]
 keywords = ["context", "global", "singleton"]
 readme = "CHANGELOG.md"
 
@@ -14,7 +14,7 @@ authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
 [dependencies]
-illicit-macro = { path = "macro", version = "0.10.0-pre"}
+illicit-macro = { path = "macro", version = "0.10.0" }
 owning_ref = "0.4"
 scopeguard = "1"
 

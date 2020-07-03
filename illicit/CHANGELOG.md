@@ -4,7 +4,7 @@ The [illicit](https://docs.rs/illicit) crate provides type-indexed thread-local 
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.10.0-pre] - unreleased
+## [0.10.0] - 2020-07-03
 
 ### Added
 
