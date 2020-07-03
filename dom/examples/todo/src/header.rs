@@ -6,8 +6,9 @@ use moxie_dom::{
 use tracing::info;
 
 #[topo::nested]
-#[illicit::from_env(todos: Key<Vec<Todo>>)]
+#[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn input_header() -> Header {
+    let todos = todos.clone();
     mox! {
         <header class="header">
             <h1>"todos"</h1>

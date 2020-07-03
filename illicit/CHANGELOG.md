@@ -13,6 +13,7 @@ The [illicit](https://docs.rs/illicit) crate provides type-indexed thread-local 
 ### Removed
 
 - `#![feature(track_caller)]` (requires >= nightly-2020-07-02 until 1.46 is beta/stable)
+- Support for owned/cloned arguments in `from_env`.
 
 ### Changed
 

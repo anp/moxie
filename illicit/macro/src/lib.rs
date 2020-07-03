@@ -45,20 +45,21 @@ panic otherwise:
             FnArg::Receiver(rec) => abort!(rec.span(), "can't receive self by-environment"),
             FnArg::Typed(pt) => pt,
         };
-        let (stmt, doc_attr) = bind_env_reference(&arg);
-        input_fn.block.stmts.insert(0, Stmt::Local(stmt));
+        let ([first_stmt, second_stmt], doc_attr) = bind_env_reference(&arg);
+        input_fn.block.stmts.insert(0, Stmt::Local(first_stmt));
+        input_fn.block.stmts.insert(1, Stmt::Local(second_stmt));
         input_fn.attrs.push(doc_attr);
     }
 
     quote::quote!(#input_fn).into()
 }
 
-/// Create a local expect assignment expression from the `pattern: &type`
+/// Create a pair of local assignment expressions from the `pattern: &type`
 /// pair which is passed.
-fn bind_env_reference(arg: &PatType) -> (Local, Attribute) {
+fn bind_env_reference(arg: &PatType) -> ([Local; 2], Attribute) {
     let arg_span = arg.span();
 
-    let (init_expr, ty_tokens) = match &*arg.ty {
+    let ty = match &*arg.ty {
         Type::Reference(TypeReference { lifetime, mutability, elem, .. }) => {
             if mutability.is_some() {
                 abort!(mutability.span(), "mutable references cannot be passed by environment");
@@ -71,22 +72,33 @@ fn bind_env_reference(arg: &PatType) -> (Local, Attribute) {
                 );
             }
 
-            (parse_quote!(&*illicit::expect::<#elem>()), quote!(#elem))
+            quote!(#elem)
         }
 
-        ty => (parse_quote!(illicit::expect::<#ty>().clone()), quote!(#ty)),
+        ty => abort!(ty.span(), "arguments must be references"),
     };
 
-    let ty_bullet = format!("* `{}`", ty_tokens);
+    let name = *arg.pat.clone();
+    let init_expr = parse_quote!(illicit::expect::<#ty>());
+    let deref_expr = parse_quote!(&*#name);
 
-    (
-        Local {
-            attrs: vec![],
-            let_token: Token![let](arg_span),
-            pat: *arg.pat.clone(),
-            init: Some((Token![=](arg_span), Box::new(init_expr))),
-            semi_token: Token![;](arg_span),
-        },
-        parse_quote!(#[doc = #ty_bullet]),
-    )
+    let shadowed = Local {
+        attrs: vec![],
+        let_token: Token![let](arg_span),
+        pat: name.clone(),
+        init: Some((Token![=](arg_span), Box::new(init_expr))),
+        semi_token: Token![;](arg_span),
+    };
+    let derefd = Local {
+        attrs: vec![],
+        let_token: Token![let](arg_span),
+        pat: name,
+        init: Some((Token![=](arg_span), Box::new(deref_expr))),
+        semi_token: Token![;](arg_span),
+    };
+
+    let ty_bullet = format!("* `{}`", ty);
+    let doc_attr = parse_quote!(#[doc = #ty_bullet]);
+
+    ([shadowed, derefd], doc_attr)
 }

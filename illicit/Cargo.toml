@@ -3,7 +3,7 @@ name = "illicit"
 version = "0.10.0"
 description = "An implicit thread-local environment which is indexed by type."
 categories = ["rust-patterns"]
-keywords = ["context", "global", "singleton"]
+keywords = ["context", "environment", "global", "singleton"]
 readme = "CHANGELOG.md"
 
 # update here, update everywhere!
