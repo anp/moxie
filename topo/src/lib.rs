@@ -1,8 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` creates a hierarchy of nested scopes represented as stable
-//! identifiers referring to the function callgraph.
+//! `topo` provides low-level tools for incrementally computing callgraphs.
 //!
 //! Each scope in this hierarchy has a unique and deterministic [crate::Id]
 //! describing that environment and the path taken to arrive at its stack frame.
