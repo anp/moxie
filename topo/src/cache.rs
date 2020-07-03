@@ -2,6 +2,7 @@ use downcast_rs::{impl_downcast, Downcast};
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
+    borrow::Borrow,
     cell::RefCell,
     cmp::Eq,
     collections::HashMap,
@@ -26,13 +27,14 @@ impl $name {
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
     /// is marked live and will not be GC'd this revision.
-    pub fn get<Scope, Input, Output>(&mut self, scope: &Scope, input: &Input) -> Option<&Output>
+    pub fn get<Query, Scope, Input, Output>(&mut self, query: &Query, input: &Input) -> Option<&Output>
     where
-        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Query: Eq + Hash + ?Sized,
+        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
         Input: 'static + PartialEq $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(scope, input)
+        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(query, input)
     }
 
     /// Store the result of a query. It will not be GC'd this revision.
@@ -120,7 +122,7 @@ impl $handle {
         Stored: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get(&scope, &arg) } {
+        if let Some(stored) = { self.inner.$acquire().get::<_, Scope, _, _,>(&scope, &arg) } {
             return with(stored);
         }
 
@@ -159,8 +161,12 @@ where
     Input: PartialEq + 'static,
     Output: 'static,
 {
-    fn get_if_input_eq(&mut self, scope: &Scope, input: &Input) -> Option<&Output> {
-        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(scope)?;
+    fn get_if_input_eq<Query>(&mut self, query: &Query, input: &Input) -> Option<&Output>
+    where
+        Query: Eq + Hash + ?Sized,
+        Scope: Borrow<Query>,
+    {
+        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(query)?;
         if stored_input == input {
             *liveness = Liveness::Live;
             Some(stored)
