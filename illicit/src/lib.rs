@@ -1,6 +1,6 @@
 //! An implicit environment which is indexed by type.
 //!
-//! # Offering references to the local environment
+//! # Offering values to the local environment
 //!
 //! Add types to the local environment by creating and `enter`ing a [`Layer`],
 //! and retrieve them using [`get`] or [`expect`]:
@@ -140,7 +140,6 @@ use std::{
     mem::replace,
     ops::Deref,
     panic::Location,
-    rc::Rc,
 };
 
 #[doc(inline)]
@@ -148,13 +147,12 @@ pub use illicit_macro::from_env;
 
 thread_local! {
     /// The current dynamic scope.
-    static CURRENT_SCOPE: RefCell<Rc<Layer>> = RefCell::new(Rc::new(
-        Layer {
+    static CURRENT_SCOPE: RefCell<Layer> = RefCell::new(Layer {
             depth: 0,
             location: Location::caller(),
             values: Default::default(),
         }
-    ));
+    );
 }
 
 /// Returns a reference to a value in the current environment if it is
@@ -243,7 +241,7 @@ pub fn hide<E: 'static>() {
         let mut without_e = env.values.clone();
         let excluded_ty = TypeId::of::<E>();
         without_e.retain(|(ty, _)| ty != &excluded_ty);
-        *env = Rc::new(Layer { values: without_e, depth: env.depth, location: env.location });
+        *env = Layer { values: without_e, depth: env.depth, location: env.location };
     })
 }
 
@@ -341,11 +339,11 @@ impl Layer {
         self
     }
 
-    /// Call `child_fn` with this layer added to the environment.
+    /// Call `child_fn` with this layer as the local environment.
     pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
         let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
-            let parent = replace(&mut *parent, Rc::new(self));
+            let parent = replace(&mut *parent, self);
 
             scopeguard::guard(parent, move |prev| {
                 CURRENT_SCOPE.with(|p| p.replace(prev));
@@ -404,7 +402,7 @@ impl Snapshot {
     /// Returns a snapshot of the current context. Suitable for debug printing,
     /// or can be converted into a [`Layer`] for reuse.
     pub fn get() -> Self {
-        let mut current: Layer = CURRENT_SCOPE.with(|s| (**s.borrow()).clone());
+        let mut current: Layer = CURRENT_SCOPE.with(|s| (*s.borrow()).clone());
 
         current.values.sort_by_key(|(_, anon)| anon.depth());
 
