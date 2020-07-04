@@ -45,7 +45,7 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use std::cell::RefCell;
+use std::{borrow::Borrow, cell::RefCell, hash::Hash};
 
 mod cache;
 mod id;
@@ -66,18 +66,18 @@ where
     F: FnOnce() -> R,
 {
     let callsite = Callsite::here();
-    let slot = Token::make(&callsite.current_count());
-    Point::with_current(|p| p.enter_child(callsite, slot, op))
+    Point::with_current(|p| p.enter_child(callsite, &callsite.current_count(), op))
 }
 
 /// The default "slot" for a topo call is the number of times that callsite
 /// has executed. You can override that by providing an arbitrary slot in
 /// this call.
 #[track_caller]
-pub fn call_in_slot<F, R, S>(slot: Token<S>, op: F) -> R
+pub fn call_in_slot<F, Q, R, S>(slot: &Q, op: F) -> R
 where
     F: FnOnce() -> R,
-    S: 'static,
+    Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
+    S: Borrow<Q> + Eq + Hash + Send + 'static,
 {
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
@@ -121,10 +121,11 @@ struct Point {
 
 impl Point {
     /// Mark a child Point in the topology, calling `child` within it.
-    fn enter_child<C, R, S>(&self, callsite: Callsite, slot: Token<S>, child: C) -> R
+    fn enter_child<C, Q, R, S>(&self, callsite: Callsite, slot: &Q, child: C) -> R
     where
         C: FnOnce() -> R,
-        S: 'static,
+        Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
+        S: Borrow<Q> + Eq + Hash + Send + 'static,
     {
         self.increment_count(callsite);
         let child_point = Self {
@@ -258,7 +259,7 @@ mod tests {
             call(|| {
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
-                    call_in_slot(Token::make(s), || {
+                    call_in_slot(s, || {
                         let current = CallId::current();
                         unique_ids.insert(current);
                     });

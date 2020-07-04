@@ -2,7 +2,7 @@ use super::{
     token::{OpaqueToken, Token},
     Point,
 };
-use std::{hash::Hash, panic::Location};
+use std::{borrow::Borrow, hash::Hash, panic::Location};
 
 /// Identifies an activation record in the current call topology.
 ///
@@ -44,11 +44,12 @@ impl CallId {
         Point::with_current(|current| current.id)
     }
 
-    pub(crate) fn child<S>(&self, callsite: Callsite, slot: Token<S>) -> Self
+    pub(crate) fn child<Q, S>(&self, callsite: Callsite, slot: &Q) -> Self
     where
-        S: 'static,
+        Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
+        S: Borrow<Q> + Eq + Hash + Send + 'static,
     {
-        Self { callsite, parent: Token::make(self), slot: slot.into() }
+        Self { callsite, parent: Token::make(self), slot: Token::make(slot).into() }
     }
 }
 
