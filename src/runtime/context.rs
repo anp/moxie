@@ -29,7 +29,7 @@ impl Context {
     /// Re-initializes the `Var` whenever `arg` changes.
     pub fn cache_state<Arg, Input, Output>(
         &self,
-        id: topo::Id,
+        id: topo::CallId,
         arg: &Arg,
         init: impl FnOnce(&Input) -> Output,
     ) -> (Commit<Output>, Key<Output>)
@@ -41,7 +41,7 @@ impl Context {
         let var = self.cache.cache_with(
             id,
             arg,
-            |arg| Var::new(topo::Id::current(), self.waker.clone(), init(arg)),
+            |arg| Var::new(topo::CallId::current(), self.waker.clone(), init(arg)),
             Clone::clone,
         );
         Var::root(var)
@@ -59,7 +59,7 @@ impl Context {
     /// a valid call to `set_task_executor`.
     pub fn load_with<Arg, Input, Fut, Output, Ret>(
         &self,
-        id: topo::Id,
+        id: topo::CallId,
         arg: &Arg,
         init: impl FnOnce(&Input) -> Fut,
         with: impl FnOnce(&Output) -> Ret,

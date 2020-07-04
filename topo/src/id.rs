@@ -6,31 +6,31 @@ use std::{hash::Hash, panic::Location};
 
 /// Identifies an activation record in the current call topology.
 ///
-/// The `Id` for the execution of a stack frame is the combined product of:
+/// The `CallId` for the execution of a stack frame is the combined product of:
 ///
 /// * a callsite: lexical source location at which the topologically-nested
 ///   function was invoked
-/// * parent `Id`: the identifier which was active when entering the current
+/// * parent `CallId`: the identifier which was active when entering the current
 ///   topo-nested function
 /// * a "slot": runtime value indicating the call's "logical index" within the
 ///   parent call
 ///
 /// By default, the slot used is a count of the number of times that particular
-/// callsite has been executed within the parent `Id`'s enclosing scope. This
-/// means that when creating an `Id` in a loop the identifier will be unique for
-/// each "index" of the loop iteration and will be stable if the same loop is
-/// invoked again. Changing the value used for the slot allows us to have stable
-/// `Id`s across multiple executions when iterating over elements of a
-/// collection that itself has unstable iteration order.
+/// callsite has been executed within the parent `CallId`'s enclosing scope.
+/// This means that when creating an `CallId` in a loop the identifier will be
+/// unique for each "index" of the loop iteration and will be stable if the same
+/// loop is invoked again. Changing the value used for the slot allows us to
+/// have stable `CallId`s across multiple executions when iterating over
+/// elements of a collection that itself has unstable iteration order.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct Id {
+pub struct CallId {
     callsite: Callsite,
-    parent: Token<Id>,
+    parent: Token<CallId>,
     slot: OpaqueToken,
 }
 
-impl Id {
-    /// Returns the root `Id`.
+impl CallId {
+    /// Returns the root `CallId`.
     pub(crate) fn root() -> Self {
         Self {
             callsite: Callsite::here(),
@@ -39,7 +39,7 @@ impl Id {
         }
     }
 
-    /// Returns the `Id` for the current scope in the call topology.
+    /// Returns the `CallId` for the current scope in the call topology.
     pub fn current() -> Self {
         Point::with_current(|current| current.id)
     }

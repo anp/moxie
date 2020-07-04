@@ -6,13 +6,13 @@ use std::{sync::Arc, task::Waker};
 /// [`Commit`] for [`Key`]s.
 pub(crate) struct Var<State> {
     current: Commit<State>,
-    id: topo::Id,
+    id: topo::CallId,
     pending: Option<Commit<State>>,
     waker: Waker,
 }
 
 impl<State> Var<State> {
-    pub fn new(id: topo::Id, waker: Waker, inner: State) -> Arc<Mutex<Self>> {
+    pub fn new(id: topo::CallId, waker: Waker, inner: State) -> Arc<Mutex<Self>> {
         let current = Commit { id, inner: Arc::new(inner) };
         Arc::new(Mutex::new(Var { id, current, waker, pending: None }))
     }

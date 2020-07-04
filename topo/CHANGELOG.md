@@ -30,6 +30,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 ### Changed
 
+- `Id` renamed to `CallId`.
 - `illicit` dependency updated to 1.0.
 - `impl Trait` has been removed from public APIs where it may cause accidental `Send`/`!Send`
   contracts.

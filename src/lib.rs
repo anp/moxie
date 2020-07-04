@@ -73,11 +73,12 @@ use std::{
     sync::Arc,
     task::Poll,
 };
+use topo::CallId;
 
 /// Memoizes the `init` function.
 ///
-/// If the cache has a stored `(Input, Output)` for the current [`topo::Id`] and
-/// if `arg` is equal to the stored `Input`, marks the value as alive in the
+/// If the cache has a stored `(Input, Output)` for the current [`topo::CallId`]
+/// and if `arg` is equal to the stored `Input`, marks the value as alive in the
 /// cache and returns the result of calling `with` on the stored `Output`.
 ///
 /// Otherwise, calls `arg.to_owned()` to get an `Input` and calls `init` to get
@@ -101,7 +102,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.cache_with(topo::Id::current(), arg, init, with)
+    rt.cache.cache_with(CallId::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
@@ -115,7 +116,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.cache_with(topo::Id::current(), &(), |&()| expr(), with)
+    rt.cache.cache_with(CallId::current(), &(), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Output` if it exists and
@@ -132,11 +133,11 @@ where
     Input: Borrow<Arg> + 'static,
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.cache.cache_with(CallId::current(), arg, init, Clone::clone)
 }
 
-/// Runs the provided expression once per [`topo::Id`]. The provided value will
-/// always be cloned on subsequent calls unless dropped from storage and
+/// Runs the provided expression once per [`topo::CallId`]. The provided value
+/// will always be cloned on subsequent calls unless dropped from storage and
 /// reinitialized in a later `Revision`.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
@@ -144,7 +145,7 @@ pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(topo::Id::current(), &(), |()| expr(), Clone::clone)
+    rt.cache.cache_with(CallId::current(), &(), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -155,7 +156,7 @@ pub fn state<Output>(init: impl FnOnce() -> Output) -> (Commit<Output>, Key<Outp
 where
     Output: 'static,
 {
-    rt.cache_state(topo::Id::current(), &(), |_| init())
+    rt.cache_state(CallId::current(), &(), |_| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -171,7 +172,7 @@ where
     Input: Borrow<Arg> + 'static,
     Output: 'static,
 {
-    rt.cache_state(topo::Id::current(), arg, init)
+    rt.cache_state(CallId::current(), arg, init)
 }
 
 /// Load a value from the future returned by `init` whenever `capture` changes,
@@ -191,7 +192,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.load_with(topo::Id::current(), arg, init, with)
+    rt.load_with(CallId::current(), arg, init, with)
 }
 
 /// Calls [`load_with`] but never re-initializes the loading future.
@@ -206,7 +207,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.load_with(topo::Id::current(), &(), |()| init(), with)
+    rt.load_with(CallId::current(), &(), |()| init(), with)
 }
 
 /// Calls [`load_with`], never re-initializes the loading future, and clones the
@@ -218,7 +219,7 @@ where
     Fut: Future<Output = Output> + 'static,
     Output: Clone + 'static,
 {
-    rt.load_with(topo::Id::current(), &(), |()| init(), Clone::clone)
+    rt.load_with(CallId::current(), &(), |()| init(), Clone::clone)
 }
 
 /// Load a value from a future, cloning it on subsequent revisions after it is
@@ -236,7 +237,7 @@ where
     Fut: Future<Output = Output> + 'static,
     Output: Clone + 'static,
 {
-    rt.load_with(topo::Id::current(), capture, init, Clone::clone)
+    rt.load_with(CallId::current(), capture, init, Clone::clone)
 }
 
 // TODO(#115) add examples
@@ -334,7 +335,7 @@ pub use mox::mox;
 /// each time.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Commit<State> {
-    id: topo::Id,
+    id: CallId,
     inner: Arc<State>,
 }
 
@@ -367,14 +368,14 @@ where
 ///
 /// They are created with the `cache_state` and `state` functions.
 pub struct Key<State> {
-    id: topo::Id,
+    id: CallId,
     commit_at_root: Commit<State>,
     var: Arc<Mutex<Var<State>>>,
 }
 
 impl<State> Key<State> {
-    /// Returns the `topo::Id` at which the state variable is bound.
-    pub fn id(&self) -> topo::Id {
+    /// Returns the `topo::CallId` at which the state variable is bound.
+    pub fn id(&self) -> CallId {
         self.id
     }
 
@@ -517,14 +518,14 @@ mod tests {
         topo::call(|| {
             let mut ids = HashSet::new();
             for _ in 0..10 {
-                topo::call(|| ids.insert(topo::Id::current()));
+                topo::call(|| ids.insert(CallId::current()));
             }
             assert_eq!(ids.len(), 10);
 
             let mut rt = RunLoop::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
-                    cache(&i, |_| ids.insert(topo::Id::current()));
+                    cache(&i, |_| ids.insert(CallId::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
