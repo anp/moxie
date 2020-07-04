@@ -12,12 +12,12 @@ use std::{
 /// Created during execution of the (element) macro and the element-specific
 /// wrappers. Offers a "stringly-typed" API for mutating the contained DOM
 /// nodes, adhering fairly closely to the upstream web specs.
-pub struct MemoNode {
+pub struct CachedNode {
     last_child: Cell<Option<Node>>,
     node: Node,
 }
 
-impl MemoNode {
+impl CachedNode {
     pub(crate) fn new(node: Node) -> Self {
         Self { last_child: Cell::new(None), node }
     }
@@ -28,8 +28,8 @@ impl MemoNode {
 
     // TODO make `self` a slot too so we can remove topo::call from mox
     // TODO accept PartialEq+ToString implementors
-    #[topo::nested(slot = "Token::get(name)")]
-    pub(crate) fn memo_attribute(&self, name: &str, value: &str) {
+    #[topo::nested(slot = "Token::make(name)")]
+    pub(crate) fn set_attribute(&self, name: &str, value: &str) {
         cache_with(
             value,
             |v| {
@@ -80,8 +80,8 @@ impl MemoNode {
     }
 }
 
-impl Debug for MemoNode {
+impl Debug for CachedNode {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("MemoNode").field("node", &self.node).finish()
+        f.debug_struct("CachedNode").field("node", &self.node).finish()
     }
 }

@@ -7,10 +7,10 @@
 #[macro_use]
 mod macros;
 
+pub(crate) mod cached_node;
 pub mod elements;
 pub mod embed;
 pub mod interfaces;
-pub(crate) mod memo_node;
 pub mod text;
 
 /// A module for glob-importing the most commonly used moxie-dom items.

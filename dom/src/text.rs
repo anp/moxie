@@ -1,8 +1,8 @@
 //! Text nodes in the DOM.
 
 use crate::{
+    cached_node::CachedNode,
     interfaces::content_categories::{FlowContent, PhrasingContent},
-    memo_node::MemoNode,
 };
 use augdom::Dom;
 use moxie::cache;
@@ -10,18 +10,18 @@ use moxie::cache;
 /// Create a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
-#[illicit::from_env(parent: &MemoNode)]
+#[illicit::from_env(parent: &CachedNode)]
 pub fn text(s: impl AsRef<str>) -> Text {
     let text_node = cache(s.as_ref(), |s| parent.raw_node().create_text_node(s));
-    Text(MemoNode::new(text_node))
+    Text(CachedNode::new(text_node))
 }
 
 /// A text node in the DOM.
 #[must_use = "needs to be bound to a parent"]
-pub struct Text(MemoNode);
+pub struct Text(CachedNode);
 
 impl crate::interfaces::node::sealed::Memoized for Text {
-    fn node(&self) -> &MemoNode {
+    fn node(&self) -> &CachedNode {
         &self.0
     }
 }

@@ -1,6 +1,6 @@
 //! Embedding APIs offering finer-grained control over execution of the runtime.
 
-use crate::{interfaces::node::Child, memo_node::MemoNode};
+use crate::{cached_node::CachedNode, interfaces::node::Child};
 use moxie::runtime::RunLoop;
 
 /// Wrapper around `moxie::runtime::RunLoop` which provides an environment for
@@ -24,10 +24,10 @@ impl WebRuntime {
         let parent = parent.into();
         WebRuntime {
             inner: RunLoop::new(Box::new(move || {
-                illicit::Layer::new().offer(MemoNode::new(parent.clone())).enter(|| {
+                illicit::Layer::new().offer(CachedNode::new(parent.clone())).enter(|| {
                     let new_root = topo::call(|| root());
 
-                    let parent = &*illicit::expect::<MemoNode>();
+                    let parent = &*illicit::expect::<CachedNode>();
                     parent.ensure_child_attached(new_root.to_bind());
                     parent.remove_trailing_children();
                 });

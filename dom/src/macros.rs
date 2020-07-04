@@ -90,7 +90,7 @@ macro_rules! element {
         ///
         /// A function for creating a builder which will accept attributes and produce the element.
         #[topo::nested]
-        #[illicit::from_env(parent: &crate::memo_node::MemoNode)]
+        #[illicit::from_env(parent: &crate::cached_node::CachedNode)]
         pub fn $name() -> [<$name:camel Builder>] {
             #[allow(unused)]
             use augdom::Dom;
@@ -100,7 +100,7 @@ macro_rules! element {
             let elem = moxie::cache(stringify!($name), |ty| {
                 parent.raw_node().create_element(ty)
             });
-            [<$name:camel Builder>] { inner: crate::memo_node::MemoNode::new(elem) }
+            [<$name:camel Builder>] { inner: crate::cached_node::CachedNode::new(elem) }
         }
 
         $(#[$outer])*
@@ -108,7 +108,7 @@ macro_rules! element {
         /// A type for initializing the element's attributes before calling `build`.
         #[must_use = "needs to be built"]
         pub struct [<$name:camel Builder>] {
-            inner: crate::memo_node::MemoNode,
+            inner: crate::cached_node::CachedNode,
         }
 
         impl crate::interfaces::element::Element for [<$name:camel Builder>] {}
@@ -125,7 +125,7 @@ macro_rules! element {
         }
 
         impl crate::interfaces::node::sealed::Memoized for [<$name:camel Builder>] {
-            fn node(&self) -> &crate::memo_node::MemoNode {
+            fn node(&self) -> &crate::cached_node::CachedNode {
                 &self.inner
             }
         }
@@ -160,12 +160,12 @@ macro_rules! element {
         /// The initialized element, ready to be bound to a parent.
         #[must_use = "needs to be bound to a parent"]
         pub struct [<$name:camel>] {
-            inner: crate::memo_node::MemoNode,
+            inner: crate::cached_node::CachedNode,
         }
 
         impl crate::interfaces::node::Node for [<$name:camel>] {}
         impl crate::interfaces::node::sealed::Memoized for [<$name:camel>] {
-            fn node(&self) -> &crate::memo_node::MemoNode {
+            fn node(&self) -> &crate::cached_node::CachedNode {
                 &self.inner
             }
         }
