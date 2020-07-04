@@ -11,6 +11,8 @@ use tracing::*;
 /// project code coverage
 #[derive(Debug, Options)]
 pub enum Coverage {
+    /// clean up .gcno/.gcda files in the target/coverage dir
+    Cleanup(Cleanup),
     /// collect code coverage by running a cargo command
     Collect(Collect),
     /// generate a code coverage report
@@ -20,9 +22,42 @@ pub enum Coverage {
 impl Coverage {
     pub fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
         match self {
+            Coverage::Cleanup(opts) => opts.run(project_root),
             Coverage::Collect(opts) => opts.run(project_root),
             Coverage::Report(opts) => opts.run(project_root),
         }
+    }
+}
+
+#[derive(Debug, Options)]
+pub struct Cleanup {}
+
+impl Cleanup {
+    fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
+        let coverage_dir = project_root.as_ref().join("target").join("coverage");
+
+        let mut num_deleted = 0;
+        for entry in walkdir::WalkDir::new(&coverage_dir) {
+            let entry = entry?;
+            if !entry.file_type().is_file() {
+                continue;
+            }
+
+            if let Some(ext) = entry.path().extension() {
+                if ext == "gcda" || ext == "gcno" {
+                    if let Err(e) = std::fs::remove_file(entry.path()) {
+                        warn!({ %e, path = %entry.path().display() }, "couldn't remove");
+                    } else {
+                        num_deleted += 1;
+                    }
+                }
+            }
+        }
+
+        let coverage_dir = coverage_dir.display();
+        info!({ %num_deleted, dir = %coverage_dir }, "cleaned up coverage files");
+
+        Ok(())
     }
 }
 
