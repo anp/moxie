@@ -26,13 +26,15 @@ impl MemoNode {
         &self.node
     }
 
-    #[topo::nested]
-    pub(crate) fn memo_attribute(&self, name: &str, value: String) {
-        let name = name.to_owned();
+    // TODO make `self` a slot too so we can remove topo::call from mox
+    // TODO accept PartialEq+ToString implementors
+    #[topo::nested(slot = "Token::get(name)")]
+    pub(crate) fn memo_attribute(&self, name: &str, value: &str) {
         memo_with(
             value,
             |v| {
-                self.node.set_attribute(&name, v);
+                self.node.set_attribute(name, v);
+                let name = name.to_owned();
                 scopeguard::guard(self.node.clone(), move |node| node.remove_attribute(&name))
             },
             |_| {},

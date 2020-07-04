@@ -2,6 +2,7 @@ use super::{Revision, Var};
 use crate::{Commit, Key};
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
+    borrow::Borrow,
     fmt::{Debug, Formatter, Result as FmtResult},
     future::Future,
     rc::Rc,
@@ -26,16 +27,16 @@ impl Context {
 
     /// Load a [`crate::state::Var`] with the provided argument and initializer.
     /// Re-initializes the `Var` whenever `arg` changes.
-    pub fn memo_state<Arg, Init, Output>(
+    pub fn memo_state<Arg, Input, Output>(
         &self,
         id: topo::Id,
-        arg: Arg,
-        init: Init,
+        arg: &Arg,
+        init: impl FnOnce(&Input) -> Output,
     ) -> (Commit<Output>, Key<Output>)
     where
-        Arg: PartialEq + 'static,
+        Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+        Input: Borrow<Arg> + 'static,
         Output: 'static,
-        for<'a> Init: FnOnce(&'a Arg) -> Output,
     {
         let var = self.cache.memo_with(
             id,
@@ -56,21 +57,22 @@ impl Context {
     ///
     /// If the [`super::Runtime`] from which `self` was created did not have
     /// a valid call to `set_task_executor`.
-    pub fn load_with<Arg, Fut, Stored, Ret>(
+    pub fn load_with<Arg, Input, Fut, Output, Ret>(
         &self,
         id: topo::Id,
-        arg: Arg,
-        init: impl FnOnce(&Arg) -> Fut,
-        with: impl FnOnce(&Stored) -> Ret,
+        arg: &Arg,
+        init: impl FnOnce(&Input) -> Fut,
+        with: impl FnOnce(&Output) -> Ret,
     ) -> Poll<Ret>
     where
-        Arg: PartialEq + 'static,
-        Fut: Future<Output = Stored> + 'static,
-        Stored: 'static,
+        Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+        Input: Borrow<Arg> + 'static,
+        Fut: Future<Output = Output> + 'static,
+        Output: 'static,
         Ret: 'static,
     {
-        let (result, set_result): (_, Key<Poll<Stored>>) =
-            self.memo_state(id, (), |()| Poll::Pending);
+        let (result, set_result): (_, Key<Poll<Output>>) =
+            self.memo_state(id, &(), |()| Poll::Pending);
         self.cache.memo_with(
             id,
             arg,

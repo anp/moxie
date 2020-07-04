@@ -27,21 +27,22 @@ impl $name {
     /// Return a reference to the stored output if `input` equals the
     /// previously-stored input. If a reference is returned, the storage
     /// is marked live and will not be GC'd this revision.
-    pub fn get<Query, Scope, Input, Output>(&mut self, query: &Query, input: &Input) -> Option<&Output>
+    pub fn get<Query, Scope, Arg, Input, Output>(&mut self, query: &Query, input: &Arg) -> Option<&Output>
     where
         Query: Eq + Hash + ?Sized,
         Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
-        Input: 'static + PartialEq $(+ $bound)?,
+        Arg: PartialEq<Input> + ?Sized,
+        Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(query, input)
+        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq::<Query, Arg>(query, input)
     }
 
     /// Store the result of a query. It will not be GC'd this revision.
     pub fn store<Scope, Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
     where
         Scope: 'static + Eq + Hash $(+ $bound)?,
-        Input: 'static + PartialEq $(+ $bound)?,
+        Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
         self.get_namespace_mut().insert(scope, input, output);
@@ -50,7 +51,7 @@ impl $name {
     fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
     where
         Scope: 'static + Eq + Hash $(+ $bound)?,
-        Input: 'static + PartialEq $(+ $bound)?,
+        Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
         let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
@@ -109,23 +110,25 @@ impl $handle {
     /// Both (1) and (3) require mutable access to storage. We want to allow
     /// nested memoization eventually so it's important that (2) *doesn't*
     /// use mutable access to storage.
-    pub fn memo_with<Scope, Arg, Stored, Ret>(
+    pub fn memo_with<Scope, Arg, Input, Output, Ret>(
         &self,
         scope: Scope,
-        arg: Arg,
-        init: impl FnOnce(&Arg) -> Stored,
-        with: impl FnOnce(&Stored) -> Ret,
+        arg: &Arg,
+        init: impl FnOnce(&Input) -> Output,
+        with: impl FnOnce(&Output) -> Ret,
     ) -> Ret
     where
         Scope: 'static + Eq + Hash $(+ $bound)?,
-        Arg: 'static + PartialEq $(+ $bound)?,
-        Stored: 'static $(+ $bound)?,
+        Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
+        Input: 'static + Borrow<Arg> $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get::<_, Scope, _, _,>(&scope, &arg) } {
+        if let Some(stored) = { self.inner.$acquire().get::<_, Scope, _, _, _,>(&scope, arg) } {
             return with(stored);
         }
 
+        let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
         self.inner.$acquire().store(scope, arg, to_store);
@@ -158,16 +161,18 @@ struct Namespace<Scope, Input, Output> {
 impl<Scope, Input, Output> Namespace<Scope, Input, Output>
 where
     Scope: Eq + Hash + 'static,
-    Input: PartialEq + 'static,
+    Input: 'static,
     Output: 'static,
 {
-    fn get_if_input_eq<Query>(&mut self, query: &Query, input: &Input) -> Option<&Output>
+    fn get_if_input_eq<Query, Arg>(&mut self, query: &Query, input: &Arg) -> Option<&Output>
     where
         Query: Eq + Hash + ?Sized,
         Scope: Borrow<Query>,
+        Arg: PartialEq<Input> + ?Sized,
+        Input: Borrow<Arg>,
     {
         let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(query)?;
-        if stored_input == input {
+        if input == stored_input {
             *liveness = Liveness::Live;
             Some(stored)
         } else {

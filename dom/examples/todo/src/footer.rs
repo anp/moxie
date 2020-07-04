@@ -6,7 +6,7 @@ use moxie_dom::{
 
 #[topo::nested]
 pub fn items_remaining(num_active: usize) -> Span {
-    let bolded = if num_active == 0 { text("No") } else { text(num_active) };
+    let bolded = if num_active == 0 { text("No") } else { text(num_active.to_string()) };
     mox! {
         <span class="todo-count">
             <strong>{bolded}</strong>

@@ -33,7 +33,7 @@ where
     #[topo::nested]
     fn on(self, callback: impl FnMut(Ev) + 'static) -> Self {
         memo_with(
-            moxie::runtime::Revision::current(),
+            &moxie::runtime::Revision::current(),
             |_| EventHandle::new(self.raw_node_that_has_sharp_edges_please_be_careful(), callback),
             |_| {},
         );

@@ -32,8 +32,8 @@ pub trait HtmlElement: Element {
     /// Forms a class of attributes, called custom data attributes, that allow
     /// proprietary information to be exchanged between the HTML and its DOM
     /// representation that may be used by scripts.
-    fn data(self, key: impl ToString, value: impl ToString) -> Self {
-        self.attribute(&format!("data-{}", key.to_string()), value)
+    fn data(self, key: impl ToString, value: impl AsRef<str>) -> Self {
+        self.attribute(&format!("data-{}", key.to_string()), value.as_ref())
     }
 
     attr_method! {
