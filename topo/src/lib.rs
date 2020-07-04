@@ -42,6 +42,56 @@
 //! assert_ne!(second, fourth);
 //! ```
 
+/// Gives a function a unique [`CallId`] in its caller's topology by applying
+/// `#[track_caller]` to the function and wrapping its body in [`topo::call`] or
+/// [`topo::call_in_slot`] if the `slot` parameter is given.
+///
+/// ```
+/// #[topo::nested]
+/// fn widget() -> topo::CallId {
+///     topo::CallId::current()
+/// }
+///
+/// // each call to the nested function gets a unique CallId in its parent's scope
+/// assert_ne!(widget(), widget());
+///
+/// // nesting can be overridden by giving the function its own root
+/// assert_eq!(topo::root(widget), topo::root(widget));
+/// ```
+///
+/// # Slots
+///
+/// See [`CallId`]'s documentation for more information on how slots are used.
+/// By default, `#[nested]` functions use for their slot the number of times the
+/// current source location has been called during the span of the current
+/// `CallId`. It is the behavior offered by the [`topo::call`] shorthand.
+///
+/// To override the slot of a nested function, use the `slot` parameter, which
+/// is then passed directly as the first argument to [`call_in_slot`]:
+///
+/// ```
+/// #[topo::nested(slot = "name")]
+/// fn get_name_id(name: &str, _value: &str) -> topo::CallId {
+///     topo::CallId::current()
+/// }
+///
+/// // reusing the same slot will get the same CallId
+/// let bob = get_name_id("bob", "hello");
+/// let bob_again = get_name_id("bob", "hello");
+/// assert_eq!(bob, bob_again);
+///
+/// // the same name in a nested call returns a *new* CallId
+/// let bob_nested = topo::call(|| get_name_id("bob", "hello"));
+/// assert_ne!(bob, bob_nested);
+///
+/// // different names produce different slots, even when other args are the same
+/// let alice_hello = get_name_id("alice", "hello");
+/// assert_ne!(bob, alice_hello);
+///
+/// // changing non-slot arguments doesn't affect the CallId produced
+/// let alice_goodbye = get_name_id("alice", "goodbye");
+/// assert_eq!(alice_hello, alice_goodbye);
+/// ```
 #[doc(inline)]
 pub use topo_macro::nested;
 
