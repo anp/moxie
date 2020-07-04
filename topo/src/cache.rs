@@ -136,7 +136,7 @@ impl $handle {
     }
 
     /// See `gc` on the inner cache type.
-    pub fn gc(&mut self) {
+    pub fn gc(&self) {
         self.inner.$acquire().gc()
     }
 }
