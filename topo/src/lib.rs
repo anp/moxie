@@ -52,7 +52,7 @@ use std::{cell::RefCell, hash::Hash};
 mod cache;
 mod id;
 mod token;
-pub use cache::{Cache, CacheHandle, LocalCache, LocalCacheHandle};
+pub use cache::{Cache, LocalCache, SharedCache, SharedLocalCache};
 pub use id::{Callsite, Id};
 pub use token::{OpaqueToken, Token};
 

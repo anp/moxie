@@ -24,7 +24,7 @@ use futures::{
     task::{noop_waker, LocalSpawn, SpawnError},
 };
 use std::{rc::Rc, task::Waker};
-use topo::LocalCacheHandle;
+use topo::SharedLocalCache;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;
@@ -70,7 +70,7 @@ impl std::fmt::Debug for Revision {
 /// ```
 pub struct Runtime {
     revision: Revision,
-    cache: LocalCacheHandle,
+    cache: Rc<SharedLocalCache>,
     spawner: Rc<dyn LocalSpawn>,
     wk: Waker,
 }
@@ -90,7 +90,7 @@ impl Runtime {
         Self {
             spawner: Rc::new(JunkSpawner),
             revision: Revision(0),
-            cache: LocalCacheHandle::default(),
+            cache: Rc::new(SharedLocalCache::default()),
             wk: noop_waker(),
         }
     }

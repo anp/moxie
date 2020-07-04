@@ -72,7 +72,7 @@ impl $name {
 
 paste::item! {
     define_cache! {
-        @handle $name $(: $bound)?, [<$name Handle>], $($rest)*
+        @handle $name $(: $bound)?, [<Shared $name>], $($rest)*
     }
 }
     };
