@@ -101,9 +101,9 @@ impl Runtime {
         self.revision
     }
 
-    /// Runs the root closure once with access to memoization storage,
-    /// increments the runtime's `Revision`, and drops any memoized values
-    /// which were not marked `Liveness::Live`.
+    /// Runs the root closure once with access to the runtime context,
+    /// increments the runtime's `Revision`, and drops any cached values
+    /// which were not marked alive.
     pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
         self.revision.0 += 1;
 

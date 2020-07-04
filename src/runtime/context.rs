@@ -10,7 +10,7 @@ use std::{
 };
 
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
-/// contexts and provides access to the current revision, memoization storage,
+/// contexts and provides access to the current revision, cache storage,
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
@@ -27,7 +27,7 @@ impl Context {
 
     /// Load a [`crate::state::Var`] with the provided argument and initializer.
     /// Re-initializes the `Var` whenever `arg` changes.
-    pub fn memo_state<Arg, Input, Output>(
+    pub fn cache_state<Arg, Input, Output>(
         &self,
         id: topo::Id,
         arg: &Arg,
@@ -38,7 +38,7 @@ impl Context {
         Input: Borrow<Arg> + 'static,
         Output: 'static,
     {
-        let var = self.cache.memo_with(
+        let var = self.cache.cache_with(
             id,
             arg,
             |arg| Var::new(topo::Id::current(), self.waker.clone(), init(arg)),
@@ -72,8 +72,8 @@ impl Context {
         Ret: 'static,
     {
         let (result, set_result): (_, Key<Poll<Output>>) =
-            self.memo_state(id, &(), |()| Poll::Pending);
-        self.cache.memo_with(
+            self.cache_state(id, &(), |()| Poll::Pending);
+        self.cache.cache_with(
             id,
             arg,
             |arg| {

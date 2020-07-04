@@ -1,7 +1,7 @@
-//! Nodes which memoize mutations.
+//! Nodes which cache mutations.
 
 use augdom::{Dom, Node};
-use moxie::memo_with;
+use moxie::cache_with;
 use std::{
     cell::Cell,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -30,7 +30,7 @@ impl MemoNode {
     // TODO accept PartialEq+ToString implementors
     #[topo::nested(slot = "Token::get(name)")]
     pub(crate) fn memo_attribute(&self, name: &str, value: &str) {
-        memo_with(
+        cache_with(
             value,
             |v| {
                 self.node.set_attribute(name, v);

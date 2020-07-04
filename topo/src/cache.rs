@@ -61,7 +61,7 @@ impl $name {
         gc.as_any_mut().downcast_mut().unwrap()
     }
 
-    /// Drops memoized values that were not referenced since the last call
+    /// Drops cached values that were not referenced since the last call
     /// and sets all remaining values to be dropped by default in the next call.
     pub fn gc(&mut self) {
         for namespace in self.inner.values_mut() {
@@ -100,7 +100,7 @@ impl Default for $handle {
 }
 
 impl $handle {
-    /// Provides a closure-based memoization API on top of the underlying
+    /// Provides a closure-based caching API on top of the underlying
     /// mutable API. Steps:
     ///
     /// 1. if matching cached value, mark live and return
@@ -108,9 +108,9 @@ impl $handle {
     /// 3. store new value as live, return
     ///
     /// Both (1) and (3) require mutable access to storage. We want to allow
-    /// nested memoization eventually so it's important that (2) *doesn't*
+    /// nested cached `init`s eventually so it's important that (2) *doesn't*
     /// use mutable access to storage.
-    pub fn memo_with<Scope, Arg, Input, Output, Ret>(
+    pub fn cache_with<Scope, Arg, Input, Output, Ret>(
         &self,
         scope: Scope,
         arg: &Arg,
@@ -258,14 +258,14 @@ trait Gc: Downcast + Debug {
 
 impl_downcast!(Gc);
 
-/// Describes the outcome for a memoization value if a garbage collection were
-/// to occur when observed. During the run of a `Revision` any memoized values
+/// Describes the outcome for a cached value if a garbage collection were
+/// to occur when observed. During the run of a `Revision` any cached values
 /// which are initialized or read are marked as `Live`. At the end of a
 /// `Revision`,
 #[derive(Debug, PartialEq)]
 enum Liveness {
-    /// The memoized value would be retained in a GC right now.
+    /// The value would be retained in a GC right now.
     Live,
-    /// The memoized value would be dropped in a GC right now.
+    /// The value would be dropped in a GC right now.
     Dead,
 }

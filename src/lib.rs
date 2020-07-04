@@ -7,12 +7,12 @@
 //!
 //! Memoization is the core tool which moxie provides to store data across
 //! `Revision`s and to minimize the incremental work performed when an update
-//! triggers the next `Revision`. Calls to the memo_\* topological functions
+//! triggers the next `Revision`. Calls to the cache_\* topological functions
 //! will perform memoization specific to the current position within the
 //! function call topology, as other topologically-nested functions do.
 //!
-//! During [run_once] the memoization storage is an [environment
-//! value](illicit::Layer). Memoization calls write to this storage to store
+//! During [run_once] the cache and other runtime context is an [environment
+//! value](illicit::Layer). Cache calls write to this storage to store
 //! results. At the end of [run_once], this storage is garbage-collected,
 //! dropping values which were not referenced, marking them as live.
 //!
@@ -22,9 +22,9 @@
 //! effect when creating the stored value and to undo the effect when the stored
 //! value is `Drop`ped.
 //!
-//! Initializing a memoized value at a particular callsite offers a simple API
+//! Initializing a cached value at a particular callsite offers a simple API
 //! for incremental computations. Further, placing mutations in the initializer
-//! for a memo variable offers a path to minimizing the mutations or other side
+//! for a cache variable offers a path to minimizing the mutations or other side
 //! effects performed while describing the interface.
 //!
 //! # State
@@ -84,13 +84,13 @@ use std::{
 /// an `Output`. It calls `with` on the `Output` to get a `Ret` value, stores
 /// the `(Input, Output)` in the cache afresh, and returns the `Ret`.
 ///
-/// It is technically possible to nest calls to `memo_with` and other functions
+/// It is technically possible to nest calls to `cache_with` and other functions
 /// in this module, but the values they store won't be correctly retained across
 /// `Revision`s until we track dependency information. As a result, it's not
 /// recommended.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo_with<Arg, Input, Output, Ret>(
+pub fn cache_with<Arg, Input, Output, Ret>(
     arg: &Arg,
     init: impl FnOnce(&Input) -> Output,
     with: impl FnOnce(&Output) -> Ret,
@@ -101,7 +101,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), arg, init, with)
+    rt.cache.cache_with(topo::Id::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
@@ -115,24 +115,24 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), &(), |&()| expr(), with)
+    rt.cache.cache_with(topo::Id::current(), &(), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Output` if it exists and
 /// `Input` is the same as when the stored value was created.
 ///
-/// `init` takes a reference to `Input` so that the memoization store can
+/// `init` takes a reference to `Input` so that the cache can
 /// compare future calls' arguments against the one used to produce the stored
 /// value.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo<Arg, Input, Output>(arg: &Arg, init: impl FnOnce(&Input) -> Output) -> Output
+pub fn cache<Arg, Input, Output>(arg: &Arg, init: impl FnOnce(&Input) -> Output) -> Output
 where
     Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
     Input: Borrow<Arg> + 'static,
     Output: Clone + 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), arg, init, Clone::clone)
+    rt.cache.cache_with(topo::Id::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::Id`]. The provided value will
@@ -144,7 +144,7 @@ pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), &(), |()| expr(), Clone::clone)
+    rt.cache.cache_with(topo::Id::current(), &(), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -155,14 +155,14 @@ pub fn state<Output>(init: impl FnOnce() -> Output) -> (Commit<Output>, Key<Outp
 where
     Output: 'static,
 {
-    rt.memo_state(topo::Id::current(), &(), |_| init())
+    rt.cache_state(topo::Id::current(), &(), |_| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo_state<Arg, Input, Output>(
+pub fn cache_state<Arg, Input, Output>(
     arg: &Arg,
     init: impl FnOnce(&Input) -> Output,
 ) -> (Commit<Output>, Key<Output>)
@@ -171,7 +171,7 @@ where
     Input: Borrow<Arg> + 'static,
     Output: 'static,
 {
-    rt.memo_state(topo::Id::current(), arg, init)
+    rt.cache_state(topo::Id::current(), arg, init)
 }
 
 /// Load a value from the future returned by `init` whenever `capture` changes,
@@ -365,7 +365,7 @@ where
 /// variable through a snapshot taken when the `Key` was created. Writes are
 /// supported with [Key::update] and [Key::set].
 ///
-/// They are created with the `memo_state` and `state` functions.
+/// They are created with the `cache_state` and `state` functions.
 pub struct Key<State> {
     id: topo::Id,
     commit_at_root: Commit<State>,
@@ -474,7 +474,7 @@ mod tests {
     }
 
     #[test]
-    fn basic_memo() {
+    fn basic_cache() {
         with_test_logs(|| {
             let mut call_count = 0u32;
 
@@ -524,7 +524,7 @@ mod tests {
             let mut rt = RunLoop::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
-                    memo(&i, |_| ids.insert(topo::Id::current()));
+                    cache(&i, |_| ids.insert(topo::Id::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
@@ -533,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn memo_in_a_loop() {
+    fn cache_in_a_loop() {
         with_test_logs(|| {
             let num_iters = 10;
             let mut rt = RunLoop::new(|| {
@@ -561,11 +561,11 @@ mod tests {
         with_test_logs(|| {
             let loop_ct = Cell::new(0);
             let raw_exec = Cell::new(0);
-            let memo_exec = Cell::new(0);
+            let cache_exec = Cell::new(0);
             let mut rt = RunLoop::new(|| {
                 raw_exec.set(raw_exec.get() + 1);
-                memo(&loop_ct.get(), |_| {
-                    memo_exec.set(memo_exec.get() + 1);
+                cache(&loop_ct.get(), |_| {
+                    cache_exec.set(cache_exec.get() + 1);
                 });
             });
 
@@ -573,9 +573,9 @@ mod tests {
                 loop_ct.set(i);
 
                 assert_eq!(
-                    memo_exec.get(),
+                    cache_exec.get(),
                     i,
-                    "memo block should execute exactly once per loop_ct value"
+                    "cache block should execute exactly once per loop_ct value"
                 );
 
                 assert_eq!(
