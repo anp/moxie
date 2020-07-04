@@ -16,15 +16,17 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 - #[nested] allows specifying a `slot`.
 - `Cache`, `GlobalCache` types for storing interned and memoized values.
-- `CacheHandle`, `GlobalCacheHandle` types for multiple-owner access to caches, implementing
-  `memo_with` with careful locking to allow nested calls in the future.
+- `SharedCache`, `SharedGlobalCache` types for safe multiple-owner access to caches, implementing
+  `cache_with` with careful locking to allow nested calls in the future.
 - `root` free function for allowing one to re-root a call topology (i.e. if running inside of a
   broader one).
+- `Token<T>`, `OpaqueToken` types for cached values.
 
 ### Removed
 
 - `Point` is no longer `pub`.
-- `#![feature(track_caller)]` is no longer needed.
+- `#![feature(track_caller)]` is no longer needed, although until 1.46 hits beta/stable an MSRV of
+  nightly-2020-07-02 applies.
 
 ### Changed
 
