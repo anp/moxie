@@ -1,4 +1,5 @@
 use downcast_rs::{impl_downcast, Downcast};
+use hash_hasher::HashedMap;
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
@@ -20,7 +21,9 @@ macro_rules! define_cache {
 /// When collecting garbage, values are retained if they were referenced since the last GC.
 #[derive(Debug, Default)]
 pub struct $name {
-    inner: HashMap<Query, Box<dyn Gc $(+ $bound)?>>,
+    /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
+    /// `TypeIds` which come pre-hashed courtesy of rustc.
+    inner: HashedMap<Query, Box<dyn Gc $(+ $bound)?>>,
 }
 
 impl $name {
