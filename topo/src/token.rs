@@ -29,31 +29,25 @@ where
         Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
         S: Borrow<Q>,
     {
+        static INDICES: Lazy<Mutex<HashMap<TypeId, usize>>> =
+            Lazy::new(|| Mutex::new(HashMap::new()));
         let mut existing_tokens = TOKENS.lock();
 
         if let Some(token) = existing_tokens.get(slot, &()) {
             *token
         } else {
-            let new_token = Self::next();
+            let mut indices = INDICES.lock();
+            let count = indices.entry(TypeId::of::<S>()).or_default();
+            *count += 1;
+            let new_token = Self { index: *count, ty: PhantomData };
             existing_tokens.store(slot.to_owned(), (), new_token);
             new_token
         }
     }
 
-    /// Get the next Token for this type.
-    fn next() -> Self {
-        static INDICES: Lazy<Mutex<HashMap<TypeId, usize>>> =
-            Lazy::new(|| Mutex::new(HashMap::new()));
-
-        let mut indices = INDICES.lock();
-        let count = indices.entry(TypeId::of::<S>()).or_default();
-        *count += 1;
-        Self { index: *count, ty: PhantomData }
-    }
-
     /// Fabricate a token. Used for creating a root `crate::Id`.
     pub(crate) fn fake() -> Self {
-        Self { index: usize::max_value(), ty: PhantomData }
+        Self { index: 0, ty: PhantomData }
     }
 
     /// Erase the type of this token, storing it as a [`TypeId`] in the
