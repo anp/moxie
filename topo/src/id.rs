@@ -35,7 +35,7 @@ impl CallId {
         Self {
             callsite: Callsite::here(),
             parent: Token::fake(),
-            slot: Token::<String>::fake().opaque(),
+            slot: Token::<String>::fake().into(),
         }
     }
 
@@ -48,7 +48,7 @@ impl CallId {
     where
         S: Eq + Hash + Send + 'static,
     {
-        Self { callsite, parent: Token::make(self), slot: slot.opaque() }
+        Self { callsite, parent: Token::make(self), slot: slot.into() }
     }
 }
 
@@ -63,10 +63,7 @@ impl Callsite {
     /// which it is called.
     #[track_caller]
     pub fn here() -> Self {
-        Self {
-            // the pointer value for a given location is enough to differentiate it from all others
-            location: Location::caller() as *const _ as usize,
-        }
+        Location::caller().into()
     }
 
     /// Returns the number of times this callsite has been seen as a child of
@@ -80,5 +77,14 @@ impl Callsite {
                 0
             }
         })
+    }
+}
+
+impl From<&'static Location<'static>> for Callsite {
+    fn from(location: &'static Location<'static>) -> Self {
+        Self {
+            // the pointer value for a given location is enough to differentiate it from all others
+            location: location as *const _ as usize,
+        }
     }
 }

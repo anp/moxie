@@ -151,6 +151,12 @@ impl Debug for $handle {
             .finish()
     }
 }
+
+impl From<$name> for $handle {
+    fn from(inner: $name) -> Self {
+        Self { inner: $shared::new($lock::new(inner)) }
+    }
+}
     };
 }
 
