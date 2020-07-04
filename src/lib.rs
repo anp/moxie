@@ -102,7 +102,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.cache_with(CallId::current(), arg, init, with)
+    rt.cache.cache_with(&CallId::current(), arg, init, with)
 }
 
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
@@ -116,7 +116,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.cache_with(CallId::current(), &(), |&()| expr(), with)
+    rt.cache.cache_with(&CallId::current(), &(), |&()| expr(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Output` if it exists and
@@ -133,7 +133,7 @@ where
     Input: Borrow<Arg> + 'static,
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(CallId::current(), arg, init, Clone::clone)
+    rt.cache.cache_with(&CallId::current(), arg, init, Clone::clone)
 }
 
 /// Runs the provided expression once per [`topo::CallId`]. The provided value
@@ -145,7 +145,7 @@ pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(CallId::current(), &(), |()| expr(), Clone::clone)
+    rt.cache.cache_with(&CallId::current(), &(), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -156,7 +156,7 @@ pub fn state<Output>(init: impl FnOnce() -> Output) -> (Commit<Output>, Key<Outp
 where
     Output: 'static,
 {
-    rt.cache_state(CallId::current(), &(), |_| init())
+    rt.cache_state(&CallId::current(), &(), |_| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
@@ -172,7 +172,7 @@ where
     Input: Borrow<Arg> + 'static,
     Output: 'static,
 {
-    rt.cache_state(CallId::current(), arg, init)
+    rt.cache_state(&CallId::current(), arg, init)
 }
 
 /// Load a value from the future returned by `init` whenever `capture` changes,
@@ -192,7 +192,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.load_with(CallId::current(), arg, init, with)
+    rt.load_with(&CallId::current(), arg, init, with)
 }
 
 /// Calls [`load_with`] but never re-initializes the loading future.
@@ -207,7 +207,7 @@ where
     Output: 'static,
     Ret: 'static,
 {
-    rt.load_with(CallId::current(), &(), |()| init(), with)
+    rt.load_with(&CallId::current(), &(), |()| init(), with)
 }
 
 /// Calls [`load_with`], never re-initializes the loading future, and clones the
@@ -219,7 +219,7 @@ where
     Fut: Future<Output = Output> + 'static,
     Output: Clone + 'static,
 {
-    rt.load_with(CallId::current(), &(), |()| init(), Clone::clone)
+    rt.load_with(&CallId::current(), &(), |()| init(), Clone::clone)
 }
 
 /// Load a value from a future, cloning it on subsequent revisions after it is
@@ -237,7 +237,7 @@ where
     Fut: Future<Output = Output> + 'static,
     Output: Clone + 'static,
 {
-    rt.load_with(CallId::current(), capture, init, Clone::clone)
+    rt.load_with(&CallId::current(), capture, init, Clone::clone)
 }
 
 // TODO(#115) add examples
