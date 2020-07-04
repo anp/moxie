@@ -42,8 +42,6 @@
 //! assert_ne!(second, fourth);
 //! ```
 
-#[doc(hidden)]
-pub use illicit;
 #[doc(inline)]
 pub use topo_macro::nested;
 
