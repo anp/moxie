@@ -29,7 +29,7 @@ impl $name {
     /// is marked live and will not be GC'd this revision.
     pub fn get<Query, Scope, Arg, Input, Output>(&mut self, query: &Query, input: &Arg) -> Option<&Output>
     where
-        Query: Eq + Hash + ?Sized,
+        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
         Arg: PartialEq<Input> + ?Sized,
         Input: 'static + Borrow<Arg> $(+ $bound)?,
@@ -118,13 +118,13 @@ impl $handle {
         with: impl FnOnce(&Output) -> Ret,
     ) -> Ret
     where
-        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Scope: 'static + Clone + Eq + Hash $(+ $bound)?,
         Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get::<_, Scope, _, _, _,>(&scope, arg) } {
+        if let Some(stored) = { self.inner.$acquire().get(&scope, arg) } {
             return with(stored);
         }
 
