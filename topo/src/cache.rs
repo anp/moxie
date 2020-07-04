@@ -13,12 +13,49 @@ use std::{
     sync::Arc,
 };
 
+macro_rules! doc_comment {
+    ($($contents:expr)+ => $($item:tt)+) => {
+        doc_comment! {@ concat!($($contents),+), $($item)+ }
+    };
+    (@ $contents:expr, $($item:tt)+) => {
+        #[doc = $contents]
+        $($item)+
+    };
+}
+
 macro_rules! define_cache {
     ($name:ident $(: $bound:ident)?, $($rest:tt)*) => {
-/// Holds results from arbitrary queries for later retrieval. Each query is indexed
-/// by the type and value of a "scope" and the type of the query's inputs and outputs.
-///
-/// When collecting garbage, values are retained if they were referenced since the last GC.
+doc_comment! {"
+Holds arbitrary query outputs from arbitrary inputs, namespaced by arbitrary scope types.
+
+# Query types
+
+> Note: the types referenced in this documentation are only visible on individual methods, as
+> `" stringify!($name) "` is not itself a generic type.
+
+Storage is sharded by the type of the query. The type of a query has three parts:
+ 
+The query scope is the value which indexes the storage for a particular query type, it has the
+bound `Scope: 'static + Eq + Hash" $(" + " stringify!($bound))? "`.
+
+Each `Scope` corresponds to at most a single `Input: 'static" $(" + " stringify!($bound))? "`
+and a single `Output: 'static" $(" + " stringify!($bound))? "` value at any given time.
+
+# Reading stored values
+
+See [`" stringify!($name) "::get`] which accepts borrowed forms of `Scope` and `Input`:
+`Query` and `Arg` respectively. `Arg` must be comparable with `Input` with `PartialEq` to
+determine whether to return a stored output.
+
+# Garbage Collection
+
+Each time [`" stringify!($name) "::gc`] is called it acts as a barrier, removing any values
+which haven't been referenced since the prior call.
+
+After each GC, all values still in the cache are marked garbage. They are marked live again when
+used via [`" stringify!($name) "::store`] or [`" stringify!($name) "::get`].
+"
+=>
 #[derive(Debug, Default)]
 pub struct $name {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
