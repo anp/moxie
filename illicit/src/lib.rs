@@ -142,6 +142,72 @@ use std::{
     panic::Location,
 };
 
+/// Defines required `illicit::get` values for a function. Binds the provided
+/// types as if references to them were implicit function arguments:
+///
+/// ```
+/// #[derive(Debug, PartialEq)]
+/// enum TextDirection {
+///     Ltr,
+///     Rtl,
+/// }
+///
+/// impl TextDirection {
+///     fn set<R>(self, op: impl FnOnce() -> R) -> R {
+///         illicit::Layer::new().offer(self).enter(op)
+///     }
+/// }
+///
+/// #[illicit::from_env(direction: &TextDirection)]
+/// fn align_text_to_end(t: &str, width: usize) -> String {
+///     assert!(t.len() <= width, "no linebreaking included, this is unicode-sinful as it is");
+///     match direction {
+///         TextDirection::Ltr => format!("{0:>1$}", t, width),
+///         TextDirection::Rtl => format!("{0:<1$}", t, width),
+///     }
+/// }
+///
+/// let get_aligned = || align_text_to_end("whoa", 8);
+///
+/// let right_aligned = TextDirection::Ltr.set(get_aligned);
+/// let left_aligned = TextDirection::Rtl.set(get_aligned);
+///
+/// assert_eq!(right_aligned, "    whoa");
+/// assert_eq!(left_aligned, "whoa    ");
+/// ```
+///
+/// # Panics
+///
+/// Will cause the annotated function to panic if it is invoked without the
+/// requested type in its environment:
+///
+/// ```should_panic
+/// # #[derive(Debug, PartialEq)]
+/// # enum TextDirection {
+/// #     Ltr,
+/// #     Rtl,
+/// # }
+/// #
+/// # impl TextDirection {
+/// #     fn set<R>(self, op: impl FnOnce() -> R) -> R {
+/// #         illicit::Layer::new().offer(self).enter(op)
+/// #     }
+/// # }
+/// #
+/// # #[illicit::from_env(direction: &TextDirection)]
+/// # fn align_text_to_end(t: &str, width: usize) -> String {
+/// #     assert!(t.len() <= width, "no linebreaking included, this is unicode-sinful as it is");
+/// #     match direction {
+/// #         TextDirection::Ltr => format!("{0:>1$}", t, width),
+/// #         TextDirection::Rtl => format!("{0:<1$}", t, width),
+/// #     }
+/// # }
+/// #
+/// align_text_to_end("oopsie", 8);
+/// ```
+///
+/// This attribute adds an `Environment Expectations` section to the doc
+/// comments of the annotated function to communicate this risk to users.
 #[doc(inline)]
 pub use illicit_macro::from_env;
 
