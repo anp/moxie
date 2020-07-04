@@ -13,9 +13,9 @@ use std::{
 static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 
 /// A unique identifer in the global cache. Each type can have
-/// [`std::usize::MAX`] unique values cached.
+/// [`std::u32::MAX`] unique values cached.
 pub struct Token<T: 'static> {
-    index: usize,
+    index: u32,
     ty: PhantomData<T>,
 }
 
@@ -29,7 +29,7 @@ where
         Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
         S: Borrow<Q>,
     {
-        static INDICES: Lazy<Mutex<HashMap<TypeId, usize>>> =
+        static INDICES: Lazy<Mutex<HashMap<TypeId, u32>>> =
             Lazy::new(|| Mutex::new(HashMap::new()));
         let mut existing_tokens = TOKENS.lock();
 
@@ -99,5 +99,5 @@ impl<T> Ord for Token<T> {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct OpaqueToken {
     ty: TypeId,
-    index: usize,
+    index: u32,
 }
