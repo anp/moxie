@@ -57,7 +57,7 @@ jobs:
     - run: cargo generate-lockfile
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-coverage2-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -72,6 +72,7 @@ jobs:
     - run: bin/ofl coverage collect test-dom
     - run: bin/ofl coverage collect test-dom-doc
     - run: bin/ofl coverage report
+    - run: bin/ofl coverage cleanup
 
     - uses: codecov/codecov-action@v1
       with:
