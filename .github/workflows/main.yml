@@ -102,6 +102,7 @@ jobs:
           ~/.cargo/git
           ~/.cargo/registry
           target/debug
+          target/doc
           target/wasm32-unknown-unknown/release
     
     - run: cargo build-times
