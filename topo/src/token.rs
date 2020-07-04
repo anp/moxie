@@ -19,15 +19,15 @@ pub struct Token<T: 'static> {
     ty: PhantomData<T>,
 }
 
-impl<S> Token<S>
+impl<T> Token<T>
 where
-    S: Eq + Hash + Send + 'static,
+    T: Eq + Hash + Send + 'static,
 {
     /// Get the token for the provided slot.
-    pub fn make<Q>(slot: &Q) -> Token<S>
+    pub fn make<Q>(slot: &Q) -> Token<T>
     where
-        Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
-        S: Borrow<Q>,
+        Q: Eq + Hash + ToOwned<Owned = T> + ?Sized,
+        T: Borrow<Q>,
     {
         static INDICES: Lazy<Mutex<HashMap<TypeId, u32>>> =
             Lazy::new(|| Mutex::new(HashMap::new()));
@@ -37,7 +37,7 @@ where
             *token
         } else {
             let mut indices = INDICES.lock();
-            let count = indices.entry(TypeId::of::<S>()).or_default();
+            let count = indices.entry(TypeId::of::<T>()).or_default();
             *count += 1;
             let new_token = Self { index: *count, ty: PhantomData };
             existing_tokens.store(slot.to_owned(), (), new_token);
@@ -48,12 +48,6 @@ where
     /// Fabricate a token. Used for creating a root `crate::CallId`.
     pub(crate) fn fake() -> Self {
         Self { index: 0, ty: PhantomData }
-    }
-
-    /// Erase the type of this token, storing it as a [`TypeId`] in the
-    /// resulting [`OpaqueToken`].
-    pub fn opaque(self) -> OpaqueToken {
-        OpaqueToken { index: self.index, ty: TypeId::of::<S>() }
     }
 }
 
@@ -68,6 +62,16 @@ impl<T> Copy for Token<T> {}
 impl<T> Debug for Token<T> {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         f.debug_struct("Token").field("index", &self.index).field("ty", &type_name::<T>()).finish()
+    }
+}
+
+impl<Q, T> From<&Q> for Token<T>
+where
+    Q: Eq + Hash + ToOwned<Owned = T> + ?Sized,
+    T: Borrow<Q> + Eq + Hash + Send + 'static,
+{
+    fn from(query: &Q) -> Self {
+        Token::make(query)
     }
 }
 
@@ -100,4 +104,10 @@ impl<T> Ord for Token<T> {
 pub struct OpaqueToken {
     ty: TypeId,
     index: u32,
+}
+
+impl<T: 'static> From<Token<T>> for OpaqueToken {
+    fn from(token: Token<T>) -> Self {
+        OpaqueToken { index: token.index, ty: TypeId::of::<T>() }
+    }
 }
