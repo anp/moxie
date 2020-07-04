@@ -3,10 +3,10 @@
 /// This module is pub(crate) to ensure only the correct wrapper types access
 /// untyped nodes via the traits defined here.
 pub(crate) mod sealed {
-    /// Implemented by types in this crate which wrap MemoNode.
+    /// Implemented by types in this crate which wrap CachedNode.
     pub trait Memoized {
         /// Return a reference to the inner value.
-        fn node(&self) -> &crate::memo_node::MemoNode;
+        fn node(&self) -> &crate::cached_node::CachedNode;
     }
 }
 
@@ -16,7 +16,7 @@ pub(crate) mod sealed {
 ///
 /// Note: this trait cannot be implemented outside of this crate.
 pub trait Node: sealed::Memoized + Sized {
-    /// Retrieves access to the raw HTML element underlying the (MemoNode).
+    /// Retrieves access to the raw HTML element underlying the (CachedNode).
     ///
     /// Because this offers an escape hatch around the memoized mutations, it
     /// should be used with caution. Also because of this, it has a silly

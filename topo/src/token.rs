@@ -24,7 +24,7 @@ where
     S: Eq + Hash + Send + 'static,
 {
     /// Get the token for the provided slot.
-    pub fn get<Q>(slot: &Q) -> Token<S>
+    pub fn make<Q>(slot: &Q) -> Token<S>
     where
         Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
         S: Borrow<Q>,

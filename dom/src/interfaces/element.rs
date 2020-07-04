@@ -22,7 +22,7 @@ pub trait Element: crate::interfaces::node::Node {
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
     fn attribute(self, name: &str, value: impl AsRef<str>) -> Self {
-        self.node().memo_attribute(name, value.as_ref());
+        self.node().set_attribute(name, value.as_ref());
         self
     }
 
