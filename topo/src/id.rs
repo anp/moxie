@@ -46,7 +46,7 @@ impl CallId {
 
     pub(crate) fn child<S>(&self, callsite: Callsite, slot: Token<S>) -> Self
     where
-        S: Eq + Hash + Send + 'static,
+        S: 'static,
     {
         Self { callsite, parent: Token::make(self), slot: slot.into() }
     }

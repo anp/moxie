@@ -45,7 +45,7 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use std::{cell::RefCell, hash::Hash};
+use std::cell::RefCell;
 
 mod cache;
 mod id;
@@ -77,7 +77,7 @@ where
 pub fn call_in_slot<F, R, S>(slot: Token<S>, op: F) -> R
 where
     F: FnOnce() -> R,
-    S: Eq + Hash + Send + 'static,
+    S: 'static,
 {
     Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
@@ -124,7 +124,7 @@ impl Point {
     fn enter_child<C, R, S>(&self, callsite: Callsite, slot: Token<S>, child: C) -> R
     where
         C: FnOnce() -> R,
-        S: Eq + Hash + Send + 'static,
+        S: 'static,
     {
         self.increment_count(callsite);
         let child_point = Self {

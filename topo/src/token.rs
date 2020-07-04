@@ -14,7 +14,7 @@ static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 
 /// A unique identifer in the global cache. Each type can have
 /// [`std::u32::MAX`] unique values cached.
-pub struct Token<T: 'static> {
+pub struct Token<T> {
     index: u32,
     ty: PhantomData<T>,
 }
