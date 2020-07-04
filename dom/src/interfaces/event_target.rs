@@ -3,7 +3,7 @@
 
 use crate::interfaces::node::Node;
 use augdom::event::{Event, EventHandle};
-use moxie::memo_with;
+use moxie::cache_with;
 
 /// EventTarget is a DOM interface implemented by objects that can receive
 /// events and may have listeners for them.
@@ -32,7 +32,7 @@ where
     /// not yet shown up in performance profiles.
     #[topo::nested]
     fn on(self, callback: impl FnMut(Ev) + 'static) -> Self {
-        memo_with(
+        cache_with(
             &moxie::runtime::Revision::current(),
             |_| EventHandle::new(self.raw_node_that_has_sharp_edges_please_be_careful(), callback),
             |_| {},

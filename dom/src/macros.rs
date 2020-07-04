@@ -97,7 +97,7 @@ macro_rules! element {
             #[allow(unused)]
             use crate::interfaces::node::Node;
 
-            let elem = moxie::memo(stringify!($name), |ty| {
+            let elem = moxie::cache(stringify!($name), |ty| {
                 parent.raw_node().create_element(ty)
             });
             [<$name:camel Builder>] { inner: crate::memo_node::MemoNode::new(elem) }
