@@ -133,6 +133,11 @@ fn consume_fs_event(
             return;
         }
     };
+
+    if event.kind.is_access() || event.kind.is_remove() {
+        return;
+    }
+
     if let Some(path) = event.paths.get(0) {
         let changed = path.display().to_string();
 
