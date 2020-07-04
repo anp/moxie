@@ -14,7 +14,7 @@ use std::{
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
-    pub cache: topo::LocalCacheHandle,
+    pub cache: Rc<topo::SharedLocalCache>,
     spawner: Rc<dyn LocalSpawn>,
     waker: Waker,
 }
