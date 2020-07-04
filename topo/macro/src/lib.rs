@@ -1,23 +1,11 @@
 //! Procedural macro support crate for the `topo` crate.
 
-#![deny(missing_docs)]
-
-extern crate proc_macro;
 use proc_macro::TokenStream;
 use syn::{
     parse_macro_input, parse_quote, spanned::Spanned, AttributeArgs, Expr, ItemFn, Lit, Meta,
     NestedMeta,
 };
 
-/// Transforms a function declaration into a topologically-nested function
-/// which, when called, attaches its call subtopology to that of its caller's
-/// (parent's).
-///
-/// # Slots
-///
-/// Define the slot of a nested function with the `slot` parameter to the
-/// attribute. It accepts any expression that evalutes to a valid first argument
-/// to `topo::call_in_slot`.
 #[proc_macro_attribute]
 pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
     let args: AttributeArgs = parse_macro_input!(args);
