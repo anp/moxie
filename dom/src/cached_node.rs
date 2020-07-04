@@ -28,7 +28,7 @@ impl CachedNode {
 
     // TODO make `self` a slot too so we can remove topo::call from mox
     // TODO accept PartialEq+ToString implementors
-    #[topo::nested(slot = "Token::make(name)")]
+    #[topo::nested(slot = "name")]
     pub(crate) fn set_attribute(&self, name: &str, value: &str) {
         cache_with(
             value,

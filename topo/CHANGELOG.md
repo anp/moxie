@@ -30,6 +30,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 ### Changed
 
+- `call_in_slot` accepts borrowed slots.
 - `Id` renamed to `CallId`.
 - `illicit` dependency updated to 1.0.
 - `impl Trait` has been removed from public APIs where it may cause accidental `Send`/`!Send`
@@ -45,7 +46,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 ### Changed
 
-- `#[track_caller]` is used to generate `Id`s, replacing macros.
+- `#[track_caller]` is used to generate `Id`s, replacing macros. Requires nightly for now.
 - Use `DefaultHasher` instead of `FnvHasher`.
 
 ### Added
