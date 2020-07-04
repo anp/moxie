@@ -1,7 +1,5 @@
 //! Procedural macro support crate for the `illicit` crate.
 
-#![deny(missing_docs)]
-
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, abort_call_site, proc_macro_error};
@@ -11,14 +9,6 @@ use syn::{
     Attribute, FnArg, ItemFn, Local, PatType, Stmt, Token, Type, TypeReference,
 };
 
-/// Defines required `illicit::get` values for a function. Binds the provided
-/// types as if references to them were implicit function arguments.
-///
-/// # Panics
-///
-/// Will cause the annotated function to panic if it is invoked without the
-/// requested type in its environment. This attribute adds an `Environment
-/// Expectations` section to the doc comments of the annotated function.
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {
