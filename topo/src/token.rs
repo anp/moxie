@@ -45,7 +45,7 @@ where
         }
     }
 
-    /// Fabricate a token. Used for creating a root `crate::Id`.
+    /// Fabricate a token. Used for creating a root `crate::CallId`.
     pub(crate) fn fake() -> Self {
         Self { index: 0, ty: PhantomData }
     }

@@ -3,7 +3,7 @@
 
 //! `topo` provides low-level tools for incrementally computing callgraphs.
 //!
-//! Each scope in this hierarchy has a unique and deterministic [crate::Id]
+//! Each scope in this hierarchy has a unique and deterministic [crate::CallId]
 //! describing that environment and the path taken to arrive at its stack frame.
 //! These identifiers are derived from the path taken through the callgraph to
 //! the current location, and are stable across repeated invocations of the same
@@ -19,12 +19,12 @@
 //!
 //! ```
 //! #[topo::nested]
-//! fn basic_topo() -> topo::Id {
-//!     topo::Id::current()
+//! fn basic_topo() -> topo::CallId {
+//!     topo::CallId::current()
 //! }
 //!
 //! #[topo::nested]
-//! fn tier_two() -> topo::Id {
+//! fn tier_two() -> topo::CallId {
 //!     basic_topo()
 //! }
 //!
@@ -51,14 +51,14 @@ mod cache;
 mod id;
 mod token;
 pub use cache::{Cache, LocalCache, SharedCache, SharedLocalCache};
-pub use id::{Callsite, Id};
+pub use id::{CallId, Callsite};
 pub use token::{OpaqueToken, Token};
 
-/// Calls the provided expression with an [`Id`] specific to the callsite.
+/// Calls the provided expression with an [`CallId`] specific to the callsite.
 ///
 /// ```
-/// let prev = topo::Id::current();
-/// topo::call(|| assert_ne!(prev, topo::Id::current()));
+/// let prev = topo::CallId::current();
+/// topo::call(|| assert_ne!(prev, topo::CallId::current()));
 /// ```
 #[track_caller]
 pub fn call<F, R>(op: F) -> R
@@ -83,18 +83,18 @@ where
 }
 
 /// Calls the provided expression as the root of a new call tree, ignoring the
-/// current `Id`.
+/// current `CallId`.
 ///
 /// # Example
 ///
 /// ```
 /// // a call to root() here ensures the child is always treated as the same tree
 /// // no matter from where the function is called
-/// let independent = || topo::root(topo::Id::current);
+/// let independent = || topo::root(topo::CallId::current);
 /// assert_eq!(topo::call(independent), topo::call(independent));
 ///
-/// // this is a normal topo call, it returns `Id`s based on the parent state
-/// let dependent = || topo::call(topo::Id::current);
+/// // this is a normal topo call, it returns `CallId`s based on the parent state
+/// let dependent = || topo::call(topo::CallId::current);
 /// assert_ne!(topo::call(dependent), topo::call(dependent));
 /// ```
 pub fn root<F, R>(op: F) -> R
@@ -108,11 +108,11 @@ where
 /// The root of a sub-graph within the overall topology formed at runtime by the
 /// call-graph of topologically-nested functions.
 ///
-/// The current `Point` contains the local [`Id`] and a count of how often each
-/// of its children has been called.
+/// The current `Point` contains the local [`CallId`] and a count of how often
+/// each of its children has been called.
 #[derive(Debug)]
 struct Point {
-    id: Id,
+    id: CallId,
     callsite: Callsite,
     /// Number of times each callsite's type has been observed during this
     /// Point.
@@ -160,7 +160,7 @@ impl Point {
 
 impl Default for Point {
     fn default() -> Self {
-        Self { id: Id::root(), callsite: Callsite::here(), callsite_counts: Default::default() }
+        Self { id: CallId::root(), callsite: Callsite::here(), callsite_counts: Default::default() }
     }
 }
 
@@ -182,9 +182,9 @@ mod tests {
 
             for i in 0..4 {
                 if i % 2 == 0 {
-                    call(|| ids.insert(Id::current()));
+                    call(|| ids.insert(CallId::current()));
                 } else {
-                    call(|| ids.insert(Id::current()));
+                    call(|| ids.insert(CallId::current()));
                 }
             }
 
@@ -195,24 +195,28 @@ mod tests {
     #[test]
     fn one_child_in_a_loop() {
         call(|| {
-            let root = Id::current();
-            assert_eq!(root, Id::current(), "Id must be stable across calls within the same scope");
+            let root = CallId::current();
+            assert_eq!(
+                root,
+                CallId::current(),
+                "CallId must be stable across calls within the same scope"
+            );
 
             let mut prev = root;
 
             for _ in 0..100 {
                 let mut called = false;
                 call(|| {
-                    let current = Id::current();
-                    assert_ne!(prev, current, "each Id in this loop must be unique");
+                    let current = CallId::current();
+                    assert_ne!(prev, current, "each CallId in this loop must be unique");
                     prev = current;
                     called = true;
                 });
 
                 assert_eq!(
                     root,
-                    Id::current(),
-                    "Id must be stable across calls within the same scope"
+                    CallId::current(),
+                    "CallId must be stable across calls within the same scope"
                 );
 
                 let mut prev = root;
@@ -220,16 +224,16 @@ mod tests {
                 for _ in 0..100 {
                     let mut called = false;
                     call(|| {
-                        let current = Id::current();
-                        assert_ne!(prev, current, "each Id in this loop must be unique");
+                        let current = CallId::current();
+                        assert_ne!(prev, current, "each CallId in this loop must be unique");
                         prev = current;
                         called = true;
                     });
 
                     assert_eq!(
                         root,
-                        Id::current(),
-                        "outside the call must have the same Id as root"
+                        CallId::current(),
+                        "outside the call must have the same CallId as root"
                     );
                     assert!(called, "the call must be made on each loop iteration");
                 }
@@ -239,8 +243,8 @@ mod tests {
 
     #[test]
     fn reuse_same_root_two_places() {
-        let dependent = || call(Id::current);
-        let independent = || root(Id::current);
+        let dependent = || call(CallId::current);
+        let independent = || root(CallId::current);
 
         assert_ne!(call(dependent), call(dependent));
         assert_eq!(call(independent), call(independent));
@@ -255,11 +259,11 @@ mod tests {
                 let mut unique_ids = HashSet::new();
                 for s in &slots {
                     call_in_slot(Token::get(s), || {
-                        let current = Id::current();
+                        let current = CallId::current();
                         unique_ids.insert(current);
                     });
                 }
-                assert_eq!(slots.len(), unique_ids.len(), "must be one Id per slot");
+                assert_eq!(slots.len(), unique_ids.len(), "must be one CallId per slot");
                 unique_ids
             })
         };
