@@ -113,24 +113,26 @@ impl $handle {
     /// Both (1) and (3) require mutable access to storage. We want to allow
     /// nested cached `init`s eventually so it's important that (2) *doesn't*
     /// use mutable access to storage.
-    pub fn cache_with<Scope, Arg, Input, Output, Ret>(
+    pub fn cache_with<Query, Scope, Arg, Input, Output, Ret>(
         &self,
-        scope: Scope,
+        query: &Query,
         arg: &Arg,
         init: impl FnOnce(&Input) -> Output,
         with: impl FnOnce(&Output) -> Ret,
     ) -> Ret
     where
-        Scope: 'static + Clone + Eq + Hash $(+ $bound)?,
+        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
         Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get(&scope, arg) } {
+        if let Some(stored) = { self.inner.$acquire().get(query, arg) } {
             return with(stored);
         }
 
+        let scope = query.to_owned();
         let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
