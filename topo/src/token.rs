@@ -31,7 +31,7 @@ where
     {
         let mut existing_tokens = TOKENS.lock();
 
-        if let Some(token) = existing_tokens.get::<_, S, _, _>(slot, &()) {
+        if let Some(token) = existing_tokens.get::<_, S, _, _, _>(slot, &()) {
             *token
         } else {
             let new_token = Self::next();

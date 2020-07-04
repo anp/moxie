@@ -11,9 +11,8 @@ use moxie::memo;
 /// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
 #[illicit::from_env(parent: &MemoNode)]
-pub fn text(s: impl ToString) -> Text {
-    // TODO(#99) avoid allocating this extra string when it hasn't changed
-    let text_node = memo(s.to_string(), |s| parent.raw_node().create_text_node(s));
+pub fn text(s: impl AsRef<str>) -> Text {
+    let text_node = memo(s.as_ref(), |s| parent.raw_node().create_text_node(s));
     Text(MemoNode::new(text_node))
 }
 

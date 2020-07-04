@@ -66,6 +66,7 @@ pub mod runtime;
 use crate::runtime::{Context, Var};
 use parking_lot::Mutex;
 use std::{
+    borrow::Borrow,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     future::Future,
     ops::Deref,
@@ -73,35 +74,31 @@ use std::{
     task::Poll,
 };
 
-/// Memoizes the provided function, caching the intermediate `Stored` value in
-/// memoization storage and only re-initializing it if `Arg` has changed since
-/// the cached value was created. Regardless of prior cached results, `with` is
-/// then called in to produce a return value.
+/// Memoizes the `init` function.
 ///
-/// Marks the memoized value as `Live` in the current `Revision`, preventing the
-/// value from being garbage collected during at the end of the current
-/// `Revision`.
+/// If the cache has a stored `(Input, Output)` for the current [`topo::Id`] and
+/// if `arg` is equal to the stored `Input`, marks the value as alive in the
+/// cache and returns the result of calling `with` on the stored `Output`.
 ///
-/// If a previous value was cached for this callsite but the argument has
-/// changed and it must be re-initialized.
+/// Otherwise, calls `arg.to_owned()` to get an `Input` and calls `init` to get
+/// an `Output`. It calls `with` on the `Output` to get a `Ret` value, stores
+/// the `(Input, Output)` in the cache afresh, and returns the `Ret`.
 ///
 /// It is technically possible to nest calls to `memo_with` and other functions
 /// in this module, but the values they store won't be correctly retained across
 /// `Revision`s until we track dependency information. As a result, it's not
 /// recommended.
-///
-/// `init` takes a reference to `Arg` so that the memoization store can compare
-/// future calls' arguments against the one used to produce the stored value.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo_with<Arg, Stored, Ret>(
-    arg: Arg,
-    init: impl FnOnce(&Arg) -> Stored,
-    with: impl FnOnce(&Stored) -> Ret,
+pub fn memo_with<Arg, Input, Output, Ret>(
+    arg: &Arg,
+    init: impl FnOnce(&Input) -> Output,
+    with: impl FnOnce(&Output) -> Ret,
 ) -> Ret
 where
-    Arg: PartialEq + 'static,
-    Stored: 'static,
+    Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+    Input: Borrow<Arg> + 'static,
+    Output: 'static,
     Ret: 'static,
 {
     rt.cache.memo_with(topo::Id::current(), arg, init, with)
@@ -110,28 +107,30 @@ where
 /// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn once_with<Stored, Ret>(
-    expr: impl FnOnce() -> Stored,
-    with: impl FnOnce(&Stored) -> Ret,
+pub fn once_with<Output, Ret>(
+    expr: impl FnOnce() -> Output,
+    with: impl FnOnce(&Output) -> Ret,
 ) -> Ret
 where
-    Stored: 'static,
+    Output: 'static,
     Ret: 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), (), |&()| expr(), with)
+    rt.cache.memo_with(topo::Id::current(), &(), |&()| expr(), with)
 }
 
-/// Memoizes `init` at this callsite, cloning a cached `Stored` if it exists and
-/// `Arg` is the same as when the stored value was created.
+/// Memoizes `init` at this callsite, cloning a cached `Output` if it exists and
+/// `Input` is the same as when the stored value was created.
 ///
-/// `init` takes a reference to `Arg` so that the memoization store can compare
-/// future calls' arguments against the one used to produce the stored value.
+/// `init` takes a reference to `Input` so that the memoization store can
+/// compare future calls' arguments against the one used to produce the stored
+/// value.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo<Arg, Stored>(arg: Arg, init: impl FnOnce(&Arg) -> Stored) -> Stored
+pub fn memo<Arg, Input, Output>(arg: &Arg, init: impl FnOnce(&Input) -> Output) -> Output
 where
-    Arg: PartialEq + 'static,
-    Stored: Clone + 'static,
+    Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+    Input: Borrow<Arg> + 'static,
+    Output: Clone + 'static,
 {
     rt.cache.memo_with(topo::Id::current(), arg, init, Clone::clone)
 }
@@ -141,34 +140,36 @@ where
 /// reinitialized in a later `Revision`.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn once<Stored>(expr: impl FnOnce() -> Stored) -> Stored
+pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
-    Stored: Clone + 'static,
+    Output: Clone + 'static,
 {
-    rt.cache.memo_with(topo::Id::current(), (), |()| expr(), Clone::clone)
+    rt.cache.memo_with(topo::Id::current(), &(), |()| expr(), Clone::clone)
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn state<Init, Output>(init: Init) -> (Commit<Output>, Key<Output>)
+pub fn state<Output>(init: impl FnOnce() -> Output) -> (Commit<Output>, Key<Output>)
 where
     Output: 'static,
-    Init: FnOnce() -> Output,
 {
-    rt.memo_state(topo::Id::current(), (), |_| init())
+    rt.memo_state(topo::Id::current(), &(), |_| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn memo_state<Arg, Init, Output>(arg: Arg, init: Init) -> (Commit<Output>, Key<Output>)
+pub fn memo_state<Arg, Input, Output>(
+    arg: &Arg,
+    init: impl FnOnce(&Input) -> Output,
+) -> (Commit<Output>, Key<Output>)
 where
-    Arg: PartialEq + 'static,
+    Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+    Input: Borrow<Arg> + 'static,
     Output: 'static,
-    for<'a> Init: FnOnce(&'a Arg) -> Output,
 {
     rt.memo_state(topo::Id::current(), arg, init)
 }
@@ -178,15 +179,16 @@ where
 /// running future after any revision during which this call was not made.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn load_with<Arg, Fut, Stored, Ret>(
-    arg: Arg,
-    init: impl FnOnce(&Arg) -> Fut,
-    with: impl FnOnce(&Stored) -> Ret,
+pub fn load_with<Arg, Input, Fut, Output, Ret>(
+    arg: &Arg,
+    init: impl FnOnce(&Input) -> Fut,
+    with: impl FnOnce(&Output) -> Ret,
 ) -> Poll<Ret>
 where
-    Arg: PartialEq + 'static,
-    Fut: Future<Output = Stored> + 'static,
-    Stored: 'static,
+    Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+    Input: Borrow<Arg> + 'static,
+    Fut: Future<Output = Output> + 'static,
+    Output: 'static,
     Ret: 'static,
 {
     rt.load_with(topo::Id::current(), arg, init, with)
@@ -195,28 +197,28 @@ where
 /// Calls [`load_with`] but never re-initializes the loading future.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn load_once_with<Fut, Stored, Ret>(
+pub fn load_once_with<Fut, Output, Ret>(
     init: impl FnOnce() -> Fut,
-    with: impl FnOnce(&Stored) -> Ret,
+    with: impl FnOnce(&Output) -> Ret,
 ) -> Poll<Ret>
 where
-    Fut: Future<Output = Stored> + 'static,
-    Stored: 'static,
+    Fut: Future<Output = Output> + 'static,
+    Output: 'static,
     Ret: 'static,
 {
-    rt.load_with(topo::Id::current(), (), |()| init(), with)
+    rt.load_with(topo::Id::current(), &(), |()| init(), with)
 }
 
 /// Calls [`load_with`], never re-initializes the loading future, and clones the
 /// returned value on each revision once the future has completed and returned.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn load_once<Fut, Stored>(init: impl FnOnce() -> Fut) -> Poll<Stored>
+pub fn load_once<Fut, Output>(init: impl FnOnce() -> Fut) -> Poll<Output>
 where
-    Fut: Future<Output = Stored> + 'static,
-    Stored: Clone + 'static,
+    Fut: Future<Output = Output> + 'static,
+    Output: Clone + 'static,
 {
-    rt.load_with(topo::Id::current(), (), |()| init(), Clone::clone)
+    rt.load_with(topo::Id::current(), &(), |()| init(), Clone::clone)
 }
 
 /// Load a value from a future, cloning it on subsequent revisions after it is
@@ -224,11 +226,15 @@ where
 /// changes from previous revisions.
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn load<Arg, Fut, Stored>(capture: Arg, init: impl FnOnce(&Arg) -> Fut) -> Poll<Stored>
+pub fn load<Arg, Input, Fut, Output>(
+    capture: &Arg,
+    init: impl FnOnce(&Input) -> Fut,
+) -> Poll<Output>
 where
-    Arg: PartialEq + 'static,
-    Fut: Future<Output = Stored> + 'static,
-    Stored: Clone + 'static,
+    Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
+    Input: Borrow<Arg> + 'static,
+    Fut: Future<Output = Output> + 'static,
+    Output: Clone + 'static,
 {
     rt.load_with(topo::Id::current(), capture, init, Clone::clone)
 }
@@ -518,7 +524,7 @@ mod tests {
             let mut rt = RunLoop::new(|| {
                 let mut ids = HashSet::new();
                 for i in 0..10 {
-                    memo(i, |_| ids.insert(topo::Id::current()));
+                    memo(&i, |_| ids.insert(topo::Id::current()));
                 }
                 assert_eq!(ids.len(), 10);
             });
@@ -558,7 +564,7 @@ mod tests {
             let memo_exec = Cell::new(0);
             let mut rt = RunLoop::new(|| {
                 raw_exec.set(raw_exec.get() + 1);
-                memo(loop_ct.get(), |_| {
+                memo(&loop_ct.get(), |_| {
                     memo_exec.set(memo_exec.get() + 1);
                 });
             });
