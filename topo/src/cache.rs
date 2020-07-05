@@ -65,6 +65,7 @@
 pub(crate) mod token;
 
 use downcast_rs::{impl_downcast, Downcast};
+use fxhash::FxHashMap;
 use hash_hasher::HashedMap;
 use parking_lot::Mutex;
 use std::{
@@ -72,7 +73,6 @@ use std::{
     borrow::Borrow,
     cell::RefCell,
     cmp::Eq,
-    collections::HashMap,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::Hash,
     marker::PhantomData,
@@ -337,7 +337,7 @@ define_cache!(LocalCache, Rc, RefCell::borrow_mut);
 define_cache!(Cache: Send, Arc, Mutex::lock);
 
 struct Namespace<Scope, Input, Output> {
-    inner: HashMap<Scope, (Liveness, Input, Output)>,
+    inner: FxHashMap<Scope, (Liveness, Input, Output)>,
 }
 
 impl<Scope, Input, Output> Namespace<Scope, Input, Output>
