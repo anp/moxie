@@ -26,7 +26,8 @@ macro_rules! doc_comment {
 macro_rules! define_cache {
     ($name:ident $(: $bound:ident)?, $($rest:tt)*) => {
 doc_comment! {"
-Holds arbitrary query results which are namespaced by arbitrary scope types.
+Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
+through [`Shared" stringify!($name) "::cache_with`] and [`Shared" stringify!($name) "::gc`].
 
 # Query types
 
@@ -138,26 +139,6 @@ paste::item! {
 doc_comment! {"
 Provides shared, synchronized access to a [`" stringify!($name) "`] and a function-memoization
 API in [`" stringify!($handle) "::cache_with`].
-"=>
-#[derive(Clone)]
-pub struct $handle {
-    inner: $shared<$lock<$name>>,
-}}
-
-impl Default for $handle {
-    fn default() -> Self {
-        Self {
-            inner: $shared::new($lock::new($name::default()))
-        }
-    }
-}
-
-impl $handle {
-doc_comment! {"
-Caches the result of `init(arg)` once per `query`, re-running it when `arg` changes. Always runs
-`with` on the stored `Output` before returning the result.
-
-See the [moxie](https://docs.rs/moxie) crate for ergonomic wrappers.
 
 # Example
 
@@ -185,14 +166,52 @@ assert_eq!(call_count.get(), 3, "called again with a new, larger increment");
 assert_eq!(call_count.get(), with_two);
 
 let with_other_query = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
-assert_eq!(call_count.get(), 4, "called again with the same increment as before, different scope");
+assert_eq!(call_count.get(), 4, "called again with the same increment, different scope");
 assert_eq!(call_count.get(), with_other_query);
 
 let with_two_again = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
 assert_eq!(call_count.get(), 4, "cell still has last mutation's value");
 assert_eq!(with_two_again, with_two, "cache should still have previous value");
+
+storage.gc(); // won't drop any values, but sets all of the cached values to be dropped
+call_count.set(0);
+
+// re-run 'b', marking it live
+let reran_other_query = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+assert_eq!(reran_other_query , 4, "returns the cached value");
+assert_eq!(call_count.get(), 0, "without running increment_count");
+
+storage.gc(); // query 'a' will be dropped
+
+// re-run 'b', observing cached value
+let reran_other_query = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+assert_eq!(reran_other_query , 4, "still returns the cached value");
+assert_eq!(call_count.get(), 0, "still without running increment_count");
+
+// run 'a' again, observe no cached value
+let with_one_again = storage.cache_with(&'a', &1, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 1, "called without caching");
+assert_eq!(call_count.get(), with_one_again);
 ```
 "#=>
+#[derive(Clone)]
+pub struct $handle {
+    inner: $shared<$lock<$name>>,
+}}
+
+impl Default for $handle {
+    fn default() -> Self {
+        Self {
+            inner: $shared::new($lock::new($name::default()))
+        }
+    }
+}
+
+impl $handle {
+    /// Caches the result of `init(arg)` once per `query`, re-running it when `arg` changes. Always
+    /// runs `with` on the stored `Output` before returning the result.
+    ///
+    /// See the [moxie](https://docs.rs/moxie) crate for ergonomic wrappers.
     pub fn cache_with<Query, Scope, Arg, Input, Output, Ret>(
         &self,
         query: &Query,
@@ -217,7 +236,7 @@ assert_eq!(with_two_again, with_two, "cache should still have previous value");
         let to_return = with(&to_store);
         self.inner.$acquire().store(query, arg, to_store);
         to_return
-    }}
+    }
 
 doc_comment!{"
 Forwards to [`" stringify!($name) "::gc`].
