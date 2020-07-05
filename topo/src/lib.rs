@@ -107,11 +107,45 @@ pub use id::CallId;
 use id::Callsite;
 pub use token::{OpaqueToken, Token};
 
-/// Calls the provided expression with an [`CallId`] specific to the callsite.
+/// Calls the provided function as a child of [`CallId::current`], using
+/// the number of times the given source location has been called during the
+/// current parent's scope.
+///
+/// This is a useful default for calls which are not expected to repeat at the
+/// same callsite during the parent scope, i.e. those that will only be called
+/// once per scope. It is also a useful default for calls that will occur in a
+/// loop where the positional index is the primary way of identifying repeated
+/// entries into the child scope.
+///
+/// See [`CallId`], [`root`], [`call_in_slot`], and [`nested`].
+///
+/// # Example
 ///
 /// ```
-/// let prev = topo::CallId::current();
-/// topo::call(|| assert_ne!(prev, topo::CallId::current()));
+/// use topo::{call, root, CallId};
+///
+/// let get_list_of_ids = || {
+///     topo::call(|| {
+///         let mut ids = vec![];
+///         for i in 0..3 {
+///             let current = call(CallId::current);
+///             if i > 0 {
+///                 assert_ne!(ids[i - 1], current, "each CallId is different from the last");
+///             }
+///             ids.push(current);
+///         }
+///         ids
+///     })
+/// };
+///
+/// // without a parent call, each of these behaves as its own root
+/// assert_eq!(get_list_of_ids(), get_list_of_ids());
+///
+/// // ...and explicitly wrapping each call in a root(...) produces the same result
+/// assert_eq!(root(get_list_of_ids), root(get_list_of_ids), "explicit roots match");
+///
+/// // but when they're siblings under a single call, they produce distinct results
+/// call(|| assert_ne!(get_list_of_ids(), get_list_of_ids(), "siblings don't match"));
 /// ```
 #[track_caller]
 pub fn call<F, R>(op: F) -> R
