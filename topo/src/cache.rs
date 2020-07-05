@@ -62,8 +62,7 @@
 //! assert_eq!(count.get(), 5);
 //! ```
 
-mod token;
-pub use token::{OpaqueToken, Token};
+pub(crate) mod token;
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashedMap;
