@@ -26,7 +26,7 @@ macro_rules! doc_comment {
 macro_rules! define_cache {
     ($name:ident $(: $bound:ident)?, $($rest:tt)*) => {
 doc_comment! {"
-Holds arbitrary query outputs from arbitrary inputs, namespaced by arbitrary scope types.
+Holds arbitrary query results which are namespaced by arbitrary scope types.
 
 # Query types
 
@@ -49,8 +49,8 @@ whether to return a stored output.
 
 # Garbage Collection
 
-Each time [`" stringify!($name) "::gc`] is called it acts as a barrier, removing any values
-which haven't been referenced since the prior call.
+Each time [`" stringify!($name) "::gc`] is called it removes any values which haven't been
+referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
 inserted with [`" stringify!($name) "::store`] or read with
@@ -61,7 +61,7 @@ pub struct $name {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
     /// `TypeIds` which come pre-hashed courtesy of rustc.
     inner: HashedMap<Query, Box<dyn Gc $(+ $bound)?>>,
-}
+}}
 
 impl $name {
     /// Return a reference to a query's stored output if a result is stored and `arg` equals the
@@ -110,8 +110,7 @@ impl $name {
         gc.as_any_mut().downcast_mut().unwrap()
     }
 
-    /// Drops cached values that were not referenced since the last call
-    /// and sets all remaining values to be dropped by default in the next call.
+    /// Drops any values which were not referenced since the last call to this method.
     pub fn gc(&mut self) {
         for namespace in self.inner.values_mut() {
             namespace.gc();
@@ -136,12 +135,14 @@ paste::item! {
         $lock:ident :: $acquire:ident
     ) => {
 
-/// Provides access to a shared cache which stores results from arbitrary queries
-/// for later retrieval.
+doc_comment! {"
+Provides shared, synchronized access to a [`" stringify!($name) "`] and a function-memoization
+API in [`" stringify!($handle) "::cache_with`].
+"=>
 #[derive(Clone)]
 pub struct $handle {
     inner: $shared<$lock<$name>>,
-}
+}}
 
 impl Default for $handle {
     fn default() -> Self {
@@ -188,10 +189,12 @@ impl $handle {
         to_return
     }
 
-    /// See `gc` on the inner cache type.
+doc_comment!{"
+Forwards to [`" stringify!($name) "::gc`].
+"=>
     pub fn gc(&self) {
         self.inner.$acquire().gc()
-    }
+    }}
 }
 
 impl Debug for $handle {
