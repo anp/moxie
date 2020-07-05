@@ -6,7 +6,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.10.0-pre] - unreleased
+## [0.10.0] - 2020-07-05
 
 ### Fixed
 
