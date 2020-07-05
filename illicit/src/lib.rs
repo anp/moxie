@@ -95,7 +95,7 @@
 //! ## execution-context
 //!
 //! `illicit` provides capabilities very similar in ways to
-//! `[execution-context]`. Both crates allow one to propagate implicit values to
+//! [execution-context]. Both crates allow one to propagate implicit values to
 //! "downstream" code, and they both allow that downstream code to provide its
 //! own additional values to the context. Both crates prevent mutation of
 //! contained types without interior mutability.
