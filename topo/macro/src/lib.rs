@@ -14,8 +14,7 @@ pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
     let inner_block = input_fn.block;
     input_fn.block = if let Some(slot_expr) = slot_from_args(&args) {
         parse_quote! {{
-            let slot = { use topo::Token; #slot_expr };
-            topo::call_in_slot(slot, move || #inner_block)
+            topo::call_in_slot(#slot_expr, move || #inner_block)
         }}
     } else {
         parse_quote! {{ topo::call(move || #inner_block) }}
