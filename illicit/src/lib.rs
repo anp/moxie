@@ -433,6 +433,10 @@ impl Debug for Layer {
     }
 }
 
+// interior mutations happen only within panic-safe methods
+impl std::panic::UnwindSafe for Layer {}
+impl std::panic::RefUnwindSafe for Layer {}
+
 /// A point-in-time representation of the implicit environment.
 ///
 /// # Examples
