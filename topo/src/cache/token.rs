@@ -27,7 +27,7 @@ static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 /// # Examples
 ///
 /// ```
-/// use topo::Token;
+/// use topo::cache::Token;
 /// let foo: Token<String> = Token::make("foo");
 /// assert_eq!(foo, Token::make("foo"));
 /// assert_ne!(foo, Token::make("bar"));
@@ -37,7 +37,7 @@ static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 /// differentiating between unique values of different types:
 ///
 /// ```
-/// use topo::{OpaqueToken, Token};
+/// use topo::cache::{OpaqueToken, Token};
 /// let first: OpaqueToken = Token::make(&10u8).into();
 /// let second: OpaqueToken = Token::make(&10u16).into();
 /// assert_ne!(first, second);

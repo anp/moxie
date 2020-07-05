@@ -97,16 +97,14 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
+use cache::{OpaqueToken, Token};
 use std::{borrow::Borrow, cell::RefCell, hash::Hash, panic::Location};
 
-mod cache;
-mod token;
-pub use cache::{Cache, LocalCache, SharedCache, SharedLocalCache};
-pub use token::{OpaqueToken, Token};
+pub mod cache;
 
-/// Calls the provided function as a child of [`CallId::current`], using
-/// the number of times the given source location has been called during the
-/// current parent's scope.
+/// Calls the provided function as a child of [`CallId::current`], using for a
+/// slot the number of times the given source location has been called during
+/// the current parent's scope.
 ///
 /// This is a useful default for calls which are not expected to repeat at the
 /// same callsite during the parent scope, i.e. those that will only be called

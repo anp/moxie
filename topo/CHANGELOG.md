@@ -15,12 +15,12 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 ### Added
 
 - #[nested] allows specifying a `slot`.
-- `Cache`, `GlobalCache` types for storing interned and memoized values.
-- `SharedCache`, `SharedGlobalCache` types for safe multiple-owner access to caches, implementing
-  `cache_with` with careful locking to allow nested calls in the future.
+- `cache::{Cache, GlobalCache}` types for storing interned and memoized values.
+- `cache::{SharedCache, SharedGlobalCache}` types for safe multiple-owner access to caches, 
+  implementing `cache_with` with careful locking to allow nested calls in the future.
 - `root` free function for allowing one to re-root a call topology (i.e. if running inside of a
   broader one).
-- `Token<T>`, `OpaqueToken` types for cached values.
+- `cache::{Token<T>, OpaqueToken}` types for cached values.
 
 ### Removed
 

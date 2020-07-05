@@ -24,7 +24,7 @@ use futures::{
     task::{noop_waker, LocalSpawn, SpawnError},
 };
 use std::{rc::Rc, task::Waker};
-use topo::SharedLocalCache;
+use topo::cache::SharedLocalCache;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;

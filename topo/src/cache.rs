@@ -1,3 +1,8 @@
+//! Caches for storing the results of repeated queries.
+
+mod token;
+pub use token::{OpaqueToken, Token};
+
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashedMap;
 use parking_lot::Mutex;
@@ -143,7 +148,7 @@ API in [`" stringify!($handle) "::cache_with`].
 # Example
 
 ```
-let storage = topo::" stringify!($handle) r#"::default();
+let storage = topo::cache::" stringify!($handle) r#"::default();
 let call_count = std::cell::Cell::new(0);
 let increment_count = |&to_add: &i32| {
     let new_count = call_count.get() + to_add;
