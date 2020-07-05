@@ -33,14 +33,14 @@ where
             Lazy::new(|| Mutex::new(HashMap::new()));
         let mut existing_tokens = TOKENS.lock();
 
-        if let Some(token) = existing_tokens.get(slot, &()) {
+        if let Some(token) = existing_tokens.get_if_arg_eq_prev_input(slot, &()) {
             *token
         } else {
             let mut indices = INDICES.lock();
             let count = indices.entry(TypeId::of::<T>()).or_default();
             *count += 1;
             let new_token = Self { index: *count, ty: PhantomData };
-            existing_tokens.store(slot.to_owned(), (), new_token);
+            existing_tokens.store(slot, (), new_token);
             new_token
         }
     }

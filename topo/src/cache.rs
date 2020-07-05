@@ -43,9 +43,9 @@ and a single `Output: 'static" $(" + " stringify!($bound))? "` value at any give
 
 # Reading stored values
 
-See [`" stringify!($name) "::get`] which accepts borrowed forms of `Scope` and `Input`:
-`Query` and `Arg` respectively. `Arg` must be comparable with `Input` with `PartialEq` to
-determine whether to return a stored output.
+See [`" stringify!($name) "::get_if_arg_eq_prev_input`] which accepts borrowed forms of `Scope`
+and `Input`: `Query` and `Arg` respectively. `Arg` must satisfy `PartialEq<Input>` to determine
+whether to return a stored output.
 
 # Garbage Collection
 
@@ -53,9 +53,9 @@ Each time [`" stringify!($name) "::gc`] is called it acts as a barrier, removing
 which haven't been referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
-used via [`" stringify!($name) "::store`] or [`" stringify!($name) "::get`].
-"
-=>
+inserted with [`" stringify!($name) "::store`] or read with
+[`" stringify!($name) "::get_if_arg_eq_prev_input`].
+"=>
 #[derive(Debug, Default)]
 pub struct $name {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
@@ -64,10 +64,14 @@ pub struct $name {
 }
 
 impl $name {
-    /// Return a reference to the stored output if `input` equals the
-    /// previously-stored input. If a reference is returned, the storage
-    /// is marked live and will not be GC'd this revision.
-    pub fn get<Query, Scope, Arg, Input, Output>(&mut self, query: &Query, input: &Arg) -> Option<&Output>
+    /// Return a reference to a query's stored output if a result is stored and `arg` equals the
+    /// previously-stored `Input`. If a reference is returned, the stored input/output
+    /// is marked live and will not be GC'd the next call.
+    pub fn get_if_arg_eq_prev_input<Query, Scope, Arg, Input, Output>(
+        &mut self,
+        query: &Query,
+        arg: &Arg,
+    ) -> Option<&Output>
     where
         Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
@@ -75,17 +79,22 @@ impl $name {
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq::<Query, Arg>(query, input)
+        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(query, arg)
     }
 
-    /// Store the result of a query. It will not be GC'd this revision.
-    pub fn store<Scope, Input, Output>(&mut self, scope: Scope, input: Input, output: Output)
-    where
-        Scope: 'static + Eq + Hash $(+ $bound)?,
+    /// Stores the input/output of a query which will not be GC'd at the next call.
+    pub fn store<Query, Scope, Input, Output>(
+        &mut self,
+        query: &Query,
+        input: Input,
+        output: Output,
+    ) where
+        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut().insert(scope, input, output);
+        self.get_namespace_mut().store(query, input, output);
     }
 
     fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
@@ -165,15 +174,14 @@ impl $handle {
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get(query, arg) } {
+        if let Some(stored) = { self.inner.$acquire().get_if_arg_eq_prev_input(query, arg) } {
             return with(stored);
         }
 
-        let scope = query.to_owned();
         let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
-        self.inner.$acquire().store(scope, arg, to_store);
+        self.inner.$acquire().store(query, arg, to_store);
         to_return
     }
 
@@ -228,8 +236,19 @@ where
         }
     }
 
-    fn insert(&mut self, scope: Scope, input: Input, output: Output) {
-        self.inner.insert(scope, (Liveness::Live, input, output));
+    fn store<Query>(&mut self, query: &Query, input: Input, output: Output)
+    where
+        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: Borrow<Query>,
+    {
+        if let Some((liveness, prev_input, prev_output)) = self.inner.get_mut(query) {
+            *liveness = Liveness::Live;
+            *prev_input = input;
+            *prev_output = output;
+        } else {
+            let scope = query.to_owned();
+            self.inner.insert(scope, (Liveness::Live, input, output));
+        }
     }
 }
 
