@@ -119,6 +119,9 @@ impl $name {
     }
 }
 
+impl std::panic::UnwindSafe for $name {}
+impl std::panic::RefUnwindSafe for $name {}
+
 paste::item! {
     define_cache! {
         @handle $name $(: $bound)?, [<Shared $name>], $($rest)*
