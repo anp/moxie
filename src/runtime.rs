@@ -70,7 +70,7 @@ impl std::fmt::Debug for Revision {
 /// ```
 pub struct Runtime {
     revision: Revision,
-    cache: Rc<SharedLocalCache>,
+    cache: SharedLocalCache,
     spawner: Rc<dyn LocalSpawn>,
     wk: Waker,
 }
@@ -90,7 +90,7 @@ impl Runtime {
         Self {
             spawner: Rc::new(JunkSpawner),
             revision: Revision(0),
-            cache: Rc::new(SharedLocalCache::default()),
+            cache: SharedLocalCache::default(),
             wk: noop_waker(),
         }
     }

@@ -15,7 +15,7 @@ use topo::cache::SharedLocalCache;
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
-    pub cache: Rc<SharedLocalCache>,
+    pub cache: SharedLocalCache,
     spawner: Rc<dyn LocalSpawn>,
     waker: Waker,
 }
