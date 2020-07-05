@@ -8,13 +8,14 @@ use std::{
     rc::Rc,
     task::{Poll, Waker},
 };
+use topo::cache::SharedLocalCache;
 
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
 /// contexts and provides access to the current revision, cache storage,
 /// task spawning, and the waker for the loop.
 pub(crate) struct Context {
     revision: Revision,
-    pub cache: Rc<topo::SharedLocalCache>,
+    pub cache: Rc<SharedLocalCache>,
     spawner: Rc<dyn LocalSpawn>,
     waker: Waker,
 }
