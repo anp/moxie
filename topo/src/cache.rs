@@ -240,6 +240,9 @@ impl From<$name> for $handle {
         Self { inner: $shared::new($lock::new(inner)) }
     }
 }
+
+impl std::panic::UnwindSafe for $handle {}
+impl std::panic::RefUnwindSafe for $handle {}
     };
 }
 
