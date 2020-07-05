@@ -122,9 +122,39 @@ where
     Scope::with_current(|p| p.enter_child(callsite, &callsite.current_count(), op))
 }
 
-/// The default "slot" for a topo call is the number of times that callsite
-/// has executed. You can override that by providing an arbitrary slot in
-/// this call.
+/// Calls the provided function as a child of [`CallId::current`], using `slot`
+/// as an input for the [`CallId`] which will be current for the duration of
+/// `op`.
+///
+/// # Example
+///
+/// ```
+/// use topo::{call_in_slot, CallId};
+///
+/// let get_name_id = |name, value| {
+///     call_in_slot(name, || {
+///         println!("{}", value);
+///         CallId::current()
+///     })
+/// };
+///
+/// // reusing the same slot will get the same CallId
+/// let bob = get_name_id("bob", "hello");
+/// let bob_again = get_name_id("bob", "hello");
+/// assert_eq!(bob, bob_again);
+///
+/// // the same name in a nested call returns a *new* CallId
+/// let bob_nested = topo::call(|| get_name_id("bob", "hello"));
+/// assert_ne!(bob, bob_nested);
+///
+/// // different names produce different slots
+/// let alice_hello = get_name_id("alice", "hello");
+/// assert_ne!(bob, alice_hello);
+///
+/// // changing non-slot arguments doesn't affect the CallId produced
+/// let alice_goodbye = get_name_id("alice", "goodbye");
+/// assert_eq!(alice_hello, alice_goodbye);
+/// ```
 #[track_caller]
 pub fn call_in_slot<F, Q, R, S>(slot: &Q, op: F) -> R
 where
