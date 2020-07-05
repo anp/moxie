@@ -1,4 +1,66 @@
 //! Caches for storing the results of repeated queries.
+//!
+//! Every query to a cache has a "scope" by which it is namespaced. The types in
+//! this module cache queries which have arbitrary scope types, storing one
+//! input value and one ouput value per scope:
+//!
+//! ```
+//! let storage = topo::cache::SharedLocalCache::default();
+//! let count = std::cell::Cell::new(0);
+//! let increment = |n| {
+//!     storage.cache_with(
+//!         "increment by arg",
+//!         &n,
+//!         |&n| {
+//!             let new_count = count.get() + n;
+//!             count.set(new_count);
+//!             new_count
+//!         },
+//!         Clone::clone,
+//!     )
+//! };
+//!
+//! assert_eq!(count.get(), 0);
+//!
+//! assert_eq!(increment(2), 2);
+//! assert_eq!(count.get(), 2);
+//!
+//! // running the query again with the same input has no external effect
+//! assert_eq!(increment(2), 2);
+//! assert_eq!(count.get(), 2);
+//!
+//! // same query with a different input will run
+//! assert_eq!(increment(1), 3);
+//! assert_eq!(count.get(), 3);
+//!
+//! // these all have the same scope, so this runs again
+//! assert_eq!(increment(3), 6);
+//! assert_eq!(count.get(), 6);
+//!
+//! let decrement = |n| {
+//!     storage.cache_with(
+//!         "decrement by arg",
+//!         &n,
+//!         |&n| {
+//!             let new_count = count.get() - n;
+//!             count.set(new_count);
+//!             new_count
+//!         },
+//!         Clone::clone,
+//!     )
+//! };
+//!
+//! assert_eq!(decrement(1), 5);
+//! assert_eq!(count.get(), 5);
+//!
+//! // increment's last query is still cached
+//! assert_eq!(increment(3), 6);
+//! assert_eq!(count.get(), 5);
+//!
+//! // this one is still cached too, because they're different queries
+//! assert_eq!(decrement(1), 5);
+//! assert_eq!(count.get(), 5);
+//! ```
 
 mod token;
 pub use token::{OpaqueToken, Token};
