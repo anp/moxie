@@ -144,20 +144,20 @@ impl CallId {
 
 /// A value unique to the source location where it is created.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct Callsite {
+pub(crate) struct Callsite {
     location: usize,
 }
 
 impl Callsite {
     /// Constructs a callsite whose value is unique to the source location at
-    /// which it is called.
+    /// which this is called.
     #[track_caller]
     pub fn here() -> Self {
         Location::caller().into()
     }
 
-    /// Returns the number of times this callsite has been seen as a child of
-    /// the current Point.
+    /// Returns the number of times this callsite has been seen in the current
+    /// call.
     pub fn current_count(self) -> u32 {
         Point::with_current(|current| {
             if let Some(c) = current.callsite_counts.borrow().iter().find(|(site, _)| site == &self)
