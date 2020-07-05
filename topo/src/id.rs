@@ -178,3 +178,31 @@ impl From<&'static Location<'static>> for Callsite {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{call, root};
+    use std::{sync::mpsc::channel, thread};
+
+    #[test]
+    fn threads_and_ids() {
+        let returns_two_ids = || {
+            let first = call(|| CallId::current());
+            let second = call(|| CallId::current());
+            assert_ne!(first, second, "these are always distinct calls");
+            (first, second)
+        };
+
+        let (send_ids, recv_ids) = channel();
+        let send_ids2 = send_ids.clone();
+        let first_thread = thread::spawn(move || send_ids2.send(root(returns_two_ids)).unwrap());
+        let second_thread = thread::spawn(move || send_ids.send(root(returns_two_ids)).unwrap());
+
+        first_thread.join().unwrap();
+        second_thread.join().unwrap();
+
+        let (first, second) = (recv_ids.recv().unwrap(), recv_ids.recv().unwrap());
+        assert_eq!(first, second);
+    }
+}
