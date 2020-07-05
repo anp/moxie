@@ -26,18 +26,18 @@ static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 ///
 /// A typed token can be converted into an [`OpaqueToken`] to allow
 /// differentiating between unique values of different types.
-pub(crate) struct Token<T> {
+pub(crate) struct Slot<T> {
     index: u32,
     ty: PhantomData<T>,
 }
 
-impl<T> Token<T>
+impl<T> Slot<T>
 where
     T: Eq + Hash + Send + 'static,
 {
     /// Makes a unique token from the provided value, interning it in the global
     /// cache. Later calls with the same input will return the same token.
-    pub fn make<Q>(value: &Q) -> Token<T>
+    pub fn make<Q>(value: &Q) -> Slot<T>
     where
         Q: Eq + Hash + ToOwned<Owned = T> + ?Sized,
         T: Borrow<Q>,
@@ -64,49 +64,49 @@ where
     }
 }
 
-impl<T> Clone for Token<T> {
+impl<T> Clone for Slot<T> {
     fn clone(&self) -> Self {
         Self { index: self.index, ty: PhantomData }
     }
 }
 
-impl<T> Copy for Token<T> {}
+impl<T> Copy for Slot<T> {}
 
-impl<T> Debug for Token<T> {
+impl<T> Debug for Slot<T> {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         f.debug_struct("Token").field("index", &self.index).field("ty", &type_name::<T>()).finish()
     }
 }
 
-impl<Q, T> From<&Q> for Token<T>
+impl<Q, T> From<&Q> for Slot<T>
 where
     Q: Eq + Hash + ToOwned<Owned = T> + ?Sized,
     T: Borrow<Q> + Eq + Hash + Send + 'static,
 {
     fn from(query: &Q) -> Self {
-        Token::make(query)
+        Slot::make(query)
     }
 }
 
-impl<T> Hash for Token<T> {
+impl<T> Hash for Slot<T> {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.index.hash(hasher)
     }
 }
 
-impl<T> PartialEq for Token<T> {
+impl<T> PartialEq for Slot<T> {
     fn eq(&self, other: &Self) -> bool {
         self.index == other.index
     }
 }
-impl<T> Eq for Token<T> {}
+impl<T> Eq for Slot<T> {}
 
-impl<T> PartialOrd for Token<T> {
+impl<T> PartialOrd for Slot<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.index.partial_cmp(&other.index)
     }
 }
-impl<T> Ord for Token<T> {
+impl<T> Ord for Slot<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
     }
@@ -114,14 +114,14 @@ impl<T> Ord for Token<T> {
 
 /// A unique type-erased identifier for a cached value.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub(crate) struct OpaqueToken {
+pub(crate) struct OpaqueSlot {
     ty: TypeId,
     index: u32,
 }
 
-impl<T: 'static> From<Token<T>> for OpaqueToken {
-    fn from(token: Token<T>) -> Self {
-        OpaqueToken { index: token.index, ty: TypeId::of::<T>() }
+impl<T: 'static> From<Slot<T>> for OpaqueSlot {
+    fn from(token: Slot<T>) -> Self {
+        OpaqueSlot { index: token.index, ty: TypeId::of::<T>() }
     }
 }
 
@@ -131,15 +131,15 @@ mod tests {
 
     #[test]
     fn make_tokens() {
-        let foo: Token<String> = Token::make("foo");
-        assert_eq!(foo, Token::make("foo"));
-        assert_ne!(foo, Token::make("bar"));
+        let foo: Slot<String> = Slot::make("foo");
+        assert_eq!(foo, Slot::make("foo"));
+        assert_ne!(foo, Slot::make("bar"));
     }
 
     #[test]
     fn make_opaque() {
-        let first: OpaqueToken = Token::make(&10u8).into();
-        let second: OpaqueToken = Token::make(&10u16).into();
+        let first: OpaqueSlot = Slot::make(&10u8).into();
+        let second: OpaqueSlot = Slot::make(&10u16).into();
         assert_ne!(first, second);
     }
 }
