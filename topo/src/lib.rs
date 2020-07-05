@@ -101,7 +101,8 @@ mod cache;
 mod id;
 mod token;
 pub use cache::{Cache, LocalCache, SharedCache, SharedLocalCache};
-pub use id::{CallId, Callsite};
+pub use id::CallId;
+use id::Callsite;
 pub use token::{OpaqueToken, Token};
 
 /// Calls the provided expression with an [`CallId`] specific to the callsite.

@@ -24,7 +24,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 ### Removed
 
-- `Point` is no longer `pub`.
+- `Callsite` and `Point` are no longer `pub`.
 - `#![feature(track_caller)]` is no longer needed, although until 1.46 hits beta/stable an MSRV of
   nightly-2020-07-02 applies.
 
