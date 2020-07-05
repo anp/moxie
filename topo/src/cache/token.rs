@@ -24,25 +24,9 @@ static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
 ///
 /// See [issue #141](https://github.com/anp/moxie/issues/141) for future work.
 ///
-/// # Examples
-///
-/// ```
-/// use topo::cache::Token;
-/// let foo: Token<String> = Token::make("foo");
-/// assert_eq!(foo, Token::make("foo"));
-/// assert_ne!(foo, Token::make("bar"));
-/// ```
-///
 /// A typed token can be converted into an [`OpaqueToken`] to allow
-/// differentiating between unique values of different types:
-///
-/// ```
-/// use topo::cache::{OpaqueToken, Token};
-/// let first: OpaqueToken = Token::make(&10u8).into();
-/// let second: OpaqueToken = Token::make(&10u16).into();
-/// assert_ne!(first, second);
-/// ```
-pub struct Token<T> {
+/// differentiating between unique values of different types.
+pub(crate) struct Token<T> {
     index: u32,
     ty: PhantomData<T>,
 }
@@ -130,7 +114,7 @@ impl<T> Ord for Token<T> {
 
 /// A unique type-erased identifier for a cached value.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct OpaqueToken {
+pub(crate) struct OpaqueToken {
     ty: TypeId,
     index: u32,
 }
@@ -138,5 +122,24 @@ pub struct OpaqueToken {
 impl<T: 'static> From<Token<T>> for OpaqueToken {
     fn from(token: Token<T>) -> Self {
         OpaqueToken { index: token.index, ty: TypeId::of::<T>() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn make_tokens() {
+        let foo: Token<String> = Token::make("foo");
+        assert_eq!(foo, Token::make("foo"));
+        assert_ne!(foo, Token::make("bar"));
+    }
+
+    #[test]
+    fn make_opaque() {
+        let first: OpaqueToken = Token::make(&10u8).into();
+        let second: OpaqueToken = Token::make(&10u16).into();
+        assert_ne!(first, second);
     }
 }

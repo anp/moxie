@@ -20,7 +20,6 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
   implementing `cache_with` with careful locking to allow nested calls in the future.
 - `root` free function for allowing one to re-root a call topology (i.e. if running inside of a
   broader one).
-- `cache::{Token<T>, OpaqueToken}` types for cached values.
 
 ### Removed
 

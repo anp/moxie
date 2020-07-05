@@ -78,9 +78,7 @@
 //! assert_ne!(bob, alice_hello);
 //! ```
 //!
-//! Internally, slots are interned in a global cache with
-//! [`cache::Token::make`]. [`Token`]s map uniquely to a value in the cache
-//! storage.
+//! Internally, slots are interned in a global cache.
 //!
 //! [Incremental Computing]: https://en.wikipedia.org/wiki/Incremental_computing
 //! [caching problem]: https://en.wikipedia.org/wiki/Cache_(computing)
@@ -140,7 +138,7 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use cache::{OpaqueToken, Token};
+use cache::token::{OpaqueToken, Token};
 use std::{borrow::Borrow, cell::RefCell, hash::Hash, panic::Location};
 
 pub mod cache;
@@ -363,8 +361,8 @@ where
 /// # `CallId` and multiple threads
 ///
 /// The [`illicit`] environment used for tracking the current `CallId` is
-/// thread-local, but by default [`Token`] values used to track slots are
-/// interned in the global cache. This means that two different threads calling
+/// thread-local, but values used to track slots are
+/// interned in a global cache. This means that two different threads calling
 /// an identical chain of nested functions can observe identical `CallId`s:
 ///
 /// ```
