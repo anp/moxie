@@ -1,46 +1,89 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` provides low-level tools for incrementally computing callgraphs.
+//! `topo` provides stable callgraph identifiers and query caching for
+//! implementing higher level [Incremental Computing] abstractions like
+//! those in the [moxie](https://docs.rs/moxie) crate.
 //!
-//! Each scope in this hierarchy has a unique and deterministic [crate::CallId]
-//! describing that environment and the path taken to arrive at its stack frame.
-//! These identifiers are derived from the path taken through the callgraph to
-//! the current location, and are stable across repeated invocations of the same
-//! execution paths.
+//! # Cache storage
 //!
-//! By running the same topologically-nested functions in a loop, we can observe
-//! changes to the structure over time. The [moxie](https://docs.rs/moxie) crate uses these identifiers and
-//! environments to create persistent trees for rendering human interfaces.
+//! Reusing the results from prior computations is a central aspect of
+//! incremental computation and can be viewed as a [caching problem].
+//! See the [`cache`] module for what this crate provides.
 //!
-//! # Making functions nested within the call topology
+//! # Scoping queries with [`CallId`]s
 //!
-//! Define a topologically-nested function with the `topo::nested` attribute:
+//! There are several ways this crate's caches can be indexed, but for
+//! incrementally computing repetitive hierarchical structures (like UI trees)
+//! it can be very useful to describe cache queries in terms of a function's
+//! abstract "location" within the runtime callgraph.
+//!
+//! To extract [`CallId`]s from code, the runtime callgraph must be "annotated"
+//! with invocations of [`call`], [`call_in_slot`], and user-defined
+//! [`nested`]-annotated functions. Each of these enters the scope of a child
+//! [`CallId`] when called, causing [`CallId::current`] calls in that inner
+//! scope to return the new [`CallId`].
+//!
+//! [`CallId`]s are deterministic and unique based on the preceding chain of
+//! parent [`CallId`]s and data slots. Every chain has a root, either defined
+//! implicitly by making a [`call`] without a parent, or explicitly by calling
+//! [`root`]. By controlling the creation of roots, a runtime can ensure that
+//! aside from changes to the executed graph itself, subsequent calls to the
+//! same function will produce the same [`CallId`]s.
+//!
+//! ## Example
 //!
 //! ```
-//! #[topo::nested]
-//! fn basic_topo() -> topo::CallId {
-//!     topo::CallId::current()
-//! }
+//! use topo::{call, root, CallId};
 //!
-//! #[topo::nested]
-//! fn tier_two() -> topo::CallId {
-//!     basic_topo()
-//! }
+//! let returns_two_ids = || {
+//!     let first = call(|| CallId::current());
+//!     let second = call(|| CallId::current());
+//!     assert_ne!(first, second, "these are always distinct calls");
+//!     (first, second)
+//! };
 //!
-//! // each of these functions will be run in separately identified
-//! // contexts as the source locations for their calls are different
-//! let first = basic_topo();
-//! let second = basic_topo();
-//! assert_ne!(first, second);
+//! // running the closure as a nested call(...) gives different siblings
+//! assert_ne!(call(returns_two_ids), call(returns_two_ids));
 //!
-//! let third = tier_two();
-//! let fourth = tier_two();
-//! assert_ne!(third, fourth);
-//! assert_ne!(first, third);
-//! assert_ne!(first, fourth);
-//! assert_ne!(second, fourth);
+//! // a call to root(...) gives each of these closure calls an identical parent CallId
+//! assert_eq!(root(returns_two_ids), root(returns_two_ids));
 //! ```
+//!
+//! ## Caching slots
+//!
+//! [`call_in_slot`] allows one to specify a "slot" -- a runtime value that
+//! represents the call's "location" within its parents scope. This is
+//! particularly useful for creating [`CallId`]s for child calls in collections
+//! whose iteration order does not map exactly to the child's logical scope.
+//!
+//! An example might be a list of users where usernames are stable and their
+//! associated resources should be cached by username, but the list order and
+//! length change in ways unrelated to usernames. The username would be used as
+//! the slot to prevent destruction and recreation of username-associated
+//! resources when the list order changes.
+//!
+//! ```
+//! use topo::{call_in_slot, CallId};
+//!
+//! let get_name_id = |name| call_in_slot(name, || CallId::current());
+//!
+//! // reusing the same slot will get the same CallId
+//! let bob = get_name_id("bob");
+//! let bob_again = get_name_id("bob");
+//! assert_eq!(bob, bob_again);
+//!
+//! // different names produce different slots
+//! let alice_hello = get_name_id("alice");
+//! assert_ne!(bob, alice_hello);
+//! ```
+//!
+//! Internally, slots are interned in a global cache with
+//! [`cache::Token::make`]. [`Token`]s map uniquely to a value in the cache
+//! storage.
+//!
+//! [Incremental Computing]: https://en.wikipedia.org/wiki/Incremental_computing
+//! [caching problem]: https://en.wikipedia.org/wiki/Cache_(computing)
 
 /// Gives a function a unique [`CallId`] in its caller's topology by applying
 /// `#[track_caller]` to the function and wrapping its body in [`call`] or
