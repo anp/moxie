@@ -153,16 +153,46 @@ impl Default for $handle {
 }
 
 impl $handle {
-    /// Provides a closure-based caching API on top of the underlying
-    /// mutable API. Steps:
-    ///
-    /// 1. if matching cached value, mark live and return
-    /// 2. no cached value, initialize new one
-    /// 3. store new value as live, return
-    ///
-    /// Both (1) and (3) require mutable access to storage. We want to allow
-    /// nested cached `init`s eventually so it's important that (2) *doesn't*
-    /// use mutable access to storage.
+doc_comment! {"
+Caches the result of `init(arg)` once per `query`, re-running it when `arg` changes. Always runs
+`with` on the stored `Output` before returning the result.
+
+See the [moxie](https://docs.rs/moxie) crate for ergonomic wrappers.
+
+# Example
+
+```
+let storage = topo::" stringify!($handle) r#"::default();
+let call_count = std::cell::Cell::new(0);
+let increment_count = |&to_add: &i32| {
+    let new_count = call_count.get() + to_add;
+    call_count.set(new_count);
+    new_count
+};
+
+assert_eq!(call_count.get(), 0, "not called yet");
+
+let with_one = storage.cache_with(&'a', &1, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 1, "called only once");
+assert_eq!(call_count.get(), with_one);
+
+let with_one_again = storage.cache_with(&'a', &1, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 1, "still called only once, previous value cached");
+assert_eq!(call_count.get(), with_one_again);
+
+let with_two = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 3, "called again with a new, larger increment");
+assert_eq!(call_count.get(), with_two);
+
+let with_other_query = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 4, "called again with the same increment as before, different scope");
+assert_eq!(call_count.get(), with_other_query);
+
+let with_two_again = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
+assert_eq!(call_count.get(), 4, "cell still has last mutation's value");
+assert_eq!(with_two_again, with_two, "cache should still have previous value");
+```
+"#=>
     pub fn cache_with<Query, Scope, Arg, Input, Output, Ret>(
         &self,
         query: &Query,
@@ -187,7 +217,7 @@ impl $handle {
         let to_return = with(&to_store);
         self.inner.$acquire().store(query, arg, to_store);
         to_return
-    }
+    }}
 
 doc_comment!{"
 Forwards to [`" stringify!($name) "::gc`].
