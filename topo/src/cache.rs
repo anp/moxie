@@ -62,8 +62,6 @@
 //! assert_eq!(count.get(), 5);
 //! ```
 
-pub(crate) mod token;
-
 use downcast_rs::{impl_downcast, Downcast};
 use fxhash::FxHashMap;
 use hash_hasher::HashedMap;
