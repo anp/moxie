@@ -51,7 +51,7 @@ and a single `Output: 'static" $(" + " stringify!($bound))? "` value at any give
 # Reading stored values
 
 See [`" stringify!($name) "::get_if_arg_eq_prev_input`] which accepts borrowed forms of `Scope`
-and `Input`: `Query` and `Arg` respectively. `Arg` must satisfy `PartialEq<Input>` to determine
+and `Input`: `Key` and `Arg` respectively. `Arg` must satisfy `PartialEq<Input>` to determine
 whether to return a stored output.
 
 # Garbage Collection
@@ -74,34 +74,34 @@ impl $name {
     /// Return a reference to a query's stored output if a result is stored and `arg` equals the
     /// previously-stored `Input`. If a reference is returned, the stored input/output
     /// is marked live and will not be GC'd the next call.
-    pub fn get_if_arg_eq_prev_input<Query, Scope, Arg, Input, Output>(
+    pub fn get_if_arg_eq_prev_input<Key, Scope, Arg, Input, Output>(
         &mut self,
-        query: &Query,
+        key: &Key,
         arg: &Arg,
     ) -> Option<&Output>
     where
-        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
-        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
         Arg: PartialEq<Input> + ?Sized,
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(query, arg)
+        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(key, arg)
     }
 
     /// Stores the input/output of a query which will not be GC'd at the next call.
-    pub fn store<Query, Scope, Input, Output>(
+    pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        query: &Query,
+        key: &Key,
         input: Input,
         output: Output,
     ) where
-        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
-        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut().store(query, input, output);
+        self.get_namespace_mut().store(key, input, output);
     }
 
     fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
@@ -215,33 +215,33 @@ impl Default for $handle {
 }
 
 impl $handle {
-    /// Caches the result of `init(arg)` once per `query`, re-running it when `arg` changes. Always
+    /// Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes. Always
     /// runs `with` on the stored `Output` before returning the result.
     ///
     /// See the [moxie](https://docs.rs/moxie) crate for ergonomic wrappers.
-    pub fn cache_with<Query, Scope, Arg, Input, Output, Ret>(
+    pub fn cache_with<Key, Scope, Arg, Input, Output, Ret>(
         &self,
-        query: &Query,
+        key: &Key,
         arg: &Arg,
         init: impl FnOnce(&Input) -> Output,
         with: impl FnOnce(&Output) -> Ret,
     ) -> Ret
     where
-        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
-        Scope: 'static + Borrow<Query> + Eq + Hash $(+ $bound)?,
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
         Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get_if_arg_eq_prev_input(query, arg) } {
+        if let Some(stored) = { self.inner.$acquire().get_if_arg_eq_prev_input(key, arg) } {
             return with(stored);
         }
 
         let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
-        self.inner.$acquire().store(query, arg, to_store);
+        self.inner.$acquire().store(key, arg, to_store);
         to_return
     }
 
@@ -285,14 +285,14 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn get_if_input_eq<Query, Arg>(&mut self, query: &Query, input: &Arg) -> Option<&Output>
+    fn get_if_input_eq<Key, Arg>(&mut self, key: &Key, input: &Arg) -> Option<&Output>
     where
-        Query: Eq + Hash + ?Sized,
-        Scope: Borrow<Query>,
+        Key: Eq + Hash + ?Sized,
+        Scope: Borrow<Key>,
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,
     {
-        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(query)?;
+        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(key)?;
         if input == stored_input {
             *liveness = Liveness::Live;
             Some(stored)
@@ -301,17 +301,17 @@ where
         }
     }
 
-    fn store<Query>(&mut self, query: &Query, input: Input, output: Output)
+    fn store<Key>(&mut self, key: &Key, input: Input, output: Output)
     where
-        Query: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
-        Scope: Borrow<Query>,
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: Borrow<Key>,
     {
-        if let Some((liveness, prev_input, prev_output)) = self.inner.get_mut(query) {
+        if let Some((liveness, prev_input, prev_output)) = self.inner.get_mut(key) {
             *liveness = Liveness::Live;
             *prev_input = input;
             *prev_output = output;
         } else {
-            let scope = query.to_owned();
+            let scope = key.to_owned();
             self.inner.insert(scope, (Liveness::Live, input, output));
         }
     }
