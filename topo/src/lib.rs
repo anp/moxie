@@ -118,8 +118,12 @@ pub fn call<F, R>(op: F) -> R
 where
     F: FnOnce() -> R,
 {
+    #[derive(Clone, Debug, Eq, Hash, PartialEq)]
+    struct CallCount(u32);
+
     let callsite = Callsite::here();
-    Scope::with_current(|p| p.enter_child(callsite, &callsite.current_count(), op))
+    let count = CallCount(callsite.current_count());
+    Scope::with_current(|p| p.enter_child(callsite, &count, op))
 }
 
 /// Calls the provided function as a child of [`CallId::current`], using `slot`
