@@ -138,7 +138,7 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use slot::{OpaqueToken, Token};
+use slot::{OpaqueSlot, Slot};
 use std::{borrow::Borrow, cell::RefCell, hash::Hash, panic::Location};
 
 pub mod cache;
@@ -407,8 +407,8 @@ where
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CallId {
     callsite: Callsite,
-    parent: Token<CallId>,
-    slot: OpaqueToken,
+    parent: Slot<CallId>,
+    slot: OpaqueSlot,
 }
 
 impl CallId {
@@ -416,8 +416,8 @@ impl CallId {
     pub(crate) fn root() -> Self {
         Self {
             callsite: Callsite::here(),
-            parent: Token::fake(),
-            slot: Token::<String>::fake().into(),
+            parent: Slot::fake(),
+            slot: Slot::<String>::fake().into(),
         }
     }
 
@@ -431,7 +431,7 @@ impl CallId {
         Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
         S: Borrow<Q> + Eq + Hash + Send + 'static,
     {
-        Self { callsite, parent: Token::make(self), slot: Token::make(slot).into() }
+        Self { callsite, parent: Slot::make(self), slot: Slot::make(slot).into() }
     }
 }
 
