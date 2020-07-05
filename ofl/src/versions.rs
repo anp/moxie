@@ -43,7 +43,6 @@ impl Versions {
             let new_version = prompt_for_new_version(&moxie_crate)?;
 
             if new_version != moxie_crate.version {
-                // TODO ensure downstream updates increment versions appropriately
                 updates.push((moxie_crate, new_version, workspace.local_dependents(&id)));
             }
         }

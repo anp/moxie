@@ -104,7 +104,7 @@ impl Debug for Context {
         f.debug_struct("Context")
             .field("revision", &self.revision)
             .field("cache", &self.cache)
-            .field("spawner", &format_args!("{:p}", &self.spawner)) // TODO print the pointer
+            .field("spawner", &format_args!("{:p}", &self.spawner))
             .field("waker", &self.waker)
             .finish()
     }
