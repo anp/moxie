@@ -1,6 +1,6 @@
 [package]
 name = "topo"
-version = "0.10.0-pre"
+version = "0.10.0"
 description = "Tools for incrementally computing repeated callgraphs."
 categories = ["caching", "data-structures", "gui", "memory-management", "rust-patterns"]
 keywords = ["cache", "memoize", "intern", "topology", "incremental"]
@@ -21,7 +21,7 @@ downcast-rs = "1.1.1"
 once_cell = "1.4.0"
 parking_lot = "0.11.0"
 paste = "0.1.18"
-topo-macro = { path = "macro", version = "0.10.0-pre"}
+topo-macro = { path = "macro", version = "0.10.0"}
 
 [dev-dependencies]
 criterion = "0.3"

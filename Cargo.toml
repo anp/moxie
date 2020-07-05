@@ -32,7 +32,7 @@ version = "0.3.0-pre"
 path = "mox"
 
 [dependencies.topo]
-version = "0.10.0-pre"
+version = "0.10.0"
 path = "topo"
 
 [dev-dependencies]

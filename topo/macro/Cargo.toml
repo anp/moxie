@@ -1,6 +1,6 @@
 [package]
 name = "topo-macro"
-version = "0.10.0-pre"
+version = "0.10.0"
 description = "procedural macros for the topo crate"
 readme = "../CHANGELOG.md"
 
