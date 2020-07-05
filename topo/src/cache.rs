@@ -75,7 +75,6 @@ use std::{
     cmp::Eq,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::Hash,
-    marker::PhantomData,
     rc::Rc,
     sync::Arc,
 };
@@ -128,7 +127,7 @@ inserted with [`" stringify!($name) "::store`] or read with
 pub struct $name {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
     /// `TypeIds` which come pre-hashed courtesy of rustc.
-    inner: HashedMap<QueryTy, Box<dyn Gc $(+ $bound)?>>,
+    inner: HashedMap<TypeId, Box<dyn Gc $(+ $bound)?>>,
 }}
 
 impl $name {
@@ -171,11 +170,10 @@ impl $name {
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        let key: Query<Scope, Input, Output> = Query::new();
         let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
             .inner
-            .entry(key.ty())
-            .or_insert_with(|| Box::new(Namespace::<Scope, Input, Output>::default()));
+            .entry(TypeId::of::<(Scope, Input, Output)>())
+            .or_insert_with(|| Box::new(Namespace::<Scope, Input, Output>::make()));
         gc.as_any_mut().downcast_mut().unwrap()
     }
 
@@ -346,6 +344,10 @@ where
     Input: 'static,
     Output: 'static,
 {
+    fn make() -> Self {
+        Self { inner: Default::default() }
+    }
+
     fn get_if_input_eq<Key, Arg>(&mut self, key: &Key, input: &Arg) -> Option<&Output>
     where
         Key: Eq + Hash + ?Sized,
@@ -390,17 +392,6 @@ where
     }
 }
 
-impl<Scope, Input, Output> Default for Namespace<Scope, Input, Output>
-where
-    Scope: Eq + Hash + 'static,
-    Input: 'static,
-    Output: 'static,
-{
-    fn default() -> Self {
-        Self { inner: Default::default() }
-    }
-}
-
 impl<Scope, Input, Output> Debug for Namespace<Scope, Input, Output>
 where
     Scope: Eq + Hash + 'static,
@@ -413,47 +404,6 @@ where
             .entry(&"input", &type_name::<Input>())
             .entry(&"output", &type_name::<Output>())
             .finish()
-    }
-}
-
-/// The "composite key" for a [`Query`].
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-struct QueryTy(TypeId);
-
-/// Each query has an `Input`, and an `Output` which together can be
-/// thought of as defining a function: `(input) -> output`.
-struct Query<Scope, Input, Output> {
-    /// The type of scope by which the query is namespaced.
-    scope: PhantomData<Scope>,
-    /// The type of input the query accepts.
-    input: PhantomData<Input>,
-    /// The type of output the query returns.
-    output: PhantomData<Output>,
-}
-
-impl<Scope, Input, Output> Query<Scope, Input, Output>
-where
-    Scope: 'static,
-    Input: 'static,
-    Output: 'static,
-{
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    fn ty(&self) -> QueryTy {
-        QueryTy(TypeId::of::<Self>())
-    }
-}
-
-impl<Scope, Input, Output> Default for Query<Scope, Input, Output>
-where
-    Scope: 'static,
-    Input: 'static,
-    Output: 'static,
-{
-    fn default() -> Self {
-        Self { scope: PhantomData, input: PhantomData, output: PhantomData }
     }
 }
 
