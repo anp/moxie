@@ -4,24 +4,72 @@ use super::{
 };
 use std::{borrow::Borrow, hash::Hash, panic::Location};
 
-/// Identifies an activation record in the current call topology.
+/// Identifies the scope of a nested function call in a way that can be
+/// deterministically reproduced across multiple executions.
 ///
-/// The `CallId` for the execution of a stack frame is the combined product of:
+/// The [`CallId::current`] for a function call is the combined product of:
 ///
-/// * a callsite: lexical source location at which the topologically-nested
-///   function was invoked
-/// * parent `CallId`: the identifier which was active when entering the current
-///   topo-nested function
-/// * a "slot": runtime value indicating the call's "logical index" within the
-///   parent call
+/// * a callsite: the [`std::panic::Location`] where the function was called
+/// * a parent: the [`CallId::current`] which was active when calling the
+///   function
+/// * a [slot](#slots): a value indicating the call's "index" within the parent
+///   call
 ///
-/// By default, the slot used is a count of the number of times that particular
-/// callsite has been executed within the parent `CallId`'s enclosing scope.
-/// This means that when creating an `CallId` in a loop the identifier will be
-/// unique for each "index" of the loop iteration and will be stable if the same
-/// loop is invoked again. Changing the value used for the slot allows us to
-/// have stable `CallId`s across multiple executions when iterating over
-/// elements of a collection that itself has unstable iteration order.
+/// When a nested call returns or unwinds, it reverts [`CallId::current`] to
+/// the parent `CallId`.
+///
+/// # Example
+///
+/// ```
+/// use topo::{call, root, CallId};
+///
+/// let returns_two_ids = || {
+///     let first = call(|| CallId::current());
+///     let second = call(|| CallId::current());
+///     assert_ne!(first, second, "these are always distinct calls");
+///     (first, second)
+/// };
+///
+/// // running the closure as a nested call(...) gives different siblings
+/// assert_ne!(call(returns_two_ids), call(returns_two_ids));
+///
+/// // a call to root(...) gives each of these closure calls an identical parent CallId
+/// assert_eq!(root(returns_two_ids), root(returns_two_ids));
+/// ```
+///
+/// # Creation
+///
+/// Every `CallId` is created by calling one of:
+///
+/// * a function marked [`nested`]
+/// * a function passed to [`call`]
+/// * a function and slot passed to [`call_in_slot`]
+///
+/// # Slots
+///
+/// Slots are used to differentiate between repeated calls at the same callsite
+/// and define the "index" of a child call within its parent. By default (and in
+/// [`call`]) the slot is populated by the number of times the current
+/// callsite has been called in this parent. Users can provide their own slot
+/// with [`call_in_slot`] or using `#[topo::nested(slot = "...")]`:
+///
+/// See [`call_in_slot`] and [`nested`] for examples.
+///
+/// # Roots
+///
+/// The topmost parent or "root" of a callgraph can be defined in two ways:
+///
+/// 1. a [`call`] or [`call_in_slot`] invocation with no parent implicitly
+/// creates its own root
+/// 2. an explicit call to [`root`] creates a new subgraph regardless of the
+/// current parent
+///
+/// See [`root`] for examples.
+///
+/// [`nested`]: `crate::nested`
+/// [`call`]: `crate::call`
+/// [`call_in_slot`]: `crate::call_in_slot`
+/// [`root`]: `crate::root`
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CallId {
     callsite: Callsite,
@@ -39,7 +87,7 @@ impl CallId {
         }
     }
 
-    /// Returns the `CallId` for the current scope in the call topology.
+    /// Returns the current `CallId`.
     pub fn current() -> Self {
         Point::with_current(|current| current.id)
     }
