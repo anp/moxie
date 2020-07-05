@@ -127,10 +127,13 @@ where
 }
 
 /// Calls the provided function as a child of [`CallId::current`], using `slot`
-/// as an input for the [`CallId`] which will be current for the duration of
-/// `op`.
+/// as an input for the new [`CallId`].
 ///
-/// # Example
+/// Because this overrides [`call`]'s default slot of call count, it is
+/// possible for the same [`CallId`] to be issued multiple times during a
+/// single parent scope.
+///
+/// # Examples
 ///
 /// ```
 /// use topo::{call_in_slot, CallId};
@@ -158,6 +161,37 @@ where
 /// // changing non-slot arguments doesn't affect the CallId produced
 /// let alice_goodbye = get_name_id("alice", "goodbye");
 /// assert_eq!(alice_hello, alice_goodbye);
+/// ```
+///
+/// Note that while [`call`] uses `call_in_slot` internally, there is no way to
+/// manually "reuse" a call count slot with this function.
+///
+/// ```
+/// use topo::{call, call_in_slot, CallId};
+///
+/// let get_lists_of_ids = || {
+///     topo::call(|| {
+///         let (mut counted_ids, mut slotted_ids) = (vec![], vec![]);
+///         for i in 0..3 {
+///             // (we're cheating here because we know that call() uses a u32)
+///             let slotted = call_in_slot(&(i as u32), CallId::current);
+///             let counted = call(CallId::current);
+///
+///             if i > 0 {
+///                 assert_ne!(slotted_ids[i - 1], slotted);
+///                 assert_ne!(counted_ids[i - 1], counted);
+///             }
+///             slotted_ids.push(slotted);
+///             counted_ids.push(counted);
+///         }
+///
+///         // these should *not* be the same despite emulating the call count
+///         assert_ne!(&counted_ids, &slotted_ids);
+///         (counted_ids, slotted_ids)
+///     })
+/// };
+///
+/// assert_eq!(get_lists_of_ids(), get_lists_of_ids());
 /// ```
 #[track_caller]
 pub fn call_in_slot<F, Q, R, S>(slot: &Q, op: F) -> R
