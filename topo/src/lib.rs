@@ -138,10 +138,11 @@
 #[doc(inline)]
 pub use topo_macro::nested;
 
-use cache::token::{OpaqueToken, Token};
+use slot::{OpaqueToken, Token};
 use std::{borrow::Borrow, cell::RefCell, hash::Hash, panic::Location};
 
 pub mod cache;
+mod slot;
 
 /// Calls the provided function as a child of [`CallId::current`], using for a
 /// slot the number of times the given source location has been called during
