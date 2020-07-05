@@ -66,6 +66,47 @@ use std::{borrow::Borrow, hash::Hash, panic::Location};
 ///
 /// See [`root`] for examples.
 ///
+/// # `CallId` and multiple threads
+///
+/// The [`illicit`] environment used for tracking the current `CallId` is
+/// thread-local, but by default [`Token`] values used to track slots are
+/// interned in the global cache. This means that two different threads calling
+/// an identical chain of nested functions can observe identical `CallId`s:
+///
+/// ```
+/// # use topo::{call, root, CallId};
+/// #
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// #
+/// # let returns_two_ids = || {
+/// #     let first = call(|| CallId::current());
+/// #     let second = call(|| CallId::current());
+/// #     assert_ne!(first, second, "these are always distinct calls");
+/// #     (first, second)
+/// # };
+/// #
+/// use std::{
+///     sync::mpsc::{channel, Sender},
+///     thread,
+/// };
+///
+/// let (send_ids, recv_ids) = channel();
+///
+/// let spawn_worker = |sender: Sender<(CallId, CallId)>| {
+///     thread::spawn(move || sender.send(root(returns_two_ids)).unwrap())
+/// };
+/// let first_thread = spawn_worker(send_ids.clone());
+/// let second_thread = spawn_worker(send_ids);
+///
+/// first_thread.join().unwrap();
+/// second_thread.join().unwrap();
+///
+/// // the two worker threads "did the same work"
+/// assert_eq!(recv_ids.recv()?, recv_ids.recv()?);
+/// #
+/// # Ok(()) }
+/// ```
+///
 /// [`nested`]: `crate::nested`
 /// [`call`]: `crate::call`
 /// [`call_in_slot`]: `crate::call_in_slot`
