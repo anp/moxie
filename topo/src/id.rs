@@ -1,6 +1,6 @@
 use super::{
     token::{OpaqueToken, Token},
-    Point,
+    Scope,
 };
 use std::{borrow::Borrow, hash::Hash, panic::Location};
 
@@ -130,7 +130,7 @@ impl CallId {
 
     /// Returns the current `CallId`.
     pub fn current() -> Self {
-        Point::with_current(|current| current.id)
+        Scope::with_current(|current| current.id)
     }
 
     pub(crate) fn child<Q, S>(&self, callsite: Callsite, slot: &Q) -> Self
@@ -159,7 +159,7 @@ impl Callsite {
     /// Returns the number of times this callsite has been seen in the current
     /// call.
     pub fn current_count(self) -> u32 {
-        Point::with_current(|current| {
+        Scope::with_current(|current| {
             if let Some(c) = current.callsite_counts.borrow().iter().find(|(site, _)| site == &self)
             {
                 c.1

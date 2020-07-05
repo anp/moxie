@@ -117,7 +117,7 @@ where
     F: FnOnce() -> R,
 {
     let callsite = Callsite::here();
-    Point::with_current(|p| p.enter_child(callsite, &callsite.current_count(), op))
+    Scope::with_current(|p| p.enter_child(callsite, &callsite.current_count(), op))
 }
 
 /// The default "slot" for a topo call is the number of times that callsite
@@ -130,7 +130,7 @@ where
     Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
     S: Borrow<Q> + Eq + Hash + Send + 'static,
 {
-    Point::with_current(|p| p.enter_child(Callsite::here(), slot, op))
+    Scope::with_current(|p| p.enter_child(Callsite::here(), slot, op))
 }
 
 /// Calls the provided expression as the root of a new call tree, ignoring the
@@ -152,25 +152,25 @@ pub fn root<F, R>(op: F) -> R
 where
     F: FnOnce() -> R,
 {
-    illicit::hide::<Point>();
+    illicit::hide::<Scope>();
     call(op)
 }
 
-/// The root of a sub-graph within the overall topology formed at runtime by the
-/// call-graph of topologically-nested functions.
+/// The root of a sub-graph within the overall topology.
 ///
-/// The current `Point` contains the local [`CallId`] and a count of how often
+/// The current `Scope` contains the local [`CallId`] and a count of how often
 /// each of its children has been called.
 #[derive(Debug)]
-struct Point {
+struct Scope {
+    /// current id
     id: CallId,
+    /// source location for this scope's root
     callsite: Callsite,
-    /// Number of times each callsite's type has been observed during this
-    /// Point.
+    /// # times each callsite's type has been observed during this scope.
     callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
 
-impl Point {
+impl Scope {
     /// Mark a child Point in the topology, calling `child` within it.
     fn enter_child<C, Q, R, S>(&self, callsite: Callsite, slot: &Q, child: C) -> R
     where
@@ -190,12 +190,12 @@ impl Point {
     /// Runs the provided closure with access to the current [`Point`].
     fn with_current<F, Out>(op: F) -> Out
     where
-        F: FnOnce(&Point) -> Out,
+        F: FnOnce(&Scope) -> Out,
     {
-        if let Ok(current) = illicit::get::<Point>() {
+        if let Ok(current) = illicit::get::<Scope>() {
             op(&*current)
         } else {
-            op(&Point::default())
+            op(&Scope::default())
         }
     }
 
@@ -210,13 +210,13 @@ impl Point {
     }
 }
 
-impl Default for Point {
+impl Default for Scope {
     fn default() -> Self {
         Self { id: CallId::root(), callsite: Callsite::here(), callsite_counts: Default::default() }
     }
 }
 
-impl PartialEq for Point {
+impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
