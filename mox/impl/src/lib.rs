@@ -84,7 +84,6 @@ impl ToTokens for MoxItem {
 struct MoxTag {
     span: Span,
     name: Ident,
-    fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
     children: Vec<MoxItem>,
 }
@@ -97,35 +96,12 @@ impl MoxTag {
 
 impl ToTokens for MoxTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tag_to_tokens(&self.name, &self.fn_args, &self.attributes, Some(&self.children), tokens);
+        tag_to_tokens(&self.name, &self.attributes, Some(&self.children), tokens);
     }
-}
-
-fn args_and_attrs(snaxttrs: Vec<SnaxAttribute>) -> (Option<MoxArgs>, Vec<MoxAttr>) {
-    let mut snaxs = snaxttrs.into_iter().peekable();
-    let mut args = None;
-
-    if let Some(first) = snaxs.peek() {
-        let name = match first {
-            SnaxAttribute::Simple { name, .. } => name,
-        };
-
-        if name == "_" {
-            let first = snaxs.next().unwrap();
-            args = Some(MoxArgs {
-                value: match first {
-                    SnaxAttribute::Simple { value, .. } => value,
-                },
-            });
-        }
-    }
-
-    (args, snaxs.map(MoxAttr::from).collect())
 }
 
 fn tag_to_tokens(
     name: &Ident,
-    fn_args: &Option<MoxArgs>,
     attributes: &[MoxAttr],
     children: Option<&[MoxItem]>,
     stream: &mut TokenStream,
@@ -144,36 +120,16 @@ fn tag_to_tokens(
         }
     }
 
-    let fn_args = fn_args.as_ref().map(|args| match &args.value {
-        TokenTree::Group(g) => {
-            // strip trailing commas that would bork macro parsing
-            let mut tokens: Vec<TokenTree> = g.stream().into_iter().collect();
-
-            let last =
-                tokens.last().expect("function argument delimiters must contain some tokens");
-
-            if last.to_string() == "," {
-                tokens.truncate(tokens.len() - 1);
-            }
-
-            let mut without_delim = TokenStream::new();
-            without_delim.extend(tokens);
-            quote!(#without_delim)
-        }
-        _ => unimplemented!("bare function args (without a paired delimiter) aren't supported yet"),
-    });
-
-    quote!(mox::topo::call(|| { #name(#fn_args) #contents .build() })).to_tokens(stream);
+    quote!(mox::topo::call(|| { #name() #contents .build() })).to_tokens(stream);
 }
 
 impl From<SnaxTag> for MoxTag {
     fn from(SnaxTag { name, attributes, children }: SnaxTag) -> Self {
-        let (fn_args, attributes) = args_and_attrs(attributes);
+        let attributes = attributes.into_iter().map(MoxAttr::from).collect();
         Self {
             // TODO get the span for the whole tag
             span: name.span(),
             name,
-            fn_args,
             attributes,
             children: children.into_iter().map(MoxItem::from).collect(),
         }
@@ -183,7 +139,6 @@ impl From<SnaxTag> for MoxTag {
 struct MoxTagNoChildren {
     span: Span,
     name: Ident,
-    fn_args: Option<MoxArgs>,
     attributes: Vec<MoxAttr>,
 }
 
@@ -195,19 +150,15 @@ impl MoxTagNoChildren {
 
 impl ToTokens for MoxTagNoChildren {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tag_to_tokens(&self.name, &self.fn_args, &self.attributes, None, tokens);
+        tag_to_tokens(&self.name, &self.attributes, None, tokens);
     }
 }
 
 impl From<SnaxSelfClosingTag> for MoxTagNoChildren {
     fn from(SnaxSelfClosingTag { name, attributes }: SnaxSelfClosingTag) -> Self {
-        let (fn_args, attributes) = args_and_attrs(attributes);
-        Self { span: name.span(), name, fn_args, attributes }
+        let attributes = attributes.into_iter().map(MoxAttr::from).collect();
+        Self { span: name.span(), name, attributes }
     }
-}
-
-struct MoxArgs {
-    value: TokenTree,
 }
 
 struct MoxAttr {

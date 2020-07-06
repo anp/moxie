@@ -9,6 +9,10 @@
 
 ## [0.10.0] - unreleased
 
+### Removed
+
+- Support for `_=(...)` style function invocation in tags.
+
 ### Added
 
 - Implementation is now in `mox-impl` crate to allow publication separately from `moxie`.

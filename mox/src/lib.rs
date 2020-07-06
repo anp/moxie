@@ -6,10 +6,9 @@
 ///
 /// ## Tags
 ///
-/// Each tag expands to a function call with the same name as the tag, with the
-/// tag's arguments passed through as function arguments. The function call and
-/// all attributes and children are wrapped in `#[topo::nested]` to create the
-/// correct topology.
+/// Each tag expands to a function call with the same name as the tag. The
+/// function call, all attributes, and children are wrapped in [`topo::call`] to
+/// create a nested scope in the callgraph.
 ///
 /// Each attribute expands to a method called on the value returned from the tag
 /// opening or the previous attribute. The attribute name is used as the method
@@ -27,10 +26,10 @@
 ///
 /// ## Content/Text
 ///
-/// Content items are wrapped in calls to `text(...)`.
+/// Text nodes are wrapped in calls to `text(...)`.
 ///
-/// If a content item is a formatter the contained expression is first wrapped
-/// in the `format!(...)` macro.
+/// If an expression is a formatter, the arguments are wrapped
+/// in the `format!(...)` macro before being treated as a text node.
 ///
 /// # Inputs
 ///
@@ -44,15 +43,8 @@
 /// Tags always have a name and can have zero or more arguments, attributes, and
 /// children.
 ///
-/// They take the form `<NAME _=(ARGS ...) ATTR=VAL ...> CHILDREN </NAME>`.
-/// Each optional portion can be omitted.
-///
-/// ### Arguments
-///
-/// A tag's arguments are wrapped with `_=(` and `)`, delimited by `,` (comma),
-/// and must precede any attributes. Each argument is a Rust expression.
-///
-/// If there are no arguments the `_=()` wrapper must be omitted.
+/// They take the form `<NAME ATTR=VAL ...> CHILDREN </NAME>`. Each optional
+/// portion can be omitted.
 ///
 /// ### Attributes
 ///
@@ -74,11 +66,19 @@
 /// to provide a parent for children. They do not accept arguments or
 /// attributes.
 ///
-/// ## Content
+/// ## Expressions
 ///
-/// Content items represent text. They are delimited with `{` and `}`. They can
-/// optionally be opened with `{%` to denote a "formatter" item.
+/// Raw Rust expressions can be inserted as a child node. They are delimited
+/// with `{` and `}`.
+///
+/// ## Format expressions
+///
+/// Expressions can optionally be opened with `{%` to denote a "formatter" item.
+/// The enclosed tokens are passed
 ///
 /// [JSX]: https://facebook.github.io/jsx/
 #[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use mox_impl::mox;
+
+#[doc(hidden)]
+pub use topo;
