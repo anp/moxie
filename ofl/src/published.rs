@@ -23,8 +23,15 @@ impl EnsurePublished {
         for id in to_publish {
             let package = &workspace.metadata[&id];
             publish(package, self.dry_run)?;
-            info!("sleeping a bit");
-            std::thread::sleep(std::time::Duration::from_secs(30));
+            
+            let tag = format!("{}-v{}", package.name, package.version);
+            let message = format!("Published {}.", &tag);
+            workspace.tag_head(&tag, &message)?;
+
+            if !self.dry_run {
+                info!("sleeping a bit");
+                std::thread::sleep(std::time::Duration::from_secs(30));
+            }
         }
         Ok(())
     }

@@ -182,3 +182,4 @@ jobs:
         npx netlify-cli deploy --prod
         cargo login ${{ secrets.CARGO_API_TOKEN }}
         bin/ofl published
+        git push origin --tags
