@@ -4,6 +4,7 @@
 
 ![crates.io](https://img.shields.io/crates/v/moxie)
 ![License](https://img.shields.io/crates/l/moxie.svg)
+[![codecov](https://codecov.io/gh/anp/moxie/branch/main/graph/badge.svg)](https://codecov.io/gh/anp/moxie)
 
 ## More Information
 
