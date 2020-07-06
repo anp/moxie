@@ -385,8 +385,11 @@ where
     Output: 'static,
 {
     fn gc(&mut self) {
-        self.inner.retain(|_, (l, _, _)| *l == Liveness::Live);
-        self.inner.values_mut().for_each(|(l, _, _)| *l = Liveness::Dead);
+        self.inner.retain(|_, (l, _, _)| {
+            let is_alive = *l == Liveness::Live;
+            *l = Liveness::Dead;
+            is_alive
+        });
     }
 }
 
