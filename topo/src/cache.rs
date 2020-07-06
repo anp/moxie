@@ -65,7 +65,7 @@
 use downcast_rs::{impl_downcast, Downcast};
 use fxhash::FxBuildHasher;
 use hash_hasher::HashedMap;
-use hashbrown::HashMap;
+use hashbrown::{hash_map::RawEntryMut, HashMap};
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
@@ -73,7 +73,7 @@ use std::{
     cell::RefCell,
     cmp::Eq,
     fmt::{Debug, Formatter, Result as FmtResult},
-    hash::Hash,
+    hash::{BuildHasher, Hash, Hasher},
     rc::Rc,
     sync::Arc,
 };
@@ -133,11 +133,14 @@ impl $name {
     /// Return a reference to a query's stored output if a result is stored and `arg` equals the
     /// previously-stored `Input`. If a reference is returned, the stored input/output
     /// is marked live and will not be GC'd the next call.
-    pub fn get_if_arg_eq_prev_input<Key, Scope, Arg, Input, Output>(
+    ///
+    /// If no reference is found, the original hash of the query key is returned to be reused for
+    /// storing.
+    pub fn get_if_arg_eq_prev_input<'k, Key, Scope, Arg, Input, Output>(
         &mut self,
-        key: &Key,
+        key: &'k Key,
         arg: &Arg,
-    ) -> Option<&Output>
+    ) -> Result<&Output, Hashed<&'k Key>>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -149,9 +152,10 @@ impl $name {
     }
 
     /// Stores the input/output of a query which will not be GC'd at the next call.
+    /// Call `get_if_arg_eq_prev_input` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        key: &Key,
+        key: Hashed<&Key>,
         input: Input,
         output: Output,
     ) where
@@ -292,14 +296,15 @@ impl $handle {
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        if let Some(stored) = { self.inner.$acquire().get_if_arg_eq_prev_input(key, arg) } {
-            return with(stored);
-        }
+        let hashed = match { self.inner.$acquire().get_if_arg_eq_prev_input(key, arg) } {
+            Ok(stored) => return with(stored),
+            Err(h) => h,
+        };
 
         let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
-        self.inner.$acquire().store(key, arg, to_store);
+        self.inner.$acquire().store(hashed, arg, to_store);
         to_return
     }
 
@@ -337,6 +342,14 @@ struct Namespace<Scope, Input, Output> {
     inner: HashMap<Scope, (Liveness, Input, Output), FxBuildHasher>,
 }
 
+/// A query key that was hashed as part of an initial lookup and which can be
+/// used to store fresh values back to the cache.
+#[derive(Clone, Copy, Debug)]
+pub struct Hashed<K> {
+    key: K,
+    hash: u64,
+}
+
 impl<Scope, Input, Output> Namespace<Scope, Input, Output>
 where
     Scope: Eq + Hash + 'static,
@@ -347,34 +360,63 @@ where
         Self { inner: Default::default() }
     }
 
-    fn get_if_input_eq<Key, Arg>(&mut self, key: &Key, input: &Arg) -> Option<&Output>
+    fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key>
+    where
+        Key: Hash + ?Sized,
+    {
+        let mut hasher = self.inner.hasher().build_hasher();
+        key.hash(&mut hasher);
+        Hashed { key, hash: hasher.finish() }
+    }
+
+    fn entry<'k, Key>(
+        &mut self,
+        hashed: &Hashed<&'k Key>,
+    ) -> RawEntryMut<Scope, (Liveness, Input, Output), FxBuildHasher>
+    where
+        Key: Eq + ?Sized,
+        Scope: Borrow<Key>,
+    {
+        self.inner.raw_entry_mut().from_hash(hashed.hash, |q| q.borrow().eq(hashed.key))
+    }
+
+    fn get_if_input_eq<'k, Key, Arg>(
+        &mut self,
+        key: &'k Key,
+        input: &Arg,
+    ) -> Result<&Output, Hashed<&'k Key>>
     where
         Key: Eq + Hash + ?Sized,
         Scope: Borrow<Key>,
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,
     {
-        let (ref mut liveness, ref stored_input, ref stored) = self.inner.get_mut(key)?;
-        if input == stored_input {
-            *liveness = Liveness::Live;
-            Some(stored)
-        } else {
-            None
+        let hashed = self.hashed(key);
+        if let RawEntryMut::Occupied(occ) = self.entry(&hashed) {
+            let (ref mut liveness, ref stored_input, ref stored) = occ.into_mut();
+            if input == stored_input {
+                *liveness = Liveness::Live;
+                return Ok(stored);
+            }
         }
+        Err(hashed)
     }
 
-    fn store<Key>(&mut self, key: &Key, input: Input, output: Output)
+    fn store<Key>(&mut self, hashed: Hashed<&Key>, input: Input, output: Output)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
-        if let Some((liveness, prev_input, prev_output)) = self.inner.get_mut(key) {
-            *liveness = Liveness::Live;
-            *prev_input = input;
-            *prev_output = output;
-        } else {
-            let scope = key.to_owned();
-            self.inner.insert(scope, (Liveness::Live, input, output));
+        match self.entry(&hashed) {
+            RawEntryMut::Occupied(occ) => {
+                let (ref mut liveness, ref mut prev_input, ref mut prev_output) = occ.into_mut();
+                *liveness = Liveness::Live;
+                *prev_input = input;
+                *prev_output = output;
+            }
+            RawEntryMut::Vacant(vac) => {
+                vac.insert(hashed.key.to_owned(), (Liveness::Live, input, output));
+            }
         }
     }
 }
