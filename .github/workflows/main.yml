@@ -78,7 +78,39 @@ jobs:
       with:
         file: ./target/coverage/lcov.info
 
-  main:
+  dom:
+    needs: ofl
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/download-artifact@v2
+      with:
+        name: ofl-${{ runner.os }}
+        path: bin/
+    # TODO(actions/download-artifact#14) undo hack
+    - run: chmod +x bin/ofl
+      if: runner.os != 'Windows'
+
+    - run: cargo generate-lockfile
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          target/debug
+          target/wasm32-unknown-unknown
+    
+    - run: cargo test-augdom
+    - run: cargo test-dom-lib-browser
+    - run: cargo test-dom-hacking
+    - run: cargo test-dom-todo
+    - run: cargo test-dom-drivertest
+
+  website:
     needs: ofl
     strategy:
       matrix:
@@ -101,25 +133,10 @@ jobs:
         path: |
           ~/.cargo/git
           ~/.cargo/registry
-          target/debug
+          ofl/target/doc
           target/doc
           target/wasm32-unknown-unknown/release
     
-    - run: cargo build-times
-    - name: upload build timings
-      uses: actions/upload-artifact@v2
-      with:
-        name: moxie-build-times
-        path: "cargo-timing.html"
-
-    # browser tests w/o coverage
-    - run: cargo test-augdom
-    - run: cargo test-dom-lib-browser
-    - run: cargo test-dom-hacking
-    - run: cargo test-dom-todo
-    - run: cargo test-dom-drivertest
-
-    # examples, docs, website
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
     - run: cargo docs-all
@@ -157,7 +174,7 @@ jobs:
     - run: cargo clippy-dom
 
   publish:
-    needs: [coverage, fmt, clippy, main, ofl]
+    needs: [clippy, coverage, dom, fmt, ofl, website]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
