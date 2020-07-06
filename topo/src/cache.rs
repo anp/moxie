@@ -63,8 +63,9 @@
 //! ```
 
 use downcast_rs::{impl_downcast, Downcast};
-use fxhash::FxHashMap;
+use fxhash::FxBuildHasher;
 use hash_hasher::HashedMap;
+use hashbrown::HashMap;
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
@@ -333,7 +334,7 @@ define_cache!(LocalCache, Rc, RefCell::borrow_mut);
 define_cache!(Cache: Send, Arc, Mutex::lock);
 
 struct Namespace<Scope, Input, Output> {
-    inner: FxHashMap<Scope, (Liveness, Input, Output)>,
+    inner: HashMap<Scope, (Liveness, Input, Output), FxBuildHasher>,
 }
 
 impl<Scope, Input, Output> Namespace<Scope, Input, Output>
