@@ -163,7 +163,7 @@ fn tag_to_tokens(
         _ => unimplemented!("bare function args (without a paired delimiter) aren't supported yet"),
     });
 
-    quote!(topo::call(|| { #name(#fn_args) #contents .build() })).to_tokens(stream);
+    quote!(mox::topo::call(|| { #name(#fn_args) #contents .build() })).to_tokens(stream);
 }
 
 impl From<SnaxTag> for MoxTag {
