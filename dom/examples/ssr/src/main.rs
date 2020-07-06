@@ -7,6 +7,7 @@ use gotham::{
     router::{builder::*, Router},
     state::{FromState, State},
 };
+use mox::mox;
 use moxie_dom::{
     elements::text_content::{li, ul, Ul},
     prelude::*,
@@ -28,7 +29,7 @@ struct PathExtractor {
 fn simple_list(items: &[String]) -> Ul {
     let mut list = ul();
     for item in items {
-        list = list.child(moxie::mox!(<li>{% "{}", item }</li>));
+        list = list.child(mox!(<li>{% "{}", item }</li>));
     }
     list.build()
 }
@@ -97,7 +98,7 @@ mod tests {
     #[test]
     fn basic_list_prerender() {
         let (mut tester, root) = WebRuntime::in_rsdom_div(move || {
-            moxie::mox! {
+            mox! {
                 <ul class="listywisty">
                     <li>"first"</li>
                     <li class="item">"second"</li>

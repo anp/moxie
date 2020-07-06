@@ -39,5 +39,6 @@ raf = { path = "raf", version = "0.2.0-pre", optional = true }
 wasm-bindgen-futures = { version = "0.4.13", optional = true }
 
 [dev-dependencies]
+mox = { path = "../mox", version = "0.10.0-pre"}
 pretty_assertions = "0.6"
 wasm-bindgen-test = "0.3"

@@ -7,6 +7,7 @@ edition = "2018"
 
 [dependencies]
 augdom = { path = "../../augdom", features = ["rsdom"] }
+mox = { path = "../../../mox" }
 moxie = { path = "../../../" }
 moxie-dom = { path = "../../", features = ["rsdom"] }
 topo = { path = "../../../topo" }
