@@ -532,12 +532,6 @@ impl Default for Scope {
     }
 }
 
-impl PartialEq for Scope {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
