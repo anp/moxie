@@ -76,6 +76,56 @@
 /// Expressions can optionally be opened with `{%` to denote a "formatter" item.
 /// The enclosed tokens are passed
 ///
+/// # Example
+///
+/// ```
+/// use mox::mox;
+///
+/// #[derive(Debug, PartialEq)]
+/// struct Tag {
+///     name: String,
+///     children: Vec<Tag>,
+/// }
+///
+/// fn built() -> TagBuilder {
+///     TagBuilder::default()
+/// }
+///
+/// #[derive(Default)]
+/// struct TagBuilder {
+///     name: Option<String>,
+///     children: Vec<Tag>,
+/// }
+///
+/// impl TagBuilder {
+///     fn name(mut self, name: impl Into<String>) -> Self {
+///         self.name = Some(name.into());
+///         self
+///     }
+///
+///     fn child(mut self, child: Tag) -> Self {
+///         self.children.push(child);
+///         self
+///     }
+///
+///     fn build(self) -> Tag {
+///         Tag { name: self.name.unwrap(), children: self.children }
+///     }
+/// }
+///
+/// assert_eq!(
+///     mox! {
+///         <built name="alice">
+///             <built name="bob"/>
+///         </built>
+///     },
+///     Tag {
+///         name: String::from("alice"),
+///         children: vec![Tag { name: String::from("bob"), children: vec![] }],
+///     },
+/// );
+/// ```
+///
 /// [JSX]: https://facebook.github.io/jsx/
 #[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use mox_impl::mox;
