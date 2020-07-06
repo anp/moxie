@@ -1,6 +1,6 @@
 [package]
 name = "mox"
-version = "0.3.0-pre"
+version = "0.10.0-pre"
 description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
 categories = ["gui", "rust-patterns"]
 keywords = ["jsx", "xml", "builder"]
