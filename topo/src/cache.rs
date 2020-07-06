@@ -63,9 +63,11 @@
 //! ```
 
 use downcast_rs::{impl_downcast, Downcast};
-use fxhash::FxBuildHasher;
 use hash_hasher::HashedMap;
-use hashbrown::{hash_map::RawEntryMut, HashMap};
+use hashbrown::{
+    hash_map::{DefaultHashBuilder, RawEntryMut},
+    HashMap,
+};
 use parking_lot::Mutex;
 use std::{
     any::{type_name, TypeId},
@@ -339,7 +341,7 @@ define_cache!(LocalCache, Rc, RefCell::borrow_mut);
 define_cache!(Cache: Send, Arc, Mutex::lock);
 
 struct Namespace<Scope, Input, Output> {
-    inner: HashMap<Scope, (Liveness, Input, Output), FxBuildHasher>,
+    inner: HashMap<Scope, (Liveness, Input, Output)>,
 }
 
 /// A query key that was hashed as part of an initial lookup and which can be
@@ -372,7 +374,7 @@ where
     fn entry<'k, Key>(
         &mut self,
         hashed: &Hashed<&'k Key>,
-    ) -> RawEntryMut<Scope, (Liveness, Input, Output), FxBuildHasher>
+    ) -> RawEntryMut<Scope, (Liveness, Input, Output), DefaultHashBuilder>
     where
         Key: Eq + ?Sized,
         Scope: Borrow<Key>,
