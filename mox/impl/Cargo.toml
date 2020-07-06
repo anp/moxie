@@ -1,6 +1,6 @@
 [package]
 name = "mox-impl"
-version = "0.10.0-pre"
+version = "0.10.0"
 description = "Implementation for the mox! macro."
 categories = ["gui", "rust-patterns"]
 keywords = ["jsx", "xml", "builder"]
