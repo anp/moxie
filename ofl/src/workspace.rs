@@ -1,15 +1,18 @@
 use cargo_metadata::{Metadata, Package, PackageId};
+use git2::{ObjectType, Repository, Signature};
 use failure::{Error, ResultExt};
 use std::{
     collections::BTreeMap,
     path::Path,
     process::{Command, Output},
 };
+use tracing::info;
 
 pub struct Workspace {
     pub metadata: Metadata,
     pub ofl_metadata: Metadata,
     pub rustfmt_toolchain: String,
+    pub repo: Repository,
 }
 
 impl Workspace {
@@ -20,6 +23,7 @@ impl Workspace {
             metadata: metadata_for_directory(project_root)?,
             ofl_metadata: metadata_for_directory(project_root.join("ofl"))?,
             rustfmt_toolchain: rustfmt_toolchain(project_root),
+            repo: Repository::open(project_root)?,
         })
     }
 
@@ -60,6 +64,15 @@ impl Workspace {
         } else {
             None
         }
+    }
+
+    /// Adds a new tag to the workspace repository which references HEAD.
+    pub fn tag_head(&self, name: &str, message: &str) -> Result<(), Error> {
+        let head = self.repo.head()?.peel(ObjectType::Commit)?;
+        let tagger = Signature::now("Adam Perry", "lol@anp.lol")?;
+        let tag = self.repo.tag(name, &head, &tagger, message, false)?;
+        info!({ %name, %message, %tag }, "created tag");
+        Ok(())
     }
 }
 
@@ -113,4 +126,14 @@ fn local_metadata_members_reverse_topo(metadata: &Metadata) -> Vec<PackageId> {
     .unwrap();
 
     member_names.into_iter().rev().filter_map(|name| id_by_name.get(&name)).cloned().collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn open_workspace() {
+        let _ws = Workspace::get(concat!(env!("CARGO_MANIFEST_DIR"), "/..")).unwrap();
+    }
 }
