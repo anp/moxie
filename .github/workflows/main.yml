@@ -61,7 +61,7 @@ jobs:
         path: |
           ~/.cargo/git
           ~/.cargo/registry
-          target/coverage
+          target
 
     # collect ofl coverage with the root target dir to get into the same report
     - run: bin/ofl coverage collect test-ofl
@@ -101,8 +101,7 @@ jobs:
         path: |
           ~/.cargo/git
           ~/.cargo/registry
-          target/debug
-          target/wasm32-unknown-unknown
+          target
     
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
@@ -134,8 +133,7 @@ jobs:
           ~/.cargo/git
           ~/.cargo/registry
           ofl/target/doc
-          target/doc
-          target/wasm32-unknown-unknown/release
+          target
     
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
