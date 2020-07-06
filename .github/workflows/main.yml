@@ -171,9 +171,15 @@ jobs:
       with:
         name: website
         path: target/website
-    - name: dry run publishing
+    - name: dry run crates.io
       if: github.ref != 'refs/heads/main'
       run: bin/ofl published --dry-run
+    - name: dry run website
+      # only run this for PRs from upstream repo itself because it needs the token
+      if: github.ref != 'refs/heads/main' && github.repository == 'anp/moxie'
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      run: npx netlify-cli deploy
     - name: promote website to prod, ensure crates published
       if: github.ref == 'refs/heads/main'
       env:
