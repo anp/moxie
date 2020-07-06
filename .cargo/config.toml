@@ -59,7 +59,7 @@ build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 # browser tests
-test-augdom = "wa-test dom/augdom -- --all-features"
+test-augdom = "wa-test dom/augdom"
 test-dom-lib-browser = "wa-test dom"
 test-dom-drivertest = "wa-test dom/examples/drivertest"
 test-dom-hacking = "wa-test dom/examples/hacking"
