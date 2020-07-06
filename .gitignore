@@ -3,6 +3,7 @@ target/
 **/*.rs.bk
 /Cargo.lock
 *.log
+*.new
 node_modules/
 .idea/
 pkg/
