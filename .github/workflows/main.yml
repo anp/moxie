@@ -171,6 +171,9 @@ jobs:
       with:
         name: website
         path: target/website
+    - name: dry run publishing
+      if: github.ref != 'refs/heads/main'
+      run: bin/ofl published --dry-run
     - name: promote website to prod, ensure crates published
       if: github.ref == 'refs/heads/main'
       env:
