@@ -32,7 +32,7 @@ illicit = { path = "../illicit", version = "1.0.0"}
 moxie = { path = "../", version = "0.3.0-pre"}
 paste = "0.1.12"
 scopeguard = "1"
-topo = { path = "../topo", version = "0.10.0"}
+topo = { path = "../topo", version = "0.11.0"}
 
 # web-only
 raf = { path = "raf", version = "0.2.0-pre", optional = true }
