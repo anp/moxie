@@ -120,6 +120,8 @@ jobs:
     - run: cargo test-dom-drivertest
 
     # examples, docs, website
+    - run: cargo build-dom-hacking
+    - run: cargo build-dom-todo
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: bin/ofl website build target/website
