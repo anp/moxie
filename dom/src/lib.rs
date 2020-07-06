@@ -18,7 +18,7 @@ pub mod prelude {
     #[cfg(feature = "webdom")]
     pub use augdom::{document, sys};
     pub use augdom::{event, Dom as _};
-    pub use moxie::{cache, cache_state, cache_with, mox, once, once_with, state, Key};
+    pub use moxie::{cache, cache_state, cache_with, once, once_with, state, Key};
 
     pub use crate::{
         elements::html,
@@ -112,13 +112,13 @@ mod tests {
     pub async fn hello_browser() {
         let root = augdom::document().create_element("div").unwrap();
         boot(root.clone(), || {
-            moxie::mox! {
-            <div>
-                <p>"hello browser"</p>
+            mox::mox! {
                 <div>
-                    <p><b>"looooool"</b></p>
+                    <p>"hello browser"</p>
+                    <div>
+                        <p><b>"looooool"</b></p>
+                    </div>
                 </div>
-            </div>
             }
         });
 

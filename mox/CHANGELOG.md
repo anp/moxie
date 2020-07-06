@@ -9,6 +9,10 @@
 
 ## [0.10.0] - unreleased
 
+### Added
+
+- Implementation is now in `mox-impl` crate to allow publication separately from `moxie`.
+
 ### Changed
 
 - Handles collisions with Rust keywords when used as attributes.

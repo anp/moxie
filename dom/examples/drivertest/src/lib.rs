@@ -1,3 +1,4 @@
+use mox::mox;
 use moxie_dom::{
     elements::html::{button, li, ul},
     embed::WebRuntime,
@@ -11,7 +12,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[wasm_bindgen_test]
 fn mini_list() {
     let list = || {
-        moxie::mox! {
+        mox! {
             <ul class="listywisty">
                 <li>"first"</li>
                 <li class="item">"second"</li>
@@ -79,7 +80,7 @@ fn mutiple_event_listeners() {
 
         let increment = |n: &u8| Some(n + 1);
 
-        moxie::mox! {
+        mox! {
             <button
                 onclick={ move |_| counter1.update(increment) }
                 onclick={ move |_| counter2.update(increment) }

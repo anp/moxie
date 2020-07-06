@@ -1,10 +1,10 @@
 [package]
-name = "mox"
+name = "mox-impl"
 version = "0.10.0-pre"
-description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
+description = "Implementation for the mox! macro."
 categories = ["gui", "rust-patterns"]
 keywords = ["jsx", "xml", "builder"]
-readme = "CHANGELOG.md"
+readme = "../CHANGELOG.md"
 
 # update here, update everywhere!
 license = "MIT/Apache-2.0"
@@ -13,7 +13,12 @@ repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-mox-impl = { version = "0.10.0-pre", path = "impl" }
+proc-macro2 = "1"
+proc-macro-error = "1.0.0"
 proc-macro-hack = "0.5"
-proc-macro-nested = "0.1.3"
+quote = "1"
+snax = "0.3.0"

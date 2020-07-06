@@ -1,4 +1,5 @@
 use augdom::{event::Click, testing::Query};
+use mox::mox;
 use moxie_dom::{
     elements::html::{button, div},
     prelude::*,

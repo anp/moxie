@@ -23,10 +23,10 @@ watch --clear
     -x docs-all
 """
 
-bench-core = "bench --all-targets --package illicit --package moxie --package topo"
-clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro"
-test-core = "test --all-targets --package illicit --package moxie --package topo --package topo-macro"
-test-core-doc = "test --doc --package illicit --package moxie --package topo --package topo-macro"
+bench-core = "bench --all-targets --package illicit --package moxie --package topo --package mox"
+clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro --package mox"
+test-core = "test --all-targets --package illicit --package moxie --package topo --package topo-macro --package mox"
+test-core-doc = "test --doc --package illicit --package moxie --package topo --package topo-macro --package mox"
 
 docs-all = "doc --workspace --no-deps --all-features"
 docs-clean = "clean --doc"
