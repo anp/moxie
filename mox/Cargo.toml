@@ -14,6 +14,7 @@ authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
 [dependencies]
-mox-impl = { version = "0.10.0-pre", path = "impl" }
+mox-impl = { path = "impl", version = "0.10.0-pre" }
 proc-macro-hack = "0.5"
 proc-macro-nested = "0.1.3"
+topo = { path = "../topo", version = "0.10.0" }
