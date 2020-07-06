@@ -1,7 +1,7 @@
 use owning_ref::OwningRef;
 use std::{
     any::{type_name, Any, TypeId},
-    fmt::{Debug, Formatter, Result as FmtResult},
+    fmt::Debug,
     ops::Deref,
     panic::Location,
     rc::Rc,
@@ -35,12 +35,13 @@ impl AnonRc {
         }
     }
 
-    pub(crate) fn downcast_deref<T: 'static>(
-        self,
-    ) -> Result<impl Deref<Target = T> + 'static, impl Debug> {
-        let from = self.name;
+    pub(crate) fn downcast_deref<T: 'static>(self) -> Option<impl Deref<Target = T> + 'static> {
         OwningRef::new(self.inner)
-            .try_map(|anon| anon.downcast_ref().ok_or(DowncastError { from, to: type_name::<T>() }))
+            .try_map(|anon| {
+                let res: Result<&T, &str> = anon.downcast_ref().ok_or("invalid cast");
+                res
+            })
+            .ok()
     }
 
     /// The `TypeId` of the contained value.
@@ -66,39 +67,5 @@ impl AnonRc {
     /// The source location at which this was initialized for an environment.
     pub fn location(&self) -> &'static Location<'static> {
         self.location
-    }
-}
-
-/// compare the pointers by their data locations, ignoring vtables
-macro_rules! data_ptrs_eq {
-    ($trt:ident: $anon1:expr, $anon2:expr) => {
-        std::ptr::eq(
-            $anon1 as &dyn $trt as *const dyn $trt as *const u8,
-            $anon2 as &dyn $trt as *const dyn $trt as *const u8,
-        )
-    };
-}
-
-impl PartialEq for AnonRc {
-    fn eq(&self, other: &Self) -> bool {
-        let raw_loc = |a: &Self| (a.location.file(), a.location.line(), a.location.column());
-        self.id == other.id
-            && self.depth == other.depth
-            && self.name == other.name
-            && raw_loc(self) == raw_loc(other)
-            && data_ptrs_eq!(Any: &self.inner, &other.inner)
-            && data_ptrs_eq!(Debug: &self.debug, &other.debug)
-    }
-}
-impl Eq for AnonRc {}
-
-struct DowncastError {
-    from: &'static str,
-    to: &'static str,
-}
-
-impl Debug for DowncastError {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "asked {:?} to cast to {:?}", self.from, self.to)
     }
 }
