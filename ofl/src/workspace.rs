@@ -1,6 +1,6 @@
 use cargo_metadata::{Metadata, Package, PackageId};
-use git2::{ObjectType, Repository, Signature};
 use failure::{Error, ResultExt};
+use git2::{ObjectType, Repository, Signature};
 use std::{
     collections::BTreeMap,
     path::Path,

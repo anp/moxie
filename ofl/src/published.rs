@@ -23,7 +23,7 @@ impl EnsurePublished {
         for id in to_publish {
             let package = &workspace.metadata[&id];
             publish(package, self.dry_run)?;
-            
+
             let tag = format!("{}-v{}", package.name, package.version);
             let message = format!("Published {}.", &tag);
             workspace.tag_head(&tag, &message)?;
