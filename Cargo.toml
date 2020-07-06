@@ -28,7 +28,7 @@ version = "1.0.0"
 path = "illicit"
 
 [dependencies.mox]
-version = "0.3.0-pre"
+version = "0.10.0-pre"
 path = "mox"
 
 [dependencies.topo]
