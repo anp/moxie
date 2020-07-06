@@ -20,6 +20,7 @@ scopeguard = "1"
 
 [dev-dependencies]
 criterion = "0.3"
+insta = "0.16.1"
 
 [[bench]]
 name = "basic_env"

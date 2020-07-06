@@ -19,17 +19,14 @@ pub(crate) struct AnonRc {
 
 impl AnonRc {
     /// Construct a new `AnonArc` from the provided value.
-    pub fn new<T: Debug + 'static>(
-        inner: T,
-        location: &'static Location<'static>,
-        depth: u32,
-    ) -> Self {
+    #[track_caller]
+    pub fn new<T: Debug + 'static>(inner: T, depth: u32) -> Self {
         let inner = Rc::new(inner);
         Self {
             name: type_name::<T>(),
             id: TypeId::of::<T>(),
             debug: inner.clone(),
-            location,
+            location: Location::caller(),
             inner,
             depth,
         }

@@ -139,7 +139,6 @@ use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     mem::replace,
     ops::Deref,
-    panic::Location,
 };
 
 /// Defines required `illicit::get` values for a function. Binds the provided
@@ -215,7 +214,6 @@ thread_local! {
     /// The current dynamic scope.
     static CURRENT_SCOPE: RefCell<Layer> = RefCell::new(Layer {
             depth: 0,
-            location: Location::caller(),
             values: Default::default(),
         }
     );
@@ -307,7 +305,7 @@ pub fn hide<E: 'static>() {
         let mut without_e = env.values.clone();
         let excluded_ty = TypeId::of::<E>();
         without_e.retain(|(ty, _)| ty != &excluded_ty);
-        *env = Layer { values: without_e, depth: env.depth, location: env.location };
+        *env = Layer { values: without_e, depth: env.depth };
     })
 }
 
@@ -347,7 +345,6 @@ pub fn hide<E: 'static>() {
 #[derive(Clone)]
 pub struct Layer {
     depth: u32,
-    location: &'static Location<'static>,
     values: Vec<(TypeId, AnonRc)>,
 }
 
@@ -380,7 +377,7 @@ impl Layer {
             values = current.values.clone();
         });
 
-        Self { values, depth, location: std::panic::Location::caller() }
+        Self { values, depth }
     }
 
     /// Adds the new item and returns the modified layer.
@@ -389,11 +386,12 @@ impl Layer {
     /// to display the contents of the illicit environment. It must also satisfy
     /// the `'static` lifetime because [`get`] is unable to express any
     /// lifetime constraints at its callsite.
+    #[track_caller]
     pub fn offer<E>(mut self, v: E) -> Self
     where
         E: Debug + 'static,
     {
-        let anon = AnonRc::new(v, self.location, self.depth);
+        let anon = AnonRc::new(v, self.depth);
         let existing = self.values.iter_mut().find(|(id, _)| *id == anon.id());
 
         if let Some((_, existing)) = existing {
@@ -423,13 +421,16 @@ impl Layer {
 
 impl Debug for Layer {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let env_w_loc = format!("Env @ {}", self.location);
-
-        let mut f = f.debug_struct(&env_w_loc);
+        let is_alternate = f.alternate();
+        let mut s = f.debug_struct("Layer");
         for (ty, anon) in self.values.iter().map(|(_, v)| (v.ty(), v)).collect::<BTreeMap<_, _>>() {
-            f.field(ty, anon.debug());
+            if is_alternate {
+                s.field(ty, &(anon.debug(), anon.location()));
+            } else {
+                s.field(ty, anon.debug());
+            }
         }
-        f.finish()
+        s.finish()
     }
 }
 
@@ -463,7 +464,7 @@ impl std::panic::RefUnwindSafe for Layer {}
 ///     assert_eq!(*illicit::expect::<u16>(), 5);
 /// });
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Snapshot {
     current: Layer,
 }
@@ -477,14 +478,6 @@ impl Snapshot {
         current.values.sort_by_key(|(_, anon)| anon.depth());
 
         Snapshot { current }
-    }
-}
-
-impl Debug for Snapshot {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_list()
-            .entries(self.current.values.iter().map(|(_, a)| (a.location(), a.debug())))
-            .finish()
     }
 }
 
@@ -504,7 +497,7 @@ impl GetFailed {
 impl Display for GetFailed {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         f.write_fmt(format_args!(
-            "expected a `{}` from the environment, did not find it in current env: {:#?}",
+            "expected a `{}` from the environment, did not find it in current env: {:?}",
             self.looked_up, &self.current_snapshot,
         ))
     }
@@ -513,6 +506,7 @@ impl Display for GetFailed {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::{assert_display_snapshot, assert_snapshot};
 
     #[test]
     fn child_env_replaces_parent_env_values() {
@@ -580,14 +574,17 @@ mod tests {
 
     #[test]
     fn failure_error() {
-        let message = if let Err(e) = get::<u8>() {
-            e.to_string()
+        if let Err(e) = get::<u8>() {
+            assert_display_snapshot!(e);
         } else {
             panic!("got a u8 from the environment when we shouldn't have");
-        };
-        assert_eq!(
-            &message,
-            "expected a `u8` from the environment, did not find it in current env: []"
-        );
+        }
+    }
+
+    #[test]
+    fn layer_debug_impl() {
+        let snapshot = Layer::new().offer(1u8).enter(Snapshot::get);
+        // assert_debug_snapshot adds #, which prints file paths, which breaks snapshots
+        assert_snapshot!(format!("{:?}", snapshot));
     }
 }
