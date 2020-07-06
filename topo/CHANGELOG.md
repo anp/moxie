@@ -6,6 +6,24 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.11.0] - 2020-07-06
+
+### Added
+
+- `cache::Hashed` holds a query key and its hash for later storage.
+
+### Changed
+
+- `cache::{Cache, LocalCache}::get_if_arg_eq_input` now returns `Err(Hashed)` rather than `None`
+  when a lookup fails. The `store` function on both types now requires that `Hashed` to be passed
+  when inserting new input & output.
+- Cache contents are GC'd in a single loop, previously there were two iterations over each
+  namespace.
+
+### Fixed
+
+- This release removes the last "known redundant" work in the cache API.
+
 ## [0.10.0] - 2020-07-05
 
 ### Fixed
