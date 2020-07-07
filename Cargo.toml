@@ -20,7 +20,7 @@ futures = "0.3.5"
 illicit = { path = "illicit", version = "1" }
 parking_lot = "0.11"
 scopeguard = "1"
-topo = { path = "topo", version = "0.11.0"}
+topo = { path = "topo", version = "0.12.0"}
 tracing = "^0.1"
 
 
