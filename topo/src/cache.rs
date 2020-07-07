@@ -63,7 +63,7 @@
 //! ```
 
 use downcast_rs::{impl_downcast, Downcast};
-use hash_hasher::HashedMap;
+use hash_hasher::HashBuildHasher;
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
@@ -76,6 +76,7 @@ use std::{
     cmp::Eq,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
+    marker::PhantomData,
     rc::Rc,
     sync::Arc,
 };
@@ -128,7 +129,7 @@ inserted with [`" stringify!($name) "::store`] or read with
 pub struct $name {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
     /// `TypeIds` which come pre-hashed courtesy of rustc.
-    inner: HashedMap<TypeId, Box<dyn Gc $(+ $bound)?>>,
+    inner: HashMap<TypeId, Box<dyn Gc $(+ $bound)?>, HashBuildHasher>,
 }}
 
 impl $name {
@@ -136,13 +137,13 @@ impl $name {
     /// previously-stored `Input`. If a reference is returned, the stored input/output
     /// is marked live and will not be GC'd the next call.
     ///
-    /// If no reference is found, the original hash of the query key is returned to be reused for
-    /// storing.
+    /// If no reference is found, the hashes of the query type and the provided key are returned
+    /// to be reused when storing a value.
     pub fn get_if_arg_eq_prev_input<'k, Key, Scope, Arg, Input, Output>(
         &mut self,
         key: &'k Key,
         arg: &Arg,
-    ) -> Result<&Output, Hashed<&'k Key>>
+    ) -> Result<&Output, (Query<Scope, Input, Output>, Hashed<&'k Key>)>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -150,14 +151,15 @@ impl $name {
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut::<Scope, Input, Output>().get_if_input_eq(key, arg)
+        let query = Query::new(self.inner.hasher());
+        self.get_namespace_mut(&query).get_if_input_eq(key, arg).map_err(|h| (query, h))
     }
 
     /// Stores the input/output of a query which will not be GC'd at the next call.
     /// Call `get_if_arg_eq_prev_input` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        key: Hashed<&Key>,
+        (query, key): (Query<Scope, Input, Output>, Hashed<&Key>),
         input: Input,
         output: Output,
     ) where
@@ -166,10 +168,13 @@ impl $name {
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        self.get_namespace_mut().store(key, input, output);
+        self.get_namespace_mut(&query).store(key, input, output);
     }
 
-    fn get_namespace_mut<Scope, Input, Output>(&mut self) -> &mut Namespace<Scope, Input, Output>
+    fn get_namespace_mut<Scope, Input, Output>(
+        &mut self,
+        query: &Query<Scope, Input, Output>,
+    ) -> &mut Namespace<Scope, Input, Output>
     where
         Scope: 'static + Eq + Hash $(+ $bound)?,
         Input: 'static $(+ $bound)?,
@@ -177,8 +182,11 @@ impl $name {
     {
         let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
             .inner
-            .entry(TypeId::of::<(Scope, Input, Output)>())
-            .or_insert_with(|| Box::new(Namespace::<Scope, Input, Output>::make()));
+            .raw_entry_mut()
+            .from_hash(query.hash, |t| t == &query.ty())
+            .or_insert_with(|| {
+                (query.ty(), query.make_namespace())
+            }).1;
         gc.as_any_mut().downcast_mut().unwrap()
     }
 
@@ -344,6 +352,38 @@ struct Namespace<Scope, Input, Output> {
     inner: HashMap<Scope, (Liveness, Input, Output)>,
 }
 
+/// A query type that was hashed as part of an initial lookup and which can be
+/// used to store fresh values back to the cache.
+pub struct Query<Scope, Input, Output> {
+    ty: PhantomData<(Scope, Input, Output)>,
+    hash: u64,
+}
+
+impl<Scope, Input, Output> Query<Scope, Input, Output>
+where
+    Scope: 'static,
+    Input: 'static,
+    Output: 'static,
+{
+    fn new(build: &impl BuildHasher) -> Self {
+        // this is a bit unrustic but it lets us keep the typeid defined in a *single*
+        // place
+        let mut new = Query { ty: PhantomData, hash: 0 };
+        let mut hasher = build.build_hasher();
+        new.ty().hash(&mut hasher);
+        new.hash = hasher.finish();
+        new
+    }
+
+    fn make_namespace(&self) -> Box<Namespace<Scope, Input, Output>> {
+        Box::new(Namespace { inner: Default::default() })
+    }
+
+    fn ty(&self) -> TypeId {
+        TypeId::of::<(Scope, Input, Output)>()
+    }
+}
+
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
 #[derive(Clone, Copy, Debug)]
@@ -358,10 +398,6 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn make() -> Self {
-        Self { inner: Default::default() }
-    }
-
     fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key>
     where
         Key: Hash + ?Sized,

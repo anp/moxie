@@ -6,6 +6,13 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.12.0] - 2020-07-06
+
+### Changed
+
+- Return type of `cache::{Cache, LocalCache}::get_if_arg_eq_prev_input` also returns hash of the
+  query type, and `cache::{Cache, LocalCache}::store` requires it.
+
 ## [0.11.0] - 2020-07-06
 
 ### Added
@@ -14,9 +21,9 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 ### Changed
 
-- `cache::{Cache, LocalCache}::get_if_arg_eq_input` now returns `Err(Hashed)` rather than `None`
-  when a lookup fails. The `store` function on both types now requires that `Hashed` to be passed
-  when inserting new input & output.
+- `cache::{Cache, LocalCache}::get_if_arg_eq_prev_input` now returns `Err(Hashed)` rather than
+  `None` when a lookup fails. The `store` function on both types now requires that `Hashed` to be
+  passed when inserting new input & output.
 - Cache contents are GC'd in a single loop, previously there were two iterations over each
   namespace.
 
