@@ -1,4 +1,3 @@
-use cargo_metadata::Package;
 use dialoguer::{Confirm, Select};
 use failure::Error;
 use gumdrop::Options;
@@ -40,7 +39,7 @@ impl Versions {
                 }
             }
 
-            let new_version = prompt_for_new_version(&moxie_crate)?;
+            let new_version = prompt_for_new_version(&moxie_crate.name, &moxie_crate.version)?;
 
             if new_version != moxie_crate.version {
                 updates.push((moxie_crate, new_version, workspace.local_dependents(&id)));
@@ -148,39 +147,42 @@ fn update_dependency_version<'doc>(
     true
 }
 
-fn prompt_for_new_version(krate: &Package) -> Result<Version, Error> {
-    let set_prerelease = |mut v: Version| {
+fn prompt_for_new_version(name: &str, version: &Version) -> Result<Version, Error> {
+    let with_prerelease = |v: &Version| {
+        let mut v = v.clone();
         v.pre = vec![semver::Identifier::AlphaNumeric(String::from("pre"))];
         v
     };
 
-    let mut options = vec![krate.version.clone()];
+    let mut options = vec![version.clone()];
 
-    options.push({
-        let mut patched = krate.version.clone();
-        patched.increment_patch();
-        set_prerelease(patched)
-    });
-    options.push({
-        let mut minored = krate.version.clone();
-        minored.increment_minor();
-        set_prerelease(minored)
-    });
-    options.push({
-        let mut majored = krate.version.clone();
-        majored.increment_major();
-        set_prerelease(majored)
-    });
-    options.push({
-        let mut promoted = krate.version.clone();
-        promoted.pre = vec![];
-        promoted
-    });
+    if !version.pre.is_empty() {
+        options.push({
+            let mut promoted = version.clone();
+            promoted.pre = vec![];
+            promoted
+        });
+    }
+
+    let mut patched = version.clone();
+    patched.increment_patch();
+    options.push(with_prerelease(&patched));
+    options.push(patched);
+
+    let mut minored = version.clone();
+    minored.increment_minor();
+    options.push(with_prerelease(&minored));
+    options.push(minored);
+
+    let mut majored = version.clone();
+    majored.increment_major();
+    options.push(with_prerelease(&majored));
+    options.push(majored);
 
     let selection = Select::new()
         .items(&options)
         .default(0)
-        .with_prompt(format!("new version for `{}` (default no change)", krate.name))
+        .with_prompt(format!("new version for `{}` (default no change)", name))
         .interact()?;
 
     Ok(options[selection].clone())
