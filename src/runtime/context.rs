@@ -1,5 +1,6 @@
 use super::{Revision, Var};
 use crate::{Commit, Key};
+use dyn_cache::SharedLocalCache;
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
     borrow::Borrow,
@@ -8,7 +9,6 @@ use std::{
     rc::Rc,
     task::{Poll, Waker},
 };
-use topo::cache::SharedLocalCache;
 
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
 /// contexts and provides access to the current revision, cache storage,

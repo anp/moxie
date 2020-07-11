@@ -19,17 +19,38 @@ watch --clear
     -x clippy-core
     -x test-core
     -x test-core-doc
-    -x docs-clean
     -x docs-all
 """
 
-bench-core = "bench --all-targets --package illicit --package moxie --package topo --package mox"
-clippy-core = "clippy --package illicit --package moxie --package topo --package topo-macro --package mox"
-test-core = "test --all-targets --package illicit --package moxie --package topo --package topo-macro --package mox"
-test-core-doc = "test --doc --package illicit --package moxie --package topo --package topo-macro --package mox"
+clippy-core = """clippy
+--package dyn-cache
+--package illicit
+--package illicit-macro
+--package mox
+--package moxie
+--package topo
+--package topo-macro
+"""
+test-core = """test --all-targets
+--package dyn-cache
+--package illicit
+--package illicit-macro
+--package mox
+--package moxie
+--package topo
+--package topo-macro
+"""
+test-core-doc = """test --doc
+--package dyn-cache
+--package illicit
+--package illicit-macro
+--package mox
+--package moxie
+--package topo
+--package topo-macro
+"""
 
 docs-all = "doc --workspace --no-deps --all-features"
-docs-clean = "clean --doc"
 
 build-times = "build --workspace --all-targets --all-features -Z timings"
 

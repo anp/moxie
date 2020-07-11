@@ -1,15 +1,9 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! `topo` provides stable callgraph identifiers and query caching for
-//! implementing higher level [Incremental Computing] abstractions like
-//! those in the [moxie](https://docs.rs/moxie) crate.
-//!
-//! # Cache storage
-//!
-//! Reusing the results from prior computations is a central aspect of
-//! incremental computation and can be viewed as a [caching problem].
-//! See the [`cache`] module for what this crate provides.
+//! `topo` provides stable callgraph identifiers for implementing higher
+//! level [Incremental Computing] abstractions like those in the
+//! [moxie](https://docs.rs/moxie) crate.
 //!
 //! # Scoping queries with [`CallId`]s
 //!
@@ -78,7 +72,7 @@
 //! assert_ne!(bob, alice_hello);
 //! ```
 //!
-//! Internally, slots are interned in a global cache.
+//! Internally, slots are interned in a global [`dyn-cache`].
 //!
 //! [Incremental Computing]: https://en.wikipedia.org/wiki/Incremental_computing
 //! [caching problem]: https://en.wikipedia.org/wiki/Cache_(computing)
@@ -141,7 +135,6 @@ pub use topo_macro::nested;
 use slot::{OpaqueSlot, Slot};
 use std::{borrow::Borrow, cell::RefCell, hash::Hash, panic::Location};
 
-pub mod cache;
 mod slot;
 
 /// Calls the provided function as a child of [`CallId::current`], using for a

@@ -19,12 +19,12 @@ mod context;
 mod runloop;
 mod var;
 
+use dyn_cache::SharedLocalCache;
 use futures::{
     future::LocalFutureObj,
     task::{noop_waker, LocalSpawn, SpawnError},
 };
 use std::{rc::Rc, task::Waker};
-use topo::cache::SharedLocalCache;
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;

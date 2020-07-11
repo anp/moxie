@@ -1,4 +1,4 @@
-use crate::cache::Cache;
+use dyn_cache::Cache;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::{
