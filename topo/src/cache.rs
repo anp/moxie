@@ -465,12 +465,13 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn gc(&mut self) {
+    fn gc(&mut self) -> Liveness {
         self.inner.retain(|_, (l, _, _)| {
             let is_alive = *l == Liveness::Live;
             *l = Liveness::Dead;
             is_alive
         });
+        Liveness::Live // no reason to throw away the allocations behind namespaces afaict
     }
 }
 
@@ -491,8 +492,9 @@ where
 
 /// A type which can contain values of varying liveness.
 trait Gc: Downcast + Debug {
-    /// Remove dead entries.
-    fn gc(&mut self);
+    /// Remove dead entries, returning the container's own status after doing
+    /// so.
+    fn gc(&mut self) -> Liveness;
 }
 
 impl_downcast!(Gc);
