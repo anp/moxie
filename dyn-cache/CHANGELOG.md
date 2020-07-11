@@ -10,6 +10,7 @@ invocations.
 ### Added
 
 - Crate extracted from `topo::cache` module.
+- `{LocalCache,SendCache}::cache` wraps `cache_with` for types that impl `Clone`.
 
 ### Changed
 

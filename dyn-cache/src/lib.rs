@@ -21,7 +21,7 @@
 //!
 //! These variants are wrapped with reference counting and synchronization and
 //! are used by calling [`SharedSendCache::cache_with`] or
-//! [`SharedLocalCache::cache_with`].
+//! [`SharedLocalCache::cache`].
 //!
 //! # Scopes
 //!
@@ -348,10 +348,12 @@ impl Default for $shared {
 }
 
 impl $shared {
-    /// Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes. Always
-    /// runs `with` on the stored `Output` before returning the result.
-    ///
-    /// See the [moxie](https://docs.rs/moxie) crate for ergonomic wrappers.
+doc_comment!{r"
+Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes. Always
+runs `with` on the stored `Output` before returning the result.
+
+See [`" stringify!($shared) "::cache`] for an ergonomic wrapper that requires `Output: Clone`.
+"=>
     pub fn cache_with<Key, Scope, Arg, Input, Output, Ret>(
         &self,
         key: &Key,
@@ -377,7 +379,30 @@ impl $shared {
         let to_return = with(&to_store);
         self.inner.$acquire().store(hashed, arg, to_store);
         to_return
-    }
+    }}
+
+doc_comment!{r"
+Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes. Clones
+the cached output before returning the result.
+
+See [`" stringify!($shared) "::cache_with`] for a lower-level version which does not require
+`Output: Clone`.
+"=>
+    pub fn cache<Key, Scope, Arg, Input, Output>(
+        &self,
+        key: &Key,
+        arg: &Arg,
+        init: impl FnOnce(&Input) -> Output,
+    ) -> Output
+    where
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
+        Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
+        Input: 'static + Borrow<Arg> $(+ $bound)?,
+        Output: 'static + Clone $(+ $bound)?,
+    {
+        self.cache_with(key, arg, init, Clone::clone)
+    }}
 
 doc_comment!{"
 Forwards to [`" stringify!($cache) "::gc`].

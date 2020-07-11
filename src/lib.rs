@@ -133,7 +133,7 @@ where
     Input: Borrow<Arg> + 'static,
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(&CallId::current(), arg, init, Clone::clone)
+    rt.cache.cache(&CallId::current(), arg, init)
 }
 
 /// Runs the provided expression once per [`topo::CallId`]. The provided value
@@ -145,7 +145,7 @@ pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
 {
-    rt.cache.cache_with(&CallId::current(), &(), |()| expr(), Clone::clone)
+    rt.cache.cache(&CallId::current(), &(), |()| expr())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
