@@ -371,8 +371,8 @@ mod $test_mod {
         call_count.set(0);
 
         let rerun_b = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
-        assert_eq!(rerun_b , 1, "returns the cached value");
-        assert_eq!(call_count.get(), 0, "without running increment_count");
+        assert_eq!(rerun_b , 1);
+        assert_eq!(call_count.get(), 0);
 
         storage.gc();
         // 'b' is not refreshed before we call gc again
@@ -381,6 +381,39 @@ mod $test_mod {
         let again = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
         assert_eq!(again, 1);
         assert_eq!(call_count.get(), 1);
+    }
+
+    #[test]
+    fn distinct_scopes_distinct_storage() {
+        let storage = $shared::default();
+        let call_count = std::cell::Cell::new(0);
+        let increment_count = |&to_add: &i32| {
+            let new_count = call_count.get() + to_add;
+            call_count.set(new_count);
+            new_count
+        };
+
+        assert_eq!(call_count.get(), 0);
+
+        let a_with_1 = storage.cache_with(&'a', &1, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 1);
+        assert_eq!(call_count.get(), a_with_1);
+
+        let b_with_1 = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 2);
+        assert_eq!(call_count.get(), b_with_1);
+
+        let a_with_1_again = storage.cache_with(&'a', &1, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 2, "untouched");
+        assert_eq!(a_with_1_again, a_with_1, "cached");
+
+        let with_a_2 = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 4);
+        assert_eq!(call_count.get(), with_a_2);
+
+        let with_a_2_again = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 4);
+        assert_eq!(with_a_2_again, with_a_2);
     }
 }
     };
