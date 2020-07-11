@@ -1,4 +1,4 @@
-use dyn_cache::Cache;
+use dyn_cache::SendCache;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::{
@@ -10,7 +10,7 @@ use std::{
     marker::PhantomData,
 };
 
-static TOKENS: Lazy<Mutex<Cache>> = Lazy::new(|| Mutex::new(Cache::default()));
+static TOKENS: Lazy<Mutex<SendCache>> = Lazy::new(|| Mutex::new(SendCache::default()));
 
 /// A unique identifer in the global cache. Each type can have
 /// [`std::u32::MAX`] unique values cached. Constructed with [`Token::make`],

@@ -420,10 +420,10 @@ mod $test_mod {
 }
 
 define_cache!(LocalCache, Rc, RefCell::borrow_mut);
-define_cache!(Cache: Send, Arc, Mutex::lock);
+define_cache!(SendCache: Send, Arc, Mutex::lock);
 
-/// A query type that was hashed as part of an initial lookup and which can be
-/// used to store fresh values back to the cache.
+/// The type of a dynamic cache query, used to shard storage in a fashion
+/// similar to `anymap` or `typemap`.
 pub struct Query<Scope, Input, Output> {
     ty: PhantomData<(Scope, Input, Output)>,
     hash: u64,

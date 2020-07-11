@@ -10,3 +10,7 @@ invocations.
 ### Added
 
 - Crate extracted from `topo::cache` module.
+
+### Changed
+
+- Rename `Cache`/`SharedCache` to `SendCache`/`SharedSendCache`.
