@@ -97,6 +97,7 @@ macro_rules! define_cache {
 paste::item! {
     define_cache! {@
         $cache $(: $bound)?,
+        [<$cache:snake _tests>],
         [<Shared $cache>],
         $($rest)*
     }
@@ -104,6 +105,7 @@ paste::item! {
     };
     (@
         $cache:ident $(: $bound:ident)?,
+        $test_mod:ident,
         $shared:ident,
         $refct:ident,
         $lock:ident :: $acquire:ident
@@ -344,6 +346,43 @@ impl From<$cache> for $shared {
 
 impl std::panic::UnwindSafe for $shared {}
 impl std::panic::RefUnwindSafe for $shared {}
+
+#[cfg(test)]
+mod $test_mod {
+    use super::*;
+
+    #[test]
+    fn single_query_with_gc() {
+        let storage = $shared::default();
+        let call_count = std::cell::Cell::new(0);
+        let increment_count = |&to_add: &i32| {
+            let new_count = call_count.get() + to_add;
+            call_count.set(new_count);
+            new_count
+        };
+
+        assert_eq!(call_count.get(), 0);
+
+        let with_b = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+        assert_eq!(call_count.get(), 1);
+        assert_eq!(call_count.get(), with_b);
+
+        storage.gc(); // won't drop any values, but sets all of the cached values to be dropped
+        call_count.set(0);
+
+        let rerun_b = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+        assert_eq!(rerun_b , 1, "returns the cached value");
+        assert_eq!(call_count.get(), 0, "without running increment_count");
+
+        storage.gc();
+        // 'b' is not refreshed before we call gc again
+        storage.gc();
+
+        let again = storage.cache_with(&'b', &1, &increment_count, Clone::clone);
+        assert_eq!(again, 1);
+        assert_eq!(call_count.get(), 1);
+    }
+}
     };
 }
 
