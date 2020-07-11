@@ -17,87 +17,41 @@
         <header class="header">
             <img src="assets/logo.png" alt="moxie logo" height="150" />
             <h1>moxie</h1>
-            <p>a lightweight platform-agnostic declarative UI runtime, written in rust</p>
             <p>
-                <a href="#web">web</a> |
-                <a href="#xplat">xplat</a> |
-                <a href="#book">book</a> |
                 <a href="#repo">repo</a> |
+                <a href="#xplat">xplat</a> |
+                <a href="#web">web</a> |
                 <a href="#related">related</a> |
                 <a href="#chat">chat</a>
             </p>
+            <p>
+                a lightweight platform-agnostic interactive runtime, written in rust, aiming to
+                empower anyone to build efficient and robust interactive software for humans.
+            </p>
         </header>
 
-        <h5 align="middle" id="web">web crates</h5>
-
-        <h2>
-            moxie-dom
-            <a href="target/doc/moxie_dom/index.html">
-                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="moxie-dom main branch docs badge"
-                    align="right" />
-            </a>
-            <a href="https://docs.rs/moxie-dom">
-                <img src="https://docs.rs/moxie-dom/badge.svg" alt="moxie-dom docs badge" align="right" />
-            </a>
-            <a href="https://crates.io/crates/moxie-dom">
-                <img src="https://img.shields.io/crates/v/moxie-dom?color=steelblue" alt="moxie-dom version badge"
-                    align="right" />
-            </a>
+        <h2 align="end" id="repo">
+            repository
         </h2>
+        <div align="end">
+            <img src="https://img.shields.io/crates/l/moxie?color=steelblue" alt="license badge" />
+            <a href="https://codecov.io/gh/anp/moxie">
+                <img src="https://codecov.io/gh/anp/moxie/branch/main/graph/badge.svg" />
+            </a>
+        </div>
+
         <p>
-            a WebAssembly-based library for describing the web's DOM using moxie
+            the project is <a href="https://github.com/anp/moxie">hosted on github</a>.
+        </p>
+        <p>
+            both the repo and the project chat (below) are covered by an actively enforced
+            <a href="https://github.com/anp/moxie/blob/main/CODE_OF_CONDUCT.md">code of
+                conduct.</a>
         </p>
 
-        <h3>(toy) examples</h3>
-        <ul>
-            <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
-            <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
-            <li>
-                <a href="https://github.com/anp/moxie/blob/main/dom/examples/ssr">
-                    server-side rendering
-                </a>
-            </li>
-        </ul>
-
-        <h2>
-            augdom
-            <a href="target/doc/augdom/index.html">
-                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="augdom main branch docs badge"
-                    align="right" />
-            </a>
-            <a href="https://docs.rs/augdom">
-                <img src="https://docs.rs/augdom/badge.svg" alt="augdom docs badge" align="right" />
-            </a>
-            <a href="https://crates.io/crates/augdom">
-                <img src="https://img.shields.io/crates/v/augdom?color=steelblue" alt="augdom version badge"
-                    align="right" />
-            </a>
-        </h2>
-        <p>
-            provides an "augmented DOM" implementation that can run almost anywhere Rust can.
-            compiles as either a thin wrapper around web-sys or a DOM emulation layer written in
-            pure Rust which can be used for testing or to render HTML strings.
-        </p>
-
-        <h2>
-            raf
-            <a href="target/doc/raf/index.html">
-                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="raf main branch docs badge"
-                    align="right" />
-            </a>
-            <a href="https://docs.rs/raf">
-                <img src="https://docs.rs/raf/badge.svg" alt="raf docs badge" align="right" />
-            </a>
-            <a href="https://crates.io/crates/raf">
-                <img src="https://img.shields.io/crates/v/raf?color=steelblue" alt="raf version badge" align="right" />
-            </a>
-        </h2>
-        <p>
-            runs an event loop in the browser using requestAnimationFrame
-        </p>
-
-        <h5 align="middle" id="xplat">platform-agnostic crates</h5>
-        <h2>
+        <hr/>
+        <h2 align="right" id="xplat">platform-agnostic crates</h2>
+        <h3>
             moxie
             <a href="target/doc/moxie/index.html">
                 <img src="https://img.shields.io/badge/docs-main-steelblue" alt="moxie main branch docs badge"
@@ -110,18 +64,41 @@
                 <img src="https://img.shields.io/crates/v/moxie?color=steelblue" alt="moxie version badge"
                     align="right" />
             </a>
-        </h2>
+        </h3>
         <p>
-            offers memoization and runtime-coordinated mutable state for presenting interactive
-            interfaces. no platform framework dependencies.
+            interactive presentation runtime without platform dependencies. wraps an event loop to
+            provide repetitive code with incremental caching & memoization.
+        </p>
+        <p>
+            the cache holds mutable state variables whose updates wake the runtime to update
+            the presented interface, allowing an interface's code to run only when meaningful
+            updates are observed.
+        </p>
+        <p>
+            state variables handle events & callbacks and as such are also a natural
+            interface between loading arbitrary futures and user-defined presentation
+            logic. moxie integrates with any async runtime that can spawn local tasks.
         </p>
 
+        <h3>
+            mox
+            <a href="target/doc/mox/index.html">
+                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="mox main branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/mox">
+                <img src="https://docs.rs/mox/badge.svg" alt="mox docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/mox">
+                <img src="https://img.shields.io/crates/v/mox?color=steelblue" alt="mox version badge"
+                    align="right" />
+            </a>
+        </h3>
         <p>
-            includes the <code>mox!</code> macro, a Mockery Of XML. express nested function calls
-            and builder instantiation using XML-lite syntax
+            a Mockery Of XML. express builder instantiation using XML-lite syntax similar to JSX.
         </p>
 
-        <h2>
+        <h3>
             topo
             <a href="target/doc/topo/index.html">
                 <img src="https://img.shields.io/badge/docs-main-steelblue" alt="topo main branch docs badge"
@@ -134,14 +111,15 @@
                 <img src="https://img.shields.io/crates/v/topo?color=steelblue" alt="topo version badge"
                     align="right" />
             </a>
-        </h2>
+        </h3>
         <p>
             create trees of stable identifiers for repeated nested function invocations. allows
             later calls to "rendezvous" with the results of previous calls at the same location in
-            the tree.
+            the tree. this graph of runtime identifiers is implemented atop a low-level query cache
+            for arbitrary Rust functions.
         </p>
 
-        <h2>
+        <h3>
             illicit
             <a href="target/doc/illicit/index.html">
                 <img src="https://img.shields.io/badge/docs-main-steelblue" alt="illicit main branch docs badge"
@@ -154,35 +132,81 @@
                 <img src="https://img.shields.io/crates/v/illicit?color=steelblue" alt="illicit version badge"
                     align="right" />
             </a>
-        </h2>
-        <p>type-indexed scoped-singletons, implicitly propagated as nested environments</p>
+        </h3>
+        <p>thread-local implicit nested context singletons, indexed by type</p>
+
+
+        <h2 align="end" id="web">web crates</h2>
+
+        <h3>
+            moxie-dom
+            <a href="target/doc/moxie_dom/index.html">
+                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="moxie-dom main branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/moxie-dom">
+                <img src="https://docs.rs/moxie-dom/badge.svg" alt="moxie-dom docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/moxie-dom">
+                <img src="https://img.shields.io/crates/v/moxie-dom?color=steelblue" alt="moxie-dom version badge"
+                    align="right" />
+            </a>
+        </h3>
+        <p>
+            a strongly-typed, WebAssembly-compatible library for incrementally describing the web's
+            DOM using moxie. supports server-side rendering using augdom's HTML DOM emulation.
+        </p>
+
+        <h4>(toy) examples</h4>
+        <ul>
+            <li><a href="dom/examples/hacking/index.html">DOM hacking</a></li>
+            <li><a href="dom/examples/todo/index.html">TodoMVC</a></li>
+            <li>
+                <a href="https://github.com/anp/moxie/blob/main/dom/examples/ssr">
+                    server-side rendering
+                </a>
+            </li>
+        </ul>
+
+        <h3>
+            augdom
+            <a href="target/doc/augdom/index.html">
+                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="augdom main branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/augdom">
+                <img src="https://docs.rs/augdom/badge.svg" alt="augdom docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/augdom">
+                <img src="https://img.shields.io/crates/v/augdom?color=steelblue" alt="augdom version badge"
+                    align="right" />
+            </a>
+        </h3>
+        <p>
+            provides an "augmented DOM" implementation that can run almost anywhere Rust can.
+            compiles as either a thin wrapper around web-sys or a DOM emulation layer written in
+            pure Rust which can be used for testing or to render HTML strings.
+        </p>
+
+        <h3>
+            raf
+            <a href="target/doc/raf/index.html">
+                <img src="https://img.shields.io/badge/docs-main-steelblue" alt="raf main branch docs badge"
+                    align="right" />
+            </a>
+            <a href="https://docs.rs/raf">
+                <img src="https://docs.rs/raf/badge.svg" alt="raf docs badge" align="right" />
+            </a>
+            <a href="https://crates.io/crates/raf">
+                <img src="https://img.shields.io/crates/v/raf?color=steelblue" alt="raf version badge" align="right" />
+            </a>
+        </h3>
+        <p>
+            runs an event loop in the browser using requestAnimationFrame
+        </p>
 
         <hr />
-
-        <h2 id="book">book</h2>
-
-        <p>
-            the <strong><a href="book/pkg/index.html">book</a></strong> covers project values,
-            general concepts, information for contributors, etc.
-        </p>
-        <p>it's a work in progress and very incomplete today.</p>
-
-        <h2 id="repo">
-            repository
-            <img src="https://img.shields.io/crates/l/moxie?color=steelblue" alt="license badge" />
-            <a href="https://codecov.io/gh/anp/moxie">
-                <img src="https://codecov.io/gh/anp/moxie/branch/main/graph/badge.svg" />
-            </a>
-        </h2>
-
-        <p>
-            the project is <a href="https://github.com/anp/moxie">hosted on github</a>. both the
-            repo and the project chat (below) are covered by an actively enforced
-            <a href="https://github.com/anp/moxie/blob/main/CODE_OF_CONDUCT.md">code of
-                conduct.</a>
-        </p>
-
-        <h2 id="related">related projects</h2>
+        <h2 align="end" id="related">related projects</h2>
 
         <h3><a href="https://github.com/tiffany352/moxie-native">moxie-native</a></h3>
         <p>
@@ -193,9 +217,10 @@
             small footprint" and is "targeted towards real world desktop applications."
         </p>
 
-        <h2 id="chat">chat</h2>
+        <hr/>
+        <h2 align="end" id="chat">chat</h2>
 
-        <iframe src="https://discordapp.com/widget?id=590930607396093971&theme=dark" width="350" height="500"
+        <iframe align="right" src="https://discordapp.com/widget?id=590930607396093971&theme=dark" width="350" height="500"
             allowtransparency="true" frameborder="0">
         </iframe>
     </div>

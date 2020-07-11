@@ -8,13 +8,12 @@
 
 ## More Information
 
-For more information about the moxie project, see the [website](https://moxie.rs) or the
-[book](https://moxie.rs/book/pkg/index.html).
+For more information about the moxie project, see the [website](https://moxie.rs).
 
 ## Contributing and Code of Conduct
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for overall contributing info and [CONDUCT.md](CODE_OF_CONDUCT.md)
-for the project's Code of Conduct. The project is still very early in its lifecycle but we welcome
+for the project's Code of Conduct. The project is still early in its lifecycle but we welcome
 anyone interested in getting involved.
 
 ## License
