@@ -1,0 +1,21 @@
+[package]
+name = "dyn-cache"
+version = "0.10.0"
+description = "Query cache indexed by type."
+categories = ["caching", "rust-patterns"]
+keywords = ["incremental", "memoize", "intern"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
+
+[dependencies]
+downcast-rs = "1.1.1"
+hash_hasher = "2.0.3"
+hashbrown = "0.8.0"
+parking_lot = "0.11.0"
+paste = "0.1.18"

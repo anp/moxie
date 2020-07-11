@@ -1,11 +1,11 @@
 //! Caches for storing the results of repeated queries.
 //!
 //! Every query to a cache has a "scope" by which it is namespaced. The types in
-//! this module cache queries which have arbitrary scope types, storing one
+//! this crate cache queries which have arbitrary scope types, storing one
 //! input value and one ouput value per scope:
 //!
 //! ```
-//! let storage = topo::cache::SharedLocalCache::default();
+//! let storage = dyn_cache::SharedLocalCache::default();
 //! let count = std::cell::Cell::new(0);
 //! let increment = |n| {
 //!     storage.cache_with(
@@ -226,7 +226,7 @@ API in [`" stringify!($shared) "::cache_with`].
 # Example
 
 ```
-let storage = topo::cache::" stringify!($shared) r#"::default();
+let storage = dyn_cache::" stringify!($shared) r#"::default();
 let call_count = std::cell::Cell::new(0);
 let increment_count = |&to_add: &i32| {
     let new_count = call_count.get() + to_add;
