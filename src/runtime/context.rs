@@ -39,12 +39,9 @@ impl Context {
         Input: Borrow<Arg> + 'static,
         Output: 'static,
     {
-        let var = self.cache.cache_with(
-            id,
-            arg,
-            |arg| Var::new(topo::CallId::current(), self.waker.clone(), init(arg)),
-            Clone::clone,
-        );
+        let var = self
+            .cache
+            .cache(id, arg, |arg| Var::new(topo::CallId::current(), self.waker.clone(), init(arg)));
         Var::root(var)
     }
 
