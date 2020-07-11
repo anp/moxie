@@ -1,6 +1,4 @@
-//! Caches for storing the results of repeated [`Query`]s. The type of a
-//! [`Query`] is determined by the types of its "scope" and its inputs and
-//! outputs.
+//! Caches for storing the results of repeated function calls.
 //!
 //! There are two main flavors of cache available for use in this crate:
 //!
@@ -12,7 +10,7 @@
 //! These "inner" caches require mutable access to call their functions like
 //! [`LocalCache::get_if_arg_eq_prev_input`] or [`SendCache::store`].
 //!
-//! They each come wrapped in a shared variant:
+//! They each come available in a shared variant:
 //!
 //! | Shared type          | Synchronized? |
 //! |----------------------|---------------|
@@ -23,33 +21,30 @@
 //! are used by calling [`SharedSendCache::cache_with`] or
 //! [`SharedLocalCache::cache`].
 //!
-//! # Scopes
+//! # Query types
+//!
+//! Each [`Query`] type maps to a typed "namespace" within the unityped cache
+//! storage, each query having a distinct type for its scope, input, and
+//! output.
+//!
+//! ## Scopes
 //!
 //! The scope of a query is its identifier within cache storage.
-//! Scopes must implement `Eq` and `Hash` so that query results can be
-//! efficiently and uniquely indexed.
+//! Scopes must implement `Eq` and `Hash` so that results can be
+//! efficiently and uniquely indexed within a namespace.
 //!
-//! All of the cache functions accept a reference to a type `Key:
-//! ToOwned<Owned=Scope>` so that the scope is only cloned on the first
-//! insertion to its storage and all subsequent lookups can be with a borrowed
-//! type.
-//!
-//! # Look-ups
-//!
-//! Each [`Query`] type maps to a "namespace" within the cache storage.
-//!
-//! Each scope identifies up to 1 `(input, output)` pair in each namespace. The
+//! Each scope identifies 0-1 `(Input, Output)` pairs in each namespace. The
 //! same type of scope can be used in multiple [`Query`]s without collision if
-//! the types of inputs or outputs or both differs.
+//! the types of inputs, outputs, or both differ.
 //!
-//! # Inputs
+//! ## Inputs
 //!
 //! The input to a query determines when it is (re-)run. If a given query has
 //! been run before, then the previous input is compared to the current input
 //! before potentially running the query. If the input hasn't changed, the query
 //! can be skipped and its previously-stored output is returned.
 //!
-//! # Outputs
+//! ## Outputs
 //!
 //! The only constraint on query outputs is that they are owned (`Output:
 //! 'static`). This imposes the inconvenient requirement that all access to
@@ -59,65 +54,41 @@
 //! The most common way to work around this requirement is to choose output
 //! types that cheaply implement [`std::clone::Clone`].
 //!
-//! # Example
+//! # Allocations
 //!
-//! ```
-//! let storage = dyn_cache::SharedLocalCache::default();
-//! let count = std::cell::Cell::new(0);
-//! let increment = |n| {
-//!     storage.cache_with(
-//!         "increment by arg",
-//!         &n,
-//!         |&n| {
-//!             let new_count = count.get() + n;
-//!             count.set(new_count);
-//!             new_count
-//!         },
-//!         Clone::clone,
-//!     )
-//! };
+//! In order to store distinct query results in the same container, allocations
+//! and indirection are required.
 //!
-//! assert_eq!(count.get(), 0);
+//! ## Borrowed query parameters
 //!
-//! assert_eq!(increment(2), 2);
-//! assert_eq!(count.get(), 2);
+//! All of the cache functions accept a reference to a type `Key:
+//! ToOwned<Owned=Scope>` so that the scope is only cloned on the first
+//! insertion to its storage and all subsequent lookups can be with a borrowed
+//! type.
 //!
-//! // running the query again with the same input has no external effect
-//! assert_eq!(increment(2), 2);
-//! assert_eq!(count.get(), 2);
+//! Like the query scope, functions to get cache values accept a borrowed
+//! version of the input and only clone it when the input has changed.
 //!
-//! // same query with a different input will run
-//! assert_eq!(increment(1), 3);
-//! assert_eq!(count.get(), 3);
+//! ## Causes
 //!
-//! // these all have the same scope, so this runs again
-//! assert_eq!(increment(3), 6);
-//! assert_eq!(count.get(), 6);
+//! There are three situations where these caches allocate:
 //!
-//! let decrement = |n| {
-//!     storage.cache_with(
-//!         "decrement by arg",
-//!         &n,
-//!         |&n| {
-//!             let new_count = count.get() - n;
-//!             count.set(new_count);
-//!             new_count
-//!         },
-//!         Clone::clone,
-//!     )
-//! };
+//! 1. caching new types which haven't been seen by that cache instance yet
+//! 2. storing the results of a new query
+//! 3. updating the results of a stored query
 //!
-//! assert_eq!(decrement(1), 5);
-//! assert_eq!(count.get(), 5);
+//! There are several types of allocations performed by the caches in this
+//! crate:
 //!
-//! // increment's last query is still cached
-//! assert_eq!(increment(3), 6);
-//! assert_eq!(count.get(), 5);
+//! | Allocation                         | Causes   |
+//! |------------------------------------|----------|
+//! | box a new, empty namespace         | (1)      |
+//! | resize a cache's map of namespaces | (1)      |
+//! | call `.to_owned()` on a scope      | (2)      |
+//! | call `.to_owned()` on an input     | (2), (3) |
+//! | resize a namespace's storage       | (2)      |
 //!
-//! // this one is still cached too, because they're different queries
-//! assert_eq!(decrement(1), 5);
-//! assert_eq!(count.get(), 5);
-//! ```
+//! Outside of these, only user-defined functions should perform any allocation.
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
