@@ -8,19 +8,21 @@ use std::{
     borrow::Borrow,
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
+    marker::PhantomData,
 };
 
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
 #[derive(Clone, Copy, Debug)]
-pub struct Hashed<K> {
+pub struct Hashed<K, H = DefaultHashBuilder> {
     key: K,
     hash: u64,
+    hasher: PhantomData<H>,
 }
 
 /// A namespace stores all cached values for a particular query type.
-pub(super) struct Namespace<Scope, Input, Output> {
-    inner: HashMap<Scope, CacheCell<Input, Output>>,
+pub(super) struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
+    inner: HashMap<Scope, CacheCell<Input, Output>, H>,
 }
 
 impl<Scope, Input, Output> Default for Namespace<Scope, Input, Output> {
@@ -29,25 +31,26 @@ impl<Scope, Input, Output> Default for Namespace<Scope, Input, Output> {
     }
 }
 
-impl<Scope, Input, Output> Namespace<Scope, Input, Output>
+impl<Scope, Input, Output, H> Namespace<Scope, Input, Output, H>
 where
     Scope: Eq + Hash + 'static,
     Input: 'static,
     Output: 'static,
+    H: BuildHasher,
 {
-    fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key>
+    fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key, H>
     where
         Key: Hash + ?Sized,
     {
         let mut hasher = self.inner.hasher().build_hasher();
         key.hash(&mut hasher);
-        Hashed { key, hash: hasher.finish() }
+        Hashed { key, hash: hasher.finish(), hasher: PhantomData }
     }
 
     fn entry<'k, Key>(
         &mut self,
-        hashed: &Hashed<&'k Key>,
-    ) -> RawEntryMut<Scope, CacheCell<Input, Output>, DefaultHashBuilder>
+        hashed: &Hashed<&'k Key, H>,
+    ) -> RawEntryMut<Scope, CacheCell<Input, Output>, H>
     where
         Key: Eq + ?Sized,
         Scope: Borrow<Key>,
@@ -59,7 +62,7 @@ where
         &mut self,
         key: &'k Key,
         input: &Arg,
-    ) -> Result<&Output, Hashed<&'k Key>>
+    ) -> Result<&Output, Hashed<&'k Key, H>>
     where
         Key: Eq + Hash + ?Sized,
         Scope: Borrow<Key>,
@@ -74,7 +77,7 @@ where
         }
     }
 
-    pub(super) fn store<Key>(&mut self, hashed: Hashed<&Key>, input: Input, output: Output)
+    pub(super) fn store<Key>(&mut self, hashed: Hashed<&Key, H>, input: Input, output: Output)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
