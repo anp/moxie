@@ -1,3 +1,6 @@
+#![forbid(unsafe_code)]
+#![deny(clippy::all, missing_docs)]
+
 //! Caches for storing the results of repeated function calls.
 //!
 //! There are two main flavors of cache available for use in this crate:
