@@ -349,7 +349,7 @@ define_cache!(LocalCache, Rc, RefCell::borrow_mut);
 define_cache!(Cache: Send, Arc, Mutex::lock);
 
 struct Namespace<Scope, Input, Output> {
-    inner: HashMap<Scope, (Liveness, Input, Output)>,
+    inner: HashMap<Scope, CacheCell<Input, Output>>,
 }
 
 /// A query type that was hashed as part of an initial lookup and which can be
@@ -410,7 +410,7 @@ where
     fn entry<'k, Key>(
         &mut self,
         hashed: &Hashed<&'k Key>,
-    ) -> RawEntryMut<Scope, (Liveness, Input, Output), DefaultHashBuilder>
+    ) -> RawEntryMut<Scope, CacheCell<Input, Output>, DefaultHashBuilder>
     where
         Key: Eq + ?Sized,
         Scope: Borrow<Key>,
@@ -431,13 +431,10 @@ where
     {
         let hashed = self.hashed(key);
         if let RawEntryMut::Occupied(occ) = self.entry(&hashed) {
-            let (ref mut liveness, ref stored_input, ref stored) = occ.into_mut();
-            if input == stored_input {
-                *liveness = Liveness::Live;
-                return Ok(stored);
-            }
+            occ.into_mut().get_if_input_eq(input).ok_or(hashed)
+        } else {
+            Err(hashed)
         }
-        Err(hashed)
     }
 
     fn store<Key>(&mut self, hashed: Hashed<&Key>, input: Input, output: Output)
@@ -447,13 +444,10 @@ where
     {
         match self.entry(&hashed) {
             RawEntryMut::Occupied(occ) => {
-                let (ref mut liveness, ref mut prev_input, ref mut prev_output) = occ.into_mut();
-                *liveness = Liveness::Live;
-                *prev_input = input;
-                *prev_output = output;
+                occ.into_mut().store(input, output);
             }
             RawEntryMut::Vacant(vac) => {
-                vac.insert(hashed.key.to_owned(), (Liveness::Live, input, output));
+                vac.insert(hashed.key.to_owned(), CacheCell::new(input, output));
             }
         }
     }
@@ -466,11 +460,7 @@ where
     Output: 'static,
 {
     fn gc(&mut self) -> Liveness {
-        self.inner.retain(|_, (l, _, _)| {
-            let is_alive = *l == Liveness::Live;
-            *l = Liveness::Dead;
-            is_alive
-        });
+        self.inner.retain(|_, c| matches!(c.gc(), Liveness::Live));
         Liveness::Live // no reason to throw away the allocations behind namespaces afaict
     }
 }
@@ -481,9 +471,71 @@ where
     Input: 'static,
     Output: 'static,
 {
+    // someday specialization might save us from these lame debug impls?
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         f.debug_map()
             .entry(&"scope", &type_name::<Scope>())
+            .entry(&"input", &type_name::<Input>())
+            .entry(&"output", &type_name::<Output>())
+            .finish()
+    }
+}
+
+/// A CacheCell represents the storage used for a particular input/output pair
+/// on the heap.
+struct CacheCell<Input, Output> {
+    liveness: Liveness,
+    input: Input,
+    output: Output,
+}
+
+impl<Input, Output> CacheCell<Input, Output> {
+    fn new(input: Input, output: Output) -> Self {
+        Self { liveness: Liveness::Live, input, output }
+    }
+
+    /// Return a reference to the output if the input is equal, marking it live
+    /// in the process.
+    fn get_if_input_eq<Arg>(&mut self, input: &Arg) -> Option<&Output>
+    where
+        Arg: PartialEq<Input> + ?Sized,
+        Input: Borrow<Arg>,
+    {
+        if input == &self.input {
+            self.liveness = Liveness::Live;
+            Some(&self.output)
+        } else {
+            None
+        }
+    }
+
+    /// Store a new input/output and mark the storage live.
+    fn store(&mut self, input: Input, output: Output) {
+        self.liveness = Liveness::Live;
+        self.input = input;
+        self.output = output;
+    }
+}
+
+impl<Input, Output> Gc for CacheCell<Input, Output>
+where
+    Input: 'static,
+    Output: 'static,
+{
+    /// Always marks itself as dead in a GC, returning its previous value.
+    fn gc(&mut self) -> Liveness {
+        std::mem::replace(&mut self.liveness, Liveness::Dead)
+    }
+}
+
+impl<Input, Output> Debug for CacheCell<Input, Output>
+where
+    Input: 'static,
+    Output: 'static,
+{
+    // someday specialization might save us from these lame debug impls?
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_map()
             .entry(&"input", &type_name::<Input>())
             .entry(&"output", &type_name::<Output>())
             .finish()
