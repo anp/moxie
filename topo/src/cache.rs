@@ -93,15 +93,30 @@ macro_rules! doc_comment {
 }
 
 macro_rules! define_cache {
-    ($name:ident $(: $bound:ident)?, $($rest:tt)*) => {
+    ($cache:ident $(: $bound:ident)?, $($rest:tt)*) => {
+paste::item! {
+    define_cache! {@
+        $cache $(: $bound)?,
+        [<Shared $cache>],
+        $($rest)*
+    }
+}
+    };
+    (@
+        $cache:ident $(: $bound:ident)?,
+        $shared:ident,
+        $refct:ident,
+        $lock:ident :: $acquire:ident
+    ) => {
+
 doc_comment! {"
 Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
-through [`Shared" stringify!($name) "::cache_with`] and [`Shared" stringify!($name) "::gc`].
+through [`Shared" stringify!($cache) "::cache_with`] and [`Shared" stringify!($cache) "::gc`].
 
 # Query types
 
 > Note: the types referenced in this documentation are only visible on individual methods, as
-> `" stringify!($name) "` is not itself a generic type.
+> `" stringify!($cache) "` is not itself a generic type.
 
 Storage is sharded by the type of the query. The type of a query has three parts:
  
@@ -113,27 +128,27 @@ and a single `Output: 'static" $(" + " stringify!($bound))? "` value at any give
 
 # Reading stored values
 
-See [`" stringify!($name) "::get_if_arg_eq_prev_input`] which accepts borrowed forms of `Scope`
+See [`" stringify!($cache) "::get_if_arg_eq_prev_input`] which accepts borrowed forms of `Scope`
 and `Input`: `Key` and `Arg` respectively. `Arg` must satisfy `PartialEq<Input>` to determine
 whether to return a stored output.
 
 # Garbage Collection
 
-Each time [`" stringify!($name) "::gc`] is called it removes any values which haven't been
+Each time [`" stringify!($cache) "::gc`] is called it removes any values which haven't been
 referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
-inserted with [`" stringify!($name) "::store`] or read with
-[`" stringify!($name) "::get_if_arg_eq_prev_input`].
+inserted with [`" stringify!($cache) "::store`] or read with
+[`" stringify!($cache) "::get_if_arg_eq_prev_input`].
 "=>
 #[derive(Debug, Default)]
-pub struct $name {
+pub struct $cache {
     /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
     /// `TypeIds` which come pre-hashed courtesy of rustc.
     inner: HashMap<TypeId, Box<dyn Gc $(+ $bound)?>, HashBuildHasher>,
 }}
 
-impl $name {
+impl $cache {
     /// Return a reference to a query's stored output if a result is stored and `arg` equals the
     /// previously-stored `Input`. If a reference is returned, the stored input/output
     /// is marked live and will not be GC'd the next call.
@@ -199,31 +214,17 @@ impl $name {
     }
 }
 
-impl std::panic::UnwindSafe for $name {}
-impl std::panic::RefUnwindSafe for $name {}
-
-paste::item! {
-    define_cache! {
-        @handle $name $(: $bound)?, [<Shared $name>], $($rest)*
-    }
-}
-    };
-    (
-        @handle
-        $name:ident $(: $bound:ident)?,
-        $handle:ident,
-        $shared:ident,
-        $lock:ident :: $acquire:ident
-    ) => {
+impl std::panic::UnwindSafe for $cache {}
+impl std::panic::RefUnwindSafe for $cache {}
 
 doc_comment! {"
-Provides shared, synchronized access to a [`" stringify!($name) "`] and a function-memoization
-API in [`" stringify!($handle) "::cache_with`].
+Provides shared, synchronized access to a [`" stringify!($cache) "`] and a function-memoization
+API in [`" stringify!($shared) "::cache_with`].
 
 # Example
 
 ```
-let storage = topo::cache::" stringify!($handle) r#"::default();
+let storage = topo::cache::" stringify!($shared) r#"::default();
 let call_count = std::cell::Cell::new(0);
 let increment_count = |&to_add: &i32| {
     let new_count = call_count.get() + to_add;
@@ -275,19 +276,19 @@ assert_eq!(call_count.get(), with_one_again);
 ```
 "#=>
 #[derive(Clone)]
-pub struct $handle {
-    inner: $shared<$lock<$name>>,
+pub struct $shared {
+    inner: $refct<$lock<$cache>>,
 }}
 
-impl Default for $handle {
+impl Default for $shared {
     fn default() -> Self {
         Self {
-            inner: $shared::new($lock::new($name::default()))
+            inner: $refct::new($lock::new($cache::default()))
         }
     }
 }
 
-impl $handle {
+impl $shared {
     /// Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes. Always
     /// runs `with` on the stored `Output` before returning the result.
     ///
@@ -320,29 +321,29 @@ impl $handle {
     }
 
 doc_comment!{"
-Forwards to [`" stringify!($name) "::gc`].
+Forwards to [`" stringify!($cache) "::gc`].
 "=>
     pub fn gc(&self) {
         self.inner.$acquire().gc()
     }}
 }
 
-impl Debug for $handle {
+impl Debug for $shared {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_tuple(stringify!($handle))
+        f.debug_tuple(stringify!($shared))
             .field(&*self.inner.$acquire())
             .finish()
     }
 }
 
-impl From<$name> for $handle {
-    fn from(inner: $name) -> Self {
-        Self { inner: $shared::new($lock::new(inner)) }
+impl From<$cache> for $shared {
+    fn from(inner: $cache) -> Self {
+        Self { inner: $refct::new($lock::new(inner)) }
     }
 }
 
-impl std::panic::UnwindSafe for $handle {}
-impl std::panic::RefUnwindSafe for $handle {}
+impl std::panic::UnwindSafe for $shared {}
+impl std::panic::RefUnwindSafe for $shared {}
     };
 }
 
