@@ -1,4 +1,4 @@
-use downcast_rs::{impl_downcast, Downcast};
+use super::{Gc, Liveness};
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
@@ -177,25 +177,4 @@ where
             .entry(&"output", &type_name::<Output>())
             .finish()
     }
-}
-
-/// A type which can contain values of varying liveness.
-pub(super) trait Gc: Downcast + Debug {
-    /// Remove dead entries, returning the container's own status after doing
-    /// so.
-    fn gc(&mut self) -> Liveness;
-}
-
-impl_downcast!(Gc);
-
-/// Describes the outcome for a cached value if a garbage collection were
-/// to occur when observed. During the run of a `Revision` any cached values
-/// which are initialized or read are marked as `Live`. At the end of a
-/// `Revision`,
-#[derive(Debug, PartialEq)]
-pub(super) enum Liveness {
-    /// The value would be retained in a GC right now.
-    Live,
-    /// The value would be dropped in a GC right now.
-    Dead,
 }

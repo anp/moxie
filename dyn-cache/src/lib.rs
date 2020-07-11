@@ -119,6 +119,7 @@
 //! assert_eq!(count.get(), 5);
 //! ```
 
+use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
 use hashbrown::HashMap;
 use parking_lot::Mutex;
@@ -137,7 +138,24 @@ use std::{
 mod namespace;
 
 pub use namespace::Hashed;
-use namespace::{Gc, Namespace};
+use namespace::Namespace;
+
+/// A type which can contain values of varying liveness, including itself.
+pub trait Gc: Downcast + Debug {
+    /// Remove dead entries, returning the container's own status afterwards.
+    fn gc(&mut self) -> Liveness;
+}
+
+impl_downcast!(Gc);
+
+/// Describes the outcome of garbage collection for a cached value.
+#[derive(Debug, PartialEq)]
+pub enum Liveness {
+    /// The value would be retained in a GC right now.
+    Live,
+    /// The value would be dropped in a GC right now.
+    Dead,
+}
 
 macro_rules! doc_comment {
     ($($contents:expr)+ => $($item:tt)+) => {
@@ -170,7 +188,7 @@ paste::item! {
 
 doc_comment! {"
 Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
-through [`Shared" stringify!($cache) "::cache_with`] and [`Shared" stringify!($cache) "::gc`].
+through [`Shared" stringify!($cache) "::cache_with`] and [`Gc::gc`].
 
 # Query types
 
@@ -193,7 +211,7 @@ whether to return a stored output.
 
 # Garbage Collection
 
-Each time [`" stringify!($cache) "::gc`] is called it removes any values which haven't been
+Each time [`Gc::gc`] is called it removes any values which haven't been
 referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
@@ -264,12 +282,18 @@ impl $cache {
             }).1;
         gc.as_any_mut().downcast_mut().unwrap()
     }
+}
 
-    /// Drops any values which were not referenced since the last call to this method.
-    pub fn gc(&mut self) {
-        for namespace in self.inner.values_mut() {
-            namespace.gc();
-        }
+impl Gc for $cache {
+    fn gc(&mut self) -> Liveness {
+        self.inner.values_mut()
+            .fold(Liveness::Dead, |l, namespace| {
+                if namespace.gc() == Liveness::Live {
+                    Liveness::Live
+                } else {
+                    l
+                }
+            })
     }
 }
 
@@ -405,9 +429,9 @@ See [`" stringify!($shared) "::cache_with`] for a lower-level version which does
     }}
 
 doc_comment!{"
-Forwards to [`" stringify!($cache) "::gc`].
+Forwards to [`Gc::gc`].
 "=>
-    pub fn gc(&self) {
+    pub fn gc(&self) -> Liveness {
         self.inner.$acquire().gc()
     }}
 }
