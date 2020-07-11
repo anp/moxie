@@ -1,8 +1,65 @@
-//! Caches for storing the results of repeated queries.
+//! Caches for storing the results of repeated [`Query`]s. The type of a
+//! [`Query`] is determined by the types of its "scope" and its inputs and
+//! outputs.
 //!
-//! Every query to a cache has a "scope" by which it is namespaced. The types in
-//! this crate cache queries which have arbitrary scope types, storing one
-//! input value and one ouput value per scope:
+//! There are two main flavors of cache available for use in this crate:
+//!
+//! | Mutable type   | Requires `Send`? |
+//! |----------------|------------------|
+//! | [`SendCache`]  | yes              |
+//! | [`LocalCache`] | no               |
+//!
+//! These "inner" caches require mutable access to call their functions like
+//! [`LocalCache::get_if_arg_eq_prev_input`] or [`SendCache::store`].
+//!
+//! They each come wrapped in a shared variant:
+//!
+//! | Shared type          | Synchronized? |
+//! |----------------------|---------------|
+//! | [`SharedSendCache`]  | Mutex         |
+//! | [`SharedLocalCache`] | RefCell       |
+//!
+//! These variants are wrapped with reference counting and synchronization and
+//! are used by calling [`SharedSendCache::cache_with`] or
+//! [`SharedLocalCache::cache_with`].
+//!
+//! # Scopes
+//!
+//! The scope of a query is its identifier within cache storage.
+//! Scopes must implement `Eq` and `Hash` so that query results can be
+//! efficiently and uniquely indexed.
+//!
+//! All of the cache functions accept a reference to a type `Key:
+//! ToOwned<Owned=Scope>` so that the scope is only cloned on the first
+//! insertion to its storage and all subsequent lookups can be with a borrowed
+//! type.
+//!
+//! # Look-ups
+//!
+//! Each [`Query`] type maps to a "namespace" within the cache storage.
+//!
+//! Each scope identifies up to 1 `(input, output)` pair in each namespace. The
+//! same type of scope can be used in multiple [`Query`]s without collision if
+//! the types of inputs or outputs or both differs.
+//!
+//! # Inputs
+//!
+//! The input to a query determines when it is (re-)run. If a given query has
+//! been run before, then the previous input is compared to the current input
+//! before potentially running the query. If the input hasn't changed, the query
+//! can be skipped and its previously-stored output is returned.
+//!
+//! # Outputs
+//!
+//! The only constraint on query outputs is that they are owned (`Output:
+//! 'static`). This imposes the inconvenient requirement that all access to
+//! stored values occurs during the scope of a closure (similar to thread-locals
+//! in the standard library).
+//!
+//! The most common way to work around this requirement is to choose output
+//! types that cheaply implement [`std::clone::Clone`].
+//!
+//! # Example
 //!
 //! ```
 //! let storage = dyn_cache::SharedLocalCache::default();
