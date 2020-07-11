@@ -75,7 +75,7 @@ use std::{
 };
 use topo::CallId;
 
-/// Memoizes the `init` function.
+/// Cache the return of the `init` function.
 ///
 /// If the cache has a stored `(Input, Output)` for the current [`topo::CallId`]
 /// and if `arg` is equal to the stored `Input`, marks the value as alive in the
