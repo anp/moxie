@@ -11,6 +11,7 @@ invocations.
 
 - Crate extracted from `topo::cache` module.
 - `{LocalCache,SendCache}::cache` wraps `cache_with` for types that impl `Clone`.
+- `Gc` trait is public, inner cache types implement it.
 
 ### Changed
 
