@@ -120,7 +120,7 @@
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
-use hashbrown::HashMap;
+use hashbrown::{hash_map::DefaultHashBuilder, HashMap};
 use parking_lot::Mutex;
 use std::{
     any::TypeId,
@@ -155,6 +155,13 @@ pub enum Liveness {
     /// The value would be dropped in a GC right now.
     Dead,
 }
+
+/// The result of lookup up a query key and its input/arg within a cache.
+type CacheLookup<'k, Key, Scope, Input, Output, H = DefaultHashBuilder> =
+    (Query<Scope, Input, Output>, KeyLookup<'k, Key, H>);
+
+/// The result of looking up a key within a cache namespace.
+type KeyLookup<'k, K, H = DefaultHashBuilder> = Result<Hashed<&'k K, H>, &'k K>;
 
 macro_rules! doc_comment {
     ($($contents:expr)+ => $($item:tt)+) => {
@@ -235,7 +242,7 @@ impl $cache {
         &self,
         key: &'k Key,
         arg: &Arg,
-    ) -> Result<&Output, (Query<Scope, Input, Output>, Result<Hashed<&'k Key>, &'k Key>)>
+    ) -> Result<&Output, CacheLookup<'k, Key, Scope, Input, Output>>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -255,7 +262,7 @@ impl $cache {
     /// Call `get_if_arg_eq_prev_input` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        (query, key): (Query<Scope, Input, Output>, Result<Hashed<&Key>, &Key>),
+        (query, key): CacheLookup<'_, Key, Scope, Input, Output>,
         input: Input,
         output: Output,
     ) where
