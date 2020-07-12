@@ -11,7 +11,7 @@ use std::{
     marker::PhantomData,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Weak,
+        Arc,
     },
 };
 
@@ -137,14 +137,13 @@ where
 /// on the heap.
 struct CacheCell<Input, Output> {
     was_called: Arc<AtomicBool>,
-    parents: Vec<Weak<AtomicBool>>,
     input: Input,
     output: Output,
 }
 
 impl<Input, Output> CacheCell<Input, Output> {
     fn new(input: Input, output: Output) -> Self {
-        Self { was_called: Arc::new(AtomicBool::new(true)), parents: vec![], input, output }
+        Self { was_called: Arc::new(AtomicBool::new(true)), input, output }
     }
 
     /// Return a reference to the output if the input is equal, marking it live
