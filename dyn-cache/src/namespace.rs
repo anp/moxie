@@ -39,7 +39,7 @@ where
     Output: 'static,
     H: BuildHasher,
 {
-    fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key, H>
+    pub fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key, H>
     where
         Key: Hash + ?Sized,
     {
@@ -85,11 +85,16 @@ where
         self.get(&hashed).and_then(|(_, cell)| cell.get_if_input_eq(input)).ok_or(hashed)
     }
 
-    pub(super) fn store<Key>(&mut self, hashed: Hashed<&Key, H>, input: Input, output: Output)
-    where
+    pub(super) fn store<Key>(
+        &mut self,
+        hashed: Result<Hashed<&Key, H>, &Key>,
+        input: Input,
+        output: Output,
+    ) where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
+        let hashed = hashed.unwrap_or_else(|k| self.hashed(k));
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
                 occ.into_mut().store(input, output);

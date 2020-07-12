@@ -232,10 +232,10 @@ impl $cache {
     /// If no reference is found, the hashes of the query type and the provided key are returned
     /// to be reused when storing a value.
     pub fn get_if_arg_eq_prev_input<'k, Key, Scope, Arg, Input, Output>(
-        &mut self,
+        &self,
         key: &'k Key,
         arg: &Arg,
-    ) -> Result<&Output, (Query<Scope, Input, Output>, Hashed<&'k Key>)>
+    ) -> Result<&Output, (Query<Scope, Input, Output>, Result<Hashed<&'k Key>, &'k Key>)>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -244,14 +244,18 @@ impl $cache {
         Output: 'static $(+ $bound)?,
     {
         let query = Query::new(self.inner.hasher());
-        self.get_namespace_mut(&query).get_if_input_eq(key, arg).map_err(|h| (query, h))
+        if let Some(ns) = self.get_namespace(&query) {
+            ns.get_if_input_eq(key, arg).map_err(|h| (query, Ok(h)))
+        } else {
+            Err((query, Err(key)))
+        }
     }
 
     /// Stores the input/output of a query which will not be GC'd at the next call.
     /// Call `get_if_arg_eq_prev_input` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        (query, key): (Query<Scope, Input, Output>, Hashed<&Key>),
+        (query, key): (Query<Scope, Input, Output>, Result<Hashed<&Key>, &Key>),
         input: Input,
         output: Output,
     ) where
@@ -261,6 +265,22 @@ impl $cache {
         Output: 'static $(+ $bound)?,
     {
         self.get_namespace_mut(&query).store(key, input, output);
+    }
+
+    fn get_namespace<Scope, Input, Output>(
+        &self,
+        query: &Query<Scope, Input, Output>,
+    ) -> Option<&Namespace<Scope, Input, Output>>
+    where
+        Scope: 'static + Eq + Hash $(+ $bound)?,
+        Input: 'static $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
+    {
+        let gc: &(dyn Gc $(+ $bound)?) = &**self
+            .inner
+            .raw_entry()
+            .from_hash(query.hash(), |t| t == &query.ty())?.1;
+        Some(gc.as_any().downcast_ref().unwrap())
     }
 
     fn get_namespace_mut<Scope, Input, Output>(
