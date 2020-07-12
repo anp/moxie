@@ -1,4 +1,4 @@
-use super::{Gc, Liveness};
+use super::{Gc, KeyLookup, Liveness};
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
@@ -85,12 +85,8 @@ where
         self.get(&hashed).and_then(|(_, cell)| cell.get_if_input_eq(input)).ok_or(hashed)
     }
 
-    pub(super) fn store<Key>(
-        &mut self,
-        hashed: Result<Hashed<&Key, H>, &Key>,
-        input: Input,
-        output: Output,
-    ) where
+    pub(super) fn store<Key>(&mut self, hashed: KeyLookup<'_, Key, H>, input: Input, output: Output)
+    where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
