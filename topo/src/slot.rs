@@ -46,7 +46,7 @@ where
             Lazy::new(|| Mutex::new(HashMap::new()));
         let mut existing_tokens = TOKENS.lock();
 
-        match existing_tokens.get_if_arg_eq_prev_input(value, &()) {
+        match existing_tokens.get(value, &()) {
             Ok(token) => *token,
             Err(hashed) => {
                 let mut indices = INDICES.lock();
