@@ -48,7 +48,7 @@ where
         Hashed { key, hash: hasher.finish(), hasher: PhantomData }
     }
 
-    fn get<'k, Key>(
+    fn entry<'k, Key>(
         &self,
         hashed: &Hashed<&'k Key, H>,
     ) -> Option<(&Scope, &CacheCell<Input, Output>)>
@@ -70,7 +70,7 @@ where
         self.inner.raw_entry_mut().from_hash(hashed.hash, |q| q.borrow().eq(hashed.key))
     }
 
-    pub(super) fn get_if_input_eq<'k, Key, Arg>(
+    pub(super) fn get<'k, Key, Arg>(
         &self,
         key: &'k Key,
         input: &Arg,
@@ -82,7 +82,7 @@ where
         Input: Borrow<Arg>,
     {
         let hashed = self.hashed(key);
-        self.get(&hashed).and_then(|(_, cell)| cell.get_if_input_eq(input)).ok_or(hashed)
+        self.entry(&hashed).and_then(|(_, cell)| cell.get(input)).ok_or(hashed)
     }
 
     pub(super) fn store<Key>(&mut self, hashed: KeyLookup<'_, Key, H>, input: Input, output: Output)
@@ -145,7 +145,7 @@ impl<Input, Output> CacheCell<Input, Output> {
 
     /// Return a reference to the output if the input is equal, marking it live
     /// in the process.
-    fn get_if_input_eq<Arg>(&self, input: &Arg) -> Option<&Output>
+    fn get<Arg>(&self, input: &Arg) -> Option<&Output>
     where
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,

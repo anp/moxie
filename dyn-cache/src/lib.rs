@@ -13,7 +13,7 @@
 //! | [`LocalCache`] | no               |
 //!
 //! These "inner" caches require mutable access to call their functions like
-//! [`LocalCache::get_if_arg_eq_prev_input`] or [`SendCache::store`].
+//! [`LocalCache::get`] or [`SendCache::store`].
 //!
 //! They each come available in a shared variant:
 //!
@@ -211,7 +211,7 @@ and a single `Output: 'static" $(" + " stringify!($bound))? "` value at any give
 
 # Reading stored values
 
-See [`" stringify!($cache) "::get_if_arg_eq_prev_input`] which accepts borrowed forms of `Scope`
+See [`" stringify!($cache) "::get`] which accepts borrowed forms of `Scope`
 and `Input`: `Key` and `Arg` respectively. `Arg` must satisfy `PartialEq<Input>` to determine
 whether to return a stored output.
 
@@ -222,7 +222,7 @@ referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
 inserted with [`" stringify!($cache) "::store`] or read with
-[`" stringify!($cache) "::get_if_arg_eq_prev_input`].
+[`" stringify!($cache) "::get`].
 "=>
 #[derive(Debug, Default)]
 pub struct $cache {
@@ -238,7 +238,7 @@ impl $cache {
     ///
     /// If no reference is found, the hashes of the query type and the provided key are returned
     /// to be reused when storing a value.
-    pub fn get_if_arg_eq_prev_input<'k, Key, Scope, Arg, Input, Output>(
+    pub fn get<'k, Key, Scope, Arg, Input, Output>(
         &self,
         key: &'k Key,
         arg: &Arg,
@@ -252,14 +252,14 @@ impl $cache {
     {
         let query = Query::new(self.inner.hasher());
         if let Some(ns) = self.get_namespace(&query) {
-            ns.get_if_input_eq(key, arg).map_err(|h| (query, Ok(h)))
+            ns.get(key, arg).map_err(|h| (query, Ok(h)))
         } else {
             Err((query, Err(key)))
         }
     }
 
     /// Stores the input/output of a query which will not be GC'd at the next call.
-    /// Call `get_if_arg_eq_prev_input` to get a `Hashed` instance.
+    /// Call `get` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
         (query, key): CacheLookup<'_, Key, Scope, Input, Output>,
@@ -419,7 +419,7 @@ See [`" stringify!($shared) "::cache`] for an ergonomic wrapper that requires `O
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        let hashed = match { self.inner.$acquire().get_if_arg_eq_prev_input(key, arg) } {
+        let hashed = match { self.inner.$acquire().get(key, arg) } {
             Ok(stored) => return with(stored),
             Err(h) => h,
         };
