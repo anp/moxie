@@ -89,11 +89,34 @@
 //! |------------------------------------|----------|
 //! | box a new, empty namespace         | (1)      |
 //! | resize a cache's map of namespaces | (1)      |
-//! | call `.to_owned()` on a scope      | (2)      |
-//! | call `.to_owned()` on an input     | (2), (3) |
+//! | call `.to_owned()` on a scope/key  | (2)      |
 //! | resize a namespace's storage       | (2)      |
+//! | call `.to_owned()` on an input/arg | (2), (3) |
 //!
 //! Outside of these, only user-defined functions should perform any allocation.
+//!
+//! # Garbage Collection
+//!
+//! Every value in the cache has a [`Liveness`] which is set to
+//! [`Liveness::Live`] when the value is first stored and again when it is read.
+//!
+//! The inner caches implement [`Gc`] and it is available through
+//! [`SharedLocalCache::gc`] & [`SharedSendCache::gc`]. When called, the `gc()`
+//! method retains only those values which are still [`Liveness::Live`] and then
+//! marks them all [`Liveness::Dead`] again.
+//!
+//! This behavior resembles a simple mark-and-sweep garbage collector where the
+//! "mark phase" is the use of the cache in between [`Gc::gc`] calls. Any values
+//! which weren't used in the mark phase are dropped in the next "sweep phase"
+//! when [`Gc::gc`] is called.
+//!
+//! ## Nested Queries
+//!
+//! While it is possible to nest use of the shared caches within the init
+//! closures passed to them, the caches do not yet track the required dependency
+//! relationship to correctly retain intermediate cached results across GCs.
+//! While this works well enough for some scenarios it needs to be resolved in
+//! the general case before this way of using this crate is recommended.
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
