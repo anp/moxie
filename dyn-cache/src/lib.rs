@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! Caches for storing the results of repeated function calls.
+//! Caches for storing the results of repeated function calls. The cache types
+//! available use minimal dynamic dispatch to allow storing arbitrarily many
+//! types of query results in a single parent store.
 //!
 //! There are two main flavors of cache available for use in this crate:
 //!
@@ -250,7 +252,7 @@ impl $cache {
         let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
             .inner
             .raw_entry_mut()
-            .from_hash(query.hash, |t| t == &query.ty())
+            .from_hash(query.hash(), |t| t == &query.ty())
             .or_insert_with(|| {
                 (query.ty(), query.make_namespace())
             }).1;
@@ -504,21 +506,22 @@ define_cache!(SendCache: Send, Arc, Mutex::lock);
 
 /// The type of a dynamic cache query, used to shard storage in a fashion
 /// similar to `anymap` or `typemap`.
-pub struct Query<Scope, Input, Output> {
+pub struct Query<Scope, Input, Output, H = HashBuildHasher> {
     ty: PhantomData<(Scope, Input, Output)>,
+    hasher: PhantomData<H>,
     hash: u64,
 }
 
-impl<Scope, Input, Output> Query<Scope, Input, Output>
+impl<Scope, Input, Output, H> Query<Scope, Input, Output, H>
 where
     Scope: 'static,
     Input: 'static,
     Output: 'static,
+    H: BuildHasher,
 {
-    fn new(build: &impl BuildHasher) -> Self {
-        // this is a bit unrustic but it lets us keep the typeid defined in a *single*
-        // place
-        let mut new = Query { ty: PhantomData, hash: 0 };
+    fn new(build: &H) -> Self {
+        // this is a bit unrustic but it lets us keep the typeid defined once
+        let mut new = Query { ty: PhantomData, hasher: PhantomData, hash: 0 };
         let mut hasher = build.build_hasher();
         new.ty().hash(&mut hasher);
         new.hash = hasher.finish();
@@ -527,6 +530,10 @@ where
 
     fn make_namespace(&self) -> Box<Namespace<Scope, Input, Output>> {
         Box::new(Namespace::default())
+    }
+
+    fn hash(&self) -> u64 {
+        self.hash
     }
 
     fn ty(&self) -> TypeId {
