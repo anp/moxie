@@ -9,7 +9,10 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
     marker::PhantomData,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Weak,
+    },
 };
 
 /// A query key that was hashed as part of an initial lookup and which can be
@@ -133,14 +136,15 @@ where
 /// A CacheCell represents the storage used for a particular input/output pair
 /// on the heap.
 struct CacheCell<Input, Output> {
-    is_alive: AtomicBool,
+    was_called: Arc<AtomicBool>,
+    parents: Vec<Weak<AtomicBool>>,
     input: Input,
     output: Output,
 }
 
 impl<Input, Output> CacheCell<Input, Output> {
     fn new(input: Input, output: Output) -> Self {
-        Self { is_alive: AtomicBool::new(true), input, output }
+        Self { was_called: Arc::new(AtomicBool::new(true)), parents: vec![], input, output }
     }
 
     /// Return a reference to the output if the input is equal, marking it live
@@ -151,7 +155,7 @@ impl<Input, Output> CacheCell<Input, Output> {
         Input: Borrow<Arg>,
     {
         if input == &self.input {
-            self.is_alive.store(true, Ordering::Relaxed);
+            self.was_called.store(true, Ordering::Relaxed);
             Some(&self.output)
         } else {
             None
@@ -160,7 +164,7 @@ impl<Input, Output> CacheCell<Input, Output> {
 
     /// Store a new input/output and mark the storage live.
     fn store(&mut self, input: Input, output: Output) {
-        self.is_alive.store(true, Ordering::Relaxed);
+        self.was_called.store(true, Ordering::Relaxed);
         self.input = input;
         self.output = output;
     }
@@ -173,7 +177,7 @@ where
 {
     /// Always marks itself as dead in a GC, returning its previous value.
     fn gc(&mut self) -> Liveness {
-        if self.is_alive.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
+        if self.was_called.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
     }
 }
 
