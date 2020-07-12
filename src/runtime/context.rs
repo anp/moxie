@@ -71,23 +71,18 @@ impl Context {
     {
         let (result, set_result): (_, Key<Poll<Output>>) =
             self.cache_state(id, &(), |()| Poll::Pending);
-        self.cache.cache_with(
-            id,
-            arg,
-            |arg| {
-                let (fut, aborter) = abortable(init(arg));
-                let task = async move {
-                    if let Ok(to_store) = fut.await {
-                        set_result.update(|_| Some(Poll::Ready(to_store)));
-                    }
-                };
-                self.spawner
-                    .spawn_local_obj(Box::pin(task).into())
-                    .expect("that set_task_executor has been called");
-                scopeguard::guard(aborter, |a| a.abort())
-            },
-            |_| {},
-        );
+        self.cache.hold(id, arg, |arg| {
+            let (fut, aborter) = abortable(init(arg));
+            let task = async move {
+                if let Ok(to_store) = fut.await {
+                    set_result.update(|_| Some(Poll::Ready(to_store)));
+                }
+            };
+            self.spawner
+                .spawn_local_obj(Box::pin(task).into())
+                .expect("that set_task_executor has been called");
+            scopeguard::guard(aborter, |a| a.abort())
+        });
 
         match &*result {
             Poll::Ready(ref stored) => Poll::Ready(with(stored)),

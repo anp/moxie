@@ -427,6 +427,29 @@ See [`" stringify!($shared) "::cache_with`] for a lower-level version which does
         self.cache_with(key, arg, init, Clone::clone)
     }}
 
+doc_comment!{r"
+Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes.
+
+Does not return any reference to the cached value. See [`" stringify!($shared) "::cache`] 
+for similar functionality that returns a copy of `Output` or
+[`" stringify!($shared) "::cache_with`] which allows specifying other pre-return functions.
+"=>
+    pub fn hold<Key, Scope, Arg, Input, Output>(
+        &self,
+        key: &Key,
+        arg: &Arg,
+        init: impl FnOnce(&Input) -> Output,
+    )
+    where
+        Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
+        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
+        Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
+        Input: 'static + Borrow<Arg> $(+ $bound)?,
+        Output: 'static $(+ $bound)?,
+    {
+        self.cache_with(key, arg, init, |_| {})
+    }}
+
 doc_comment!{"
 Forwards to [`Gc::gc`].
 "=>
@@ -455,6 +478,8 @@ impl std::panic::RefUnwindSafe for $shared {}
 #[cfg(test)]
 mod $test_mod {
     use super::*;
+    use std::sync::Arc;
+    use parking_lot::Mutex;
 
     #[test]
     fn single_query_with_gc() {
@@ -519,6 +544,51 @@ mod $test_mod {
         let with_a_2_again = storage.cache_with(&'a', &2, &increment_count, Clone::clone);
         assert_eq!(call_count.get(), 4);
         assert_eq!(with_a_2_again, with_a_2);
+    }
+
+    #[test]
+    fn hold_retains_across_gcs() {
+        let storage = $shared::default();
+
+        let guard_count_inc = Arc::new(Mutex::new(0));
+        let drop_count_inc = Arc::new(Mutex::new(0));
+        let (guard_count, drop_count) = (guard_count_inc.clone(), drop_count_inc.clone());
+
+        macro_rules! assert_counts {
+            ($guard:expr, $drop:expr) => {{
+                assert_eq!($guard, *guard_count.lock());
+                assert_eq!($drop, *drop_count.lock());
+            }};
+        }
+
+        let make_guard = || {
+            let (guard_count_inc, drop_count_inc) = (
+                guard_count_inc.clone(),
+                drop_count_inc.clone(),
+            );
+            storage.hold(
+                &'a',
+                &(),
+                move |&()| {
+                    *guard_count_inc.lock() += 1;
+                    scopeguard::guard((), move |()| *drop_count_inc.lock() += 1)
+                },
+            );
+        };
+
+        assert_counts!(0, 0);
+        make_guard();
+        assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 0);
+        make_guard();
+        assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 1);
+        make_guard();
+        assert_counts!(2, 1);
     }
 }
     };
