@@ -438,6 +438,21 @@ impl Debug for Layer {
 impl std::panic::UnwindSafe for Layer {}
 impl std::panic::RefUnwindSafe for Layer {}
 
+/// Implemented by types that can offer themselves as context to a child call.
+pub trait AsContext {
+    /// Call `op` within the context of a [`Layer`] containing `self`.
+    fn offer<R>(self, op: impl FnOnce() -> R) -> R;
+}
+
+impl<T> AsContext for T
+where
+    T: Debug + Sized + 'static,
+{
+    fn offer<R>(self, op: impl FnOnce() -> R) -> R {
+        Layer::new().offer(self).enter(op)
+    }
+}
+
 /// A point-in-time representation of the implicit environment.
 ///
 /// # Examples

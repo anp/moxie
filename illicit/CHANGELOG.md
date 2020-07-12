@@ -4,6 +4,12 @@ The [illicit](https://docs.rs/illicit) crate provides type-indexed thread-local 
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [1.1.0] - 2020-07-12
+
+### Added
+
+- `AsContext` trait offers a shorthand for adding a single type to the local environment.
+
 ## [1.0.0] - 2020-07-03
 
 Commiting to the current API for future `1.*` releases.
