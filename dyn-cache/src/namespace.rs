@@ -9,6 +9,7 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
     marker::PhantomData,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 /// A query key that was hashed as part of an initial lookup and which can be
@@ -47,7 +48,18 @@ where
         Hashed { key, hash: hasher.finish(), hasher: PhantomData }
     }
 
-    fn entry<'k, Key>(
+    fn get<'k, Key>(
+        &self,
+        hashed: &Hashed<&'k Key, H>,
+    ) -> Option<(&Scope, &CacheCell<Input, Output>)>
+    where
+        Key: Eq + ?Sized,
+        Scope: Borrow<Key>,
+    {
+        self.inner.raw_entry().from_hash(hashed.hash, |q| q.borrow().eq(hashed.key))
+    }
+
+    fn entry_mut<'k, Key>(
         &mut self,
         hashed: &Hashed<&'k Key, H>,
     ) -> RawEntryMut<Scope, CacheCell<Input, Output>, H>
@@ -59,7 +71,7 @@ where
     }
 
     pub(super) fn get_if_input_eq<'k, Key, Arg>(
-        &mut self,
+        &self,
         key: &'k Key,
         input: &Arg,
     ) -> Result<&Output, Hashed<&'k Key, H>>
@@ -70,11 +82,7 @@ where
         Input: Borrow<Arg>,
     {
         let hashed = self.hashed(key);
-        if let RawEntryMut::Occupied(occ) = self.entry(&hashed) {
-            occ.into_mut().get_if_input_eq(input).ok_or(hashed)
-        } else {
-            Err(hashed)
-        }
+        self.get(&hashed).and_then(|(_, cell)| cell.get_if_input_eq(input)).ok_or(hashed)
     }
 
     pub(super) fn store<Key>(&mut self, hashed: Hashed<&Key, H>, input: Input, output: Output)
@@ -82,7 +90,7 @@ where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
-        match self.entry(&hashed) {
+        match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
                 occ.into_mut().store(input, output);
             }
@@ -124,25 +132,25 @@ where
 /// A CacheCell represents the storage used for a particular input/output pair
 /// on the heap.
 struct CacheCell<Input, Output> {
-    liveness: Liveness,
+    is_alive: AtomicBool,
     input: Input,
     output: Output,
 }
 
 impl<Input, Output> CacheCell<Input, Output> {
     fn new(input: Input, output: Output) -> Self {
-        Self { liveness: Liveness::Live, input, output }
+        Self { is_alive: AtomicBool::new(true), input, output }
     }
 
     /// Return a reference to the output if the input is equal, marking it live
     /// in the process.
-    fn get_if_input_eq<Arg>(&mut self, input: &Arg) -> Option<&Output>
+    fn get_if_input_eq<Arg>(&self, input: &Arg) -> Option<&Output>
     where
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,
     {
         if input == &self.input {
-            self.liveness = Liveness::Live;
+            self.is_alive.store(true, Ordering::Relaxed);
             Some(&self.output)
         } else {
             None
@@ -151,7 +159,7 @@ impl<Input, Output> CacheCell<Input, Output> {
 
     /// Store a new input/output and mark the storage live.
     fn store(&mut self, input: Input, output: Output) {
-        self.liveness = Liveness::Live;
+        self.is_alive.store(true, Ordering::Relaxed);
         self.input = input;
         self.output = output;
     }
@@ -164,7 +172,7 @@ where
 {
     /// Always marks itself as dead in a GC, returning its previous value.
     fn gc(&mut self) -> Liveness {
-        std::mem::replace(&mut self.liveness, Liveness::Dead)
+        if self.is_alive.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
     }
 }
 
