@@ -475,6 +475,55 @@ mod $test_mod {
         make_guard();
         assert_counts!(2, 1);
     }
+
+    #[test]
+    fn nested_hold_retains_across_gcs() {
+        let storage = $shared::default();
+
+        let guard_count_inc = Arc::new(Mutex::new(0));
+        let drop_count_inc = Arc::new(Mutex::new(0));
+        let (guard_count, drop_count) = (guard_count_inc.clone(), drop_count_inc.clone());
+
+        macro_rules! assert_counts {
+            ($guard:expr, $drop:expr) => {{
+                assert_eq!($guard, *guard_count.lock(), "guard count incorrect");
+                assert_eq!($drop, *drop_count.lock(), "drop count incorrect");
+            }};
+        }
+
+        let make_guard = || {
+            let (guard_count_inc, drop_count_inc) = (
+                guard_count_inc.clone(),
+                drop_count_inc.clone(),
+            );
+            storage.hold(
+                &'a',
+                &(),
+                |&()| {
+                    *guard_count_inc.lock() += 1;
+                    scopeguard::guard((), move |()| *drop_count_inc.lock() += 1)
+                },
+            );
+        };
+
+        let memo_make_guard = || {
+            storage.hold("foo", "bar", |_| make_guard());
+        };
+
+        let memo_memo_make_guard = || {
+            storage.hold("baz", "quux", |_| memo_make_guard());
+        };
+
+        assert_counts!(0, 0);
+        memo_memo_make_guard();
+        assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 0);
+        memo_memo_make_guard();
+        assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 0);
+    }
 }
     };
 }
