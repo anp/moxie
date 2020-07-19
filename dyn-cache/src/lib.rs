@@ -149,6 +149,42 @@ pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuild
     key: Result<Hashed<&'k Key, H>, &'k Key>,
 }
 
+/// A cache for types which are not thread-safe (`?Send`).
+pub mod local {
+    use super::*;
+    use hash_hasher::HashBuildHasher;
+    use hashbrown::HashMap;
+    use std::{
+        any::TypeId,
+        borrow::Borrow,
+        cell::RefCell,
+        cmp::Eq,
+        fmt::{Debug, Formatter, Result as FmtResult},
+        hash::Hash,
+        rc::Rc,
+    };
+
+    define_cache!(local, LocalCache, Rc, RefCell::borrow_mut);
+}
+
+/// A thread-safe cache which requires stored types implement `Send`.
+pub mod sync {
+    use super::*;
+    use hash_hasher::HashBuildHasher;
+    use hashbrown::HashMap;
+    use parking_lot::Mutex;
+    use std::{
+        any::TypeId,
+        borrow::Borrow,
+        cmp::Eq,
+        fmt::{Debug, Formatter, Result as FmtResult},
+        hash::Hash,
+        sync::Arc,
+    };
+
+    define_cache!(sync, SendCache: Send, Arc, Mutex::lock);
+}
+
 /// A type which can contain values of varying liveness, including itself.
 trait Gc: Downcast + Debug {
     /// Remove dead entries, returning the container's own status afterwards.
@@ -203,40 +239,4 @@ where
     fn ty(&self) -> TypeId {
         TypeId::of::<(Scope, Input, Output)>()
     }
-}
-
-/// A cache for types which are not thread-safe (`?Send`).
-pub mod local {
-    use super::*;
-    use hash_hasher::HashBuildHasher;
-    use hashbrown::HashMap;
-    use std::{
-        any::TypeId,
-        borrow::Borrow,
-        cell::RefCell,
-        cmp::Eq,
-        fmt::{Debug, Formatter, Result as FmtResult},
-        hash::Hash,
-        rc::Rc,
-    };
-
-    define_cache!(local, LocalCache, Rc, RefCell::borrow_mut);
-}
-
-/// A thread-safe cache which requires stored types implement `Send`.
-pub mod sync {
-    use super::*;
-    use hash_hasher::HashBuildHasher;
-    use hashbrown::HashMap;
-    use parking_lot::Mutex;
-    use std::{
-        any::TypeId,
-        borrow::Borrow,
-        cmp::Eq,
-        fmt::{Debug, Formatter, Result as FmtResult},
-        hash::Hash,
-        sync::Arc,
-    };
-
-    define_cache!(sync, SendCache: Send, Arc, Mutex::lock);
 }
