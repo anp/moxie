@@ -108,8 +108,8 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn collect(&mut self) -> Liveness {
-        self.inner.retain(|_, c| matches!(c.collect(), Liveness::Live));
+    fn sweep(&mut self) -> Liveness {
+        self.inner.retain(|_, c| matches!(c.sweep(), Liveness::Live));
         Liveness::Live // no reason to throw away the allocations behind namespaces afaict
     }
 }
@@ -171,8 +171,8 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn collect(&mut self) -> Liveness {
-        self.dep.collect()
+    fn sweep(&mut self) -> Liveness {
+        self.dep.sweep()
     }
 }
 
@@ -207,7 +207,7 @@ impl DepNode {
 
 impl Gc for DepNode {
     /// Always marks itself as dead in a GC, returning its previous value.
-    fn collect(&mut self) -> Liveness {
+    fn sweep(&mut self) -> Liveness {
         if self.inner.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
     }
 }

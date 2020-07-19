@@ -148,15 +148,15 @@ impl $cache {
 
     /// Drop any values which have not been marked alive since the last call to this method.
     pub fn gc(&mut self) {
-        self.collect();
+        self.sweep();
     }
 }
 
 impl Gc for $cache {
-    fn collect(&mut self) -> Liveness {
+    fn sweep(&mut self) -> Liveness {
         self.inner.values_mut()
             .fold(Liveness::Dead, |l, namespace| {
-                if namespace.collect() == Liveness::Live {
+                if namespace.sweep() == Liveness::Live {
                     Liveness::Live
                 } else {
                     l
@@ -328,7 +328,7 @@ doc_comment!{"
 Forwards to [`" stringify!($cache) "::gc`].
 "=>
     pub fn gc(&self) {
-        self.inner.$acquire().collect();
+        self.inner.$acquire().sweep();
     }}
 }
 
