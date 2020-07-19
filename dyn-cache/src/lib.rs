@@ -145,11 +145,32 @@ mod definition;
 
 use namespace::{KeyMiss, Namespace};
 
-/// The result of a failed attempt to retrieve a value from the cache. Pass this
-/// back to the inner cache's `store()` method to initialize a cached value.
+/// The result of a failed attempt to retrieve a value from the cache.
+/// Initialize a full [`CacheEntry`] for storage with [`CacheMiss::init`].
 pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     query: Query<Scope, Input, Output>,
     key: KeyMiss<'k, Key, H>,
+}
+
+impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, Output, H> {
+    /// Prepare the cache miss to be populated by running `query(arg)`,
+    /// returning a separate value. The value returned (`R`) is typically
+    /// derived in some way from the stored `Output`.
+    pub fn init<R>(
+        self,
+        input: Input,
+        query: impl FnOnce(&Input) -> (Output, R),
+    ) -> (CacheEntry<'k, Key, Scope, Input, Output, H>, R) {
+        let (output, to_return) = query(&input);
+        (CacheEntry { output, input, miss: self }, to_return)
+    }
+}
+
+/// A fully-initialized input/output pair, ready to be written to the store.
+pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
+    miss: CacheMiss<'k, Key, Scope, Input, Output, H>,
+    input: Input,
+    output: Output,
 }
 
 /// A cache for types which are not thread-safe (`?Send`).

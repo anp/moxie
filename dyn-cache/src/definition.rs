@@ -99,9 +99,11 @@ impl $cache {
     /// Call `get` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        CacheMiss { query, key }: CacheMiss<'_, Key, Scope, Input, Output>,
-        input: Input,
-        output: Output,
+        CacheEntry {
+            miss: CacheMiss { query, key },
+            input,
+            output,
+        }: CacheEntry<'_, Key, Scope, Input, Output>,
     ) where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -271,10 +273,13 @@ See [`" stringify!($shared) "::cache`] for an ergonomic wrapper that requires `O
             Err(m) => m,
         };
 
-        let arg = arg.to_owned();
-        let to_store = init(&arg);
-        let to_return = with(&to_store);
-        self.inner.$acquire().store(miss, arg, to_store);
+        let (to_store, to_return) = miss.init(arg.to_owned(), |arg| {
+            let store = init(arg);
+            let ret = with(&store);
+            (store, ret)
+        });
+
+        self.inner.$acquire().store(to_store);
         to_return
     }}
 
