@@ -9,10 +9,7 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
     marker::PhantomData,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 /// A query key that was hashed as part of an initial lookup and which can be
@@ -136,14 +133,14 @@ where
 /// A CacheCell represents the storage used for a particular input/output pair
 /// on the heap.
 struct CacheCell<Input, Output> {
-    was_called: Arc<AtomicBool>,
+    dep: DepNode,
     input: Input,
     output: Output,
 }
 
 impl<Input, Output> CacheCell<Input, Output> {
     fn new(input: Input, output: Output) -> Self {
-        Self { was_called: Arc::new(AtomicBool::new(true)), input, output }
+        Self { dep: DepNode::new(), input, output }
     }
 
     /// Return a reference to the output if the input is equal, marking it live
@@ -154,7 +151,7 @@ impl<Input, Output> CacheCell<Input, Output> {
         Input: Borrow<Arg>,
     {
         if input == &self.input {
-            self.was_called.store(true, Ordering::Relaxed);
+            self.dep.mark_live();
             Some(&self.output)
         } else {
             None
@@ -163,7 +160,7 @@ impl<Input, Output> CacheCell<Input, Output> {
 
     /// Store a new input/output and mark the storage live.
     fn store(&mut self, input: Input, output: Output) {
-        self.was_called.store(true, Ordering::Relaxed);
+        self.dep.mark_live();
         self.input = input;
         self.output = output;
     }
@@ -174,9 +171,8 @@ where
     Input: 'static,
     Output: 'static,
 {
-    /// Always marks itself as dead in a GC, returning its previous value.
     fn gc(&mut self) -> Liveness {
-        if self.was_called.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
+        self.dep.gc()
     }
 }
 
@@ -191,5 +187,27 @@ where
             .entry(&"input", &type_name::<Input>())
             .entry(&"output", &type_name::<Output>())
             .finish()
+    }
+}
+
+#[derive(Debug)]
+struct DepNode {
+    inner: AtomicBool,
+}
+
+impl DepNode {
+    fn new() -> Self {
+        Self { inner: AtomicBool::new(true) }
+    }
+
+    fn mark_live(&self) {
+        self.inner.store(true, Ordering::Relaxed);
+    }
+}
+
+impl Gc for DepNode {
+    /// Always marks itself as dead in a GC, returning its previous value.
+    fn gc(&mut self) -> Liveness {
+        if self.inner.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
     }
 }
