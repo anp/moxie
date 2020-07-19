@@ -89,9 +89,9 @@ impl $cache {
     {
         let query = Query::new(self.inner.hasher());
         if let Some(ns) = self.get_namespace(&query) {
-            ns.get(key, arg).map_err(|h| CacheMiss { query, key: Ok(h) })
+            ns.get(key, arg).map_err(|h| CacheMiss { query, key: h })
         } else {
-            Err(CacheMiss { query, key: Err(key) })
+            Err(CacheMiss { query, key: KeyMiss::just_key(key) })
         }
     }
 
