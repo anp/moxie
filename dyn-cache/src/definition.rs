@@ -63,8 +63,8 @@ inserted with [`" stringify!($cache) "::store`] or read with
 "=>
 #[derive(Debug, Default)]
 pub struct $cache {
-    /// We use a [`hash_hasher::HashedMap`] here because we know that `Query` is made up only of
-    /// `TypeIds` which come pre-hashed courtesy of rustc.
+    /// We use a [`hash_hasher::HashBuildHasher`] here because we know that `TypeId`s
+    /// are globally unique and pre-hashed courtesy of rustc.
     inner: HashMap<TypeId, Box<dyn Gc $(+ $bound)?>, HashBuildHasher>,
 }}
 
