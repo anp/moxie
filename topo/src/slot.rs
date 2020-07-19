@@ -48,12 +48,15 @@ where
 
         match existing_tokens.get(value, &()) {
             Ok(token) => *token,
-            Err(hashed) => {
-                let mut indices = INDICES.lock();
-                let count = indices.entry(TypeId::of::<T>()).or_default();
-                *count += 1;
-                let new_token = Self { index: *count, ty: PhantomData };
-                existing_tokens.store(hashed, (), new_token);
+            Err(miss) => {
+                let (to_store, new_token) = miss.init((), |_| {
+                    let mut indices = INDICES.lock();
+                    let count = indices.entry(TypeId::of::<T>()).or_default();
+                    *count += 1;
+                    let new_token = Self { index: *count, ty: PhantomData };
+                    (new_token, new_token)
+                });
+                existing_tokens.store(to_store);
                 new_token
             }
         }
