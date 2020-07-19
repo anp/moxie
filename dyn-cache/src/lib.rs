@@ -7,29 +7,37 @@
 //!
 //! There are two main flavors of cache available for use in this crate:
 //!
+//! | Shared type                 | Synchronized? |
+//! |-----------------------------|---------------|
+//! | [`sync::SharedSendCache`]   | Mutex         |
+//! | [`local::SharedLocalCache`] | RefCell       |
+//!
+//! These variants are used by calling [`sync::SharedSendCache::cache_with`] or
+//! [`local::SharedLocalCache::cache`].
+//!
+//! The shared cache types above are implemented by wrapping these "inner"
+//! types:
+//!
 //! | Mutable type          | Requires `Send`? |
 //! |-----------------------|------------------|
 //! | [`sync::SendCache`]   | yes              |
 //! | [`local::LocalCache`] | no               |
 //!
 //! These "inner" caches require mutable access to call their functions like
-//! [`local::LocalCache::get`] or [`sync::SendCache::store`].
+//! [`local::LocalCache::get`] which returns either a reference or a
+//! [`CacheMiss`] that can be passed back to the cache in
+//! [`local::LocalCache::store`] to initialize a value in the cache.
 //!
-//! They each come available in a shared variant:
+//! See [`sync::SendCache::get`] and [`sync::SendCache::store`] for the
+//! thread-safe equivalents.
 //!
-//! | Shared type                 | Synchronized? |
-//! |-----------------------------|---------------|
-//! | [`sync::SharedSendCache`]   | Mutex         |
-//! | [`local::SharedLocalCache`] | RefCell       |
-//!
-//! These variants are wrapped with reference counting and synchronization and
-//! are used by calling [`sync::SharedSendCache::cache_with`] or
-//! [`local::SharedLocalCache::cache`].
+//! The shared variants are defined by wrapping these inner cache types in
+//! reference counting and synchronized mutability.
 //!
 //! # Query types
 //!
-//! Each [`Query`] type maps to a typed "namespace" within the unityped cache
-//! storage, each query having a distinct type for its scope, input, and
+//! Each query type maps to a typed "namespace" within the unityped cache
+//! storage, each query having a distinct type each for its scope, input, and
 //! output.
 //!
 //! ## Scopes
@@ -39,7 +47,7 @@
 //! efficiently and uniquely indexed within a namespace.
 //!
 //! Each scope identifies 0-1 `(Input, Output)` pairs in each namespace. The
-//! same type of scope can be used in multiple [`Query`]s without collision if
+//! same type of scope can be used in multiple queries without collision if
 //! the types of inputs, outputs, or both differ.
 //!
 //! ## Inputs
@@ -132,8 +140,14 @@ use std::{
 mod definition;
 mod storage;
 
-pub use storage::Hashed;
-use storage::Namespace;
+use storage::{Hashed, Namespace};
+
+/// The result of a failed attempt to retrieve a value from the cache. Pass this
+/// back to the inner cache's `store()` method to initialize a cached value.
+pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
+    query: Query<Scope, Input, Output>,
+    key: Result<Hashed<&'k Key, H>, &'k Key>,
+}
 
 /// A type which can contain values of varying liveness, including itself.
 pub trait Gc: Downcast + Debug {
@@ -152,16 +166,11 @@ pub enum Liveness {
     Dead,
 }
 
-/// The result of lookup up a query key and its input/arg within a cache.
-type CacheLookup<'k, Key, Scope, Input, Output, H = DefaultHashBuilder> =
-    (Query<Scope, Input, Output>, KeyLookup<'k, Key, H>);
-
-/// The result of looking up a key within a cache namespace.
 type KeyLookup<'k, K, H = DefaultHashBuilder> = Result<Hashed<&'k K, H>, &'k K>;
 
 /// The type of a dynamic cache query, used to shard storage in a fashion
 /// similar to `anymap` or `typemap`.
-pub struct Query<Scope, Input, Output, H = HashBuildHasher> {
+struct Query<Scope, Input, Output, H = HashBuildHasher> {
     ty: PhantomData<(Scope, Input, Output)>,
     hasher: PhantomData<H>,
     hash: u64,
