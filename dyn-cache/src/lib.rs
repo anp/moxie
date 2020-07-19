@@ -136,9 +136,12 @@ use std::{
     marker::PhantomData,
 };
 
-#[macro_use]
-mod definition;
+mod cache_cell;
+mod dep_node;
 mod storage;
+
+#[macro_use] // put this after other modules so we don't accidentally depend on root-only macros
+mod definition;
 
 use storage::{Hashed, Namespace};
 
