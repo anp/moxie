@@ -33,6 +33,8 @@ pub struct ServerOpts {
     addr: IpAddr,
     #[options(default = "8000")]
     port: u16,
+    #[options(default = "false")]
+    open: bool,
 }
 
 impl Default for ServerOpts {
@@ -41,6 +43,7 @@ impl Default for ServerOpts {
             // this is so annoying. different cli parsing option maybe?
             addr: "::1".parse().unwrap(),
             port: 8000,
+            open: false,
         }
     }
 }
@@ -50,6 +53,12 @@ impl ServerOpts {
         let (session_tx, session_rx) = chan();
         let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
         let mut runner = System::new("ofl");
+        if self.open {
+            let root_url = format!("http://[{}]:{}/index.html", self.addr, self.port);
+            std::thread::spawn(move || {
+                opener::open(&root_url).unwrap();
+            });
+        }
         runner.block_on(http_server(self.addr, self.port, root_path, session_tx, watcher))?;
         Ok(())
     }
@@ -62,11 +71,6 @@ fn http_server(
     session_tx: Sender<Addr<ChangeWatchSession>>,
     watcher: Arc<FilesWatcher>,
 ) -> impl Future<Output = std::io::Result<()>> {
-    let root_url = format!("http://[{}]:{}/index.html", addr, port);
-    std::thread::spawn(move || {
-        opener::open(&root_url).unwrap();
-    });
-
     HttpServer::new(move || {
         let session_tx = session_tx.clone();
         let watcher_middleware = watcher.clone();
