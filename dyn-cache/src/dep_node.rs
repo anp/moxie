@@ -12,13 +12,13 @@ impl DepNode {
     }
 
     pub fn mark_live(&self) {
-        self.inner.store(true, Ordering::Relaxed);
+        self.inner.store(true, Ordering::Release);
     }
 }
 
 impl Gc for DepNode {
     /// Always marks itself as dead in a GC, returning its previous value.
     fn sweep(&mut self) -> Liveness {
-        if self.inner.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
+        if self.inner.swap(false, Ordering::AcqRel) { Liveness::Live } else { Liveness::Dead }
     }
 }
