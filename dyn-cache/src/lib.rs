@@ -138,12 +138,12 @@ use std::{
 
 mod cache_cell;
 mod dep_node;
-mod storage;
+mod namespace;
 
 #[macro_use] // put this after other modules so we don't accidentally depend on root-only macros
 mod definition;
 
-use storage::{KeyMiss, Namespace};
+use namespace::{KeyMiss, Namespace};
 
 /// The result of a failed attempt to retrieve a value from the cache. Pass this
 /// back to the inner cache's `store()` method to initialize a cached value.
