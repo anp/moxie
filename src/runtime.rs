@@ -19,7 +19,7 @@ mod context;
 mod runloop;
 mod var;
 
-use dyn_cache::SharedLocalCache;
+use dyn_cache::local::SharedLocalCache;
 use futures::{
     future::LocalFutureObj,
     task::{noop_waker, LocalSpawn, SpawnError},

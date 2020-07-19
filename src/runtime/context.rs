@@ -1,6 +1,6 @@
 use super::{Revision, Var};
 use crate::{Commit, Key};
-use dyn_cache::SharedLocalCache;
+use dyn_cache::local::SharedLocalCache;
 use futures::{future::abortable, task::LocalSpawn};
 use std::{
     borrow::Borrow,

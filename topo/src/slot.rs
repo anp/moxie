@@ -1,4 +1,4 @@
-use dyn_cache::SendCache;
+use dyn_cache::sync::SendCache;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::{
