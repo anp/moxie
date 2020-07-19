@@ -3,22 +3,22 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug)]
 pub struct DepNode {
-    inner: AtomicBool,
+    is_root: AtomicBool,
 }
 
 impl DepNode {
     pub fn new() -> Self {
-        Self { inner: AtomicBool::new(true) }
+        Self { is_root: AtomicBool::new(true) }
     }
 
     pub fn root(&self) {
-        self.inner.store(true, Ordering::Release);
+        self.is_root.store(true, Ordering::Release);
     }
 }
 
 impl Gc for DepNode {
     /// Always marks itself as dead in a GC, returning its previous value.
     fn sweep(&mut self) -> Liveness {
-        if self.inner.swap(false, Ordering::AcqRel) { Liveness::Live } else { Liveness::Dead }
+        if self.is_root.swap(false, Ordering::AcqRel) { Liveness::Live } else { Liveness::Dead }
     }
 }
