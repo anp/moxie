@@ -152,7 +152,7 @@ pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuild
 /// A type which can contain values of varying liveness, including itself.
 trait Gc: Downcast + Debug {
     /// Remove dead entries, returning the container's own status afterwards.
-    fn collect(&mut self) -> Liveness;
+    fn sweep(&mut self) -> Liveness;
 }
 
 impl_downcast!(Gc);
