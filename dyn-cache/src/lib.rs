@@ -143,13 +143,13 @@ mod storage;
 #[macro_use] // put this after other modules so we don't accidentally depend on root-only macros
 mod definition;
 
-use storage::{Hashed, Namespace};
+use storage::{KeyMiss, Namespace};
 
 /// The result of a failed attempt to retrieve a value from the cache. Pass this
 /// back to the inner cache's `store()` method to initialize a cached value.
 pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     query: Query<Scope, Input, Output>,
-    key: Result<Hashed<&'k Key, H>, &'k Key>,
+    key: KeyMiss<'k, Key, H>,
 }
 
 /// A cache for types which are not thread-safe (`?Send`).
@@ -204,8 +204,6 @@ enum Liveness {
     /// The value should be dropped.
     Dead,
 }
-
-type KeyLookup<'k, K, H = DefaultHashBuilder> = Result<Hashed<&'k K, H>, &'k K>;
 
 /// The type of a dynamic cache query, used to shard storage in a fashion
 /// similar to `anymap` or `typemap`.

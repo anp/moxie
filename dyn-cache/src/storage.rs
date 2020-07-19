@@ -1,4 +1,4 @@
-use super::{cache_cell::CacheCell, Gc, KeyLookup, Liveness};
+use super::{cache_cell::CacheCell, Gc, Liveness};
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
@@ -11,10 +11,26 @@ use std::{
     marker::PhantomData,
 };
 
+/// The result of failing to find a `key` in a cache with matching input. Passed
+/// back to [`Namespace::store`] to initialize a value in the cache.
+pub struct KeyMiss<'k, K: ?Sized, H> {
+    inner: Result<Hashed<&'k K, H>, &'k K>,
+}
+
+impl<'k, K: ?Sized, H> KeyMiss<'k, K, H> {
+    fn hashed(h: Hashed<&'k K, H>) -> Self {
+        Self { inner: Ok(h) }
+    }
+
+    pub(crate) fn just_key(k: &'k K) -> Self {
+        Self { inner: Err(k) }
+    }
+}
+
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
 #[derive(Clone, Copy, Debug)]
-pub struct Hashed<K, H> {
+struct Hashed<K, H> {
     key: K,
     hash: u64,
     hasher: PhantomData<H>,
@@ -41,7 +57,7 @@ where
     Output: 'static,
     H: BuildHasher,
 {
-    pub fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key, H>
+    fn hashed<'k, Key>(&self, key: &'k Key) -> Hashed<&'k Key, H>
     where
         Key: Hash + ?Sized,
     {
@@ -72,11 +88,11 @@ where
         self.inner.raw_entry_mut().from_hash(hashed.hash, |q| q.borrow().eq(hashed.key))
     }
 
-    pub(super) fn get<'k, Key, Arg>(
+    pub fn get<'k, Key, Arg>(
         &self,
         key: &'k Key,
         input: &Arg,
-    ) -> Result<&Output, Hashed<&'k Key, H>>
+    ) -> Result<&Output, KeyMiss<'k, Key, H>>
     where
         Key: Eq + Hash + ?Sized,
         Scope: Borrow<Key>,
@@ -84,15 +100,17 @@ where
         Input: Borrow<Arg>,
     {
         let hashed = self.hashed(key);
-        self.entry(&hashed).and_then(|(_, cell)| cell.get(input)).ok_or(hashed)
+        self.entry(&hashed)
+            .and_then(|(_, cell)| cell.get(input))
+            .ok_or_else(|| KeyMiss::hashed(hashed))
     }
 
-    pub(super) fn store<Key>(&mut self, hashed: KeyLookup<'_, Key, H>, input: Input, output: Output)
+    pub fn store<Key>(&mut self, hashed: KeyMiss<'_, Key, H>, input: Input, output: Output)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
-        let hashed = hashed.unwrap_or_else(|k| self.hashed(k));
+        let hashed = hashed.inner.unwrap_or_else(|k| self.hashed(k));
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
                 occ.into_mut().store(input, output);
