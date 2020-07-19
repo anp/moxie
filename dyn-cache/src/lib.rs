@@ -160,9 +160,9 @@ impl_downcast!(Gc);
 /// Describes the outcome of garbage collection for a cached value.
 #[derive(Debug, PartialEq)]
 pub enum Liveness {
-    /// The value would be retained in a GC right now.
+    /// The value is still live.
     Live,
-    /// The value would be dropped in a GC right now.
+    /// The value should be dropped.
     Dead,
 }
 
