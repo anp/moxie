@@ -69,12 +69,14 @@ pub struct $cache {
 }}
 
 impl $cache {
-    /// Return a reference to a query's stored output if a result is stored and `arg` equals the
-    /// previously-stored `Input`. If a reference is returned, the stored input/output
-    /// is marked live and will not be GC'd the next call.
-    ///
-    /// If no reference is found, the hashes of the query type and the provided key are returned
-    /// to be reused when storing a value.
+doc_comment! {"
+Return a reference to a query's stored output if a result is stored *and* `arg` equals the
+previously-stored `Input`. If a reference is returned, the stored input/output
+is marked as a root and will not be GC'd the next call.
+
+If no reference is found, a [`CacheMiss`] is returned. Call [`CacheMiss::init`] to get
+a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
+"=>
     pub fn get<'k, Key, Scope, Arg, Input, Output>(
         &self,
         key: &'k Key,
@@ -93,25 +95,29 @@ impl $cache {
         } else {
             Err(CacheMiss { query, key: KeyMiss::just_key(key) })
         }
-    }
+    }}
 
-    /// Stores the input/output of a query which will not be GC'd at the next call.
-    /// Call `get` to get a `Hashed` instance.
+doc_comment! {"
+Stores a fresh [`CacheEntry`] whose input/output will not be GC'd at the next call.
+Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::init`] to get a
+[`CacheEntry`].
+    "=>
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        CacheEntry {
-            miss: CacheMiss { query, key },
-            input,
-            output,
-        }: CacheEntry<'_, Key, Scope, Input, Output>,
+        entry: CacheEntry<'_, Key, Scope, Input, Output>,
     ) where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
+        let CacheEntry {
+            miss: CacheMiss { query, key },
+            input,
+            output,
+        } = entry;
         self.get_namespace_mut(&query).store(key, input, output);
-    }
+    }}
 
     fn get_namespace<Scope, Input, Output>(
         &self,
