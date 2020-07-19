@@ -1,4 +1,4 @@
-use super::{Gc, KeyLookup, Liveness};
+use super::{cache_cell::CacheCell, Gc, KeyLookup, Liveness};
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
@@ -9,13 +9,12 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
     marker::PhantomData,
-    sync::atomic::{AtomicBool, Ordering},
 };
 
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
 #[derive(Clone, Copy, Debug)]
-pub struct Hashed<K, H = DefaultHashBuilder> {
+pub struct Hashed<K, H> {
     key: K,
     hash: u64,
     hasher: PhantomData<H>,
@@ -26,7 +25,10 @@ pub struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
     inner: HashMap<Scope, CacheCell<Input, Output>, H>,
 }
 
-impl<Scope, Input, Output> Default for Namespace<Scope, Input, Output> {
+impl<Scope, Input, Output, H> Default for Namespace<Scope, Input, Output, H>
+where
+    H: Default,
+{
     fn default() -> Self {
         Self { inner: Default::default() }
     }
@@ -102,11 +104,12 @@ where
     }
 }
 
-impl<Scope, Input, Output> Gc for Namespace<Scope, Input, Output>
+impl<Scope, Input, Output, H> Gc for Namespace<Scope, Input, Output, H>
 where
     Scope: Eq + Hash + 'static,
     Input: 'static,
     Output: 'static,
+    H: 'static,
 {
     fn sweep(&mut self) -> Liveness {
         self.inner.retain(|_, c| matches!(c.sweep(), Liveness::Live));
@@ -114,7 +117,7 @@ where
     }
 }
 
-impl<Scope, Input, Output> Debug for Namespace<Scope, Input, Output>
+impl<Scope, Input, Output, H> Debug for Namespace<Scope, Input, Output, H>
 where
     Scope: Eq + Hash + 'static,
     Input: 'static,
@@ -127,87 +130,5 @@ where
             .entry(&"input", &type_name::<Input>())
             .entry(&"output", &type_name::<Output>())
             .finish()
-    }
-}
-
-/// A CacheCell represents the storage used for a particular input/output pair
-/// on the heap.
-struct CacheCell<Input, Output> {
-    dep: DepNode,
-    input: Input,
-    output: Output,
-}
-
-impl<Input, Output> CacheCell<Input, Output> {
-    fn new(input: Input, output: Output) -> Self {
-        Self { dep: DepNode::new(), input, output }
-    }
-
-    /// Return a reference to the output if the input is equal, marking it live
-    /// in the process.
-    fn get<Arg>(&self, input: &Arg) -> Option<&Output>
-    where
-        Arg: PartialEq<Input> + ?Sized,
-        Input: Borrow<Arg>,
-    {
-        if input == &self.input {
-            self.dep.mark_live();
-            Some(&self.output)
-        } else {
-            None
-        }
-    }
-
-    /// Store a new input/output and mark the storage live.
-    fn store(&mut self, input: Input, output: Output) {
-        self.dep.mark_live();
-        self.input = input;
-        self.output = output;
-    }
-}
-
-impl<Input, Output> Gc for CacheCell<Input, Output>
-where
-    Input: 'static,
-    Output: 'static,
-{
-    fn sweep(&mut self) -> Liveness {
-        self.dep.sweep()
-    }
-}
-
-impl<Input, Output> Debug for CacheCell<Input, Output>
-where
-    Input: 'static,
-    Output: 'static,
-{
-    // someday specialization might save us from these lame debug impls?
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_map()
-            .entry(&"input", &type_name::<Input>())
-            .entry(&"output", &type_name::<Output>())
-            .finish()
-    }
-}
-
-#[derive(Debug)]
-struct DepNode {
-    inner: AtomicBool,
-}
-
-impl DepNode {
-    fn new() -> Self {
-        Self { inner: AtomicBool::new(true) }
-    }
-
-    fn mark_live(&self) {
-        self.inner.store(true, Ordering::Relaxed);
-    }
-}
-
-impl Gc for DepNode {
-    /// Always marks itself as dead in a GC, returning its previous value.
-    fn sweep(&mut self) -> Liveness {
-        if self.inner.swap(false, Ordering::Relaxed) { Liveness::Live } else { Liveness::Dead }
     }
 }
