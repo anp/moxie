@@ -22,7 +22,7 @@ pub struct Hashed<K, H = DefaultHashBuilder> {
 }
 
 /// A namespace stores all cached values for a particular query type.
-pub(super) struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
+pub struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
     inner: HashMap<Scope, CacheCell<Input, Output>, H>,
 }
 

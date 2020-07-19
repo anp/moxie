@@ -79,7 +79,7 @@ impl $cache {
         &self,
         key: &'k Key,
         arg: &Arg,
-    ) -> Result<&Output, CacheLookup<'k, Key, Scope, Input, Output>>
+    ) -> Result<&Output, CacheMiss<'k, Key, Scope, Input, Output>>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
@@ -89,9 +89,9 @@ impl $cache {
     {
         let query = Query::new(self.inner.hasher());
         if let Some(ns) = self.get_namespace(&query) {
-            ns.get(key, arg).map_err(|h| (query, Ok(h)))
+            ns.get(key, arg).map_err(|h| CacheMiss { query, key: Ok(h) })
         } else {
-            Err((query, Err(key)))
+            Err(CacheMiss { query, key: Err(key) })
         }
     }
 
@@ -99,7 +99,7 @@ impl $cache {
     /// Call `get` to get a `Hashed` instance.
     pub fn store<Key, Scope, Input, Output>(
         &mut self,
-        (query, key): CacheLookup<'_, Key, Scope, Input, Output>,
+        CacheMiss { query, key }: CacheMiss<'_, Key, Scope, Input, Output>,
         input: Input,
         output: Output,
     ) where
@@ -256,15 +256,15 @@ See [`" stringify!($shared) "::cache`] for an ergonomic wrapper that requires `O
         Output: 'static $(+ $bound)?,
         Ret: 'static $(+ $bound)?,
     {
-        let hashed = match { self.inner.$acquire().get(key, arg) } {
+        let miss = match { self.inner.$acquire().get(key, arg) } {
             Ok(stored) => return with(stored),
-            Err(h) => h,
+            Err(m) => m,
         };
 
         let arg = arg.to_owned();
         let to_store = init(&arg);
         let to_return = with(&to_store);
-        self.inner.$acquire().store(hashed, arg, to_store);
+        self.inner.$acquire().store(miss, arg, to_store);
         to_return
     }}
 
