@@ -12,9 +12,7 @@ invocations.
 - Crate extracted from `topo::cache` module.
 - `{LocalCache,SendCache}::cache` wraps `cache_with` for types that impl `Clone`.
 - `{LocalCache,SendCache}::hold` wraps `cache_with` for queries that don't need returns.
-- `Gc` trait is public, inner cache types implement it.
-- `Hashed` and `Query` have an additional type parameter for the type of hasher used to create them.
-  Both default to the hasher type currently in use in their respective maps.
+- `CacheMiss` struct is used to ensure storage happens where the failed lookup happened.
 
 ### Changed
 

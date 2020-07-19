@@ -31,7 +31,7 @@ paste::item! {
 
 doc_comment! {"
 Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
-through [`Shared" stringify!($cache) "::cache_with`] and [`Gc::gc`].
+through [`" stringify!($shared) "::cache_with`] and [`" stringify!($shared) "::gc`].
 
 # Query types
 
@@ -54,7 +54,7 @@ whether to return a stored output.
 
 # Garbage Collection
 
-Each time [`Gc::gc`] is called it removes any values which haven't been
+Each time [`" stringify!($cache) "::gc`] is called it removes any values which haven't been
 referenced since the prior call.
 
 After each GC, all values still in the cache are marked garbage. They are marked live again when
@@ -145,13 +145,18 @@ impl $cache {
             }).1;
         gc.as_any_mut().downcast_mut().unwrap()
     }
+
+    /// Drop any values which have not been marked alive since the last call to this method.
+    pub fn gc(&mut self) {
+        self.collect();
+    }
 }
 
 impl Gc for $cache {
-    fn gc(&mut self) -> Liveness {
+    fn collect(&mut self) -> Liveness {
         self.inner.values_mut()
             .fold(Liveness::Dead, |l, namespace| {
-                if namespace.gc() == Liveness::Live {
+                if namespace.collect() == Liveness::Live {
                     Liveness::Live
                 } else {
                     l
@@ -166,6 +171,11 @@ impl std::panic::RefUnwindSafe for $cache {}
 doc_comment! {"
 Provides shared, synchronized access to a [`" stringify!($cache) "`] and a function-memoization
 API in [`" stringify!($shared) "::cache_with`].
+
+For convenience wrappers around [`" stringify!($shared) "::cache_with`] see
+[`" stringify!($shared) "::cache`] for returned types that implement
+`Clone` and [`" stringify!($shared) "::hold`] for values that just need to be stored
+without returning a reference.
 
 # Example
 
@@ -315,10 +325,10 @@ for similar functionality that returns a copy of `Output` or
     }}
 
 doc_comment!{"
-Forwards to [`Gc::gc`].
+Forwards to [`" stringify!($cache) "::gc`].
 "=>
-    pub fn gc(&self) -> Liveness {
-        self.inner.$acquire().gc()
+    pub fn gc(&self) {
+        self.inner.$acquire().collect();
     }}
 }
 

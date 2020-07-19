@@ -105,18 +105,18 @@
 //!
 //! # Garbage Collection
 //!
-//! Every value in the cache has a [`Liveness`] which is set to
-//! [`Liveness::Live`] when the value is first stored and again when it is read.
+//! Every value in the cache has a "liveness" which is set to
+//! "alive" when the value is first stored and again when it is read.
 //!
-//! The inner caches implement [`Gc`] and it is available through
-//! [`local::SharedLocalCache::gc`] & [`sync::SharedSendCache::gc`]. When
-//! called, the `gc()` method retains only those values which are still
-//! [`Liveness::Live`] and then marks them all [`Liveness::Dead`] again.
+//! The inner caches offer [`local::LocalCache::gc`] and [`sync::SendCache::gc`]
+//! which are also exposed through [`local::SharedLocalCache::gc`] and
+//! [`sync::SharedSendCache::gc`]. When called, the `gc()` method retains only
+//! those values which are still "alive" and then marks them all "dead".
 //!
 //! This behavior resembles a simple mark-and-sweep garbage collector where the
-//! "mark phase" is the use of the cache in between [`Gc::gc`] calls. Any values
+//! "mark phase" is the use of the cache in between `gc()` calls. Any values
 //! which weren't used in the mark phase are dropped in the next "sweep phase"
-//! when [`Gc::gc`] is called.
+//! when `gc()` is called.
 //!
 //! ## Nested Queries
 //!
@@ -150,16 +150,16 @@ pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuild
 }
 
 /// A type which can contain values of varying liveness, including itself.
-pub trait Gc: Downcast + Debug {
+trait Gc: Downcast + Debug {
     /// Remove dead entries, returning the container's own status afterwards.
-    fn gc(&mut self) -> Liveness;
+    fn collect(&mut self) -> Liveness;
 }
 
 impl_downcast!(Gc);
 
 /// Describes the outcome of garbage collection for a cached value.
 #[derive(Debug, PartialEq)]
-pub enum Liveness {
+enum Liveness {
     /// The value is still live.
     Live,
     /// The value should be dropped.
