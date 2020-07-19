@@ -11,7 +11,7 @@ impl DepNode {
         Self { inner: AtomicBool::new(true) }
     }
 
-    pub fn mark_live(&self) {
+    pub fn root(&self) {
         self.inner.store(true, Ordering::Release);
     }
 }

@@ -26,7 +26,7 @@ impl<Input, Output> CacheCell<Input, Output> {
         Input: Borrow<Arg>,
     {
         if input == &self.input {
-            self.dep.mark_live();
+            self.dep.root();
             Some(&self.output)
         } else {
             None
@@ -35,7 +35,7 @@ impl<Input, Output> CacheCell<Input, Output> {
 
     /// Store a new input/output and mark the storage live.
     pub fn store(&mut self, input: Input, output: Output) {
-        self.dep.mark_live();
+        self.dep.root();
         self.input = input;
         self.output = output;
     }
