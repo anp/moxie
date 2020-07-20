@@ -51,7 +51,7 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
         }
 
         if package.version.is_prerelease()
-            || crates_io_has(&package.name, &package.version).unwrap_or(true)
+            || crates_io_has(&package.name, &package.version).unwrap_or(false)
         {
             info!({ %package.name, %package.version }, "skipping");
         } else {
