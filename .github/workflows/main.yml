@@ -94,15 +94,6 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
-    - run: cargo generate-lockfile
-    - uses: actions/cache@v2
-      with:
-        key: ${{ runner.os }}-dom3-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
-        path: |
-          ~/.cargo/git
-          ~/.cargo/registry
-          target
-    
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-hacking
