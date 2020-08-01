@@ -1,8 +1,13 @@
-use super::{cache_cell::CacheCell, Gc, Liveness};
+use super::{
+    cache_cell::CacheCell,
+    dep_node::{DepNode, Dependent},
+    Gc, Liveness,
+};
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
     HashMap,
 };
+
 use std::{
     any::type_name,
     borrow::Borrow,
@@ -15,15 +20,24 @@ use std::{
 /// back to [`Namespace::store`] to initialize a value in the cache.
 pub struct KeyMiss<'k, K: ?Sized, H> {
     inner: Result<Hashed<&'k K, H>, &'k K>,
+    dependent: Dependent,
+    node: Option<DepNode>,
 }
 
 impl<'k, K: ?Sized, H> KeyMiss<'k, K, H> {
-    fn hashed(h: Hashed<&'k K, H>) -> Self {
-        Self { inner: Ok(h) }
+    fn hashed(h: Hashed<&'k K, H>, node: Option<DepNode>, dependent: Dependent) -> Self {
+        Self { inner: Ok(h), node, dependent }
     }
 
-    pub(crate) fn just_key(k: &'k K) -> Self {
-        Self { inner: Err(k) }
+    pub(crate) fn just_key(k: &'k K, dependent: Dependent) -> Self {
+        let node = DepNode::new();
+        node.root(dependent);
+        let dependent = node.as_dependent();
+        Self { inner: Err(k), dependent, node: Some(node) }
+    }
+
+    pub(crate) fn dependent(&self) -> Dependent {
+        self.dependent.clone()
     }
 }
 
@@ -37,7 +51,7 @@ struct Hashed<K, H> {
 }
 
 /// A namespace stores all cached values for a particular query type.
-pub struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
+pub(crate) struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
     inner: HashMap<Scope, CacheCell<Input, Output>, H>,
 }
 
@@ -92,6 +106,7 @@ where
         &self,
         key: &'k Key,
         input: &Arg,
+        dependent: Dependent,
     ) -> Result<&Output, KeyMiss<'k, Key, H>>
     where
         Key: Eq + Hash + ?Sized,
@@ -100,23 +115,37 @@ where
         Input: Borrow<Arg>,
     {
         let hashed = self.hashed(key);
-        self.entry(&hashed)
-            .and_then(|(_, cell)| cell.get(input))
-            .ok_or_else(|| KeyMiss::hashed(hashed))
+        if let Some((_, cell)) = self.entry(&hashed) {
+            cell.get(input, dependent).map_err(|d| KeyMiss::hashed(hashed, None, d))
+        } else {
+            let node = DepNode::new();
+            node.root(dependent);
+            let new_dep = node.as_dependent();
+            Err(KeyMiss::hashed(hashed, Some(node), new_dep))
+        }
     }
 
-    pub fn store<Key>(&mut self, hashed: KeyMiss<'_, Key, H>, input: Input, output: Output)
+    pub fn store<Key>(&mut self, miss: KeyMiss<'_, Key, H>, input: Input, output: Output)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
     {
-        let hashed = hashed.inner.unwrap_or_else(|k| self.hashed(k));
+        let dependent = miss.dependent;
+        let hashed = miss.inner.unwrap_or_else(|k| self.hashed(k));
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
-                occ.into_mut().store(input, output);
+                debug_assert!(miss.node.is_none(), "mustn't create nodes that aren't used");
+                occ.into_mut().store(input, output, dependent);
             }
             RawEntryMut::Vacant(vac) => {
-                vac.insert(hashed.key.to_owned(), CacheCell::new(input, output));
+                vac.insert(
+                    hashed.key.to_owned(),
+                    CacheCell::new(
+                        input,
+                        output,
+                        miss.node.expect("if no cell present, we must have created a fresh node"),
+                    ),
+                );
             }
         }
     }

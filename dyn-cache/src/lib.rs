@@ -129,6 +129,7 @@
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
 use hashbrown::hash_map::DefaultHashBuilder;
+use illicit::AsContext;
 use std::{
     any::TypeId,
     fmt::Debug,
@@ -161,8 +162,10 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
         input: Input,
         query: impl FnOnce(&Input) -> (Output, R),
     ) -> (CacheEntry<'k, Key, Scope, Input, Output, H>, R) {
-        let (output, to_return) = query(&input);
-        (CacheEntry { output, input, miss: self }, to_return)
+        self.key.dependent().offer(|| {
+            let (output, to_return) = query(&input);
+            (CacheEntry { output, input, miss: self }, to_return)
+        })
     }
 }
 
@@ -175,7 +178,7 @@ pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuil
 
 /// A cache for types which are not thread-safe (`?Send`).
 pub mod local {
-    use super::*;
+    use super::{dep_node::Dependent, *};
     use hash_hasher::HashBuildHasher;
     use hashbrown::HashMap;
     use std::{
@@ -193,7 +196,7 @@ pub mod local {
 
 /// A thread-safe cache which requires stored types implement `Send`.
 pub mod sync {
-    use super::*;
+    use super::{dep_node::Dependent, *};
     use hash_hasher::HashBuildHasher;
     use hashbrown::HashMap;
     use parking_lot::Mutex;
