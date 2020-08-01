@@ -1,4 +1,7 @@
-use super::{dep_node::DepNode, Gc, Liveness};
+use super::{
+    dep_node::{DepNode, Dependent},
+    Gc, Liveness,
+};
 use std::{
     any::type_name,
     borrow::Borrow,
@@ -7,35 +10,33 @@ use std::{
 
 /// A CacheCell represents the storage used for a particular input/output pair
 /// on the heap.
-pub struct CacheCell<Input, Output> {
+pub(crate) struct CacheCell<Input, Output> {
     dep: DepNode,
     input: Input,
     output: Output,
 }
 
 impl<Input, Output> CacheCell<Input, Output> {
-    pub fn new(input: Input, output: Output) -> Self {
-        Self { dep: DepNode::new(), input, output }
+    pub fn new(input: Input, output: Output, dep: DepNode) -> Self {
+        Self { dep, input, output }
     }
 
     /// Return a reference to the output if the input is equal, marking it live
-    /// in the process.
-    pub fn get<Arg>(&self, input: &Arg) -> Option<&Output>
+    /// in the process. If get fails, returns its own `Dependent` to be used as
+    /// a dependency of any queries which are invoked to re-initialize this
+    /// cell.
+    pub fn get<Arg>(&self, input: &Arg, dependent: Dependent) -> Result<&Output, Dependent>
     where
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,
     {
-        if input == &self.input {
-            self.dep.root();
-            Some(&self.output)
-        } else {
-            None
-        }
+        self.dep.root(dependent);
+        if input == &self.input { Ok(&self.output) } else { Err(self.dep.as_dependent()) }
     }
 
     /// Store a new input/output and mark the storage live.
-    pub fn store(&mut self, input: Input, output: Output) {
-        self.dep.root();
+    pub fn store(&mut self, input: Input, output: Output, dependent: Dependent) {
+        self.dep.root(dependent);
         self.input = input;
         self.output = output;
     }
