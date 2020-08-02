@@ -214,6 +214,9 @@ pub mod sync {
 
 /// A type which can contain values of varying liveness, including itself.
 trait Gc: Downcast + Debug {
+    /// Traverse stored values, identifying rooted dependents.
+    fn mark(&mut self);
+
     /// Remove dead entries, returning the container's own status afterwards.
     fn sweep(&mut self) -> Liveness;
 }

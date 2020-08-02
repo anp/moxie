@@ -158,11 +158,16 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
 
     /// Drop any values which have not been marked alive since the last call to this method.
     pub fn gc(&mut self) {
+        self.mark();
         self.sweep();
     }
 }
 
 impl Gc for $cache {
+    fn mark(&mut self) {
+        self.inner.values_mut().for_each(|ns| ns.mark());
+    }
+
     fn sweep(&mut self) -> Liveness {
         self.inner.values_mut()
             .fold(Liveness::Dead, |l, namespace| {
@@ -341,7 +346,9 @@ doc_comment!{"
 Forwards to [`" stringify!($cache) "::gc`].
 "=>
     pub fn gc(&self) {
-        self.inner.$acquire().sweep();
+        let mut inner = self.inner.$acquire();
+        inner.mark();
+        inner.sweep();
     }}
 }
 

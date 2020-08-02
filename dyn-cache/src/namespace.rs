@@ -158,6 +158,10 @@ where
     Output: 'static,
     H: 'static,
 {
+    fn mark(&mut self) {
+        self.inner.values_mut().for_each(|cell| cell.mark());
+    }
+
     fn sweep(&mut self) -> Liveness {
         self.inner.retain(|_, c| matches!(c.sweep(), Liveness::Live));
         Liveness::Live // no reason to throw away the allocations behind namespaces afaict
