@@ -23,9 +23,13 @@ impl DepNode {
         Dependent { inner: Arc::downgrade(&self.inner) }
     }
 
-    pub fn liveness(&self) -> Liveness {
+    pub fn is_known_live(&self) -> bool {
         // TODO(#174) find a better way to handle cycles
-        if let Some(l) = self.inner.try_lock() { l.liveness() } else { Liveness::Dead }
+        if let Some(l) = self.inner.try_lock() {
+            matches!(l.liveness, Liveness::Live)
+        } else {
+            false
+        }
     }
 
     pub fn update_liveness(&mut self) {
@@ -76,7 +80,7 @@ impl InnerDepNode {
 
             if let Some(mut dependent) = dependent.upgrade() {
                 dependent.update_liveness();
-                if matches!(dependent.liveness(), Liveness::Live) {
+                if dependent.is_known_live() {
                     has_root = true;
                 }
                 keep = true;
@@ -89,10 +93,6 @@ impl InnerDepNode {
         if has_root {
             self.liveness = Liveness::Live;
         }
-    }
-
-    fn liveness(&self) -> Liveness {
-        self.liveness
     }
 
     fn mark_dead(&mut self) {
