@@ -164,8 +164,8 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
 }
 
 impl Gc for $cache {
-    fn mark(&mut self) {
-        self.inner.values_mut().for_each(|ns| ns.mark());
+    fn mark(&mut self) -> bool {
+        self.inner.values_mut().fold(false, |r, ns| ns.mark() || r)
     }
 
     fn sweep(&mut self) -> Liveness {

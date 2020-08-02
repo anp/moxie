@@ -158,8 +158,8 @@ where
     Output: 'static,
     H: 'static,
 {
-    fn mark(&mut self) {
-        self.inner.values_mut().for_each(|cell| cell.mark());
+    fn mark(&mut self) -> bool {
+        self.inner.values_mut().fold(false, |r, cell| cell.mark() || r)
     }
 
     fn sweep(&mut self) -> Liveness {
