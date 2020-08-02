@@ -1,4 +1,5 @@
 use super::{Gc, Liveness};
+use illicit::AsContext;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Weak,
@@ -45,4 +46,18 @@ impl Gc for DepNode {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Dependent {
     inner: Weak<InnerDepNode>,
+}
+
+impl Dependent {
+    /// Returns the current incoming `Dependent`. If about to execute a
+    /// top-level query this will return a null/no-op `Dependent`.
+    pub fn incoming() -> Self {
+        if let Ok(dep) = illicit::get::<Self>() { dep.clone() } else { Self::default() }
+    }
+
+    /// Initialize the dependency query with `self` marked as its immediate
+    /// dependent.
+    pub fn init_dependency<R>(self, op: impl FnOnce() -> R) -> R {
+        self.offer(op)
+    }
 }

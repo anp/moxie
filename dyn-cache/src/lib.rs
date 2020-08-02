@@ -129,7 +129,6 @@
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
 use hashbrown::hash_map::DefaultHashBuilder;
-use illicit::AsContext;
 use std::{
     any::TypeId,
     fmt::Debug,
@@ -162,7 +161,7 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
         input: Input,
         query: impl FnOnce(&Input) -> (Output, R),
     ) -> (CacheEntry<'k, Key, Scope, Input, Output, H>, R) {
-        self.key.dependent().offer(|| {
+        self.key.dependent().init_dependency(|| {
             let (output, to_return) = query(&input);
             (CacheEntry { output, input, miss: self }, to_return)
         })
