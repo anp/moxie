@@ -29,7 +29,10 @@ impl DepNode {
 }
 
 impl Gc for DepNode {
-    /// Always marks itself as dead in a GC, returning its previous value.
+    fn mark(&mut self) {
+        // TODO
+    }
+
     fn sweep(&mut self) -> Liveness {
         if self.inner.has_root.swap(false, Ordering::AcqRel) {
             Liveness::Live
