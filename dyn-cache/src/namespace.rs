@@ -1,7 +1,7 @@
 use super::{
     cache_cell::CacheCell,
     dep_node::{DepNode, Dependent},
-    Gc, Liveness,
+    Gc,
 };
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
@@ -162,9 +162,9 @@ where
 
     fn sweep(&mut self) {
         self.inner.retain(|_, c| {
-            let is_live = matches!(c.liveness(), Liveness::Live);
+            let keep = c.is_live();
             c.mark_dead();
-            is_live
+            keep
         });
     }
 }

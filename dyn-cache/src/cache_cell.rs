@@ -1,7 +1,4 @@
-use super::{
-    dep_node::{DepNode, Dependent},
-    Liveness,
-};
+use super::dep_node::{DepNode, Dependent};
 use std::{
     any::type_name,
     borrow::Borrow,
@@ -41,8 +38,8 @@ impl<Input, Output> CacheCell<Input, Output> {
         self.output = output;
     }
 
-    pub fn liveness(&self) -> Liveness {
-        self.dep.liveness()
+    pub fn is_live(&self) -> bool {
+        self.dep.is_known_live()
     }
 
     pub fn update_liveness(&mut self) {
