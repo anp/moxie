@@ -1,4 +1,4 @@
-use super::{Gc, Liveness};
+use super::Liveness;
 use illicit::AsContext;
 use parking_lot::Mutex;
 use std::sync::{Arc, Weak};
@@ -20,38 +20,79 @@ impl DepNode {
     pub fn as_dependent(&self) -> Dependent {
         Dependent { inner: Arc::downgrade(&self.inner) }
     }
-}
 
-impl Gc for DepNode {
-    fn mark(&mut self) -> bool {
-        self.inner.lock().mark()
+    pub fn liveness(&self) -> Liveness {
+        // TODO(#174) find a better way to handle cycles
+        if let Some(l) = self.inner.try_lock() { l.liveness() } else { Liveness::Dead }
     }
 
-    fn sweep(&mut self) -> Liveness {
-        self.inner.lock().sweep()
+    pub fn update_liveness(&mut self) {
+        // TODO(#174) find a better way to handle cycles
+        if let Some(mut this) = self.inner.try_lock() {
+            this.update_liveness();
+        }
+    }
+
+    pub fn mark_dead(&mut self) {
+        self.inner.lock().mark_dead();
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct InnerDepNode {
-    has_root: bool,
+    liveness: Liveness,
     dependents: Vec<Dependent>,
 }
 
+impl Default for InnerDepNode {
+    fn default() -> Self {
+        Self { liveness: Liveness::Live, dependents: Vec::new() }
+    }
+}
+
 impl InnerDepNode {
+    /// Root this dep node in the current revision with the given `dependent`.
     fn root(&mut self, dependent: Dependent) {
+        // FIXME deduplicate dependents
         self.dependents.push(dependent);
-        self.dependents.dedup(); // TODO benchmark this?
-        self.has_root = true;
+        self.liveness = Liveness::Live;
     }
 
-    fn mark(&mut self) -> bool {
-        // TODO check dependents
-        self.has_root
+    /// Check incoming dependents for roots, marking ourselves live if a root
+    /// exists. Drops stale dependents.
+    fn update_liveness(&mut self) {
+        if matches!(self.liveness, Liveness::Live) {
+            // we've already been here this gc, nothing new to see here
+            return;
+        }
+
+        let mut has_root = false;
+        self.dependents.retain(|dependent| {
+            let mut keep = false;
+
+            if let Some(mut dependent) = dependent.upgrade() {
+                dependent.update_liveness();
+                if matches!(dependent.liveness(), Liveness::Live) {
+                    has_root = true;
+                }
+                keep = true;
+            }
+
+            keep
+        });
+
+        // if we found a transitive root then mark ourselves live
+        if has_root {
+            self.liveness = Liveness::Live;
+        }
     }
 
-    fn sweep(&mut self) -> Liveness {
-        if std::mem::replace(&mut self.has_root, false) { Liveness::Live } else { Liveness::Dead }
+    fn liveness(&self) -> Liveness {
+        self.liveness
+    }
+
+    fn mark_dead(&mut self) {
+        self.liveness = Liveness::Dead;
     }
 }
 

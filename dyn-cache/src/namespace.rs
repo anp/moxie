@@ -158,13 +158,16 @@ where
     Output: 'static,
     H: 'static,
 {
-    fn mark(&mut self) -> bool {
-        self.inner.values_mut().fold(false, |r, cell| cell.mark() || r)
+    fn mark(&mut self) {
+        self.inner.values_mut().for_each(CacheCell::update_liveness);
     }
 
-    fn sweep(&mut self) -> Liveness {
-        self.inner.retain(|_, c| matches!(c.sweep(), Liveness::Live));
-        Liveness::Live // no reason to throw away the allocations behind namespaces afaict
+    fn sweep(&mut self) {
+        self.inner.retain(|_, c| {
+            let is_live = matches!(c.liveness(), Liveness::Live);
+            c.mark_dead();
+            is_live
+        });
     }
 }
 

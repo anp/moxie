@@ -1,6 +1,6 @@
 use super::{
     dep_node::{DepNode, Dependent},
-    Gc, Liveness,
+    Liveness,
 };
 use std::{
     any::type_name,
@@ -40,19 +40,17 @@ impl<Input, Output> CacheCell<Input, Output> {
         self.input = input;
         self.output = output;
     }
-}
 
-impl<Input, Output> Gc for CacheCell<Input, Output>
-where
-    Input: 'static,
-    Output: 'static,
-{
-    fn mark(&mut self) -> bool {
-        self.dep.mark()
+    pub fn liveness(&self) -> Liveness {
+        self.dep.liveness()
     }
 
-    fn sweep(&mut self) -> Liveness {
-        self.dep.sweep()
+    pub fn update_liveness(&mut self) {
+        self.dep.update_liveness();
+    }
+
+    pub fn mark_dead(&mut self) {
+        self.dep.mark_dead();
     }
 }
 

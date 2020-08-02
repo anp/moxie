@@ -214,18 +214,17 @@ pub mod sync {
 
 /// A type which can contain values of varying liveness, including itself.
 trait Gc: Downcast + Debug {
-    /// Traverse stored values, identifying rooted dependents and returning
-    /// `true` if a root is contained.
-    fn mark(&mut self) -> bool;
+    /// Traverse stored values, identifying rooted values.
+    fn mark(&mut self);
 
     /// Remove dead entries, returning the container's own status afterwards.
-    fn sweep(&mut self) -> Liveness;
+    fn sweep(&mut self);
 }
 
 impl_downcast!(Gc);
 
 /// Describes the outcome of garbage collection for a cached value.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Liveness {
     /// The value is still live.
     Live,
