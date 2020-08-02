@@ -23,8 +23,8 @@ impl DepNode {
 }
 
 impl Gc for DepNode {
-    fn mark(&mut self) {
-        self.inner.lock().mark();
+    fn mark(&mut self) -> bool {
+        self.inner.lock().mark()
     }
 
     fn sweep(&mut self) -> Liveness {
@@ -43,8 +43,9 @@ impl InnerDepNode {
         self.has_root = true;
     }
 
-    fn mark(&mut self) {
-        // TODO
+    fn mark(&mut self) -> bool {
+        // TODO check dependents
+        self.has_root
     }
 
     fn sweep(&mut self) -> Liveness {

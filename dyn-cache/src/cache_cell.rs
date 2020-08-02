@@ -47,8 +47,8 @@ where
     Input: 'static,
     Output: 'static,
 {
-    fn mark(&mut self) {
-        self.dep.mark();
+    fn mark(&mut self) -> bool {
+        self.dep.mark()
     }
 
     fn sweep(&mut self) -> Liveness {
