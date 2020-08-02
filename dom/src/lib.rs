@@ -39,7 +39,7 @@ pub mod prelude {
     };
 }
 
-/// [`augdom`] provides the underlying DOM implementation for moxie-dom.
+/// Provides the underlying DOM implementation for moxie-dom.
 pub use augdom as raw;
 
 /// The "boot sequence" for a moxie-dom instance creates a
