@@ -5,6 +5,13 @@ invocations.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.11.0] - unreleased
+
+### Fixed
+
+- Nested queries to `SharedLocalCache`/``SharedSendCache` have their intermediate dependencies
+  retained as long as a transitive dependent is used in a revision.
+
 ## [0.10.0] - 2020-07-19
 
 ### Added
