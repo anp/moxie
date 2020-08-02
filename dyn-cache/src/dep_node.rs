@@ -1,27 +1,20 @@
 use super::{Gc, Liveness};
 use illicit::AsContext;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Weak,
-};
+use parking_lot::Mutex;
+use std::sync::{Arc, Weak};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct DepNode {
-    inner: Arc<InnerDepNode>,
-}
-
-#[derive(Debug, Default)]
-struct InnerDepNode {
-    has_root: AtomicBool,
+    inner: Arc<Mutex<InnerDepNode>>,
 }
 
 impl DepNode {
     pub fn new() -> Self {
-        Self { inner: Arc::new(InnerDepNode { has_root: AtomicBool::new(true) }) }
+        Self { inner: Arc::new(Mutex::new(Default::default())) }
     }
 
-    pub fn root(&self, _dependent: Dependent) {
-        self.inner.has_root.store(true, Ordering::Release);
+    pub fn root(&self, dependent: Dependent) {
+        self.inner.lock().root(dependent);
     }
 
     pub fn as_dependent(&self) -> Dependent {
@@ -31,21 +24,37 @@ impl DepNode {
 
 impl Gc for DepNode {
     fn mark(&mut self) {
+        self.inner.lock().mark();
+    }
+
+    fn sweep(&mut self) -> Liveness {
+        self.inner.lock().sweep()
+    }
+}
+
+#[derive(Debug, Default)]
+struct InnerDepNode {
+    has_root: bool,
+}
+
+impl InnerDepNode {
+    fn root(&mut self, _dependent: Dependent) {
+        // TODO use _dependent
+        self.has_root = true;
+    }
+
+    fn mark(&mut self) {
         // TODO
     }
 
     fn sweep(&mut self) -> Liveness {
-        if self.inner.has_root.swap(false, Ordering::AcqRel) {
-            Liveness::Live
-        } else {
-            Liveness::Dead
-        }
+        if std::mem::replace(&mut self.has_root, false) { Liveness::Live } else { Liveness::Dead }
     }
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Dependent {
-    inner: Weak<InnerDepNode>,
+    inner: Weak<Mutex<InnerDepNode>>,
 }
 
 impl Dependent {
