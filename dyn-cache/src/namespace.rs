@@ -132,7 +132,7 @@ where
         let hashed = miss.inner.unwrap_or_else(|k| self.hashed(k));
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
-                debug_assert!(miss.node.is_none(), "mustn't create nodes that aren't used");
+                assert!(miss.node.is_none(), "mustn't create nodes that aren't used");
                 occ.into_mut().store(input, output, dependent);
             }
             RawEntryMut::Vacant(vac) => {
