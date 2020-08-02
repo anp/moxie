@@ -30,8 +30,7 @@ impl<'k, K: ?Sized, H> KeyMiss<'k, K, H> {
     }
 
     pub(crate) fn just_key(k: &'k K, dependent: Dependent) -> Self {
-        let node = DepNode::new();
-        node.root(dependent);
+        let node = DepNode::new(dependent);
         let dependent = node.as_dependent();
         Self { inner: Err(k), dependent, node: Some(node) }
     }
@@ -118,8 +117,7 @@ where
         if let Some((_, cell)) = self.entry(&hashed) {
             cell.get(input, dependent).map_err(|d| KeyMiss::hashed(hashed, None, d))
         } else {
-            let node = DepNode::new();
-            node.root(dependent);
+            let node = DepNode::new(dependent);
             let new_dep = node.as_dependent();
             Err(KeyMiss::hashed(hashed, Some(node), new_dep))
         }

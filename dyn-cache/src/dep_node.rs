@@ -9,8 +9,10 @@ pub(crate) struct DepNode {
 }
 
 impl DepNode {
-    pub fn new() -> Self {
-        Self { inner: Arc::new(Mutex::new(Default::default())) }
+    pub fn new(dependent: Dependent) -> Self {
+        let this = Self { inner: Arc::new(Mutex::new(Default::default())) };
+        this.root(dependent);
+        this
     }
 
     pub fn root(&self, dependent: Dependent) {
