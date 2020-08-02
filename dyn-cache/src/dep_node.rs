@@ -55,7 +55,6 @@ impl Default for InnerDepNode {
 impl InnerDepNode {
     /// Root this dep node in the current revision with the given `dependent`.
     fn root(&mut self, dependent: Dependent) {
-        // FIXME deduplicate dependents
         self.dependents.push(dependent);
         self.liveness = Liveness::Live;
     }
@@ -63,6 +62,9 @@ impl InnerDepNode {
     /// Check incoming dependents for roots, marking ourselves live if a root
     /// exists. Drops stale dependents.
     fn update_liveness(&mut self) {
+        self.dependents.sort_unstable();
+        self.dependents.dedup();
+
         if matches!(self.liveness, Liveness::Live) {
             // we've already been here this gc, nothing new to see here
             return;
@@ -133,3 +135,15 @@ impl PartialEq for Dependent {
     }
 }
 impl Eq for Dependent {}
+
+impl PartialOrd for Dependent {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.addr().partial_cmp(&other.addr())
+    }
+}
+
+impl Ord for Dependent {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.addr().cmp(&other.addr())
+    }
+}
