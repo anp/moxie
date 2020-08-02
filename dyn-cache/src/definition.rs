@@ -89,7 +89,7 @@ a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
         Input: 'static + Borrow<Arg> $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        let dependent = illicit::get::<Dependent>().ok().map(|n| n.clone()).unwrap_or_default();
+        let dependent = Dependent::incoming();
         let query = Query::new(self.inner.hasher());
 
         if let Some(ns) = self.get_namespace(&query) {
