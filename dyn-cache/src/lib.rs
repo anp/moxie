@@ -106,26 +106,24 @@
 //!
 //! # Garbage Collection
 //!
-//! Every value in the cache has a "liveness" which is set to
-//! "alive" when the value is first stored and again when it is read.
+//! All of the caches have a `gc()` method which retains only used values. A
+//! value is used if it or a value which depends on it has been used/rooted
+//! since the last call to `gc()`.
 //!
-//! The inner caches offer [`local::LocalCache::gc`] and [`sync::SendCache::gc`]
-//! which are also exposed through [`local::SharedLocalCache::gc`] and
-//! [`sync::SharedSendCache::gc`]. When called, the `gc()` method retains only
-//! those values which are still "alive" and then marks them all "dead".
+//! ## Rooting
 //!
-//! This behavior resembles a simple mark-and-sweep garbage collector where the
-//! "mark phase" is the use of the cache in between `gc()` calls. Any values
-//! which weren't used in the mark phase are dropped in the next "sweep phase"
-//! when `gc()` is called.
+//! When a cache read *fails*, we expect that the value will be populated
+//! immediately after and a new node in the dependency graph is created. The new
+//! dependency node is marked as an incoming dependent on any cache values which
+//! are accessed during the initialization of the new value. The new node is
+//! then marked as a "root" for the garbage collector once it has
+//! been initialized and the cache populated. If in subsequent epochs the rooted
+//! value is accessed again it will be re-rooted and its dependents will be
+//! marked as live even if they were not directly accessed in that epoch.
 //!
-//! ## Nested Queries
-//!
-//! While it is possible to nest use of the shared caches within the init
-//! closures passed to them, the caches do not yet track the required dependency
-//! relationship to correctly retain intermediate cached results across GCs.
-//! While this works well enough for some scenarios it needs to be resolved in
-//! the general case before this way of using this crate is recommended.
+//! When a cache read *succeeds*, its dependency node is marked as being
+//! depended upon by the node (if any) which was being initialized during the
+//! read, linking the two dependencies together.
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
