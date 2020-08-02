@@ -35,11 +35,13 @@ impl Gc for DepNode {
 #[derive(Debug, Default)]
 struct InnerDepNode {
     has_root: bool,
+    dependents: Vec<Dependent>,
 }
 
 impl InnerDepNode {
-    fn root(&mut self, _dependent: Dependent) {
-        // TODO use _dependent
+    fn root(&mut self, dependent: Dependent) {
+        self.dependents.push(dependent);
+        self.dependents.dedup(); // TODO benchmark this?
         self.has_root = true;
     }
 
@@ -59,6 +61,11 @@ pub(crate) struct Dependent {
 }
 
 impl Dependent {
+    /// Return the corresponding `DepNode` if it is still live.
+    fn upgrade(&self) -> Option<DepNode> {
+        self.inner.upgrade().map(|inner| DepNode { inner })
+    }
+
     /// Returns the current incoming `Dependent`. If about to execute a
     /// top-level query this will return a null/no-op `Dependent`.
     pub fn incoming() -> Self {
@@ -70,4 +77,16 @@ impl Dependent {
     pub fn init_dependency<R>(self, op: impl FnOnce() -> R) -> R {
         self.offer(op)
     }
+
+    /// Return the memory address of this `Dependent`.
+    fn addr(&self) -> usize {
+        self.inner.as_ptr() as *const _ as _
+    }
 }
+
+impl PartialEq for Dependent {
+    fn eq(&self, other: &Self) -> bool {
+        self.addr().eq(&other.addr())
+    }
+}
+impl Eq for Dependent {}
