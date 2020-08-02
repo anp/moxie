@@ -93,13 +93,14 @@
 //! There are several types of allocations performed by the caches in this
 //! crate:
 //!
-//! | Allocation                         | Causes   |
-//! |------------------------------------|----------|
-//! | box a new, empty namespace         | (1)      |
-//! | resize a cache's map of namespaces | (1)      |
-//! | call `.to_owned()` on a scope/key  | (2)      |
-//! | resize a namespace's storage       | (2)      |
-//! | call `.to_owned()` on an input/arg | (2), (3) |
+//! | Allocation                         | Causes        |
+//! |------------------------------------|---------------|
+//! | box a new, empty namespace         | (1)           |
+//! | resize a cache's map of namespaces | (1)           |
+//! | call `.to_owned()` on a scope/key  | (2)           |
+//! | resize a namespace's storage       | (2)           |
+//! | call `.to_owned()` on an input/arg | (2), (3)      |
+//! | update an output's dependents      | (1), (2), (3) |
 //!
 //! Outside of these, only user-defined functions should perform any allocation.
 //!
