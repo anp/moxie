@@ -119,7 +119,7 @@ jobs:
     - run: cargo generate-lockfile
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-moxie-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
