@@ -176,21 +176,15 @@ pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuil
 
 /// A cache for types which are not thread-safe (`?Send`).
 pub mod local {
-    use super::{dep_node::Dependent, *};
-    use hash_hasher::HashBuildHasher;
-    use hashbrown::HashMap;
-    use std::{any::TypeId, borrow::Borrow, cell::RefCell, cmp::Eq, hash::Hash, rc::Rc};
+    use std::{cell::RefCell, rc::Rc};
 
     define_cache!(local, LocalCache, Rc, RefCell::borrow_mut);
 }
 
 /// A thread-safe cache which requires stored types implement `Send`.
 pub mod sync {
-    use super::{dep_node::Dependent, *};
-    use hash_hasher::HashBuildHasher;
-    use hashbrown::HashMap;
     use parking_lot::Mutex;
-    use std::{any::TypeId, borrow::Borrow, cmp::Eq, hash::Hash, sync::Arc};
+    use std::sync::Arc;
 
     define_cache!(sync, SendCache: Send, Arc, Mutex::lock);
 }

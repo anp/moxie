@@ -28,6 +28,10 @@ paste::item! {
         $refct:ident,
         $lock:ident :: $acquire:ident
     ) => {
+use crate::{dep_node::Dependent, *};
+use hash_hasher::HashBuildHasher;
+use hashbrown::HashMap;
+use std::{any::TypeId, borrow::Borrow, cmp::Eq, hash::Hash};
 
 doc_comment! {"
 Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
