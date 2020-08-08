@@ -73,7 +73,7 @@ watch --clear
 
 wa-pack = "run --manifest-path dom/local-wasm-pack/Cargo.toml --"
 wa-pack-build = "wa-pack build --target web --out-name index"
-wa-test = "wa-pack test --firefox --headless"
+wa-test = "wa-pack test --chrome --headless"
 
 build-dom-lib = "wa-pack-build dom"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
