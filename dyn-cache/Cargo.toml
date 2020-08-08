@@ -17,7 +17,7 @@ edition = "2018"
 downcast-rs = "1.1.1"
 hash_hasher = "2.0.3"
 hashbrown = "0.8.0"
-illicit = { path = "../illicit", version = "1.1.0"}
+illicit = { path = "../illicit", version = "1.1.1"}
 parking_lot = "0.11.0"
 paste = "1.0.0"
 

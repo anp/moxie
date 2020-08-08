@@ -32,7 +32,9 @@ impl AnonRc {
         }
     }
 
-    pub(crate) fn downcast_deref<T: 'static>(self) -> Option<impl Deref<Target = T> + 'static> {
+    pub(crate) fn downcast_deref<T: Debug + 'static>(
+        self,
+    ) -> Option<impl Deref<Target = T> + Debug + 'static> {
         OwningRef::new(self.inner)
             .try_map(|anon| {
                 let res: Result<&T, &str> = anon.downcast_ref().ok_or("invalid cast");
