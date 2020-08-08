@@ -167,7 +167,7 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
     }
 }
 
-/// A fully-initialized input/output pair, ready to be written to the store.
+/// A fully-initialized input/output entry, ready to be written to the cache.
 pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     miss: CacheMiss<'k, Key, Scope, Input, Output, H>,
     input: Input,
@@ -189,12 +189,12 @@ pub mod sync {
     define_cache!(sync, SendCache: Send, Arc, Mutex::lock);
 }
 
-/// A type which can contain values of varying liveness, including itself.
+/// A type which can contain values of varying liveness.
 trait Gc: Downcast + Debug {
-    /// Traverse stored values, identifying rooted values.
+    /// Traverse stored values, identifying roots.
     fn mark(&mut self);
 
-    /// Remove dead entries, returning the container's own status afterwards.
+    /// Remove dead entries.
     fn sweep(&mut self);
 }
 
