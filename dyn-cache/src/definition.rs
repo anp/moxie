@@ -229,7 +229,7 @@ assert_eq!(call_count.get(), 1, "called without caching");
 assert_eq!(call_count.get(), with_one_again);
 ```
 "#=>
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct $shared {
     inner: $refct<$lock<$cache>>,
 }}
@@ -331,14 +331,6 @@ Forwards to [`" stringify!($cache) "::gc`].
     pub fn gc(&self) {
         self.inner.$acquire().gc();
     }}
-}
-
-impl Debug for $shared {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_tuple(stringify!($shared))
-            .field(&*self.inner.$acquire())
-            .finish()
-    }
 }
 
 impl From<$cache> for $shared {

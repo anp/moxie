@@ -179,15 +179,7 @@ pub mod local {
     use super::{dep_node::Dependent, *};
     use hash_hasher::HashBuildHasher;
     use hashbrown::HashMap;
-    use std::{
-        any::TypeId,
-        borrow::Borrow,
-        cell::RefCell,
-        cmp::Eq,
-        fmt::{Debug, Formatter, Result as FmtResult},
-        hash::Hash,
-        rc::Rc,
-    };
+    use std::{any::TypeId, borrow::Borrow, cell::RefCell, cmp::Eq, hash::Hash, rc::Rc};
 
     define_cache!(local, LocalCache, Rc, RefCell::borrow_mut);
 }
@@ -198,14 +190,7 @@ pub mod sync {
     use hash_hasher::HashBuildHasher;
     use hashbrown::HashMap;
     use parking_lot::Mutex;
-    use std::{
-        any::TypeId,
-        borrow::Borrow,
-        cmp::Eq,
-        fmt::{Debug, Formatter, Result as FmtResult},
-        hash::Hash,
-        sync::Arc,
-    };
+    use std::{any::TypeId, borrow::Borrow, cmp::Eq, hash::Hash, sync::Arc};
 
     define_cache!(sync, SendCache: Send, Arc, Mutex::lock);
 }
