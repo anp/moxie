@@ -177,10 +177,23 @@ where
 {
     // someday specialization might save us from these lame debug impls?
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        // TODO(#176) better debug output somehow?
         f.debug_map()
             .entry(&"scope", &type_name::<Scope>())
             .entry(&"input", &type_name::<Input>())
             .entry(&"output", &type_name::<Output>())
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn namespace_debug_output() {
+        let ns: Namespace<u8, u8, u8> = Default::default();
+        let output = format!("{:?}", ns);
+        assert_eq!(output, "{\"scope\": \"u8\", \"input\": \"u8\", \"output\": \"u8\"}");
     }
 }
