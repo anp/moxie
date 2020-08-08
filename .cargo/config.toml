@@ -8,10 +8,7 @@ panic = "abort"
 
 [alias]
 ####################################################################################################
-# core crates:
-# * moxie
-# * topo
-# * topo-macro
+# core crates
 
 core-flow = """
 watch --clear
@@ -50,7 +47,7 @@ test-core-doc = """test --doc
 --package topo-macro
 """
 
-docs-all = "doc --workspace --no-deps --all-features"
+docs-all = "doc --workspace --all-features"
 
 build-times = "build --workspace --all-targets --all-features -Z timings"
 
