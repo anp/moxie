@@ -47,7 +47,7 @@ test-core-doc = """test --doc
 --package topo-macro
 """
 
-docs-all = "doc --workspace --all-features"
+docs-all = "doc --workspace --no-deps --all-features"
 
 build-times = "build --workspace --all-targets --all-features -Z timings"
 
