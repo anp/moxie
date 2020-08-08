@@ -116,16 +116,6 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
-    - run: cargo generate-lockfile
-    - uses: actions/cache@v2
-      with:
-        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
-        path: |
-          ~/.cargo/git
-          ~/.cargo/registry
-          ofl/target/doc
-          target
-    
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
     - run: cargo docs-all
