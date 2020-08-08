@@ -1,6 +1,6 @@
 [package]
 name = "illicit"
-version = "1.1.0"
+version = "1.1.1"
 description = "An implicit thread-local environment which is indexed by type."
 categories = ["rust-patterns"]
 keywords = ["context", "environment", "global", "singleton"]

@@ -241,9 +241,9 @@ thread_local! {
 /// ```
 /// assert!(illicit::get::<String>().is_err());
 /// ```
-pub fn get<E>() -> Result<impl Deref<Target = E> + 'static, GetFailed>
+pub fn get<E>() -> Result<impl Deref<Target = E> + Debug + 'static, GetFailed>
 where
-    E: Any + 'static,
+    E: Any + Debug + 'static,
 {
     let key = TypeId::of::<E>();
     let anon = CURRENT_SCOPE.with(|current| {
@@ -279,7 +279,7 @@ where
 #[track_caller]
 pub fn expect<E>() -> impl Deref<Target = E> + 'static
 where
-    E: Any + 'static,
+    E: Any + Debug + 'static,
 {
     get().unwrap()
 }
@@ -351,7 +351,16 @@ pub struct Layer {
 impl Default for Layer {
     #[track_caller]
     fn default() -> Self {
-        Self::new()
+        let mut values = Vec::new();
+        let mut depth = 0;
+
+        CURRENT_SCOPE.with(|current| {
+            let current = current.borrow();
+            depth = current.depth + 1;
+            values = current.values.clone();
+        });
+
+        Self { values, depth }
     }
 }
 
@@ -368,16 +377,7 @@ impl Layer {
     /// values.
     #[track_caller]
     pub fn new() -> Self {
-        let mut values = Vec::new();
-        let mut depth = 0;
-
-        CURRENT_SCOPE.with(|current| {
-            let current = current.borrow();
-            depth = current.depth + 1;
-            values = current.values.clone();
-        });
-
-        Self { values, depth }
+        Self::default()
     }
 
     /// Adds the new item and returns the modified layer.
@@ -589,11 +589,8 @@ mod tests {
 
     #[test]
     fn failure_error() {
-        if let Err(e) = get::<u8>() {
-            assert_display_snapshot!(e);
-        } else {
-            panic!("got a u8 from the environment when we shouldn't have");
-        }
+        let e = get::<u8>().unwrap_err();
+        assert_display_snapshot!(e);
     }
 
     #[test]
