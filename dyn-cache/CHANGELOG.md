@@ -5,7 +5,7 @@ invocations.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.11.0] - 2020-07-27
+## [0.11.0] - 2020-08-08
 
 ### Fixed
 
