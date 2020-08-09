@@ -47,7 +47,7 @@ impl DepNode {
         self.inner.lock().mark_dead();
     }
 
-    /// Return the memory address of this `Dependent`.
+    /// Return the memory address of this `DepNode`.
     fn addr(&self) -> usize {
         Arc::as_ptr(&self.inner) as *const _ as _
     }

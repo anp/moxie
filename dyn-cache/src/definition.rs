@@ -121,7 +121,7 @@ a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: 'static + Borrow<Key> + Eq + Hash,
-        Arg: PartialEq<Input> + ?Sized,
+        Arg: PartialEq<Input> + ToOwned<Owned=Input> + ?Sized,
         Input: 'static + Borrow<Arg>,
         Output: 'static,
     {
@@ -129,9 +129,9 @@ a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
         let query = Query::new(self.inner.hasher());
 
         if let Some(ns) = self.get_namespace(&query) {
-            ns.get(key, arg, dependent).map_err(|h| CacheMiss { query, key: h })
+            ns.get(key, arg, dependent).map_err(|key_miss| CacheMiss { query, key_miss })
         } else {
-            Err(CacheMiss { query, key: KeyMiss::just_key(key, dependent) })
+            Err(CacheMiss { query, key_miss: KeyMiss::just_key(key, arg.to_owned(), dependent) })
         }
     }}
 
@@ -150,11 +150,10 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
         Output: 'static $(+ $bound)?,
     {
         let CacheEntry {
-            miss: CacheMiss { query, key },
-            input,
+            miss: CacheMiss { query, key_miss },
             output,
         } = entry;
-        self.get_namespace_mut(&query).store(key, input, output);
+        self.get_namespace_mut(&query).store(key_miss, output);
     }}
 
     fn get_namespace<Scope, Input, Output>(
@@ -297,7 +296,7 @@ See [`" stringify!($shared) "::cache`] for an ergonomic wrapper that requires `O
             Err(m) => m,
         };
 
-        let (to_store, to_return) = miss.init(arg.to_owned(), |arg| {
+        let (to_store, to_return) = miss.init(|arg| {
             let store = init(arg);
             let ret = with(&store);
             (store, ret)

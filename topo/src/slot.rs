@@ -49,7 +49,7 @@ where
         match existing_tokens.get(value, &()) {
             Ok(token) => *token,
             Err(miss) => {
-                let (to_store, new_token) = miss.init((), |_| {
+                let (to_store, new_token) = miss.init(|_| {
                     let mut indices = INDICES.lock();
                     let count = indices.entry(TypeId::of::<T>()).or_default();
                     *count += 1;

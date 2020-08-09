@@ -18,36 +18,65 @@ use std::{
 
 /// The result of failing to find a `key` in a cache with matching input. Passed
 /// back to [`Namespace::store`] to initialize a value in the cache.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct KeyMiss<'k, K: ?Sized, H> {
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct KeyMiss<'k, K: ?Sized, I, H> {
     inner: Result<Hashed<&'k K, H>, &'k K>,
     dependent: Dependent,
     node: Option<DepNode>,
+    input: I,
 }
 
-impl<'k, K: ?Sized, H> KeyMiss<'k, K, H> {
-    fn hashed(h: Hashed<&'k K, H>, node: Option<DepNode>, dependent: Dependent) -> Self {
-        Self { inner: Ok(h), node, dependent }
+impl<'k, K: ?Sized, I, H> KeyMiss<'k, K, I, H> {
+    fn hashed(h: Hashed<&'k K, H>, input: I, node: Option<DepNode>, dependent: Dependent) -> Self {
+        Self { inner: Ok(h), node, dependent, input }
     }
 
-    pub(crate) fn just_key(k: &'k K, dependent: Dependent) -> Self {
+    pub(crate) fn just_key(k: &'k K, input: I, dependent: Dependent) -> Self {
         let node = DepNode::new(dependent);
         let dependent = node.as_dependent();
-        Self { inner: Err(k), dependent, node: Some(node) }
+        Self { inner: Err(k), dependent, node: Some(node), input }
     }
 
-    pub(crate) fn dependent(&self) -> Dependent {
-        self.dependent.clone()
+    pub(crate) fn init<R>(&self, op: impl FnOnce(&I) -> R) -> R {
+        self.dependent.clone().init_dependency(|| op(&self.input))
+    }
+}
+
+impl<'k, K, I, H> Debug for KeyMiss<'k, K, I, H>
+where
+    K: Debug + ?Sized,
+    I: Debug,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_struct("KeyMiss")
+            .field("inner", &self.inner)
+            .field("dependent", &self.dependent)
+            .field("node", &self.node)
+            .field("input", &self.input)
+            .finish()
     }
 }
 
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct Hashed<K, H> {
     key: K,
     hash: u64,
     hasher: PhantomData<H>,
+}
+
+impl<K, H> Debug for Hashed<K, H>
+where
+    K: Debug,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_struct("Hashed")
+            .field("key", &self.key)
+            .field("hash", &self.hash)
+            .field("hasher", &std::any::type_name::<H>())
+            .finish()
+    }
 }
 
 /// A namespace stores all cached values for a particular query type.
@@ -106,26 +135,26 @@ where
     pub fn get<'k, Key, Arg>(
         &self,
         key: &'k Key,
-        input: &Arg,
+        arg: &Arg,
         dependent: Dependent,
-    ) -> Result<&Output, KeyMiss<'k, Key, H>>
+    ) -> Result<&Output, KeyMiss<'k, Key, Input, H>>
     where
         Key: Eq + Hash + ?Sized,
         Scope: Borrow<Key>,
-        Arg: PartialEq<Input> + ?Sized,
+        Arg: PartialEq<Input> + ToOwned<Owned = Input> + ?Sized,
         Input: Borrow<Arg>,
     {
         let hashed = self.hashed(key);
         if let Some((_, cell)) = self.entry(&hashed) {
-            cell.get(input, dependent).map_err(|d| KeyMiss::hashed(hashed, None, d))
+            cell.get(arg, dependent).map_err(|d| KeyMiss::hashed(hashed, arg.to_owned(), None, d))
         } else {
             let node = DepNode::new(dependent);
             let new_dep = node.as_dependent();
-            Err(KeyMiss::hashed(hashed, Some(node), new_dep))
+            Err(KeyMiss::hashed(hashed, arg.to_owned(), Some(node), new_dep))
         }
     }
 
-    pub fn store<Key>(&mut self, miss: KeyMiss<'_, Key, H>, input: Input, output: Output)
+    pub fn store<Key>(&mut self, miss: KeyMiss<'_, Key, Input, H>, output: Output)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
@@ -135,13 +164,13 @@ where
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
                 assert!(miss.node.is_none(), "mustn't create nodes that aren't used");
-                occ.into_mut().store(input, output, dependent);
+                occ.into_mut().store(miss.input, output, dependent);
             }
             RawEntryMut::Vacant(vac) => {
                 vac.insert(
                     hashed.key.to_owned(),
                     CacheCell::new(
-                        input,
+                        miss.input,
                         output,
                         miss.node.expect("if no cell present, we must have created a fresh node"),
                     ),

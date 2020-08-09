@@ -130,7 +130,7 @@ use hash_hasher::HashBuildHasher;
 use hashbrown::hash_map::DefaultHashBuilder;
 use std::{
     any::TypeId,
-    fmt::Debug,
+    fmt::{Debug, Formatter, Result as FmtResult},
     hash::{BuildHasher, Hash, Hasher},
     marker::PhantomData,
 };
@@ -146,10 +146,10 @@ use namespace::{KeyMiss, Namespace};
 
 /// The result of a failed attempt to retrieve a value from the cache.
 /// Initialize a full [`CacheEntry`] for storage with [`CacheMiss::init`].
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     query: Query<Scope, Input, Output>,
-    key: KeyMiss<'k, Key, H>,
+    key_miss: KeyMiss<'k, Key, Input, H>,
 }
 
 impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, Output, H> {
@@ -158,13 +158,24 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
     /// derived in some way from the stored `Output`.
     pub fn init<R>(
         self,
-        input: Input,
         query: impl FnOnce(&Input) -> (Output, R),
     ) -> (CacheEntry<'k, Key, Scope, Input, Output, H>, R) {
-        self.key.dependent().init_dependency(|| {
-            let (output, to_return) = query(&input);
-            (CacheEntry { output, input, miss: self }, to_return)
-        })
+        let (output, to_return) = self.key_miss.init(query);
+        (CacheEntry { output, miss: self }, to_return)
+    }
+}
+
+impl<'k, Key, Scope, Input, Output, H> Debug for CacheMiss<'k, Key, Scope, Input, Output, H>
+where
+    Key: Debug + ?Sized,
+    Scope: Debug,
+    Input: Debug,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_struct("CacheMiss")
+            .field("query", &self.query)
+            .field("key_miss", &self.key_miss)
+            .finish()
     }
 }
 
@@ -172,7 +183,6 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     miss: CacheMiss<'k, Key, Scope, Input, Output, H>,
-    input: Input,
     output: Output,
 }
 
@@ -213,7 +223,7 @@ enum Liveness {
 
 /// The type of a dynamic cache query, used to shard storage in a fashion
 /// similar to `anymap` or `typemap`.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct Query<Scope, Input, Output, H = HashBuildHasher> {
     ty: PhantomData<(Scope, Input, Output)>,
     hasher: PhantomData<H>,
@@ -246,5 +256,15 @@ where
 
     fn ty(&self) -> TypeId {
         TypeId::of::<(Scope, Input, Output)>()
+    }
+}
+
+impl<Scope, Input, Output, H> Debug for Query<Scope, Input, Output, H> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_struct("Query")
+            .field("ty", &std::any::type_name::<(Scope, Input, Output)>())
+            .field("hasher", &std::any::type_name::<H>())
+            .field("hash", &self.hash)
+            .finish()
     }
 }
