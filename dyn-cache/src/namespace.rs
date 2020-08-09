@@ -18,6 +18,7 @@ use std::{
 
 /// The result of failing to find a `key` in a cache with matching input. Passed
 /// back to [`Namespace::store`] to initialize a value in the cache.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct KeyMiss<'k, K: ?Sized, H> {
     inner: Result<Hashed<&'k K, H>, &'k K>,
     dependent: Dependent,
@@ -42,7 +43,7 @@ impl<'k, K: ?Sized, H> KeyMiss<'k, K, H> {
 
 /// A query key that was hashed as part of an initial lookup and which can be
 /// used to store fresh values back to the cache.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct Hashed<K, H> {
     key: K,
     hash: u64,
@@ -50,6 +51,7 @@ struct Hashed<K, H> {
 }
 
 /// A namespace stores all cached values for a particular query type.
+#[derive(Clone)]
 pub(crate) struct Namespace<Scope, Input, Output, H = DefaultHashBuilder> {
     inner: HashMap<Scope, CacheCell<Input, Output>, H>,
 }

@@ -135,17 +135,18 @@ use std::{
     marker::PhantomData,
 };
 
+#[macro_use]
+mod definition;
+
 mod cache_cell;
 mod dep_node;
 mod namespace;
-
-#[macro_use] // put this after other modules so we don't accidentally depend on root-only macros
-mod definition;
 
 use namespace::{KeyMiss, Namespace};
 
 /// The result of a failed attempt to retrieve a value from the cache.
 /// Initialize a full [`CacheEntry`] for storage with [`CacheMiss::init`].
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     query: Query<Scope, Input, Output>,
     key: KeyMiss<'k, Key, H>,
@@ -168,6 +169,7 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
 }
 
 /// A fully-initialized input/output entry, ready to be written to the cache.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     miss: CacheMiss<'k, Key, Scope, Input, Output, H>,
     input: Input,
@@ -211,6 +213,7 @@ enum Liveness {
 
 /// The type of a dynamic cache query, used to shard storage in a fashion
 /// similar to `anymap` or `typemap`.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Query<Scope, Input, Output, H = HashBuildHasher> {
     ty: PhantomData<(Scope, Input, Output)>,
     hasher: PhantomData<H>,
