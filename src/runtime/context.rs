@@ -1,22 +1,21 @@
-use super::{Revision, Var};
+use super::{Revision, Spawner, Var};
 use crate::{Commit, Key};
 use dyn_cache::local::SharedLocalCache;
-use futures::{future::abortable, task::LocalSpawn};
+use futures::future::abortable;
 use std::{
     borrow::Borrow,
-    fmt::{Debug, Formatter, Result as FmtResult},
     future::Future,
-    rc::Rc,
     task::{Poll, Waker},
 };
 
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
 /// contexts and provides access to the current revision, cache storage,
 /// task spawning, and the waker for the loop.
+#[derive(Debug)]
 pub(crate) struct Context {
     revision: Revision,
     pub cache: SharedLocalCache,
-    spawner: Rc<dyn LocalSpawn>,
+    spawner: Spawner,
     waker: Waker,
 }
 
@@ -79,6 +78,7 @@ impl Context {
                 }
             };
             self.spawner
+                .0
                 .spawn_local_obj(Box::pin(task).into())
                 .expect("that set_task_executor has been called");
             scopeguard::guard(aborter, |a| a.abort())
@@ -88,17 +88,6 @@ impl Context {
             Poll::Ready(ref stored) => Poll::Ready(with(stored)),
             Poll::Pending => Poll::Pending,
         }
-    }
-}
-
-impl Debug for Context {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("Context")
-            .field("revision", &self.revision)
-            .field("cache", &self.cache)
-            .field("spawner", &format_args!("{:p}", &self.spawner))
-            .field("waker", &self.waker)
-            .finish()
     }
 }
 
