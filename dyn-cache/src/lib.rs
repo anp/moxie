@@ -190,7 +190,7 @@ pub mod sync {
 }
 
 /// A type which can contain values of varying liveness.
-trait Gc: Downcast + Debug {
+trait Storage: Downcast + Debug {
     /// Traverse stored values, identifying roots.
     fn mark(&mut self);
 
@@ -198,7 +198,7 @@ trait Gc: Downcast + Debug {
     fn sweep(&mut self);
 }
 
-impl_downcast!(Gc);
+impl_downcast!(Storage);
 
 /// Describes the outcome of garbage collection for a cached value.
 #[derive(Clone, Copy, Debug, PartialEq)]

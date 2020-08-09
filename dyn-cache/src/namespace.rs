@@ -1,7 +1,7 @@
 use super::{
     cache_cell::CacheCell,
     dep_node::{DepNode, Dependent},
-    Gc,
+    Storage,
 };
 use hashbrown::{
     hash_map::{DefaultHashBuilder, RawEntryMut},
@@ -149,9 +149,9 @@ where
     }
 }
 
-impl<Scope, Input, Output, H> Gc for Namespace<Scope, Input, Output, H>
+impl<Scope, Input, Output, H> Storage for Namespace<Scope, Input, Output, H>
 where
-    Scope: Eq + Hash + 'static,
+    Scope: 'static,
     Input: 'static,
     Output: 'static,
     H: 'static,
@@ -169,12 +169,7 @@ where
     }
 }
 
-impl<Scope, Input, Output, H> Debug for Namespace<Scope, Input, Output, H>
-where
-    Scope: Eq + Hash + 'static,
-    Input: 'static,
-    Output: 'static,
-{
+impl<Scope, Input, Output, H> Debug for Namespace<Scope, Input, Output, H> {
     // someday specialization might save us from these lame debug impls?
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         // TODO(#176) better debug output somehow?
