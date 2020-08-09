@@ -69,7 +69,7 @@ inserted with [`" stringify!($cache) "::store`] or read with
 pub struct $cache {
     /// We use a [`hash_hasher::HashBuildHasher`] here because we know that `TypeId`s
     /// are globally unique and pre-hashed courtesy of rustc.
-    inner: HashMap<TypeId, Box<dyn Gc $(+ $bound)?>, HashBuildHasher>,
+    inner: HashMap<TypeId, Box<dyn Storage $(+ $bound)?>, HashBuildHasher>,
 }}
 
 impl $cache {
@@ -88,10 +88,10 @@ a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
     ) -> Result<&Output, CacheMiss<'k, Key, Scope, Input, Output>>
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
-        Scope: 'static + Borrow<Key> + Eq + Hash $(+ $bound)?,
+        Scope: 'static + Borrow<Key> + Eq + Hash,
         Arg: PartialEq<Input> + ?Sized,
-        Input: 'static + Borrow<Arg> $(+ $bound)?,
-        Output: 'static $(+ $bound)?,
+        Input: 'static + Borrow<Arg>,
+        Output: 'static,
     {
         let dependent = Dependent::incoming();
         let query = Query::new(self.inner.hasher());
@@ -130,11 +130,11 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
         query: &Query<Scope, Input, Output>,
     ) -> Option<&Namespace<Scope, Input, Output>>
     where
-        Scope: 'static + Eq + Hash $(+ $bound)?,
-        Input: 'static $(+ $bound)?,
-        Output: 'static $(+ $bound)?,
+        Scope: 'static,
+        Input: 'static,
+        Output: 'static,
     {
-        let gc: &(dyn Gc $(+ $bound)?) = &**self
+        let gc: &dyn Storage = &**self
             .inner
             .raw_entry()
             .from_hash(query.hash(), |t| t == &query.ty())?.1;
@@ -150,7 +150,7 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
-        let gc: &mut (dyn Gc $(+ $bound)?) = &mut **self
+        let gc: &mut dyn Storage = &mut **self
             .inner
             .raw_entry_mut()
             .from_hash(query.hash(), |t| t == &query.ty())
