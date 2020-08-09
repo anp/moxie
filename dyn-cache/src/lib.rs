@@ -5,6 +5,99 @@
 //! available use minimal dynamic dispatch to allow storing arbitrarily many
 //! types of query results in a single parent store.
 //!
+//! Cache storage is indexed by dynamic [scopes](#scopes):
+//!
+//! ```
+//! let storage = dyn_cache::local::SharedLocalCache::default();
+//!
+//! // scopes can be identified by ~anything Eq + Hash
+//! let a_scope = 'a';
+//! let b_scope = 'b';
+//!
+//! // we use interior mutability here to demonstrate query side effects
+//! let count = std::cell::Cell::new(0);
+//! let increment = |&to_add: &i32| -> i32 {
+//!     // let's pretend that there's some other interesting work happening here...
+//!     let new = count.get() + to_add;
+//!     count.set(new);
+//!     new
+//! };
+//!
+//! // now we'll define some "queries" to the cache
+//! let a_inc = |n| storage.cache(&a_scope, &n, &increment);
+//! let b_inc = |n| storage.cache(&b_scope, &n, &increment);
+//!
+//! assert_eq!(count.get(), 0, "haven't called any queries");
+//!
+//! assert_eq!(a_inc(1), 1);
+//! assert_eq!(count.get(), 1, "called 'a'(1) once");
+//!
+//! assert_eq!(a_inc(1), 1);
+//! assert_eq!(count.get(), 1, "called 'a'(1) twice, only ran once");
+//!
+//! assert_eq!(b_inc(2), 3);
+//! assert_eq!(count.get(), 3, "called 'a'(1) and 'b'(2)");
+//!
+//! assert_eq!(a_inc(1), 1, "retains cached value");
+//! assert_eq!(count.get(), 3, "queries only affect their own scope");
+//!
+//! a_inc(2);
+//! assert_eq!(count.get(), 5, "called 'a'(1), 'a'(2), 'b'(2)");
+//! ```
+//!
+//! A single cache instance can hold multiple types of [scope](#scopes):
+//!
+//! ```
+//! let storage = dyn_cache::local::SharedLocalCache::default();
+//! # let count = std::cell::Cell::new(0);
+//! # let increment = |&to_add: &i32| -> i32 {
+//! #     // let's pretend that there's some other interesting work happening here...
+//! #     let new = count.get() + to_add;
+//! #     count.set(new);
+//! #    new
+//! # };
+//!
+//! let one_scope = 1u8;
+//! let two_scope = 2i32;
+//! let red_scope = b"red";
+//! let blue_scope = "blue";
+//!
+//! // each of these queries has a different type of scope
+//! // and while the inputs/outputs are the same they could also
+//! // vary without interfering with each other
+//! let one_inc = |n| storage.cache(&one_scope, &n, increment);
+//! let two_inc = |n| storage.cache(&two_scope, &n, increment);
+//! let red_inc = |n| storage.cache(&red_scope, &n, increment);
+//! let blue_inc = |n| storage.cache(&blue_scope, &n, increment);
+//!
+//! assert_eq!(one_inc(1), 1);
+//! assert_eq!(count.get(), 1);
+//!
+//! assert_eq!(two_inc(1), 2);
+//! assert_eq!(one_inc(1), 1, "still cached");
+//! assert_eq!(count.get(), 2, "only one of the queries ran");
+//!
+//! assert_eq!(red_inc(2), 4);
+//! assert_eq!(two_inc(1), 2, "still cached");
+//! assert_eq!(one_inc(1), 1, "still cached");
+//! assert_eq!(count.get(), 4, "only one of the queries ran");
+//!
+//! assert_eq!(blue_inc(3), 7);
+//! assert_eq!(red_inc(2), 4, "still cached");
+//! assert_eq!(two_inc(1), 2, "still cached");
+//! assert_eq!(one_inc(1), 1, "still cached");
+//! assert_eq!(count.get(), 7, "only one of the queries ran");
+//!
+//! // invalidation still happens once per scope (type)
+//! assert_eq!(blue_inc(5), 12, "blue has a different input");
+//! assert_eq!(red_inc(2), 4, "still cached");
+//! assert_eq!(two_inc(1), 2, "still cached");
+//! assert_eq!(one_inc(1), 1, "still cached");
+//! assert_eq!(count.get(), 12, "only one of the queries ran");
+//! ```
+//!
+//! # Cache types
+//!
 //! There are two main flavors of cache available for use in this crate:
 //!
 //! | Shared type                 | Synchronized? |
@@ -26,7 +119,24 @@
 //! These "inner" caches require mutable access to call their functions like
 //! [`local::LocalCache::get`] which returns either a reference or a
 //! [`CacheMiss`] that can be passed back to the cache in
-//! [`local::LocalCache::store`] to initialize a value in the cache.
+//! [`local::LocalCache::store`] to initialize a value in the cache:
+//!
+//! ```
+//! let mut cache = dyn_cache::local::LocalCache::default();
+//! let scope = &'a';
+//! let arg = &1;
+//!
+//! let miss = cache.get(scope, arg).expect_err("first access will always be a miss");
+//! let (entry, result): (_, Vec<usize>) = miss.init(|&n| {
+//!     let v: Vec<usize> = vec![n; n];
+//!     (v.clone(), v)
+//! });
+//! cache.store(entry);
+//! assert_eq!(result, vec![1usize]);
+//!
+//! let result: &Vec<usize> = cache.get(scope, arg).unwrap();
+//! assert_eq!(result, &vec![1]);
+//! ```
 //!
 //! See [`sync::SendCache::get`] and [`sync::SendCache::store`] for the
 //! thread-safe equivalents.
@@ -42,9 +152,9 @@
 //!
 //! ## Scopes
 //!
-//! The scope of a query is its identifier within cache storage.
-//! Scopes must implement `Eq` and `Hash` so that results can be
-//! efficiently and uniquely indexed within a namespace.
+//! The scope of a query is its identifier within cache storage for the given
+//! input & output types. Scopes must implement `Eq` and `Hash` so that results
+//! can be efficiently and uniquely indexed.
 //!
 //! Each scope identifies 0-1 `(Input, Output)` pairs in each namespace. The
 //! same type of scope can be used in multiple queries without collision if
@@ -52,10 +162,10 @@
 //!
 //! ## Inputs
 //!
-//! The input to a query determines when it is (re-)run. If a given query has
-//! been run before, then the previous input is compared to the current input
-//! before potentially running the query. If the input hasn't changed, the query
-//! can be skipped and its previously-stored output is returned.
+//! The input to a query determines when it is re-run. If a given query is
+//! present in the cache then the previous input is compared to the new input.
+//! If the input hasn't changed, the query can be skipped and its
+//! previously-stored output is returned.
 //!
 //! ## Outputs
 //!
