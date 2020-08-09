@@ -7,6 +7,7 @@ use std::{
 
 /// A CacheCell represents the storage used for a particular input/output pair
 /// on the heap.
+#[derive(Clone, Default, Hash, Eq, PartialEq)]
 pub(crate) struct CacheCell<Input, Output> {
     dep: DepNode,
     input: Input,

@@ -8,6 +8,38 @@ macro_rules! doc_comment {
     };
 }
 
+macro_rules! impl_common_traits_for_type_with_addr {
+    ($type_:ty) => {
+        impl Hash for $type_ {
+            fn hash<H>(&self, hasher: &mut H)
+            where
+                H: Hasher,
+            {
+                self.addr().hash(hasher);
+            }
+        }
+
+        impl PartialEq for $type_ {
+            fn eq(&self, other: &Self) -> bool {
+                self.addr().eq(&other.addr())
+            }
+        }
+        impl Eq for $type_ {}
+
+        impl PartialOrd for $type_ {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                self.addr().partial_cmp(&other.addr())
+            }
+        }
+
+        impl Ord for $type_ {
+            fn cmp(&self, other: &Self) -> Ordering {
+                self.addr().cmp(&other.addr())
+            }
+        }
+    };
+}
+
 macro_rules! define_cache {
     ($module:ident, $cache:ident $(: $bound:ident)?, $($rest:tt)*) => {
 paste::item! {
@@ -31,7 +63,7 @@ paste::item! {
 use crate::{dep_node::Dependent, *};
 use hash_hasher::HashBuildHasher;
 use hashbrown::HashMap;
-use std::{any::TypeId, borrow::Borrow, cmp::Eq, hash::Hash};
+use std::{any::TypeId, borrow::Borrow, cmp::{Eq, Ordering}, hash::{Hash, Hasher}};
 
 doc_comment! {"
 Holds arbitrary query results which are namespaced by arbitrary scope types. Usually used
@@ -233,18 +265,10 @@ assert_eq!(call_count.get(), 1, "called without caching");
 assert_eq!(call_count.get(), with_one_again);
 ```
 "#=>
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct $shared {
     inner: $refct<$lock<$cache>>,
 }}
-
-impl Default for $shared {
-    fn default() -> Self {
-        Self {
-            inner: $refct::new($lock::new($cache::default()))
-        }
-    }
-}
 
 impl $shared {
 doc_comment!{r"
@@ -335,7 +359,13 @@ Forwards to [`" stringify!($cache) "::gc`].
     pub fn gc(&self) {
         self.inner.$acquire().gc();
     }}
+
+    fn addr(&self) -> usize {
+        $refct::as_ptr(&self.inner) as *const _ as _
+    }
 }
+
+impl_common_traits_for_type_with_addr!($shared);
 
 impl From<$cache> for $shared {
     fn from(inner: $cache) -> Self {

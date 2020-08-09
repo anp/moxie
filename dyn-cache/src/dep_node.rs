@@ -1,7 +1,11 @@
 use super::Liveness;
 use illicit::AsContext;
 use parking_lot::Mutex;
-use std::sync::{Arc, Weak};
+use std::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+    sync::{Arc, Weak},
+};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct DepNode {
@@ -42,7 +46,14 @@ impl DepNode {
     pub fn mark_dead(&mut self) {
         self.inner.lock().mark_dead();
     }
+
+    /// Return the memory address of this `Dependent`.
+    fn addr(&self) -> usize {
+        Arc::as_ptr(&self.inner) as *const _ as _
+    }
 }
+
+impl_common_traits_for_type_with_addr!(DepNode);
 
 #[derive(Debug)]
 struct InnerDepNode {
@@ -129,21 +140,4 @@ impl Dependent {
     }
 }
 
-impl PartialEq for Dependent {
-    fn eq(&self, other: &Self) -> bool {
-        self.addr().eq(&other.addr())
-    }
-}
-impl Eq for Dependent {}
-
-impl PartialOrd for Dependent {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.addr().partial_cmp(&other.addr())
-    }
-}
-
-impl Ord for Dependent {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.addr().cmp(&other.addr())
-    }
-}
+impl_common_traits_for_type_with_addr!(Dependent);
