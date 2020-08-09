@@ -345,6 +345,20 @@ use namespace::{KeyMiss, Namespace};
 
 /// The result of a failed attempt to retrieve a value from the cache.
 /// Initialize a full [`CacheEntry`] for storage with [`CacheMiss::init`].
+///
+/// ```
+/// use dyn_cache::local::LocalCache;
+/// let mut cache = LocalCache::default();
+/// let (scope, arg) = (&'a', &1);
+///
+/// let miss = cache.get(scope, arg).expect_err("first access will always be a miss");
+/// # let (entry, result): (_, Vec<usize>) = miss.init(|&n| {
+/// #     let v: Vec<usize> = vec![n; n];
+/// #     (v.clone(), v)
+/// # });
+/// # cache.store(entry);
+/// # assert_eq!(result, vec![1usize]);
+/// ```
 #[derive(Clone, Eq, PartialEq)]
 pub struct CacheMiss<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     query: Query<Scope, Input, Output>,
@@ -355,6 +369,19 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
     /// Prepare the cache miss to be populated by running `query(arg)`,
     /// returning a separate value. The value returned (`R`) is typically
     /// derived in some way from the stored `Output`.
+    ///
+    /// ```
+    /// # use dyn_cache::local::LocalCache;
+    /// # let mut cache = LocalCache::default();
+    /// # let (scope, arg) = (&'a', &1);
+    /// # let miss = cache.get(scope, arg).expect_err("first access will always be a miss");
+    /// let (entry, result): (_, Vec<usize>) = miss.init(|&n| {
+    ///     let v: Vec<usize> = vec![n; n];
+    ///     (v.clone(), v)
+    /// });
+    /// cache.store(entry);
+    /// assert_eq!(result, vec![1usize]);
+    /// ```
     pub fn init<R>(
         self,
         query: impl FnOnce(&Input) -> (Output, R),
@@ -379,6 +406,8 @@ where
 }
 
 /// A fully-initialized input/output entry, ready to be written to the cache.
+/// Obtained from [`CacheMiss::init`] and passed to [`local::LocalCache::store`]
+/// or [`sync::SendCache::store`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CacheEntry<'k, Key: ?Sized, Scope, Input, Output, H = DefaultHashBuilder> {
     miss: CacheMiss<'k, Key, Scope, Input, Output, H>,
