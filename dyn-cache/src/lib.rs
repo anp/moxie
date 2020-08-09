@@ -223,20 +223,106 @@
 //! value is used if it or a value which depends on it has been used/rooted
 //! since the last call to `gc()`.
 //!
-//! ## Rooting
+//! ```
+//! let storage = dyn_cache::local::SharedLocalCache::default();
+//! let a_scope = 'a';
+//! let b_scope = 'b';
+//!
+//! // we use interior mutability here to demonstrate query side effects
+//! let count = std::cell::Cell::new(0);
+//! let increment = |&to_add: &i32| -> i32 {
+//!     // let's pretend that there's some other interesting work happening here...
+//!     let new = count.get() + to_add;
+//!     count.set(new);
+//!     new
+//! };
+//!
+//! // we'll define the same "queries" to the cache as in the previous example
+//! let a_inc = |n| storage.cache(&a_scope, &n, &increment);
+//! let b_inc = |n| storage.cache(&b_scope, &n, &increment);
+//!
+//! assert_eq!(a_inc(1), 1);
+//! assert_eq!(count.get(), 1, "called 'a'(1) once");
+//!
+//! assert_eq!(b_inc(2), 3);
+//! assert_eq!(count.get(), 3, "called 'a'(1) and 'b'(2)");
+//!
+//! // mark the end of this "revision" in the cache
+//! // this won't drop anything yet, just marks all cached values as unused
+//! storage.gc();
+//!
+//! // run only one of the queries to mark it live
+//! assert_eq!(a_inc(1), 1, "value is still cached");
+//! assert_eq!(count.get(), 3, "nothing has touched our side effect tracker");
+//!
+//! storage.gc(); // drops b_inc from storage
+//!
+//! assert_eq!(b_inc(2), 5, "b_inc was dropped from the cache, ran again");
+//! assert_eq!(count.get(), 5);
+//!
+//! assert_eq!(a_inc(1), 1, "value is still cached");
+//! assert_eq!(count.get(), 5);
+//! ```
+//!
+//! ## Nesting
 //!
 //! When a cache read *fails*, we expect that the value will be populated
 //! immediately after and a new node in the dependency graph is created. The new
 //! dependency node is marked as an incoming dependent on any cache values which
 //! are accessed during the initialization of the new value. The new node is
 //! then marked as a "root" for the garbage collector once it has
-//! been initialized and the cache populated. If in subsequent epochs the rooted
-//! value is accessed again it will be re-rooted and its dependents will be
-//! marked as live even if they were not directly accessed in that epoch.
+//! been initialized and the cache populated. If in subsequent revisions the
+//! rooted value is accessed again it will be re-rooted and its dependents will
+//! be marked as live even if they were not directly accessed in that revision.
 //!
 //! When a cache read *succeeds*, its dependency node is marked as being
 //! depended upon by the node (if any) which was being initialized during the
 //! read, linking the two dependencies together.
+//!
+//! ```
+//! let storage = dyn_cache::local::SharedLocalCache::default();
+//! let a_scope = 'a';
+//! let b_scope = 'b';
+//!
+//! let count = std::cell::Cell::new(0);
+//! let increment = |&to_add: &i32| -> i32 {
+//!     // let's pretend that there's some other interesting work happening here...
+//!     let new = count.get() + to_add;
+//!     count.set(new);
+//!     new
+//! };
+//!
+//! let a_inc = |n| storage.cache(&a_scope, &n, &increment);
+//!
+//! // this new query "depends on" a_inc by calling it in its own init closure
+//! let b_inc = |n| storage.cache(&b_scope, &n, |&n| a_inc(n));
+//!
+//! assert_eq!(b_inc(2), 2);
+//! assert_eq!(count.get(), 2);
+//!
+//! // until now, we haven't called a_inc directly
+//! assert_eq!(a_inc(2), 2, "a_inc is indeed cached as a dep of b_inc");
+//! assert_eq!(count.get(), 2);
+//!
+//! storage.gc(); // mark both queries dead
+//!
+//! // in this revision we'll only call b_inc directly
+//! assert_eq!(b_inc(3), 5);
+//! assert_eq!(count.get(), 5);
+//!
+//! storage.gc(); // doesn't actually drop anything
+//!
+//! // both queries should still have their outputs for input=3 cached
+//! assert_eq!(b_inc(3), 5);
+//! assert_eq!(a_inc(3), 5);
+//! assert_eq!(count.get(), 5);
+//!
+//! // we can also check to make sure that neither query is touching the cell
+//! count.set(0);
+//! assert_eq!(b_inc(3), 5);
+//! assert_eq!(a_inc(3), 5);
+//! assert_eq!(count.get(), 0);
+//! ```
 
 use downcast_rs::{impl_downcast, Downcast};
 use hash_hasher::HashBuildHasher;
