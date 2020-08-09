@@ -3,7 +3,7 @@ name = "dyn-cache"
 version = "0.11.0"
 description = "Query cache indexed by type."
 categories = ["caching", "rust-patterns"]
-keywords = ["incremental", "memoize", "intern"]
+keywords = ["incremental", "memoize", "intern", "cache"]
 readme = "CHANGELOG.md"
 
 # update here, update everywhere!

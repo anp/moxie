@@ -5,6 +5,13 @@ invocations.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.12.0] - 2020-08-09
+
+### Changed
+
+- `CacheMiss` handles initialization of borrowed inputs for storage, this removes arguments from
+  some lower-level functions.
+
 ## [0.11.0] - 2020-08-08
 
 ### Fixed
