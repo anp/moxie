@@ -24,7 +24,12 @@ use futures::{
     future::LocalFutureObj,
     task::{noop_waker, LocalSpawn, SpawnError},
 };
-use std::{rc::Rc, task::Waker};
+use illicit::AsContext;
+use std::{
+    fmt::{Debug, Formatter, Result as FmtResult},
+    rc::Rc,
+    task::Waker,
+};
 
 pub(crate) use context::Context;
 pub use runloop::RunLoop;
@@ -71,7 +76,7 @@ impl std::fmt::Debug for Revision {
 pub struct Runtime {
     revision: Revision,
     cache: SharedLocalCache,
-    spawner: Rc<dyn LocalSpawn>,
+    spawner: Spawner,
     wk: Waker,
 }
 
@@ -84,11 +89,9 @@ impl Default for Runtime {
 impl Runtime {
     /// Construct a new [`Runtime`] with blank storage and no external waker or
     /// task executor.
-    ///
-    /// By default no state change waker or task executor is populated.
     pub fn new() -> Self {
         Self {
-            spawner: Rc::new(JunkSpawner),
+            spawner: Spawner(Rc::new(JunkSpawner)),
             revision: Revision(0),
             cache: SharedLocalCache::default(),
             wk: noop_waker(),
@@ -107,7 +110,7 @@ impl Runtime {
     pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
         self.revision.0 += 1;
 
-        let ret = illicit::Layer::new().offer(self.context_handle()).enter(|| topo::call(op));
+        let ret = self.context_handle().offer(|| topo::call(op));
 
         self.cache.gc();
         ret
@@ -123,7 +126,16 @@ impl Runtime {
 
     /// Sets the executor that will be used to spawn normal priority tasks.
     pub fn set_task_executor(&mut self, sp: impl LocalSpawn + 'static) {
-        self.spawner = Rc::new(sp);
+        self.spawner = Spawner(Rc::new(sp));
+    }
+}
+
+#[derive(Clone)]
+struct Spawner(pub Rc<dyn LocalSpawn>);
+
+impl Debug for Spawner {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_fmt(format_args!("{:p}", &self.0))
     }
 }
 
@@ -152,7 +164,7 @@ mod tests {
         });
 
         assert!(illicit::get::<u8>().is_err());
-        illicit::Layer::new().offer(first_byte).enter(|| {
+        first_byte.offer(|| {
             topo::call(|| runtime.run_once());
         });
         assert!(illicit::get::<u8>().is_err());
