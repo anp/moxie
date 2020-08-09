@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
 
-//! Caches for storing the results of repeated function calls. The cache types
-//! available use minimal dynamic dispatch to allow storing arbitrarily many
-//! types of query results in a single parent store.
+//! Caches for storing the results of repeated function calls. The caches
+//! use minimal dynamic dispatch to store arbitrarily many
+//! types of query results in a single store.
 //!
 //! Cache storage is indexed by dynamic [scopes](#scopes):
 //!
@@ -41,21 +41,24 @@
 //! assert_eq!(a_inc(1), 1, "retains cached value");
 //! assert_eq!(count.get(), 3, "queries only affect their own scope");
 //!
-//! a_inc(2);
+//! assert_eq!(a_inc(2), 5);
 //! assert_eq!(count.get(), 5, "called 'a'(1), 'a'(2), 'b'(2)");
+//!
+//! assert_eq!(a_inc(1), 6, "only the most recent revision is cached");
+//! assert_eq!(count.get(), 6);
 //! ```
 //!
 //! A single cache instance can hold multiple types of [scope](#scopes):
 //!
 //! ```
 //! let storage = dyn_cache::local::SharedLocalCache::default();
-//! # let count = std::cell::Cell::new(0);
-//! # let increment = |&to_add: &i32| -> i32 {
-//! #     // let's pretend that there's some other interesting work happening here...
-//! #     let new = count.get() + to_add;
-//! #     count.set(new);
-//! #    new
-//! # };
+//! let count = std::cell::Cell::new(0);
+//! let increment = |&to_add: &i32| -> i32 {
+//!     // let's pretend that there's some other interesting work happening here...
+//!     let new = count.get() + to_add;
+//!     count.set(new);
+//!     new
+//! };
 //!
 //! let one_scope = 1u8;
 //! let two_scope = 2i32;
