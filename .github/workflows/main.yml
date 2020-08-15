@@ -105,8 +105,8 @@ jobs:
       with:
         record: true
         working-directory: dom/examples/todo
-        start: "cargo ofl"
-        wait-on: "http://[::1]:8000"
+        start: "../../../bin/ofl"
+        wait-on: "http://localhost:8000"
       env:
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
