@@ -100,7 +100,7 @@ mod tests {
     pub async fn single_item() {
         let root = document().create_element("div").unwrap();
         crate::App::boot(&[Todo::new("weeeee")], root.clone(), || {
-            let todo = &illicit::get::<Key<Vec<Todo>>>().unwrap()[0];
+            let todo = &illicit::expect::<Key<Vec<Todo>>>()[0];
             todo_item(todo)
         });
 
