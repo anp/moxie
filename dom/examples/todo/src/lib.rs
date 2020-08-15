@@ -63,14 +63,14 @@ impl App {
 #[derive(Clone, Debug)]
 pub struct Todo {
     id: u32,
-    text: String,
+    title: String,
     completed: bool,
 }
 
 impl Todo {
     fn new(s: impl Into<String>) -> Self {
         static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-        Self { id: NEXT_ID.fetch_add(1, Ordering::SeqCst), text: s.into(), completed: false }
+        Self { id: NEXT_ID.fetch_add(1, Ordering::SeqCst), title: s.into(), completed: false }
     }
 }
 
