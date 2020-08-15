@@ -56,15 +56,15 @@ build-times = "build --workspace --all-targets --all-features -Z timings"
 
 dom-flow = """
 watch --clear
+    -x build-dom-todo
+    -x build-dom-hacking
     -x test-dom
     -x test-dom-doc
     -x test-augdom
+    -x test-dom-todo
     -x test-dom-lib-browser
     -x test-dom-drivertest
-    -x build-dom-hacking
     -x test-dom-hacking
-    -x build-dom-todo
-    -x test-dom-todo
     -x clippy-dom
 """
 
