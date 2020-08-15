@@ -1,0 +1,10 @@
+{
+    "private": true,
+    "name": "cypress-example-todomvc-e2e-tests",
+    "version": "0.0.0-development",
+    "devDependencies": {
+        "axe-core": "3.5.3",
+        "cypress": "4.12.1",
+        "cypress-axe": "0.5.3"
+    }
+}
