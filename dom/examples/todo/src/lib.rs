@@ -1,6 +1,8 @@
 use filter::Visibility;
 use header::input_header;
 use main_section::main_section;
+
+use illicit::AsContext;
 use mox::mox;
 use moxie_dom::{
     elements::text_content::{div, Div},
@@ -34,14 +36,17 @@ pub(crate) struct App {
 
 impl App {
     #[topo::nested]
-    pub fn current(default_todos: &[Todo]) -> Self {
+    pub fn current() -> Self {
         let (_, visibility) = state(Visibility::default);
-        let (_, todos) = state(|| default_todos.into());
+        let (_, todos) =
+            // we allow the default empty to be overridden for testing
+            // TODO support localStorage
+            state(|| illicit::get::<Vec<Todo>>().map(|d| d.clone()).unwrap_or_default());
 
         Self { todos, visibility }
     }
 
-    pub fn enter<T>(self, f: &mut dyn FnMut() -> T) -> T {
+    pub fn enter<T>(self, f: impl FnMut() -> T) -> T {
         illicit::Layer::new().offer(self.todos).offer(self.visibility).enter(f)
     }
 
@@ -51,7 +56,7 @@ impl App {
         mut root: impl FnMut() -> Root + 'static,
     ) {
         let defaults = default_todos.to_vec();
-        moxie_dom::boot(node, move || App::current(&defaults).enter(&mut root));
+        moxie_dom::boot(node, move || defaults.clone().offer(|| App::current().enter(&mut root)));
     }
 }
 
@@ -75,7 +80,7 @@ pub fn begin() {
     std::panic::set_hook(Box::new(|info| {
         tracing::error!("{:#?}", info);
     }));
-    App::boot(&[Todo::new("whoaaa")], document().body().unwrap(), todo_app);
+    App::boot(&[], document().body().unwrap(), todo_app);
 }
 
 #[cfg(test)]
