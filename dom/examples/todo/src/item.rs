@@ -13,13 +13,13 @@ use moxie_dom::{
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
     let todos = todos.clone();
-    let text = todo.text.clone();
+    let text = todo.title.clone();
     text_input(&text, true, move |value: String| {
         editing.set(false);
         todos.update(|todos| {
             let mut todos = todos.to_vec();
             if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
-                todo.text = value;
+                todo.title = value;
             }
             Some(todos)
         });
@@ -56,7 +56,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
             <input class="toggle" type="checkbox" checked={todo.completed} onclick={on_click} />
 
             <label ondblclick={move |_| editing.set(true)}>
-                {% "{}", todo.text }
+                {% "{}", todo.title }
             </label>
 
             <button class="destroy" onclick={move |_| {
