@@ -1,15 +1,48 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
-    <title>TodoMVC (moxie)</title>
-    <meta charset="utf-8" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1" name="viewport" />
-    <link rel="stylesheet" href="index.css">
+    <title>moxie-dom • TodoMVC</title>
+    <link rel="stylesheet" href="https://unpkg.com/todomvc-common@^1.0.0/base.css">
+    <link rel="stylesheet" href="https://unpkg.com/todomvc-app-css@^2.0.0/index.css">
 </head>
 
 <body>
+    <section class="todoapp">
+        <header class="header">
+            <h1>todos</h1>
+            <input class="new-todo" placeholder="What needs to be done?" autofocus>
+        </header>
+        <footer class="footer">
+            <!-- This should be `0 items left` by default -->
+            <span class="todo-count"><strong>0</strong> items left</span>
+            <!-- Remove this if you don't implement routing -->
+            <ul class="filters">
+                <li>
+                    <a class="selected" href="#/">All</a>
+                </li>
+                <li>
+                    <a href="#/active">Active</a>
+                </li>
+                <li>
+                    <a href="#/completed">Completed</a>
+                </li>
+            </ul>
+            <button class="clear-completed">Clear completed</button>
+        </footer>
+    </section>
+    <footer class="info">
+        <p>Double-click to edit a todo</p>
+
+        <p>Created by <a href="http://blog.anp.lol">anp</a></p>
+        <p>Part of <a href="http://moxie.rs">moxie-dom</a></p>
+    </footer>
+
+    <script src="https://unpkg.com/todomvc-common@^1.0.0/base.js"></script>
     <script type="module">
         import init from './pkg/index.js';
         async function run() {
