@@ -10,6 +10,7 @@ use moxie_dom::{
     prelude::*,
 };
 use std::sync::atomic::{AtomicU32, Ordering};
+use tracing::*;
 use wasm_bindgen::prelude::*;
 
 pub mod filter;
@@ -76,11 +77,13 @@ impl Todo {
 
 #[wasm_bindgen(start)]
 pub fn begin() {
-    console_log::init_with_level(tracing::log::Level::Debug).unwrap();
+    tracing_wasm::set_as_global_default();
+    info!("starting");
     std::panic::set_hook(Box::new(|info| {
-        tracing::error!("{:#?}", info);
+        error!(?info, "crashed");
     }));
     App::boot(&[], document().body().unwrap(), todo_app);
+    info!("started");
 }
 
 #[cfg(test)]
