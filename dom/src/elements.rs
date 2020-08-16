@@ -114,7 +114,6 @@ body_events! {
     onmessage      <- WebsocketMessage,
     onoffline      <- Offline,
     ononline       <- Online,
-    onpopstate     <- PopState,
     onstorage      <- Storage,
     onunload       <- Unload,
 }

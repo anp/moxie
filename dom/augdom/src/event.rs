@@ -433,24 +433,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// Fresh data is available from a motion sensor. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/devicemotion
-    DeviceMotion,
-    "devicemotion",
-    sys::DeviceMotionEvent
-}
-
-event_ty! {
-    /// Fresh data is available from an orientation sensor. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/deviceorientation
-    DeviceOrientation,
-    "deviceorientation",
-    sys::DeviceOrientationEvent
-}
-
-event_ty! {
     /// The dischargingTime attribute has been updated. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/dischargingtimechange
@@ -1186,41 +1168,12 @@ event_ty! {
 }
 
 event_ty! {
-    /// A session history entry is being navigated to (in certain cases). [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/popstate
-    PopState,
-    "popstate",
-    sys::PopStateEvent
-}
-
-event_ty! {
     /// In progress. [MDN documentation][mdn]
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/progress
     Progress,
     "progress",
     sys::ProgressEvent
-}
-
-event_ty! {
-    /// A [Service Worker] has received a push message. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/push
-    /// [Service Worker]: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
-    Push,
-    "push",
-    sys::PushEvent
-}
-
-event_ty! {
-    /// A [PushSubscription] has expired. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/pushsubscriptionchange
-    /// [PushSubscription]: https://developer.mozilla.org/en-US/docs/Web/API/PushSubscription
-    PushSubscriptionChange,
-    "pushsubscriptionchange",
-    sys::PushEvent
 }
 
 event_ty! {
@@ -1622,16 +1575,6 @@ event_ty! {
 }
 
 event_ty! {
-    /// A [CSS transition] has completed. [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/transitionend
-    /// [CSS transition]: https://developer.mozilla.org/en-US/docs/CSS/CSS_transitions
-    TransitionEnd,
-    "transitionend",
-    sys::TransitionEvent
-}
-
-event_ty! {
     /// An attempt was made to open a database with a version number higher than its current
     /// version. A versionchange transaction has been created. [MDN documentation][mdn]
     ///
@@ -1639,16 +1582,6 @@ event_ty! {
     UpgradeNeeded,
     "upgradeneeded",
     sys::Event
-}
-
-event_ty! {
-    /// Fresh data is available from a proximity sensor (indicates whether the nearby object is near
-    /// the device or not). [MDN documentation][mdn]
-    ///
-    /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/Events/userproximity
-    UserProximity,
-    "userproximity",
-    sys::UserProximityEvent
 }
 
 event_ty! {

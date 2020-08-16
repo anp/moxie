@@ -99,7 +99,6 @@ global_events! {
     onsubmit             <- Submit,
     onsuspend            <- Suspend,
     ontimeupdate         <- TimeUpdate,
-    ontransitionend      <- TransitionEnd,
     onvolumechange       <- VolumeChange,
     onwaiting            <- Waiting,
     onwheel              <- Wheel,
