@@ -27,7 +27,9 @@ describe('TodoMVC - Moxie DOM', function () {
     // Go out and visit our local web server
     // before each test, which serves us the
     // TodoMVC App we want to test against
-    cy.visit('/')
+    cy.visit('/index.html')
+    // TODO(#182) delete above line and uncomment below line
+    // cy.visit('/')
   })
 
   afterEach(() => {

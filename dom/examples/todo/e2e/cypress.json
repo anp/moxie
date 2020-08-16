@@ -1,6 +1,6 @@
 {
     "projectId": "9vrkgj",
-    "baseUrl": "http://localhost:8000/dom/examples/todo/index.html",
+    "baseUrl": "http://localhost:8000/dom/examples/todo",
     "fixturesFolder": false,
     "pluginsFile": false
 }
