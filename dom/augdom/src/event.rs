@@ -5,6 +5,7 @@ use crate::Node;
 #[cfg(feature = "webdom")]
 use {
     crate::webdom,
+    std::fmt::{Debug, Formatter, Result as FmtResult},
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
@@ -83,6 +84,7 @@ impl Drop for EventHandle {
 macro_rules! event_ty {
     ($(#[$attr:meta])* $name:ident, $ty_str:expr, $parent_ty:ty) => {
         $(#[$attr])*
+        #[derive(Debug)]
         pub struct $name;
 
         impl Event for $name {
@@ -137,6 +139,14 @@ macro_rules! event_ty {
             fn dispatch(target: &sys::EventTarget) {
                 let event = <$parent_ty>::new($ty_str).unwrap();
                 sys::EventTarget::dispatch_event(target, event.as_ref()).unwrap();
+            }
+        }
+
+        impl Debug for $name {
+            fn fmt(&self, f: &mut Formatter) -> FmtResult {
+                f.debug_tuple(stringify!($name))
+                .field(&self.0)
+                .finish()
             }
         }
     };
