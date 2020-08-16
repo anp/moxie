@@ -82,7 +82,7 @@
             "type": "shell",
             "presentation": {
                 "group": "tools",
-                "panel": "dedicated",
+                "panel": "dedicated"
             },
             "runOptions": {
                 "runOn": "folderOpen"
@@ -95,6 +95,27 @@
             "problemMatcher": [
                 "$rustc-watch"
             ]
+        },
+        {
+            "label": "cypress",
+            "type": "shell",
+            "presentation": {
+                "group": "tools",
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "npx",
+            "args": [
+                "cypress",
+                "open"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/dom/examples/todo/e2e"
+            },
+            "problemMatcher": []
         }
     ]
 }
