@@ -104,8 +104,8 @@ jobs:
       uses: cypress-io/github-action@v2
       with:
         record: true
-        working-directory: dom/examples/todo
-        start: "../../../bin/ofl"
+        working-directory: dom/examples/todo/e2e
+        start: "../../../../bin/ofl"
         wait-on: "http://localhost:8000"
       env:
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
