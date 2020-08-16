@@ -10,6 +10,9 @@ use {
     web_sys as sys,
 };
 
+#[cfg(feature = "webdom")]
+mod debug;
+
 /// An event that can be received as the first argument to a handler callback.
 #[cfg(feature = "webdom")]
 pub trait Event: AsRef<web_sys::Event> + JsCast {
@@ -144,9 +147,10 @@ macro_rules! event_ty {
 
         impl Debug for $name {
             fn fmt(&self, f: &mut Formatter) -> FmtResult {
-                f.debug_tuple(stringify!($name))
-                .field(&self.0)
-                .finish()
+                f.write_fmt(format_args!(
+                    "{:?}",
+                    debug::JsFormatter::new(stringify!($name), &self.0),
+                ))
             }
         }
     };
