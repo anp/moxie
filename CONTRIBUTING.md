@@ -66,6 +66,19 @@ filesystem for changes to files it has served, delivering notifications when any
 change. The server injects the necessary JavaScript into each HTML page to open a websocket
 connection to listen for changes, reloading when changes occur.
 
+##### End-to-end tests
+
+The TodoMVC example app has some e2e tests which use [cypress.io] and thus require a recent Node/npm
+installation.
+
+```
+$ cd dom/examples/todo/e2e
+$ npx cypress open
+```
+
+Alternatively, there is a project-local VSCode task configured which will open cypress when the
+workspace is opened (assuming one enables auto-tasks for this workspace).
+
 #### Releases
 
 During development all non-tool crate versions should be suffixed with `-pre` indicating a
