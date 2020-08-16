@@ -12,29 +12,8 @@
 </head>
 
 <body>
-    <section class="todoapp">
-        <header class="header">
-            <h1>todos</h1>
-            <input class="new-todo" placeholder="What needs to be done?" autofocus>
-        </header>
-        <footer class="footer">
-            <!-- This should be `0 items left` by default -->
-            <span class="todo-count"><strong>0</strong> items left</span>
-            <!-- Remove this if you don't implement routing -->
-            <ul class="filters">
-                <li>
-                    <a class="selected" href="#/">All</a>
-                </li>
-                <li>
-                    <a href="#/active">Active</a>
-                </li>
-                <li>
-                    <a href="#/completed">Completed</a>
-                </li>
-            </ul>
-            <button class="clear-completed">Clear completed</button>
-        </footer>
-    </section>
+    <div id="content"></div>
+
     <footer class="info">
         <p>Double-click to edit a todo</p>
 
@@ -43,11 +22,11 @@
     </footer>
 
     <script type="module">
-        import init from './pkg/index.js';
-        async function run() {
+        import init, { boot } from './pkg/index.js';
+        (async () => {
             await init();
-        }
-        run();
+            await boot(document.querySelector('#content'));
+        })();
     </script>
 </body>
 

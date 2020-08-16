@@ -5,7 +5,7 @@ use main_section::main_section;
 use illicit::AsContext;
 use mox::mox;
 use moxie_dom::{
-    elements::text_content::{div, Div},
+    elements::sectioning::{section, Section},
     interfaces::node::Node,
     prelude::*,
 };
@@ -21,12 +21,12 @@ pub mod item;
 pub mod main_section;
 
 #[topo::nested]
-fn todo_app() -> Div {
+fn todo_app() -> Section {
     mox! {
-        <div class="todoapp">
+        <section class="todoapp">
             { input_header() }
             { main_section() }
-        </div>
+        </section>
     }
 }
 
@@ -76,14 +76,18 @@ impl Todo {
 }
 
 #[wasm_bindgen(start)]
-pub fn begin() {
+pub fn setup_tracing() {
     tracing_wasm::set_as_global_default();
-    info!("starting");
     std::panic::set_hook(Box::new(|info| {
         error!(?info, "crashed");
     }));
-    App::boot(&[], document().body().unwrap(), todo_app);
-    info!("started");
+    info!("tracing initialized");
+}
+
+#[wasm_bindgen]
+pub fn boot(root: moxie_dom::raw::sys::Node) {
+    App::boot(&[], root, todo_app);
+    info!("running");
 }
 
 #[cfg(test)]
