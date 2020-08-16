@@ -8,7 +8,6 @@ function listenToChangeEvents() {
         changes.error(e);
     }
 
-    changes.onopen = () => console.log('livereload socket connected');
     changes.onclose = () => {
         let timeout = Math.pow(2, timeoutExp);
         timeoutExp += 1;
@@ -20,7 +19,6 @@ function listenToChangeEvents() {
         changes.close();
     };
     changes.onmessage = ({ data }) => {
-        console.log(data);
         location.reload();
     };
 }
