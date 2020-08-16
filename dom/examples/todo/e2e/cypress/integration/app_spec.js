@@ -53,22 +53,12 @@ describe('TodoMVC - Moxie DOM', function () {
 
   context('When page is initially opened', function () {
     it('should focus on the todo input field', function () {
-      // get the currently focused element and assert
-      // that it has class='new-todo'
-      //
-      // http://on.cypress.io/focused
       cy.focused().should('have.class', 'new-todo')
     })
   })
 
   context('No Todos', function () {
     it('should hide #main and #footer', function () {
-      // Unlike the TodoMVC tests, we don't need to create
-      // a gazillion helper functions which are difficult to
-      // parse through. Instead we'll opt to use real selectors
-      // so as to make our testing intentions as clear as possible.
-      //
-      // http://on.cypress.io/get
       cy.get('.todo-list li').should('not.exist')
       cy.get('.main').should('not.exist')
       cy.get('.footer').should('not.exist')
@@ -104,8 +94,8 @@ describe('TodoMVC - Moxie DOM', function () {
       // create several todos then check the number of items in the list
       cy.get('.new-todo')
         .type('todo A{enter}')
-        .type('todo B{enter}') // we can continue working with same element
-        .type('todo C{enter}') // and keep adding new items
+        .type('todo B{enter}')
+        .type('todo C{enter}')
         .type('todo D{enter}')
 
       cy.get('.todo-list li').should('have.length', 4)
@@ -120,13 +110,9 @@ describe('TodoMVC - Moxie DOM', function () {
     })
 
     it('should append new items to the bottom of the list', function () {
-      // this is an example of a custom command
       // defined in cypress/support/commands.js
       cy.createDefaultTodos().as('todos')
 
-      // even though the text content is split across
-      // multiple <span> and <strong> elements
-      // `cy.contains` can verify this correctly
       cy.get('.todo-count').contains('3 items left')
 
       cy.get('@todos')
@@ -146,11 +132,6 @@ describe('TodoMVC - Moxie DOM', function () {
     })
 
     it('should trim text input', function () {
-      // this is an example of another custom command
-      // since we repeat the todo creation over and over
-      // again. It's up to you to decide when to abstract
-      // repetitive behavior and roll that up into a custom
-      // command vs explicitly writing the code.
       cy.createTodo(`    ${TODO_ITEM_ONE}    `)
 
       // we use as explicit assertion here about the text instead of
@@ -171,18 +152,11 @@ describe('TodoMVC - Moxie DOM', function () {
   context('Mark all as completed', function () {
 
     beforeEach(function () {
-      // This is an example of aliasing
-      // within a hook (beforeEach).
-      // Aliases will automatically persist
-      // between hooks and are available
-      // in your tests below
       cy.createDefaultTodos().as('todos')
     })
 
     it('should allow me to mark all items as completed', function () {
-      // complete all todos
-      // we use 'check' instead of 'click'
-      // because that indicates our intention much clearer
+      // we use 'check' instead of 'click' because that indicates our intention much clearer
       cy.get('.toggle-all').check()
 
       // get each todo li and ensure its class is 'completed'
@@ -223,8 +197,6 @@ describe('TodoMVC - Moxie DOM', function () {
       cy.get('.toggle-all')
         .as('toggleAll')
         .check()
-        // this assertion is silly here IMO but
-        // it is what TodoMVC does
         .should('be.checked')
 
       // alias the first todo and then click it
@@ -250,9 +222,6 @@ describe('TodoMVC - Moxie DOM', function () {
 
   context('Item', function () {
     it('should allow me to mark items as complete', function () {
-      // we are aliasing the return value of
-      // our custom command 'createTodo'
-      //
       // the return value is the <li> in the <ul.todos-list>
       cy.createTodo(TODO_ITEM_ONE).as('firstTodo')
       cy.createTodo(TODO_ITEM_TWO).as('secondTodo')
@@ -354,10 +323,6 @@ describe('TodoMVC - Moxie DOM', function () {
         .find('.edit')
         .clear()
         .type('buy some sausages')
-        // we can just send the blur event directly
-        // to the input instead of having to click
-        // on another button on the page. though you
-        // could do that its just more mental work
         .blur()
 
       cy.get('@todos')
@@ -490,8 +455,6 @@ describe('TodoMVC - Moxie DOM', function () {
 
   context('Persistence', function () {
     it('should persist its data', function () {
-      // mimicking TodoMVC tests
-      // by writing out this function
       function testState() {
         cy.get('@firstTodo')
           .should('contain', TODO_ITEM_ONE)
