@@ -4,6 +4,9 @@ use crossbeam::channel::Sender;
 use std::time::{Duration, Instant};
 use tracing::*;
 
+const TIMEOUT: Duration = Duration::from_secs(10);
+const FREQUENCY: Duration = Duration::from_secs(1);
+
 pub struct Changed(pub String);
 
 impl Message for Changed {
@@ -12,12 +15,13 @@ impl Message for Changed {
 
 pub struct ChangeWatchSession {
     last_heartbeat: Instant,
+    last_change: Option<Changed>,
     session_tx: Sender<Addr<ChangeWatchSession>>,
 }
 
 impl ChangeWatchSession {
     pub fn new(session_tx: Sender<Addr<ChangeWatchSession>>) -> Self {
-        ChangeWatchSession { last_heartbeat: Instant::now(), session_tx }
+        ChangeWatchSession { last_heartbeat: Instant::now(), last_change: None, session_tx }
     }
 
     fn tick_heartbeat(&mut self) {
@@ -28,13 +32,8 @@ impl ChangeWatchSession {
 impl Handler<Changed> for ChangeWatchSession {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        Changed(changed): Changed,
-        cx: &mut <Self as Actor>::Context,
-    ) -> Self::Result {
-        info!("notifying client of changed file");
-        cx.text(changed);
+    fn handle(&mut self, changed: Changed, _cx: &mut <Self as Actor>::Context) -> Self::Result {
+        self.last_change = Some(changed);
     }
 }
 
@@ -71,13 +70,19 @@ impl Actor for ChangeWatchSession {
 
     fn started(&mut self, cx: &mut Self::Context) {
         self.session_tx.send(cx.address()).unwrap();
-        cx.run_interval(Duration::from_secs(3), |session, cx| {
-            if Instant::now().duration_since(session.last_heartbeat) > Duration::from_secs(10) {
+        cx.run_interval(FREQUENCY, |session, cx| {
+            if Instant::now().duration_since(session.last_heartbeat) > TIMEOUT {
                 info!("ws change event client timed out, disconnecting");
                 cx.stop();
                 return;
             }
-            cx.ping(b"");
+
+            if let Some(Changed(change)) = session.last_change.take() {
+                info!(%change, "notifying client");
+                cx.text(change);
+            } else {
+                cx.ping(b"");
+            }
         });
     }
 }
