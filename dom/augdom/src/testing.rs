@@ -285,18 +285,27 @@ where
     /// in the queried subtree.
     #[cfg(feature = "webdom")]
     pub async fn many(&self) -> Vec<N> {
+        macro_rules! try_query {
+            () => {{
+                let current_results = self.query.many();
+                if !current_results.is_empty() {
+                    return current_results;
+                }
+            }};
+        }
+
         let mut mutations = self.query.finder.target.observe_mutations();
         let timeout = gloo_timers::future::TimeoutFuture::new(1_000);
         futures::pin_mut!(timeout);
+
+        try_query!(); // see if we can eagerly eval
         loop {
             futures::select_biased! {
-                _ = timeout.as_mut().fuse() => return Vec::new(),
-                _ = mutations.next().fuse() => {
-                    let current_results = self.query.many();
-                    if !current_results.is_empty() {
-                        return current_results;
-                    }
-                }
+                _ = timeout.as_mut().fuse() => {
+                    try_query!(); // first see if we can succeed after timing out
+                    return Vec::new(); // return empty results if we still fail
+                },
+                _ = mutations.next().fuse() => try_query!(),
             }
         }
     }
