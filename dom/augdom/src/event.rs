@@ -5,13 +5,11 @@ use crate::Node;
 #[cfg(feature = "webdom")]
 use {
     crate::webdom,
+    prettiest::Pretty,
     std::fmt::{Debug, Formatter, Result as FmtResult},
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
-
-#[cfg(feature = "webdom")]
-mod debug;
 
 /// An event that can be received as the first argument to a handler callback.
 #[cfg(feature = "webdom")]
@@ -147,10 +145,9 @@ macro_rules! event_ty {
 
         impl Debug for $name {
             fn fmt(&self, f: &mut Formatter) -> FmtResult {
-                f.write_fmt(format_args!(
-                    "{:?}",
-                    debug::JsFormatter::new(stringify!($name), &self.0),
-                ))
+                let val: &JsValue = self.0.as_ref();
+                let pretty = Pretty::from(val.clone());
+                pretty.fmt(f)
             }
         }
     };

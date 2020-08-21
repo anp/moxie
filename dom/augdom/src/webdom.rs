@@ -4,6 +4,7 @@
 use super::Node;
 use crate::document;
 use futures::{channel::mpsc::UnboundedReceiver, Stream};
+use prettiest::Pretty;
 use std::{
     io::Write,
     pin::Pin,
@@ -23,9 +24,12 @@ impl Callback {
     where
         T: JsCast,
     {
-        let cb = Closure::wrap(Box::new(move |v: JsValue| {
-            let v: T = v.dyn_into().unwrap();
-            cb(v);
+        let cb = Closure::wrap(Box::new(move |raw: JsValue| {
+            let value = raw
+                .dyn_into()
+                .map_err(|v| Pretty::from(v))
+                .expect("must be able to cast into expected callback input");
+            cb(value);
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
