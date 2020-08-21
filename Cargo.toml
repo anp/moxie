@@ -36,6 +36,7 @@ members = [
     "dom/examples/hacking",
     "dom/examples/ssr",
     "dom/examples/todo",
+    "dom/prettiest",
     "dom/raf",
     "dyn-cache",
     "illicit",
