@@ -94,6 +94,7 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
+    - run: cargo test-prettiest
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-hacking
