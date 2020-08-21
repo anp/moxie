@@ -20,7 +20,7 @@ all-features = true
 [features]
 default = ["webdom"]
 rsdom = []
-webdom = ["gloo-timers", "js-sys", "wasm-bindgen", "web-sys"]
+webdom = ["gloo-timers", "js-sys", "prettiest", "wasm-bindgen", "web-sys"]
 
 [dependencies]
 futures = "0.3.5"
@@ -30,6 +30,7 @@ static_assertions = "1"
 
 # webdom dependencies:
 js-sys = { version = "0.3.25", optional = true }
+prettiest = { version = "0.1.0", path = "../prettiest", optional = true }
 wasm-bindgen = { version = "0.2.48", optional = true }
 
 [dependencies.web-sys]
