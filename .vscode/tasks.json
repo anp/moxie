@@ -97,6 +97,29 @@
             ]
         },
         {
+            "label": "docs/fmt",
+            "type": "shell",
+            "presentation": {
+                "group": "tools",
+                "panel": "dedicated"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "watch",
+                "-x",
+                "ofl-fmt-project",
+                "-x",
+                "docs-all",
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+        {
             "label": "cypress",
             "type": "shell",
             "presentation": {

@@ -12,11 +12,15 @@ panic = "abort"
 
 core-flow = """
 watch --clear
-    -x ofl-fmt-project
+    -w dyn-cache
+    -w illicit
+    -w mox
+    -w src
+    -w topo
+    -w Cargo.toml
     -x clippy-core
     -x test-core
     -x test-core-doc
-    -x docs-all
 """
 
 clippy-core = """clippy
