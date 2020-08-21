@@ -1,0 +1,28 @@
+[package]
+name = "prettiest"
+version = "0.1.0"
+description = "Pretty-printer for JS values from wasm-bindgen."
+categories = ["web"]
+keywords = ["debug", "pretty", "javascript"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
+
+[dependencies]
+js-sys = "0.3.25"
+ordered-float = "2.0.0"
+wasm-bindgen = "0.2.48"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[dev-dependencies.web-sys]
+version = "0.3.28"
+features = [
+    "KeyboardEvent",
+]
