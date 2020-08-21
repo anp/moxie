@@ -43,9 +43,8 @@ pub mod prelude {
 pub use augdom as raw;
 
 /// The "boot sequence" for a moxie-dom instance creates a
-/// [crate::embed::WebRuntime] with the provided arguments, runs its root
-/// function once and begins scheduling its subsequent execution with
-/// `requestAnimationFrame` on state changes.
+/// [crate::embed::WebRuntime] with the provided arguments and begins scheduling
+/// its execution with `requestAnimationFrame` on state changes.
 ///
 /// If you need to schedule your root function more or less frequently than when
 /// state variables are updated, see the [embed](crate::embed) module for
@@ -62,9 +61,7 @@ pub fn boot<Root>(new_parent: impl Into<augdom::Node>, root: impl FnMut() -> Roo
 where
     Root: interfaces::node::Child + 'static,
 {
-    let mut rt = embed::WebRuntime::new(new_parent.into(), root);
-    rt.run_once();
-    rt.animation_frame_scheduler().run_on_wake();
+    embed::WebRuntime::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
 
 /// Runs the provided closure once and produces a prettified HTML string from
