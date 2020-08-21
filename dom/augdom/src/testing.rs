@@ -26,6 +26,7 @@
 
 use super::Dom;
 use futures::prelude::*;
+use std::fmt::Debug;
 
 /// A type which can be queried as a DOM container, returning results from its
 /// subtree.
@@ -45,8 +46,28 @@ where
     }
 }
 
+/// The outcome of a failed query.
+#[derive(Debug)]
+pub enum QueryError<'a, N> {
+    /// Couldn't find any matching nodes.
+    Missing {
+        /// the original query
+        lookup: &'a dyn Debug,
+    },
+    /// Found more nodes than the 1 requested.
+    TooMany {
+        /// the first node we found
+        matched: N,
+        /// unexpected nodes
+        extra: Vec<N>,
+        /// the original query
+        lookup: &'a dyn Debug,
+    },
+}
+
 /// Executes a search strategy over a DOM container's subtree via depth-first
 /// pre-order traversal.
+#[derive(Debug)]
 pub struct Finder<'n, N> {
     target: &'n N,
 }
@@ -115,6 +136,7 @@ impl<'node, N> Finder<'node, N> {
 
 /// The final description of a subtree query. The methods on this struct
 /// execute the underlying search and return the results in various forms.
+#[derive(Debug)]
 pub struct Found<'find, 'pat, 'node, N> {
     strat: Strategy,
     pattern: &'pat str,
@@ -123,7 +145,7 @@ pub struct Found<'find, 'pat, 'node, N> {
 
 impl<'find, 'pat, 'node, N> Found<'find, 'pat, 'node, N>
 where
-    N: Dom,
+    N: Dom + Debug,
 {
     /// Wrap the query in a [`MutationObserver`] with async methods that resolve
     /// once the wrapped query could succeed or a 1 second timeout has expired.
@@ -139,11 +161,20 @@ where
     /// # Panics
     ///
     /// If more than one matching node is found.
-    pub fn one(&self) -> Option<N> {
+    pub fn one(&self) -> Result<N, QueryError<'_, N>> {
         let mut matches = self.many().into_iter();
-        let first = matches.next();
-        assert!(matches.next().is_none(), "`one()` returned more than one matching node");
-        first
+        let matched = matches.next();
+        let extra = matches.collect::<Vec<_>>();
+
+        if let Some(matched) = matched {
+            if extra.is_empty() {
+                Ok(matched)
+            } else {
+                Err(QueryError::TooMany { matched, extra, lookup: self })
+            }
+        } else {
+            Err(QueryError::Missing { lookup: self })
+        }
     }
 
     /// Execute the query and return a `Vec` of matching nodes in the queried
@@ -201,7 +232,7 @@ fn collect_children_dfs_preorder<N: Dom>(node: &N, queue: &mut Vec<N>) {
 }
 
 /// Which portion of a queried node to examine.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Strategy {
     LabelText,
     PlaceholderText,
@@ -214,13 +245,14 @@ enum Strategy {
 }
 
 /// A query which resolves asynchronously
+#[derive(Debug)]
 pub struct Until<'query, 'find, 'pat, 'node, N> {
     query: &'query Found<'find, 'pat, 'node, N>,
 }
 
 impl<'query, 'find, 'pat, 'node, N> Until<'query, 'find, 'pat, 'node, N>
 where
-    N: Dom,
+    N: Dom + Debug,
 {
     fn new(query: &'query Found<'find, 'pat, 'node, N>) -> Self {
         Self { query }
@@ -233,11 +265,20 @@ where
     ///
     /// If more than one matching node is found.
     #[cfg(feature = "webdom")]
-    pub async fn one(&self) -> Option<N> {
+    pub async fn one(&self) -> Result<N, QueryError<'_, N>> {
         let mut matches = self.many().await.into_iter();
-        let first = matches.next();
-        assert!(matches.next().is_none(), "`one()` returned more than one matching node");
-        first
+        let matched = matches.next();
+        let extra = matches.collect::<Vec<_>>();
+
+        if let Some(matched) = matched {
+            if extra.is_empty() {
+                Ok(matched)
+            } else {
+                Err(QueryError::TooMany { matched, extra, lookup: self })
+            }
+        } else {
+            Err(QueryError::Missing { lookup: self })
+        }
     }
 
     /// Wait until the query can succeed then return a `Vec` of matching nodes
