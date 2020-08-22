@@ -247,7 +247,7 @@ where
 /// the runtime. Commits should be shared and used within the context of a
 /// single [`crate::runtime::Revision`], being re-loaded from the state variable
 /// each time.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub struct Commit<State> {
     id: CallId,
     inner: Arc<State>,
@@ -256,6 +256,15 @@ pub struct Commit<State> {
 impl<State> Clone for Commit<State> {
     fn clone(&self) -> Self {
         Self { id: self.id, inner: Arc::clone(&self.inner) }
+    }
+}
+
+impl<State> Debug for Commit<State>
+where
+    State: Debug,
+{
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        self.inner.fmt(f)
     }
 }
 
