@@ -1,10 +1,10 @@
 use js_sys::{
     Array, Date, Error, Function, JsString, Map, Object, Promise, Reflect, RegExp, Set, Symbol,
 };
-use ordered_float::OrderedFloat;
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::HashSet,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
+    rc::Rc,
 };
 use wasm_bindgen::{convert::IntoWasmAbi, JsCast, JsValue};
 
@@ -17,86 +17,136 @@ where
     T: AsRef<JsValue>,
 {
     fn pretty(&self) -> Prettified {
-        let mut collector = Collector { seen: Default::default() };
-        collector.collect(self.as_ref())
+        Prettified {
+            value: self.as_ref().to_owned(),
+            seen: Default::default(),
+            skip: Default::default(),
+        }
     }
 }
 
 /// A pretty-printable value from Javascript.
-// TODO impl serialize
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
-pub enum Prettified {
-    Cycle,
-    Function,
-    Promise,
-    Null,
-    Undefined,
-    Unknown(String),
-
-    Number(OrderedFloat<f64>),
-    Boolean(bool),
-
-    Str(String),
-    Date(String),
-    Error(String),
-    Regex(String),
-    Symbol(String),
-
-    Object { name: String, contents: BTreeMap<String, Self>, functions: BTreeSet<String> },
-    Array(Vec<Self>),
-    Map(BTreeMap<Self, Self>),
-    Set(BTreeSet<Self>),
+pub struct Prettified {
+    value: JsValue,
+    seen: HashSet<u32>,
+    skip: Rc<HashSet<String>>,
 }
 
 impl Prettified {
     /// Remove the property with the given `name` if this is an object and it
     /// has the property.
-    pub fn delete_property(&mut self, name: &str) {
-        match self {
-            Prettified::Object { contents, .. } => {
-                contents.remove(name);
-            }
-            _ => (),
-        }
+    pub fn skip_property(&mut self, name: &str) {
+        let mut with_name = HashSet::to_owned(&self.skip);
+        with_name.insert(name.to_owned());
+        self.skip = Rc::new(with_name);
     }
 
-    fn is_function(&self) -> bool {
-        match self {
-            Prettified::Function => true,
-            _ => false,
-        }
+    fn has_been_seen(&self) -> bool {
+        let raw = self.value.clone().into_abi();
+        self.seen.contains(&raw)
     }
+
+    fn child(&self, v: impl AsRef<JsValue>) -> Self {
+        let mut seen = self.seen.clone();
+        seen.insert(self.value.clone().into_abi());
+        Self { seen, skip: self.skip.clone(), value: v.as_ref().clone() }
+    }
+
+    // TODO get serde_json::Value from this too
 }
 
 impl Debug for Prettified {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        match self {
-            Self::Cycle => write!(f, "[Cycle]"),
-            Self::Function => write!(f, "[Function]"),
-            Self::Promise => write!(f, "[Promise]"),
-            Self::Null => write!(f, "null"),
-            Self::Undefined => write!(f, "undefined"),
-            Self::Unknown(u) => write!(f, "unknown ({})", u),
-            Self::Number(n) => write!(f, "{}", n),
-            Self::Boolean(b) => write!(f, "{:?}", b),
-            Self::Str(s) => write!(f, "{:?}", s),
-            Self::Date(d) => write!(f, "{}", d),
-            Self::Error(e) => write!(f, "Error: {}", e),
-            Self::Regex(r) => write!(f, "/{}/", r),
-            Self::Symbol(sym) => write!(f, "{}", sym),
-            Self::Array(arr) => f.debug_list().entries(arr.iter()).finish(),
-            Self::Set(set) => f.debug_set().entries(set.iter()).finish(),
-            Self::Map(map) => f.debug_map().entries(map.iter()).finish(),
-            Self::Object { name, contents, functions } => {
-                let mut f = f.debug_struct(name);
-                for (key, value) in contents {
-                    f.field(key, value);
-                }
-                for key in functions {
-                    f.field(key, &Prettified::Function);
-                }
-                f.finish()
+        if self.value.is_null() {
+            write!(f, "null")
+        } else if self.value.is_undefined() {
+            write!(f, "undefined")
+        } else if self.value.dyn_ref::<Function>().is_some() {
+            write!(f, "[Function]")
+        } else if self.value.dyn_ref::<Promise>().is_some() {
+            write!(f, "[Promise]")
+        } else if let Some(s) = self.value.dyn_ref::<JsString>() {
+            write!(f, "{:?}", s.as_string().unwrap())
+        } else if let Some(n) = self.value.as_f64() {
+            write!(f, "{}", n)
+        } else if let Some(b) = self.value.as_bool() {
+            write!(f, "{:?}", b)
+        } else if self.has_been_seen() {
+            write!(f, "[Cycle]")
+        } else if let Some(a) = self.value.dyn_ref::<Array>() {
+            let mut f = f.debug_list();
+            for val in a.iter() {
+                f.entry(&self.child(val));
             }
+            f.finish()
+        } else if let Some(s) = self.value.dyn_ref::<Set>() {
+            let mut f = f.debug_set();
+            let entries = s.entries();
+            while let Ok(next) = entries.next() {
+                if next.done() {
+                    break;
+                }
+                f.entry(&self.child(&next.value()));
+            }
+            f.finish()
+        } else if let Some(m) = self.value.dyn_ref::<Map>() {
+            let mut f = f.debug_map();
+            let keys = m.keys();
+            while let Ok(next) = keys.next() {
+                if next.done() {
+                    break;
+                }
+                let key = next.value();
+                let value = m.get(&key);
+
+                f.entry(&self.child(&key), &self.child(&value));
+            }
+
+            f.finish()
+        } else if let Some(d) = self.value.dyn_ref::<Date>() {
+            write!(f, "{}", d.to_iso_string().as_string().unwrap())
+        } else if let Some(e) = self.value.dyn_ref::<Error>() {
+            write!(f, "Error: {}", e.to_string().as_string().unwrap())
+        } else if let Some(r) = self.value.dyn_ref::<RegExp>() {
+            write!(f, "/{}/", r.to_string().as_string().unwrap())
+        } else if let Some(s) = self.value.dyn_ref::<Symbol>() {
+            write!(f, "{}", s.to_string().as_string().unwrap())
+        } else if let Some(obj) = self.value.dyn_ref::<Object>() {
+            let mut proto = obj.clone();
+            let mut functions = Vec::new();
+            let mut props_seen = HashSet::new();
+            let name = obj.constructor().name().as_string().unwrap();
+            let mut f = f.debug_struct(&name);
+
+            while !proto.is_falsy() {
+                for raw_key in Object::get_own_property_names(&proto).iter() {
+                    let key = raw_key.as_string().expect("object keys are always strings");
+                    if (key.starts_with("__") && key.ends_with("__"))
+                        || props_seen.contains(&key)
+                        || functions.contains(&key)
+                        || self.skip.contains(&key)
+                    {
+                        continue;
+                    }
+
+                    if let Ok(value) = Reflect::get(&obj, &raw_key) {
+                        props_seen.insert(key.clone());
+                        if value.is_function() {
+                            functions.push(key);
+                        } else {
+                            f.field(&key, &self.child(&value));
+                        }
+                    }
+                }
+                proto = Object::get_prototype_of(proto.as_ref());
+            }
+
+            for key in functions {
+                f.field(&key, &JsFunction);
+            }
+            f.finish()
+        } else {
+            write!(f, "unknown ({:?})", &self.value)
         }
     }
 }
@@ -107,107 +157,10 @@ impl Display for Prettified {
     }
 }
 
-struct Collector {
-    seen: HashSet<u32>,
-}
-
-impl Collector {
-    fn have_seen(&mut self, val: &JsValue) -> bool {
-        let raw = val.clone().into_abi();
-        let already_has = self.seen.contains(&raw);
-        self.seen.insert(raw);
-        already_has
-    }
-
-    fn collect(&mut self, val: &JsValue) -> Prettified {
-        if val.is_null() {
-            Prettified::Null
-        } else if val.is_undefined() {
-            Prettified::Undefined
-        } else if self.have_seen(val) {
-            Prettified::Cycle
-        } else if let Some(a) = val.dyn_ref::<Array>() {
-            let mut children = vec![];
-            for val in a.iter() {
-                children.push(self.collect(&val));
-            }
-
-            Prettified::Array(children)
-        } else if let Some(s) = val.dyn_ref::<Set>() {
-            let mut contents = BTreeSet::new();
-            let entries = s.entries();
-            while let Ok(next) = entries.next() {
-                if next.done() {
-                    break;
-                }
-                contents.insert(self.collect(&next.value()));
-            }
-
-            Prettified::Set(contents)
-        } else if let Some(m) = val.dyn_ref::<Map>() {
-            let mut contents = BTreeMap::new();
-            let keys = m.keys();
-            while let Ok(next) = keys.next() {
-                if next.done() {
-                    break;
-                }
-                let key = next.value();
-                let value = m.get(&key);
-
-                contents.insert(self.collect(&key), self.collect(&value));
-            }
-
-            Prettified::Map(contents)
-        } else if let Some(d) = val.dyn_ref::<Date>() {
-            Prettified::Date(d.to_iso_string().as_string().unwrap())
-        } else if let Some(e) = val.dyn_ref::<Error>() {
-            Prettified::Error(e.to_string().as_string().unwrap())
-        } else if let Some(r) = val.dyn_ref::<RegExp>() {
-            Prettified::Regex(r.to_string().as_string().unwrap())
-        } else if let Some(s) = val.dyn_ref::<Symbol>() {
-            Prettified::Symbol(s.to_string().as_string().unwrap())
-        } else if val.dyn_ref::<Function>().is_some() {
-            Prettified::Function
-        } else if val.dyn_ref::<Promise>().is_some() {
-            Prettified::Promise
-        } else if let Some(s) = val.dyn_ref::<JsString>() {
-            Prettified::Str(s.as_string().unwrap())
-        } else if let Some(n) = val.as_f64() {
-            Prettified::Number(OrderedFloat(n))
-        } else if let Some(b) = val.as_bool() {
-            Prettified::Boolean(b)
-        } else if let Some(obj) = val.dyn_ref::<Object>() {
-            let mut contents = BTreeMap::new();
-            let mut functions = BTreeSet::new();
-            let name = obj.constructor().name().as_string().unwrap();
-            let mut proto = obj.clone();
-
-            while !proto.is_falsy() {
-                for raw_key in Object::get_own_property_names(&proto).iter() {
-                    let key = raw_key.as_string().expect("object keys are always strings");
-                    let is_quasi_builtin = key.starts_with("__") && key.ends_with("__");
-
-                    // we don't need to capture internals at all or anything twice
-                    if is_quasi_builtin || contents.contains_key(&key) || functions.contains(&key) {
-                        continue;
-                    }
-
-                    if let Ok(value) = Reflect::get(&obj, &raw_key) {
-                        let value = self.collect(&value);
-                        if value.is_function() {
-                            functions.insert(key);
-                        } else {
-                            contents.insert(key, value);
-                        }
-                    }
-                }
-                proto = Object::get_prototype_of(proto.as_ref());
-            }
-
-            Prettified::Object { name, contents, functions }
-        } else {
-            Prettified::Unknown(format!("{:?}", val))
-        }
+struct JsFunction;
+impl Debug for JsFunction {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "[Function]")
     }
 }
 
@@ -223,62 +176,62 @@ mod tests {
         let event = web_sys::KeyboardEvent::new("keydown").unwrap();
         let mut pretty = event.pretty();
         // this is never going to stay still for us without browser support
-        pretty.delete_property("timeStamp");
+        pretty.skip_property("timeStamp");
 
         assert_eq!(
             pretty.to_string(),
             r#"KeyboardEvent {
+    isTrusted: false,
+    DOM_KEY_LOCATION_STANDARD: 0,
+    DOM_KEY_LOCATION_LEFT: 1,
+    DOM_KEY_LOCATION_RIGHT: 2,
+    DOM_KEY_LOCATION_NUMPAD: 3,
+    key: "",
+    code: "",
+    location: 0,
+    ctrlKey: false,
+    shiftKey: false,
+    altKey: false,
+    metaKey: false,
+    repeat: false,
+    isComposing: false,
+    charCode: 0,
+    keyCode: 0,
+    view: null,
+    detail: 0,
+    sourceCapabilities: null,
+    which: 0,
+    NONE: 0,
+    CAPTURING_PHASE: 1,
     AT_TARGET: 2,
     BUBBLING_PHASE: 3,
-    CAPTURING_PHASE: 1,
-    DOM_KEY_LOCATION_LEFT: 1,
-    DOM_KEY_LOCATION_NUMPAD: 3,
-    DOM_KEY_LOCATION_RIGHT: 2,
-    DOM_KEY_LOCATION_STANDARD: 0,
-    NONE: 0,
-    altKey: false,
-    bubbles: false,
-    cancelBubble: false,
-    cancelable: false,
-    charCode: 0,
-    code: "",
-    composed: false,
-    ctrlKey: false,
-    currentTarget: null,
-    defaultPrevented: false,
-    detail: 0,
-    eventPhase: 0,
-    isComposing: false,
-    isTrusted: false,
-    key: "",
-    keyCode: 0,
-    location: 0,
-    metaKey: false,
-    path: [],
-    repeat: false,
-    returnValue: true,
-    shiftKey: false,
-    sourceCapabilities: null,
-    srcElement: null,
-    target: null,
     type: "keydown",
-    view: null,
-    which: 0,
-    composedPath: [Function],
-    constructor: [Function],
+    target: null,
+    currentTarget: null,
+    eventPhase: 0,
+    bubbles: false,
+    cancelable: false,
+    defaultPrevented: false,
+    composed: false,
+    srcElement: null,
+    returnValue: true,
+    cancelBubble: false,
+    path: [],
     getModifierState: [Function],
-    hasOwnProperty: [Function],
-    initEvent: [Function],
     initKeyboardEvent: [Function],
+    constructor: [Function],
     initUIEvent: [Function],
-    isPrototypeOf: [Function],
-    preventDefault: [Function],
-    propertyIsEnumerable: [Function],
-    stopImmediatePropagation: [Function],
+    composedPath: [Function],
     stopPropagation: [Function],
-    toLocaleString: [Function],
+    stopImmediatePropagation: [Function],
+    preventDefault: [Function],
+    initEvent: [Function],
+    hasOwnProperty: [Function],
+    isPrototypeOf: [Function],
+    propertyIsEnumerable: [Function],
     toString: [Function],
     valueOf: [Function],
+    toLocaleString: [Function],
 }"#,
         );
     }
