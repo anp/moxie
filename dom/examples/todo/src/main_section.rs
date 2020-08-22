@@ -65,7 +65,6 @@ pub fn main_section() -> Section {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moxie_dom::raw::testing::Query;
     use pretty_assertions::assert_eq;
 
     #[wasm_bindgen_test::wasm_bindgen_test]
@@ -77,7 +76,6 @@ mod tests {
             main_section,
         );
 
-        root.find().by_text("first").until().many().await;
         assert_eq!(
             root.pretty_outer_html(2),
             r#"<div>

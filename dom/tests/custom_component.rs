@@ -63,7 +63,6 @@ pub async fn binds_to_div() {
     let test_root = augdom::Node::new("div");
     moxie_dom::boot(test_root.clone(), render_counter_as_child);
 
-    test_root.find().by_text("child (9)").until().many().await;
     assert_eq!(
         test_root.first_child().unwrap().to_string(),
         "<div>
@@ -78,8 +77,8 @@ pub async fn renders_and_interacts() {
     let test_root = augdom::Node::new("div");
     moxie_dom::boot(test_root.clone(), render_counter);
 
-    let button = test_root.find().by_text("foo (0)").until().one().await.unwrap();
     assert_eq!(test_root.first_child().unwrap().to_string(), "<button>foo (0)</button>",);
+    let button = test_root.find().by_text("foo (0)").until().one().await.unwrap();
 
     button.dispatch::<Click>();
     test_root.find().by_text("foo (1)").until().one().await.unwrap();

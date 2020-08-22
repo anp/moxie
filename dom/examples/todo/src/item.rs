@@ -93,7 +93,6 @@ pub fn todo_item(todo: &Todo) -> Li {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moxie_dom::raw::testing::Query;
     use pretty_assertions::assert_eq;
 
     #[wasm_bindgen_test::wasm_bindgen_test]
@@ -104,7 +103,6 @@ mod tests {
             todo_item(todo)
         });
 
-        root.find().by_label_text("weeeee").until().one().await;
         assert_eq!(
             root.pretty_outer_html(2),
             r#"<div>
