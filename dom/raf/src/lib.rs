@@ -87,11 +87,8 @@ impl<T: Tick + Waking> AnimationFrameScheduler<T> {
     pub fn run_on_wake(self) {
         let state = Rc::clone(&self.0);
         let waker = waker(Arc::new(self));
-        {
-            // ensure we've released our mutable borrow by running it in a separate block
-            state.ticker.borrow_mut().set_waker(waker.clone());
-        }
-        waker.wake_by_ref();
+        state.ticker.borrow_mut().set_waker(waker.clone());
+        state.ticker.borrow_mut().tick();
     }
 }
 
