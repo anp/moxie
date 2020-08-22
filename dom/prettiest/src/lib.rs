@@ -12,6 +12,9 @@ pub enum Pretty {
     Cycle,
     Function,
     Promise,
+    Null,
+    Undefined,
+    Unknown(String),
 
     Number(OrderedFloat<f64>),
     Boolean(bool),
@@ -52,7 +55,11 @@ impl Collector {
     }
 
     fn collect(&mut self, val: &JsValue) -> Pretty {
-        if self.have_seen(val) {
+        if val.is_null() {
+            Pretty::Null
+        } else if val.is_undefined() {
+            Pretty::Undefined
+        } else if self.have_seen(val) {
             Pretty::Cycle
         } else if let Some(a) = val.dyn_ref::<Array>() {
             let mut children = vec![];
@@ -104,14 +111,12 @@ impl Collector {
             Pretty::Number(OrderedFloat(n))
         } else if let Some(b) = val.as_bool() {
             Pretty::Boolean(b)
-        } else {
+        } else if let Some(obj) = val.dyn_ref::<Object>() {
             let mut contents = BTreeMap::new();
-            let obj =
-                val.dyn_ref::<Object>().expect("fallthrough condition is to an Object").clone();
             let name = obj.constructor().name().as_string().unwrap();
-            let proto = obj.clone();
+            let mut proto = obj.clone();
 
-            while !obj.is_falsy() {
+            while !proto.is_falsy() {
                 for raw_key in Object::get_own_property_names(&proto).iter() {
                     let key = raw_key.as_string().expect("object keys are always strings");
                     if contents.contains_key(&key) {
@@ -122,11 +127,12 @@ impl Collector {
                         contents.insert(key, value);
                     }
                 }
-                // proto = Object::get_prototype_of(proto.as_ref());
-                break;
+                proto = Object::get_prototype_of(proto.as_ref());
             }
 
             Pretty::Object { name, contents }
+        } else {
+            Pretty::Unknown(format!("{:?}", val))
         }
     }
 }
