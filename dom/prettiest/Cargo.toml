@@ -1,6 +1,6 @@
 [package]
 name = "prettiest"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pretty-printer for JS values from wasm-bindgen."
 categories = ["web"]
 keywords = ["debug", "pretty", "javascript"]
