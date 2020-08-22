@@ -119,9 +119,12 @@ impl Collector {
             while !proto.is_falsy() {
                 for raw_key in Object::get_own_property_names(&proto).iter() {
                     let key = raw_key.as_string().expect("object keys are always strings");
-                    if contents.contains_key(&key) {
+
+                    if key == "__proto__" || contents.contains_key(&key) {
+                        // we don't need to capture anything prototype twice
                         continue;
                     }
+
                     if let Ok(value) = Reflect::get(&obj, &raw_key) {
                         let value = self.collect(&value);
                         contents.insert(key, value);
