@@ -24,6 +24,7 @@ for Javascript values in the [wasm-bindgen](https://docs.rs/wasm-bindgen) crate.
 
 - `Pretty` enum renamed to `Prettified` to allow trait to be named `Pretty`.
 - Objects print non-function properties before function properties.
+- Objects print their properites in prototype-order.
 
 ## [0.1.0] - 2020-08-20
 
