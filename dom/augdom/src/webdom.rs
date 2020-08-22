@@ -27,7 +27,7 @@ impl Callback {
         let cb = Closure::wrap(Box::new(move |raw: JsValue| {
             let value = raw
                 .dyn_into()
-                .map_err(|v| Pretty::from(v))
+                .map_err(|v| v.pretty())
                 .expect("must be able to cast into expected callback input");
             cb(value);
         }) as Box<dyn FnMut(JsValue)>);

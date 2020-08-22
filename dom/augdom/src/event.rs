@@ -145,9 +145,7 @@ macro_rules! event_ty {
 
         impl Debug for $name {
             fn fmt(&self, f: &mut Formatter) -> FmtResult {
-                let val: &JsValue = self.0.as_ref();
-                let pretty = Pretty::from(val.clone());
-                pretty.fmt(f)
+                self.0.pretty().fmt(f)
             }
         }
     };
