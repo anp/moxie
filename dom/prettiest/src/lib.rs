@@ -1,3 +1,7 @@
+//! Pretty printing for Javascript values from [wasm-bindgen](https://docs.rs/wasm-bindgen).
+
+#![forbid(unsafe_code)]
+
 use js_sys::{
     Array, Date, Error, Function, JsString, Map, Object, Promise, Reflect, RegExp, Set, Symbol,
 };
