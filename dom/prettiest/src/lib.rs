@@ -56,7 +56,7 @@ impl Prettified {
         Self { seen, skip: self.skip.clone(), value: v.as_ref().clone() }
     }
 
-    // TODO get serde_json::Value from this too
+    // TODO get a serde_json::Value from this too
 }
 
 impl Debug for Prettified {
@@ -75,6 +75,14 @@ impl Debug for Prettified {
             write!(f, "{}", n)
         } else if let Some(b) = self.value.as_bool() {
             write!(f, "{:?}", b)
+        } else if let Some(d) = self.value.dyn_ref::<Date>() {
+            write!(f, "{}", d.to_iso_string().as_string().unwrap())
+        } else if let Some(e) = self.value.dyn_ref::<Error>() {
+            write!(f, "Error: {}", e.to_string().as_string().unwrap())
+        } else if let Some(r) = self.value.dyn_ref::<RegExp>() {
+            write!(f, "/{}/", r.to_string().as_string().unwrap())
+        } else if let Some(s) = self.value.dyn_ref::<Symbol>() {
+            write!(f, "{}", s.to_string().as_string().unwrap())
         } else if self.has_been_seen() {
             write!(f, "[Cycle]")
         } else if let Some(a) = self.value.dyn_ref::<Array>() {
@@ -107,14 +115,6 @@ impl Debug for Prettified {
             }
 
             f.finish()
-        } else if let Some(d) = self.value.dyn_ref::<Date>() {
-            write!(f, "{}", d.to_iso_string().as_string().unwrap())
-        } else if let Some(e) = self.value.dyn_ref::<Error>() {
-            write!(f, "Error: {}", e.to_string().as_string().unwrap())
-        } else if let Some(r) = self.value.dyn_ref::<RegExp>() {
-            write!(f, "/{}/", r.to_string().as_string().unwrap())
-        } else if let Some(s) = self.value.dyn_ref::<Symbol>() {
-            write!(f, "{}", s.to_string().as_string().unwrap())
         } else if let Some(obj) = self.value.dyn_ref::<Object>() {
             let mut proto = obj.clone();
             let mut functions = Vec::new();
