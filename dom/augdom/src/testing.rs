@@ -54,6 +54,11 @@ pub enum QueryError<'a, N> {
         /// the original query
         lookup: &'a dyn Debug,
     },
+    /// Couldn't find any matching nodes in the time allotted.
+    Timeout {
+        /// the original query
+        lookup: &'a dyn Debug,
+    },
     /// Found more nodes than the 1 requested.
     TooMany {
         /// the first node we found
@@ -162,24 +167,20 @@ where
     ///
     /// If more than one matching node is found.
     pub fn one(&self) -> Result<N, QueryError<'_, N>> {
-        let mut matches = self.many().into_iter();
-        let matched = matches.next();
+        let mut matches = self.many()?.into_iter();
+        let matched = matches.next().expect("empty results are a query error");
         let extra = matches.collect::<Vec<_>>();
 
-        if let Some(matched) = matched {
-            if extra.is_empty() {
-                Ok(matched)
-            } else {
-                Err(QueryError::TooMany { matched, extra, lookup: self })
-            }
+        if extra.is_empty() {
+            Ok(matched)
         } else {
-            Err(QueryError::Missing { lookup: self })
+            Err(QueryError::TooMany { matched, extra, lookup: self })
         }
     }
 
     /// Execute the query and return a `Vec` of matching nodes in the queried
     /// subtree.
-    pub fn many(&self) -> Vec<N> {
+    pub fn many(&self) -> Result<Vec<N>, QueryError<'_, N>> {
         // first accumulate the subtree
         let mut candidates = Vec::new();
         collect_children_dfs_preorder(self.finder.target, &mut candidates);
@@ -187,7 +188,11 @@ where
         // then keep only those which match
         candidates.retain(|n| self.matches(n));
 
-        candidates
+        if candidates.is_empty() {
+            Err(QueryError::Missing { lookup: self })
+        } else {
+            Ok(candidates)
+        }
     }
 
     fn normalize(s: impl AsRef<str>) -> String {
@@ -266,30 +271,25 @@ where
     /// If more than one matching node is found.
     #[cfg(feature = "webdom")]
     pub async fn one(&self) -> Result<N, QueryError<'_, N>> {
-        let mut matches = self.many().await.into_iter();
-        let matched = matches.next();
+        let mut matches = self.many().await?.into_iter();
+        let matched = matches.next().expect("empty results are a query error");
         let extra = matches.collect::<Vec<_>>();
 
-        if let Some(matched) = matched {
-            if extra.is_empty() {
-                Ok(matched)
-            } else {
-                Err(QueryError::TooMany { matched, extra, lookup: self })
-            }
+        if extra.is_empty() {
+            Ok(matched)
         } else {
-            Err(QueryError::Missing { lookup: self })
+            Err(QueryError::TooMany { matched, extra, lookup: self })
         }
     }
 
     /// Wait until the query can succeed then return a `Vec` of matching nodes
     /// in the queried subtree.
     #[cfg(feature = "webdom")]
-    pub async fn many(&self) -> Vec<N> {
+    pub async fn many(&self) -> Result<Vec<N>, QueryError<'_, N>> {
         macro_rules! try_query {
             () => {{
-                let current_results = self.query.many();
-                if !current_results.is_empty() {
-                    return current_results;
+                if let Ok(current_results) = self.query.many() {
+                    return Ok(current_results);
                 }
             }};
         }
@@ -303,7 +303,7 @@ where
             futures::select_biased! {
                 _ = timeout.as_mut().fuse() => {
                     try_query!(); // first see if we can succeed after timing out
-                    return Vec::new(); // return empty results if we still fail
+                    return Err(QueryError::Timeout { lookup: self });
                 },
                 _ = mutations.next().fuse() => try_query!(),
             }
