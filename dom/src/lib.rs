@@ -102,7 +102,6 @@ mod tests {
         boot,
         elements::html::{b, div, p},
         prelude::*,
-        raw::testing::Query,
     };
     use pretty_assertions::assert_eq;
     use wasm_bindgen_test::*;
@@ -123,7 +122,6 @@ mod tests {
             }
         });
 
-        root.find().by_text("looooool").until().many().await;
         assert_eq!(
             root.pretty_outer_html(2),
             r#"<div>
