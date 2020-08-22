@@ -106,7 +106,7 @@ jobs:
       with:
         record: true
         working-directory: dom/examples/todo/e2e
-        start: "../../../../bin/ofl"
+        start: "${{ github.workspace }}/bin/ofl"
         wait-on: "http://localhost:8000"
       env:
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
