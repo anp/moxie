@@ -12,6 +12,7 @@ use std::{
     rc::Rc,
 };
 use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{Document, Element, Window};
 
 pub trait Pretty {
     fn pretty(&self) -> Prettified;
@@ -44,10 +45,11 @@ pub struct Prettified {
 impl Prettified {
     /// Skip printing the property with `name` if it exists on any object
     /// visited (transitively).
-    pub fn skip_property(&mut self, name: &str) {
+    pub fn skip_property(&mut self, name: &str) -> &mut Self {
         let mut with_name = HashSet::to_owned(&self.skip);
         with_name.insert(name.to_owned());
         self.skip = Rc::new(with_name);
+        self
     }
 
     fn child(&self, v: &JsValue) -> Self {
@@ -81,6 +83,10 @@ impl Debug for Prettified {
             JsFunction.fmt(f)
         } else if self.value.dyn_ref::<Promise>().is_some() {
             write!(f, "[Promise]")
+        } else if self.value.dyn_ref::<Document>().is_some() {
+            write!(f, "[Document]")
+        } else if self.value.dyn_ref::<Window>().is_some() {
+            write!(f, "[Window]")
         } else if let Some(s) = self.value.dyn_ref::<JsString>() {
             write!(f, "{:?}", s.as_string().unwrap())
         } else if let Some(n) = self.value.as_f64() {
@@ -89,6 +95,16 @@ impl Debug for Prettified {
             write!(f, "{:?}", b)
         } else if let Some(d) = self.value.dyn_ref::<Date>() {
             write!(f, "{}", d.to_iso_string().as_string().unwrap())
+        } else if let Some(d) = self.value.dyn_ref::<Element>() {
+            let name = d.tag_name().to_ascii_lowercase();
+            let (mut class, mut id) = (d.class_name(), d.id());
+            if !class.is_empty() {
+                class.insert_str(0, " .");
+            }
+            if !id.is_empty() {
+                id.insert_str(0, " #");
+            }
+            write!(f, "<{}{}{}/>", name, id, class)
         } else if let Some(e) = self.value.dyn_ref::<Error>() {
             write!(f, "Error: {}", e.to_string().as_string().unwrap())
         } else if let Some(r) = self.value.dyn_ref::<RegExp>() {
@@ -185,7 +201,10 @@ impl Debug for JsFunction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::channel::oneshot::channel;
+    use wasm_bindgen::closure::Closure;
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+    use web_sys::{Event, EventTarget};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -245,14 +264,41 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    fn keyboard_event() {
-        let event = web_sys::KeyboardEvent::new("keydown").unwrap();
-        let mut pretty = event.pretty();
-        // this is never going to stay still for us without browser support
-        pretty.skip_property("timeStamp");
+    async fn live_keyboard_event() {
+        // create an input element and bind it to the document
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let input = document.create_element("input").unwrap();
+        // input.set_attribute("type", "text").unwrap();
+        document.body().unwrap().append_child(input.as_ref()).unwrap();
 
+        // create & add an event listener that will send the event back the test
+        let (send, recv) = channel();
+        let callback = Closure::once_into_js(move |ev: Event| {
+            send.send(ev).unwrap();
+        });
+        let target: &EventTarget = input.as_ref();
+        let event_type = "keydown";
+        target.add_event_listener_with_callback(event_type, callback.dyn_ref().unwrap()).unwrap();
+
+        // create & dispatch an event to the input element
+        let sent_event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(
+            event_type,
+            web_sys::KeyboardEventInit::new()
+                .char_code(b'F' as u32)
+                .bubbles(true)
+                .cancelable(true)
+                .view(Some(&window)),
+        )
+        .unwrap();
+        let sent: &Event = sent_event.as_ref();
+        assert!(target.dispatch_event(sent).unwrap());
+
+        // wait for the event to come back
+        let received_event: Event = recv.await.unwrap();
+        // make sure we can print it without exploding due to nesting
         assert_eq!(
-            pretty.to_string(),
+            received_event.pretty().skip_property("timeStamp").to_string(),
             r#"KeyboardEvent {
     isTrusted: false,
     DOM_KEY_LOCATION_STANDARD: 0,
@@ -268,9 +314,9 @@ mod tests {
     metaKey: false,
     repeat: false,
     isComposing: false,
-    charCode: 0,
+    charCode: 70,
     keyCode: 0,
-    view: null,
+    view: [Window],
     detail: 0,
     sourceCapabilities: null,
     which: 0,
@@ -279,17 +325,23 @@ mod tests {
     AT_TARGET: 2,
     BUBBLING_PHASE: 3,
     type: "keydown",
-    target: null,
+    target: <input/>,
     currentTarget: null,
     eventPhase: 0,
-    bubbles: false,
-    cancelable: false,
+    bubbles: true,
+    cancelable: true,
     defaultPrevented: false,
     composed: false,
-    srcElement: null,
+    srcElement: <input/>,
     returnValue: true,
     cancelBubble: false,
-    path: [],
+    path: [
+        <input/>,
+        <body/>,
+        <html/>,
+        [Document],
+        [Window],
+    ],
     getModifierState: [Function],
     initKeyboardEvent: [Function],
     constructor: [Function],
