@@ -66,7 +66,7 @@ impl Debug for Prettified {
         } else if self.value.is_undefined() {
             write!(f, "undefined")
         } else if self.value.dyn_ref::<Function>().is_some() {
-            write!(f, "[Function]")
+            JsFunction.fmt(f)
         } else if self.value.dyn_ref::<Promise>().is_some() {
             write!(f, "[Promise]")
         } else if let Some(s) = self.value.dyn_ref::<JsString>() {
@@ -122,7 +122,7 @@ impl Debug for Prettified {
             let name = obj.constructor().name().as_string().unwrap();
             let mut f = f.debug_struct(&name);
 
-            while !proto.is_falsy() {
+            loop {
                 for raw_key in Object::get_own_property_names(&proto).iter() {
                     let key = raw_key.as_string().expect("object keys are always strings");
                     if (key.starts_with("__") && key.ends_with("__"))
@@ -143,6 +143,10 @@ impl Debug for Prettified {
                     }
                 }
                 proto = Object::get_prototype_of(proto.as_ref());
+                if proto.is_falsy() || proto.constructor().name().as_string().unwrap() == "Object" {
+                    // we've reached the end of the prototype chain
+                    break;
+                }
             }
 
             for key in functions {
@@ -230,12 +234,6 @@ mod tests {
     stopImmediatePropagation: [Function],
     preventDefault: [Function],
     initEvent: [Function],
-    hasOwnProperty: [Function],
-    isPrototypeOf: [Function],
-    propertyIsEnumerable: [Function],
-    toString: [Function],
-    valueOf: [Function],
-    toLocaleString: [Function],
 }"#,
         );
     }
