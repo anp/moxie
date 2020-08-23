@@ -4,13 +4,14 @@
 
 use js_sys::{
     Array, Date, Error, Function, JsString, Map, Object, Promise, Reflect, RegExp, Set, Symbol,
+    WeakSet,
 };
 use std::{
     collections::HashSet,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     rc::Rc,
 };
-use wasm_bindgen::{convert::IntoWasmAbi, JsCast, JsValue};
+use wasm_bindgen::{JsCast, JsValue};
 
 pub trait Pretty {
     fn pretty(&self) -> Prettified;
@@ -23,7 +24,7 @@ where
     fn pretty(&self) -> Prettified {
         Prettified {
             value: self.as_ref().to_owned(),
-            seen: Default::default(),
+            seen: WeakSet::new(),
             skip: Default::default(),
         }
     }
@@ -31,29 +32,26 @@ where
 
 /// A pretty-printable value from Javascript.
 pub struct Prettified {
+    /// The current value we're visiting.
     value: JsValue,
-    seen: HashSet<u32>,
+    /// We just use a JS array here to avoid relying on wasm-bindgen's unstable
+    /// ABI.
+    seen: WeakSet,
+    /// Properties we don't want serialized.
     skip: Rc<HashSet<String>>,
 }
 
 impl Prettified {
-    /// Remove the property with the given `name` if this is an object and it
-    /// has the property.
+    /// Skip printing the property with `name` if it exists on any object
+    /// visited (transitively).
     pub fn skip_property(&mut self, name: &str) {
         let mut with_name = HashSet::to_owned(&self.skip);
         with_name.insert(name.to_owned());
         self.skip = Rc::new(with_name);
     }
 
-    fn has_been_seen(&self) -> bool {
-        let raw = self.value.clone().into_abi();
-        self.seen.contains(&raw)
-    }
-
-    fn child(&self, v: impl AsRef<JsValue>) -> Self {
-        let mut seen = self.seen.clone();
-        seen.insert(self.value.clone().into_abi());
-        Self { seen, skip: self.skip.clone(), value: v.as_ref().clone() }
+    fn child(&self, v: &JsValue) -> Self {
+        Self { seen: self.seen.clone(), skip: self.skip.clone(), value: v.as_ref().clone() }
     }
 
     // TODO get a serde_json::Value from this too
@@ -61,6 +59,20 @@ impl Prettified {
 
 impl Debug for Prettified {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        // detect and break cycles before trying to figure out Object subclass
+        // keeps a single path here rather than separately in each branch below
+        let mut _reset = None;
+        if let Some(obj) = self.value.dyn_ref::<Object>() {
+            if self.seen.has(obj) {
+                return write!(f, "[Cycle]");
+            }
+
+            self.seen.add(obj);
+            _reset = Some(scopeguard::guard(obj.to_owned(), |obj| {
+                self.seen.delete(&obj);
+            }));
+        }
+
         if self.value.is_null() {
             write!(f, "null")
         } else if self.value.is_undefined() {
@@ -83,12 +95,10 @@ impl Debug for Prettified {
             write!(f, "/{}/", r.to_string().as_string().unwrap())
         } else if let Some(s) = self.value.dyn_ref::<Symbol>() {
             write!(f, "{}", s.to_string().as_string().unwrap())
-        } else if self.has_been_seen() {
-            write!(f, "[Cycle]")
         } else if let Some(a) = self.value.dyn_ref::<Array>() {
             let mut f = f.debug_list();
             for val in a.iter() {
-                f.entry(&self.child(val));
+                f.entry(&self.child(&val));
             }
             f.finish()
         } else if let Some(s) = self.value.dyn_ref::<Set>() {
@@ -178,6 +188,61 @@ mod tests {
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
     wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn cycle_is_broken() {
+        let with_cycles = js_sys::Function::new_no_args(
+            r#"
+            let root = { child: { nested: [] } };
+            root.child.nested.push(root);
+            return root;
+        "#,
+        )
+        .call0(&JsValue::null())
+        .unwrap();
+
+        assert_eq!(
+            with_cycles.pretty().to_string(),
+            r#"Object {
+    child: Object {
+        nested: [
+            [Cycle],
+        ],
+    },
+}"#
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn repeated_siblings_are_not_cycles() {
+        let with_siblings = js_sys::Function::new_no_args(
+            r#"
+            let root = { child: { nested: [] } };
+            let repeated_child = { foo: "bar" };
+            root.child.nested.push(repeated_child);
+            root.child.nested.push(repeated_child);
+            return root;
+        "#,
+        )
+        .call0(&JsValue::null())
+        .unwrap();
+
+        assert_eq!(
+            with_siblings.pretty().to_string(),
+            r#"Object {
+    child: Object {
+        nested: [
+            Object {
+                foo: "bar",
+            },
+            Object {
+                foo: "bar",
+            },
+        ],
+    },
+}"#
+        );
+    }
 
     #[wasm_bindgen_test]
     fn keyboard_event() {
