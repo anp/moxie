@@ -17,6 +17,8 @@ pub struct RunOpts {
     /// run once the http server is up
     #[options(free)]
     cmd: String,
+    /// working directory for the command
+    cwd: PathBuf,
     /// args to pass the command
     #[options(free)]
     args: Vec<String>,
@@ -43,7 +45,7 @@ impl RunOpts {
         }
 
         let mut command = Command::new(which(self.cmd)?);
-        command.args(self.args);
+        command.args(self.args).current_dir(self.cwd);
 
         info!(?command, "running");
         let status = command.status()?;
