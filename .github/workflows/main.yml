@@ -102,15 +102,9 @@ jobs:
     - run: cargo test-dom-drivertest
 
     - name: todomvc e2e tests
-      uses: cypress-io/github-action@v2
-      with:
-        record: true
-        working-directory: dom/examples/todo/e2e
-        start: "${{ github.workspace }}/bin/ofl"
-        wait-on: "http://localhost:8000"
+      run: bin/ofl serve-then-run -- npx cypress run --project dom/examples/todo/e2e --record
       env:
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   website:
     needs: ofl
