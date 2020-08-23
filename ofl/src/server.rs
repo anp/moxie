@@ -35,6 +35,8 @@ pub struct ServerOpts {
     port: u16,
     #[options(default = "false")]
     open: bool,
+    #[options(default = "true")]
+    watch_changes: bool,
 }
 
 impl Default for ServerOpts {
@@ -44,6 +46,7 @@ impl Default for ServerOpts {
             addr: "::1".parse().unwrap(),
             port: 8000,
             open: false,
+            watch_changes: true,
         }
     }
 }
@@ -51,7 +54,7 @@ impl Default for ServerOpts {
 impl ServerOpts {
     pub fn run_server(self, root_path: PathBuf) -> Result<(), Error> {
         let (session_tx, session_rx) = chan();
-        let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx));
+        let watcher = Arc::new(FilesWatcher::new(&root_path, session_rx, self.watch_changes));
         let mut runner = System::new("ofl");
         if self.open {
             let root_url = format!("http://[{}]:{}/index.html", self.addr, self.port);
@@ -59,7 +62,14 @@ impl ServerOpts {
                 opener::open(&root_url).unwrap();
             });
         }
-        runner.block_on(http_server(self.addr, self.port, root_path, session_tx, watcher))?;
+        runner.block_on(http_server(
+            self.addr,
+            self.port,
+            root_path,
+            session_tx,
+            watcher,
+            self.watch_changes,
+        ))?;
         Ok(())
     }
 }
@@ -70,25 +80,35 @@ fn http_server(
     root_path: PathBuf,
     session_tx: Sender<Addr<ChangeWatchSession>>,
     watcher: Arc<FilesWatcher>,
+    watch_changes: bool,
 ) -> impl Future<Output = std::io::Result<()>> {
     HttpServer::new(move || {
         let session_tx = session_tx.clone();
         let watcher_middleware = watcher.clone();
-        let changes_service = web::resource("/ch-ch-ch-changes").route(web::get().to(
-            move |req, stream: web::Payload| {
-                let session_tx = session_tx.clone();
-                async move {
-                    let session = ChangeWatchSession::new(session_tx);
-                    ws::start(session, &req, stream)
-                }
-            },
-        ));
 
-        App::new()
-            .wrap(middleware::Logger::default())
-            .service(changes_service)
-            .wrap(watcher_middleware)
-            .wrap_fn(|req, srv| srv.call(req).and_then(inject::reload_on_changes_into_html))
+        let mut app = App::new().wrap(middleware::Logger::default());
+        if watch_changes {
+            app = app.service(web::resource("/ch-ch-ch-changes").route(web::get().to(
+                move |req, stream: web::Payload| {
+                    let session_tx = session_tx.clone();
+                    async move {
+                        let session = ChangeWatchSession::new(session_tx);
+                        ws::start(session, &req, stream)
+                    }
+                },
+            )));
+        }
+
+        app.wrap(watcher_middleware)
+            .wrap_fn(move |req, srv| {
+                srv.call(req).and_then(move |res| async move {
+                    if watch_changes {
+                        inject::reload_on_changes_into_html(res).await
+                    } else {
+                        Ok(res)
+                    }
+                })
+            })
             .default_service(actix_files::Files::new("/", &root_path).show_files_listing())
     })
     .bind((addr, port))
@@ -99,7 +119,9 @@ fn http_server(
 #[allow(clippy::drop_copy, clippy::zero_ptr)] // wtf crossbeam
 fn pump_channels(
     root: PathBuf,
-    (uri_rx, session_rx): (Receiver<Uri>, Receiver<Addr<ChangeWatchSession>>),
+    uri_rx: Receiver<Uri>,
+    session_rx: Receiver<Addr<ChangeWatchSession>>,
+    forward: bool,
 ) {
     let (event_tx, event_rx) = chan();
     let mut sessions = Vec::new();
@@ -121,7 +143,7 @@ fn pump_channels(
                     Err(what) => warn!({ ?what }, "error on session channel"),
                 }
             },
-            recv(event_rx) -> event => consume_fs_event(&sessions, event),
+            recv(event_rx) -> event => if forward { consume_fs_event(&sessions, event) },
         }
     }
 }
@@ -185,10 +207,15 @@ struct FilesWatcher {
 }
 
 impl FilesWatcher {
-    fn new(root_path: &Path, session_rx: Receiver<Addr<ChangeWatchSession>>) -> Self {
+    fn new(
+        root_path: &Path,
+        session_rx: Receiver<Addr<ChangeWatchSession>>,
+        forward: bool,
+    ) -> Self {
         let (uri_tx, uri_rx) = chan();
         let root = root_path.to_owned();
-        let joiner = Some(std::thread::spawn(|| pump_channels(root, (uri_rx, session_rx))));
+        let joiner =
+            Some(std::thread::spawn(move || pump_channels(root, uri_rx, session_rx, forward)));
 
         Self { uri_tx, joiner }
     }
