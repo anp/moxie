@@ -25,7 +25,10 @@ use std::{
 use tracing::*;
 
 mod inject;
+mod run;
 mod session;
+
+pub use run::RunOpts;
 
 #[derive(Debug, Options)]
 pub struct ServerOpts {
