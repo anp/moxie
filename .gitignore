@@ -8,3 +8,5 @@ node_modules/
 .idea/
 pkg/
 cargo-timing*.html
+**/cypress/screenshots
+**/cypress/videos
