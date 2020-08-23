@@ -10,6 +10,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+use tracing::error;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys as sys;
 
@@ -24,12 +25,9 @@ impl Callback {
     where
         T: JsCast,
     {
-        let cb = Closure::wrap(Box::new(move |raw: JsValue| {
-            let value = raw
-                .dyn_into()
-                .map_err(|v| v.pretty())
-                .expect("must be able to cast into expected callback input");
-            cb(value);
+        let cb = Closure::wrap(Box::new(move |raw: JsValue| match raw.dyn_into() {
+            Ok(value) => cb(value),
+            Err(v) => error!(value = %v.pretty(), "received unexpected value in callback"),
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
