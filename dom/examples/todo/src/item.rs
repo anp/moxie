@@ -9,7 +9,6 @@ use moxie_dom::{
     prelude::*,
 };
 
-#[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
     let todos = todos.clone();
@@ -26,7 +25,6 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
     })
 }
 
-#[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
     let todos = todos.clone();
@@ -66,7 +64,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
     }
 }
 
-#[topo::nested]
+#[topo::nested(slot = "&todo.id")]
 pub fn todo_item(todo: &Todo) -> Li {
     let (editing, set_editing) = state(|| false);
 
