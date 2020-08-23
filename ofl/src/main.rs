@@ -29,6 +29,7 @@ enum Command {
     Coverage(coverage::Coverage),
     Published(published::EnsurePublished),
     Serve(server::ServerOpts),
+    ServeThenRun(server::RunOpts),
     Website(website::Website),
     /// Format all targets in the repository, including those under `ofl/`.
     Fmt(format::Format),
@@ -54,6 +55,7 @@ fn main() -> Result<(), Error> {
         Command::Fmt(opts) => opts.run(config.project_root),
         Command::Published(opts) => opts.run(config.project_root),
         Command::Serve(opts) => opts.run_server(config.project_root),
+        Command::ServeThenRun(opts) => opts.run(config.project_root),
         Command::Website(opts) => opts.run(config.project_root),
         Command::Versions(opts) => opts.run(config.project_root),
     }
