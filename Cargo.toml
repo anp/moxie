@@ -39,6 +39,7 @@ members = [
     "dom/prettiest",
     "dom/raf",
     "dyn-cache",
+    "honk",
     "illicit",
     "illicit/macro",
     "mox",
