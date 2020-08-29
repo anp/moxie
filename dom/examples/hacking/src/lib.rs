@@ -11,9 +11,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(start)]
 pub fn begin() {
     console_log::init_with_level(tracing::log::Level::Debug).unwrap();
-    std::panic::set_hook(Box::new(|info| {
-        tracing::error!("{:#?}", info);
-    }));
+    console_error_panic_hook::set_once();
 
     tracing::info!("mounting moxie-dom to root");
     moxie_dom::boot(document().body().unwrap(), root);

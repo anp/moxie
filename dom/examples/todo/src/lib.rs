@@ -78,9 +78,7 @@ impl Todo {
 #[wasm_bindgen(start)]
 pub fn setup_tracing() {
     tracing_wasm::set_as_global_default();
-    std::panic::set_hook(Box::new(|info| {
-        error!(?info, "crashed");
-    }));
+    console_error_panic_hook::set_once();
     info!("tracing initialized");
 }
 
