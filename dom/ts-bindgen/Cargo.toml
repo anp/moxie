@@ -1,0 +1,10 @@
+[package]
+name = "ts-bindgen"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+swc_common = { version = "0.10.1", features = [ "tty-emitter" ] }
+swc_ecma_ast = "0.30.0"
+swc_ecma_parser = "0.36.2"
+thiserror = "1.0.20"

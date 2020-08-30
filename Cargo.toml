@@ -38,6 +38,7 @@ members = [
     "dom/examples/todo",
     "dom/prettiest",
     "dom/raf",
+    "dom/ts-bindgen",
     "dyn-cache",
     "honk",
     "illicit",

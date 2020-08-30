@@ -89,6 +89,7 @@ test-dom-drivertest = "wa-test dom/examples/drivertest"
 test-dom-hacking = "wa-test dom/examples/hacking"
 test-dom-todo = "wa-test dom/examples/todo"
 test-dom-todo-e2e = "ofl serve-then-run --cwd dom/examples/todo/e2e -- npx cypress run"
+test-ts-bindgen = "test --package ts-bindgen"
 
 # standalones
 test-dom = "test --package moxie-dom --package ssr-poc --all-targets"
