@@ -10,9 +10,10 @@ use swc_ecma_ast::{
     TsNamespaceDecl, TsNamespaceExportDecl, TsTypeAliasDecl, VarDecl,
 };
 
-use super::{class::Class, enums::Enum, func::Func, name::Name};
+use super::{class::Class, enums::Enum, func::Func, name::Name, ty::Ty};
 
 pub struct TsModule {
+    variables: BTreeMap<Name, Ty>,
     enums: Vec<Enum>,
     classes: Vec<Class>,
     functions: BTreeMap<Name, Func>,
@@ -22,7 +23,11 @@ pub struct TsModule {
 impl Debug for TsModule {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_list().entries(&self.enums).entries(&self.classes).finish()?;
-        f.debug_map().entries(&self.functions).entries(&self.children).finish()
+        f.debug_map()
+            .entries(&self.variables)
+            .entries(&self.functions)
+            .entries(&self.children)
+            .finish()
     }
 }
 
@@ -41,6 +46,7 @@ impl TsModule {
             classes: Default::default(),
             enums: Default::default(),
             functions: Default::default(),
+            variables: Default::default(),
         }
     }
 
@@ -123,8 +129,11 @@ impl TsModule {
 
     fn add_var(&mut self, var: VarDecl) {
         for decl in var.decls {
-            let name = match decl.name {
-                Pat::Ident(n) => Name::from(n.sym.to_string()),
+            let (name, ty) = match decl.name {
+                Pat::Ident(n) => (
+                    Name::from(n.sym.to_string()),
+                    n.type_ann.map(Ty::from).unwrap_or_else(Ty::any),
+                ),
                 other => {
                     todo!("i guess implement support for assignments to {:?}", other);
                 }
@@ -133,6 +142,8 @@ impl TsModule {
             if let Some(init) = decl.init {
                 todo!("i guess support initializing {:?} {:?} {:?}", &var.kind, name, init);
             }
+
+            self.variables.insert(name, ty);
         }
     }
 
