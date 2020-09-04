@@ -8,6 +8,9 @@ use swc_common::BytePos;
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::input::StringInput, Parser, Syntax, TsConfig};
 
+mod ty;
+use ty::Ty;
+
 pub fn parse_d_ts(contents: &str) -> Result<Module, TypescriptError> {
     let input = StringInput::new(contents, BytePos(0), BytePos(0));
     let mut parser = Parser::new(
@@ -378,30 +381,6 @@ impl Debug for TsParam {
     }
 }
 
-#[derive(Debug)]
-struct Ty {
-    // TODO figure out a repr for not-yet-resolved types
-}
-
-impl Ty {
-    fn any() -> Self {
-        Ty {}
-    }
-}
-
-impl From<TsType> for Ty {
-    fn from(_ty: TsType) -> Ty {
-        // TODO ...stuff
-        Ty {}
-    }
-}
-
-impl From<TsTypeAnn> for Ty {
-    fn from(ann: TsTypeAnn) -> Ty {
-        (*ann.type_ann).into()
-    }
-}
-
 struct Enum {
     name: Name,
     members: Vec<Name>,
@@ -464,6 +443,6 @@ fn prop_name(key: PropName) -> Name {
 
 impl TsModule {
     pub fn import_with_wasm_bindgen(&self) -> Result<WasmBindgenImport, TypescriptError> {
-        todo!("{:#?}", self)
+        todo!("{:?}", self)
     }
 }
