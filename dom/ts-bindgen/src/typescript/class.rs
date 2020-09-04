@@ -28,16 +28,10 @@ impl From<ClassDecl> for Class {
             match member {
                 ClassMember::Constructor(ctor) => new.add_constructor(ctor),
                 ClassMember::Method(method) => new.add_method(method),
-                ClassMember::ClassProp(_) => {
-                    println!("TODO figure out if we care about class properties")
-                }
-                ClassMember::PrivateMethod(_) => {
-                    println!("TODO figure out if we care about private methods")
-                }
-                ClassMember::PrivateProp(_) => {
-                    println!("TODO figure out if we care about private properties")
-                }
-                ClassMember::TsIndexSignature(_) => println!("TODO figure out ts index signatures"),
+                ClassMember::ClassProp(_) => println!("TODO class properties?"),
+                ClassMember::PrivateMethod(_) => todo!("private methods"),
+                ClassMember::PrivateProp(_) => todo!("private properties"),
+                ClassMember::TsIndexSignature(_) => todo!("ts index signatures"),
                 ClassMember::Empty(_) => (),
             }
         }

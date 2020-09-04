@@ -64,42 +64,42 @@ impl TsModule {
     }
 
     fn add_import(&mut self, _import: ImportDecl) {
-        println!("TODO support imports");
+        todo!("support imports");
     }
 
     pub fn add_named_export(&mut self, _named: NamedExport) {
-        println!("TODO support re-exports");
+        todo!("support re-exports");
     }
 
     pub fn add_default_export(&mut self, _default_decl: ExportDefaultDecl) {
-        println!("TODO export default decl");
+        todo!("export default decl");
     }
 
     pub fn add_default_export_expr(&mut self, _default_expr: ExportDefaultExpr) {
-        println!("TODO export default expr");
+        todo!("export default expr");
     }
 
     pub fn add_export_all(&mut self, _export_all: ExportAll) {
-        println!("TODO export all");
+        todo!("export all");
     }
 
     pub fn add_import_equals(&mut self, _ts_import: TsImportEqualsDecl) {
-        println!("TODO ts import");
+        todo!("ts import");
     }
 
     pub fn add_export_assign(&mut self, _ts_export: TsExportAssignment) {
-        println!("TODO export assignment");
+        todo!("export assignment");
     }
 
     pub fn add_namespace_export(&mut self, _ts_ns_export: TsNamespaceExportDecl) {
-        println!("TODO typescript namespace export");
+        todo!("typescript namespace export");
     }
 
     fn add_stmt(&mut self, stmt: Stmt) {
         match stmt {
             Stmt::Decl(decl) => self.add_decl(decl),
             _ => {
-                println!("TODO non-decl statements");
+                todo!("non-decl statements");
             }
         }
     }
