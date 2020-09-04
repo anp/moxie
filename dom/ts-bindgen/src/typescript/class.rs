@@ -2,23 +2,21 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-use swc_ecma_ast::{ClassDecl, ClassMember, ClassMethod, Constructor, PropName};
+use swc_ecma_ast::{Class as AstClass, ClassMember, ClassMethod, Constructor, PropName};
 
 use super::{Func, Name, Ty};
 
 pub struct Class {
-    name: Name,
     ty: Ty,
     constructors: Vec<Func>,
     statics: BTreeMap<Name, Func>,
     methods: BTreeMap<Name, Func>,
 }
 
-impl From<ClassDecl> for Class {
-    fn from(class: ClassDecl) -> Self {
+impl From<AstClass> for Class {
+    fn from(class: AstClass) -> Self {
         let mut new = Class {
             ty: Ty::any(), // TODO a real type?
-            name: class.ident.sym.to_string().into(),
             constructors: Default::default(),
             statics: Default::default(),
             methods: Default::default(),
@@ -28,7 +26,7 @@ impl From<ClassDecl> for Class {
         // TODO super class & type params
         // TODO implemented interfaces
 
-        for member in class.class.body {
+        for member in class.body {
             match member {
                 ClassMember::Constructor(ctor) => new.add_constructor(ctor),
                 ClassMember::Method(method) => new.add_method(method),
@@ -67,16 +65,15 @@ impl Class {
 
 impl Debug for Class {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut f = f.debug_struct(self.name.as_ref());
+        let mut f = f.debug_map();
 
+        let ctor_name = Name::from("contructor".to_string());
         for ctor in &self.constructors {
-            f.field("constructor", &ctor);
+            f.entry(&ctor_name, &ctor);
         }
 
-        for (name, method) in &self.methods {
-            f.field(name.as_ref(), method);
-        }
-
+        f.entries(&self.statics);
+        f.entries(&self.methods);
         f.finish()
     }
 }

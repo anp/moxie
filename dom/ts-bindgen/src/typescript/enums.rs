@@ -1,38 +1,32 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::{TsEnumDecl, TsEnumMemberId};
+use swc_ecma_ast::{TsEnumMember, TsEnumMemberId};
 
 use super::Name;
 
 pub struct Enum {
-    name: Name,
     members: Vec<Name>,
 }
 
-impl From<TsEnumDecl> for Enum {
-    fn from(decl: TsEnumDecl) -> Self {
-        let name = decl.id.sym.to_string().into();
-        let members = decl
-            .members
-            .into_iter()
-            .map(|member| {
-                let member_name = member_name(&member.id);
-                if member.init.is_some() {
-                    println!("TODO enum member init {:?}.{:?}", &name, &member_name);
-                }
-                member_name
-            })
-            .collect();
-        Enum { name, members }
+impl From<Vec<TsEnumMember>> for Enum {
+    fn from(decls: Vec<TsEnumMember>) -> Self {
+        Enum {
+            members: decls
+                .into_iter()
+                .map(|member| {
+                    let member_name = member_name(&member.id);
+                    if member.init.is_some() {
+                        println!("TODO enum member init {:?}", &member_name);
+                    }
+                    member_name
+                })
+                .collect(),
+        }
     }
 }
 
 impl Debug for Enum {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut tup = f.debug_tuple(&self.name.as_ref());
-        for member in &self.members {
-            tup.field(member);
-        }
-        tup.finish()
+        f.debug_set().entries(&self.members).finish()
     }
 }
 

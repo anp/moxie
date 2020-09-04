@@ -14,22 +14,20 @@ use super::{class::Class, enums::Enum, func::Func, interface::Interface, name::N
 
 pub struct TsModule {
     variables: BTreeMap<Name, Ty>,
-    enums: Vec<Enum>,
-    classes: Vec<Class>,
-    interfaces: Vec<Interface>,
+    enums: BTreeMap<Name, Enum>,
+    classes: BTreeMap<Name, Class>,
+    interfaces: BTreeMap<Name, Interface>,
     functions: BTreeMap<Name, Func>,
     children: BTreeMap<Name, TsModule>,
 }
 
 impl Debug for TsModule {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_list()
+        f.debug_map()
+            .entries(&self.variables)
             .entries(&self.enums)
             .entries(&self.classes)
             .entries(&self.interfaces)
-            .finish()?;
-        f.debug_map()
-            .entries(&self.variables)
             .entries(&self.functions)
             .entries(&self.children)
             .finish()
@@ -159,11 +157,11 @@ impl TsModule {
     }
 
     fn add_class(&mut self, class: ClassDecl) {
-        self.classes.push(class.into());
+        self.classes.insert(class.ident.sym.to_string().into(), class.class.into());
     }
 
     fn add_interface(&mut self, interface: TsInterfaceDecl) {
-        self.interfaces.push(interface.into());
+        self.interfaces.insert(Name::from(interface.id.sym.to_string()), interface.body.into());
     }
 
     fn add_alias(&mut self, _alias: TsTypeAliasDecl) {
@@ -171,7 +169,7 @@ impl TsModule {
     }
 
     fn add_enum(&mut self, decl: TsEnumDecl) {
-        self.enums.push(decl.into());
+        self.enums.insert(decl.id.sym.to_string().into(), decl.members.into());
     }
 
     fn add_ts_module(&mut self, id: TsModuleName, body: Option<TsNamespaceBody>) {

@@ -1,28 +1,20 @@
+#![allow(unused)]
+
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::TsInterfaceDecl;
+use swc_ecma_ast::TsInterfaceBody;
 
-use super::Name;
+pub struct Interface {}
 
-pub struct Interface {
-    name: Name,
-}
-
-impl From<TsInterfaceDecl> for Interface {
-    fn from(decl: TsInterfaceDecl) -> Self {
-        let name = Name::from(decl.id.sym.to_string());
-
+impl From<TsInterfaceBody> for Interface {
+    fn from(decl: TsInterfaceBody) -> Self {
         // TODO
 
-        Self { name }
+        Self {}
     }
 }
 
 impl Debug for Interface {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut f = f.debug_struct(self.name.as_ref());
-
-        // TODO
-
-        f.finish()
+        Ok(())
     }
 }
