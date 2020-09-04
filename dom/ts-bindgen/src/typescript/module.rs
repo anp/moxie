@@ -10,19 +10,24 @@ use swc_ecma_ast::{
     TsNamespaceDecl, TsNamespaceExportDecl, TsTypeAliasDecl, VarDecl,
 };
 
-use super::{class::Class, enums::Enum, func::Func, name::Name, ty::Ty};
+use super::{class::Class, enums::Enum, func::Func, interface::Interface, name::Name, ty::Ty};
 
 pub struct TsModule {
     variables: BTreeMap<Name, Ty>,
     enums: Vec<Enum>,
     classes: Vec<Class>,
+    interfaces: Vec<Interface>,
     functions: BTreeMap<Name, Func>,
     children: BTreeMap<Name, TsModule>,
 }
 
 impl Debug for TsModule {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_list().entries(&self.enums).entries(&self.classes).finish()?;
+        f.debug_list()
+            .entries(&self.enums)
+            .entries(&self.classes)
+            .entries(&self.interfaces)
+            .finish()?;
         f.debug_map()
             .entries(&self.variables)
             .entries(&self.functions)
@@ -44,6 +49,7 @@ impl TsModule {
         Self {
             children: Default::default(),
             classes: Default::default(),
+            interfaces: Default::default(),
             enums: Default::default(),
             functions: Default::default(),
             variables: Default::default(),
@@ -156,8 +162,8 @@ impl TsModule {
         self.classes.push(class.into());
     }
 
-    fn add_interface(&mut self, _interface: TsInterfaceDecl) {
-        println!("TODO interfaces");
+    fn add_interface(&mut self, interface: TsInterfaceDecl) {
+        self.interfaces.push(interface.into());
     }
 
     fn add_alias(&mut self, _alias: TsTypeAliasDecl) {

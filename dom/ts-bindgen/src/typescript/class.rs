@@ -7,6 +7,7 @@ use swc_ecma_ast::{ClassDecl, ClassMember, ClassMethod, Constructor, PropName};
 use super::{Func, Name, Ty};
 
 pub struct Class {
+    name: Name,
     ty: Ty,
     constructors: Vec<Func>,
     statics: BTreeMap<Name, Func>,
@@ -17,6 +18,7 @@ impl From<ClassDecl> for Class {
     fn from(class: ClassDecl) -> Self {
         let mut new = Class {
             ty: Ty::any(), // TODO a real type?
+            name: class.ident.sym.to_string().into(),
             constructors: Default::default(),
             statics: Default::default(),
             methods: Default::default(),
@@ -65,14 +67,16 @@ impl Class {
 
 impl Debug for Class {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut f = f.debug_map();
+        let mut f = f.debug_struct(self.name.as_ref());
 
-        let ctor_name = Name::from("constructor".to_string());
         for ctor in &self.constructors {
-            f.entry(&ctor_name, &ctor);
+            f.field("constructor", &ctor);
         }
 
-        f.entries(&self.methods);
+        for (name, method) in &self.methods {
+            f.field(name.as_ref(), method);
+        }
+
         f.finish()
     }
 }
