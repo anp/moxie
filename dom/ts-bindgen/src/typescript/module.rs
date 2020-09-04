@@ -14,6 +14,7 @@ use super::{class::Class, enums::Enum, func::Func, interface::Interface, name::N
 
 pub struct TsModule {
     variables: BTreeMap<Name, Ty>,
+    aliases: BTreeMap<Name, Ty>,
     enums: BTreeMap<Name, Enum>,
     classes: BTreeMap<Name, Class>,
     interfaces: BTreeMap<Name, Interface>,
@@ -45,6 +46,7 @@ impl From<Module> for TsModule {
 impl TsModule {
     fn blank() -> Self {
         Self {
+            aliases: Default::default(),
             children: Default::default(),
             classes: Default::default(),
             interfaces: Default::default(),
@@ -161,11 +163,11 @@ impl TsModule {
     }
 
     fn add_interface(&mut self, interface: TsInterfaceDecl) {
-        self.interfaces.insert(Name::from(interface.id.sym.to_string()), interface.body.into());
+        self.interfaces.insert(interface.id.sym.to_string().into(), interface.body.into());
     }
 
-    fn add_alias(&mut self, _alias: TsTypeAliasDecl) {
-        println!("TODO ts aliases");
+    fn add_alias(&mut self, alias: TsTypeAliasDecl) {
+        self.aliases.insert(alias.id.sym.to_string().into(), From::from(*alias.type_ann));
     }
 
     fn add_enum(&mut self, decl: TsEnumDecl) {
