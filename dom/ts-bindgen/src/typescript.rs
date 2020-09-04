@@ -48,13 +48,14 @@ impl Display for Name {
 pub struct TsModule {
     enums: Vec<Enum>,
     classes: Vec<Class>,
+    functions: BTreeMap<Name, Func>,
     children: BTreeMap<Name, TsModule>,
 }
 
 impl Debug for TsModule {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_list().entries(&self.enums).entries(&self.classes).finish()?;
-        f.debug_map().entries(&self.children).finish()
+        f.debug_map().entries(&self.functions).entries(&self.children).finish()
     }
 }
 
@@ -80,6 +81,7 @@ impl TsModule {
             children: Default::default(),
             classes: Default::default(),
             enums: Default::default(),
+            functions: Default::default(),
         }
     }
 
@@ -175,8 +177,9 @@ impl TsModule {
         }
     }
 
-    fn add_function(&mut self, _fun: FnDecl) {
-        println!("TODO functions");
+    fn add_function(&mut self, fun: FnDecl) {
+        let name = Name::from(fun.ident.sym.to_string());
+        self.functions.insert(name, fun.function.into());
     }
 
     fn add_class(&mut self, class: ClassDecl) {
@@ -211,7 +214,6 @@ impl TsModule {
 }
 
 struct Class {
-    name: Name,
     constructors: Vec<Func>,
     statics: BTreeMap<Name, Func>,
     methods: BTreeMap<Name, Func>,
@@ -220,7 +222,6 @@ struct Class {
 impl From<ClassDecl> for Class {
     fn from(class: ClassDecl) -> Self {
         let mut new = Class {
-            name: class.ident.sym.to_string().into(),
             constructors: Default::default(),
             statics: Default::default(),
             methods: Default::default(),
@@ -275,16 +276,14 @@ impl Class {
 
 impl Debug for Class {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut f = f.debug_struct(&self.name.0);
+        let mut f = f.debug_map();
 
+        let ctor_name = Name::from("constructor".to_string());
         for ctor in &self.constructors {
-            f.field("constructor", &ctor);
+            f.entry(&ctor_name, &ctor);
         }
 
-        for (name, function) in &self.methods {
-            f.field(&name.0, function);
-        }
-
+        f.entries(&self.methods);
         f.finish()
     }
 }
@@ -358,12 +357,12 @@ impl From<Param> for TsParam {
         match param.pat {
             Pat::Ident(i) => {
                 let name = i.sym.to_string().into();
-                let ty = i.type_ann.into();
+                let ty = i.type_ann.map(Ty::from).unwrap_or_else(Ty::any);
                 Self { name, ty, rest: false, optional: i.optional }
             }
             Pat::Rest(r) => {
                 let name = r.arg.expect_ident().sym.to_string().into();
-                let ty = r.type_ann.into();
+                let ty = r.type_ann.map(Ty::from).unwrap_or_else(Ty::any);
                 Self { name, ty, rest: true, optional: false }
             }
             other => todo!("other parameter types like {:#?}", other),
@@ -384,6 +383,12 @@ struct Ty {
     // TODO figure out a repr for not-yet-resolved types
 }
 
+impl Ty {
+    fn any() -> Self {
+        Ty {}
+    }
+}
+
 impl From<TsType> for Ty {
     fn from(_ty: TsType) -> Ty {
         // TODO ...stuff
@@ -394,12 +399,6 @@ impl From<TsType> for Ty {
 impl From<TsTypeAnn> for Ty {
     fn from(ann: TsTypeAnn) -> Ty {
         (*ann.type_ann).into()
-    }
-}
-
-impl From<Option<TsTypeAnn>> for Ty {
-    fn from(ann: Option<TsTypeAnn>) -> Ty {
-        ann.map(From::from).unwrap_or(Ty {}) // TODO make an Any/universal type i guess?
     }
 }
 
