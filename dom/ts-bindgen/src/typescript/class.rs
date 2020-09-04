@@ -2,11 +2,12 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-use swc_ecma_ast::*;
+use swc_ecma_ast::{ClassDecl, ClassMember, ClassMethod, Constructor, PropName};
 
 use super::{Func, Name, Ty};
 
 pub struct Class {
+    ty: Ty,
     constructors: Vec<Func>,
     statics: BTreeMap<Name, Func>,
     methods: BTreeMap<Name, Func>,
@@ -15,6 +16,7 @@ pub struct Class {
 impl From<ClassDecl> for Class {
     fn from(class: ClassDecl) -> Self {
         let mut new = Class {
+            ty: Ty::any(), // TODO a real type?
             constructors: Default::default(),
             statics: Default::default(),
             methods: Default::default(),
@@ -41,8 +43,8 @@ impl From<ClassDecl> for Class {
 }
 
 impl Class {
-    pub fn ty(&self) -> Ty {
-        Ty {} // TODO return *this*'s type
+    pub fn ty(&self) -> &Ty {
+        &self.ty
     }
 
     fn add_constructor(&mut self, ctor: Constructor) {

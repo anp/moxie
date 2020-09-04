@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::*;
+use swc_ecma_ast::{Function, ParamOrTsParamProp};
 
 use super::{Class, TsParam, Ty};
 
@@ -24,7 +24,7 @@ impl Func {
                     }
                 })
                 .collect(),
-            returns: Some(class.ty()),
+            returns: Some(class.ty().clone()),
         }
     }
 }

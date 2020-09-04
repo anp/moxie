@@ -1,6 +1,8 @@
-use swc_ecma_ast::*;
+#![allow(unused)]
 
-#[derive(Debug)]
+use swc_ecma_ast::{TsType, TsTypeAnn};
+
+#[derive(Clone, Debug)]
 pub struct Ty {
     // TODO figure out a better repr for not-yet-resolved types
 }

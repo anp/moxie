@@ -3,7 +3,12 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-use swc_ecma_ast::*;
+use swc_ecma_ast::{
+    ClassDecl, Decl, ExportAll, ExportDefaultDecl, ExportDefaultExpr, FnDecl, ImportDecl, Module,
+    ModuleDecl, ModuleItem, NamedExport, Pat, Stmt, TsEnumDecl, TsExportAssignment,
+    TsImportEqualsDecl, TsInterfaceDecl, TsModuleDecl, TsModuleName, TsNamespaceBody,
+    TsNamespaceDecl, TsNamespaceExportDecl, TsTypeAliasDecl, VarDecl,
+};
 
 use super::{class::Class, enums::Enum, func::Func, name::Name};
 

@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::*;
+use swc_ecma_ast::{TsEnumDecl, TsEnumMemberId};
 
 use super::Name;
 

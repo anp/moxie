@@ -1,6 +1,6 @@
 use crate::error::TypescriptError;
 use swc_common::BytePos;
-use swc_ecma_ast::*;
+use swc_ecma_ast::Module;
 use swc_ecma_parser::{lexer::input::StringInput, Parser, Syntax, TsConfig};
 
 mod class;
