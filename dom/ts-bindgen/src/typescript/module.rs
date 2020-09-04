@@ -4,10 +4,8 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
 };
 use swc_ecma_ast::{
-    ClassDecl, Decl, ExportAll, ExportDefaultDecl, ExportDefaultExpr, FnDecl, ImportDecl, Module,
-    ModuleDecl, ModuleItem, NamedExport, Pat, Stmt, TsEnumDecl, TsExportAssignment,
-    TsImportEqualsDecl, TsInterfaceDecl, TsModuleDecl, TsModuleName, TsNamespaceBody,
-    TsNamespaceDecl, TsNamespaceExportDecl, TsTypeAliasDecl, VarDecl,
+    Decl, Ident, Module, ModuleDecl, ModuleItem, Stmt, TsModuleDecl, TsModuleName, TsNamespaceBody,
+    TsNamespaceDecl,
 };
 
 use super::{class::Class, enums::Enum, func::Func, interface::Interface, name::Name, ty::Ty};
@@ -60,118 +58,51 @@ impl TsModule {
         for item in contents {
             match item {
                 ModuleItem::ModuleDecl(decl) => match decl {
-                    ModuleDecl::Import(import) => self.add_import(import),
+                    ModuleDecl::Import(_) => todo!("support imports"),
+                    ModuleDecl::ExportNamed(_) => todo!("support re-exports"),
+                    ModuleDecl::ExportDefaultDecl(_) => todo!("export default decl"),
+                    ModuleDecl::ExportDefaultExpr(_) => todo!("export default expr"),
+                    ModuleDecl::ExportAll(_) => todo!("export all"),
+                    ModuleDecl::TsImportEquals(_) => todo!("ts import"),
+                    ModuleDecl::TsExportAssignment(_) => todo!("export assignment"),
+                    ModuleDecl::TsNamespaceExport(_) => todo!("typescript namespace export"),
                     ModuleDecl::ExportDecl(export) => self.add_decl(export.decl),
-                    ModuleDecl::ExportNamed(named) => self.add_named_export(named),
-                    ModuleDecl::ExportDefaultDecl(default_decl) => {
-                        self.add_default_export(default_decl)
-                    }
-                    ModuleDecl::ExportDefaultExpr(expr) => self.add_default_export_expr(expr),
-                    ModuleDecl::ExportAll(export_all) => self.add_export_all(export_all),
-
-                    ModuleDecl::TsImportEquals(ts_import) => self.add_import_equals(ts_import),
-                    ModuleDecl::TsExportAssignment(ts_export) => self.add_export_assign(ts_export),
-                    ModuleDecl::TsNamespaceExport(ts_ns_export) => {
-                        self.add_namespace_export(ts_ns_export)
-                    }
                 },
-                ModuleItem::Stmt(stmt) => self.add_stmt(stmt),
-            }
-        }
-    }
-
-    fn add_import(&mut self, _import: ImportDecl) {
-        todo!("support imports");
-    }
-
-    pub fn add_named_export(&mut self, _named: NamedExport) {
-        todo!("support re-exports");
-    }
-
-    pub fn add_default_export(&mut self, _default_decl: ExportDefaultDecl) {
-        todo!("export default decl");
-    }
-
-    pub fn add_default_export_expr(&mut self, _default_expr: ExportDefaultExpr) {
-        todo!("export default expr");
-    }
-
-    pub fn add_export_all(&mut self, _export_all: ExportAll) {
-        todo!("export all");
-    }
-
-    pub fn add_import_equals(&mut self, _ts_import: TsImportEqualsDecl) {
-        todo!("ts import");
-    }
-
-    pub fn add_export_assign(&mut self, _ts_export: TsExportAssignment) {
-        todo!("export assignment");
-    }
-
-    pub fn add_namespace_export(&mut self, _ts_ns_export: TsNamespaceExportDecl) {
-        todo!("typescript namespace export");
-    }
-
-    fn add_stmt(&mut self, stmt: Stmt) {
-        match stmt {
-            Stmt::Decl(decl) => self.add_decl(decl),
-            _ => {
-                todo!("non-decl statements");
+                ModuleItem::Stmt(Stmt::Decl(decl)) => self.add_decl(decl),
+                ModuleItem::Stmt(s) => todo!("support non-decl statements? {:#?}", s),
             }
         }
     }
 
     fn add_decl(&mut self, decl: Decl) {
         match decl {
-            Decl::Class(class) => self.add_class(class),
-            Decl::TsInterface(interface) => self.add_interface(interface),
-            Decl::TsTypeAlias(alias) => self.add_alias(alias),
-            Decl::TsEnum(ts_enum) => self.add_enum(ts_enum),
-            Decl::TsModule(TsModuleDecl { id, body, .. }) => self.add_ts_module(id, body),
-            Decl::Fn(fun) => self.add_function(fun),
-            Decl::Var(var) => self.add_var(var),
-        }
-    }
-
-    fn add_var(&mut self, var: VarDecl) {
-        for decl in var.decls {
-            let (name, ty) = match decl.name {
-                Pat::Ident(n) => (
-                    Name::from(n.sym.to_string()),
-                    n.type_ann.map(Ty::from).unwrap_or_else(Ty::any),
-                ),
-                other => {
-                    todo!("i guess implement support for assignments to {:?}", other);
-                }
-            };
-
-            if let Some(init) = decl.init {
-                todo!("i guess support initializing {:?} {:?} {:?}", &var.kind, name, init);
+            Decl::Class(class) => {
+                self.classes.insert(class.ident.sym.to_string().into(), class.class.into());
             }
-
-            self.variables.insert(name, ty);
+            Decl::TsInterface(interface) => {
+                self.interfaces.insert(interface.id.sym.to_string().into(), interface.body.into());
+            }
+            Decl::TsTypeAlias(alias) => {
+                self.aliases.insert(alias.id.sym.to_string().into(), From::from(*alias.type_ann));
+            }
+            Decl::TsEnum(decl) => {
+                self.enums.insert(decl.id.sym.to_string().into(), decl.members.into());
+            }
+            Decl::Fn(fun) => {
+                self.functions.insert(fun.ident.sym.to_string().into(), fun.function.into());
+            }
+            Decl::Var(var) => {
+                for decl in var.decls {
+                    let Ident { sym, type_ann, .. } = decl.name.expect_ident();
+                    let (name, ty) = (
+                        Name::from(sym.to_string()),
+                        type_ann.map(Ty::from).unwrap_or_else(Ty::any),
+                    );
+                    self.variables.insert(name, ty);
+                }
+            }
+            Decl::TsModule(TsModuleDecl { id, body, .. }) => self.add_ts_module(id, body),
         }
-    }
-
-    fn add_function(&mut self, fun: FnDecl) {
-        let name = Name::from(fun.ident.sym.to_string());
-        self.functions.insert(name, fun.function.into());
-    }
-
-    fn add_class(&mut self, class: ClassDecl) {
-        self.classes.insert(class.ident.sym.to_string().into(), class.class.into());
-    }
-
-    fn add_interface(&mut self, interface: TsInterfaceDecl) {
-        self.interfaces.insert(interface.id.sym.to_string().into(), interface.body.into());
-    }
-
-    fn add_alias(&mut self, alias: TsTypeAliasDecl) {
-        self.aliases.insert(alias.id.sym.to_string().into(), From::from(*alias.type_ann));
-    }
-
-    fn add_enum(&mut self, decl: TsEnumDecl) {
-        self.enums.insert(decl.id.sym.to_string().into(), decl.members.into());
     }
 
     fn add_ts_module(&mut self, id: TsModuleName, body: Option<TsNamespaceBody>) {
