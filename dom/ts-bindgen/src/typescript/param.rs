@@ -15,12 +15,12 @@ impl From<Param> for TsParam {
         match param.pat {
             Pat::Ident(i) => {
                 let name = i.sym.to_string().into();
-                let ty = i.type_ann.map(Ty::from).unwrap_or_else(Ty::any);
+                let ty = i.type_ann.map(Ty::from).unwrap_or(Ty::Any);
                 Self { name, ty, rest: false, optional: i.optional }
             }
             Pat::Rest(r) => {
                 let name = r.arg.expect_ident().sym.to_string().into();
-                let ty = r.type_ann.map(Ty::from).unwrap_or_else(Ty::any);
+                let ty = r.type_ann.map(Ty::from).unwrap_or(Ty::Any);
                 Self { name, ty, rest: true, optional: false }
             }
             other => todo!("other parameter types like {:#?}", other),

@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use swc_ecma_ast::{Function, ParamOrTsParamProp};
 
-use super::{Class, TsParam, Ty};
+use super::{Name, TsParam, Ty};
 
 pub struct Func {
     is_generator: bool,
@@ -11,7 +11,7 @@ pub struct Func {
 }
 
 impl Func {
-    pub fn ctor(class: &Class, params: Vec<ParamOrTsParamProp>) -> Self {
+    pub fn ctor(name: &Name, params: Vec<ParamOrTsParamProp>) -> Self {
         Self {
             is_async: false,
             is_generator: false,
@@ -24,7 +24,7 @@ impl Func {
                     }
                 })
                 .collect(),
-            returns: Some(class.ty().clone()),
+            returns: Some(Ty::Named(name.clone())),
         }
     }
 }

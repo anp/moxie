@@ -2,33 +2,33 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-use swc_ecma_ast::{Class as AstClass, ClassMember, ClassMethod, Constructor, PropName};
+use swc_ecma_ast::{ClassDecl, ClassMember, ClassMethod, Constructor, PropName};
 
-use super::{Func, Name, Ty};
+use super::{Func, Name};
 
 pub struct Class {
-    ty: Ty,
     constructors: Vec<Func>,
     statics: BTreeMap<Name, Func>,
     methods: BTreeMap<Name, Func>,
 }
 
-impl From<AstClass> for Class {
-    fn from(class: AstClass) -> Self {
+impl From<ClassDecl> for Class {
+    fn from(class: ClassDecl) -> Self {
         let mut new = Class {
-            ty: Ty::any(), // TODO a real type?
             constructors: Default::default(),
             statics: Default::default(),
             methods: Default::default(),
         };
 
+        let name = Name::from(class.ident.sym.to_string());
+
         // TODO type params
         // TODO super class & type params
         // TODO implemented interfaces
 
-        for member in class.body {
+        for member in class.class.body {
             match member {
-                ClassMember::Constructor(ctor) => new.add_constructor(ctor),
+                ClassMember::Constructor(ctor) => new.add_constructor(&name, ctor),
                 ClassMember::Method(method) => new.add_method(method),
                 ClassMember::ClassProp(_) => println!("TODO class properties?"),
                 ClassMember::PrivateMethod(_) => todo!("private methods"),
@@ -43,12 +43,8 @@ impl From<AstClass> for Class {
 }
 
 impl Class {
-    pub fn ty(&self) -> &Ty {
-        &self.ty
-    }
-
-    fn add_constructor(&mut self, ctor: Constructor) {
-        self.constructors.push(Func::ctor(&self, ctor.params));
+    fn add_constructor(&mut self, name: &Name, ctor: Constructor) {
+        self.constructors.push(Func::ctor(name, ctor.params));
     }
 
     fn add_method(&mut self, method: ClassMethod) {

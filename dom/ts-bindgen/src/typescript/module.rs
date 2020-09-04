@@ -77,7 +77,7 @@ impl TsModule {
     fn add_decl(&mut self, decl: Decl) {
         match decl {
             Decl::Class(class) => {
-                self.classes.insert(class.ident.sym.to_string().into(), class.class.into());
+                self.classes.insert(class.ident.sym.to_string().into(), class.into());
             }
             Decl::TsInterface(interface) => {
                 self.interfaces.insert(interface.id.sym.to_string().into(), interface.body.into());
@@ -94,10 +94,8 @@ impl TsModule {
             Decl::Var(var) => {
                 for decl in var.decls {
                     let Ident { sym, type_ann, .. } = decl.name.expect_ident();
-                    let (name, ty) = (
-                        Name::from(sym.to_string()),
-                        type_ann.map(Ty::from).unwrap_or_else(Ty::any),
-                    );
+                    let (name, ty) =
+                        (Name::from(sym.to_string()), type_ann.map(Ty::from).unwrap_or(Ty::Any));
                     self.variables.insert(name, ty);
                 }
             }
