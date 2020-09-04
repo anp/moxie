@@ -9,18 +9,7 @@ pub struct Enum {
 
 impl From<Vec<TsEnumMember>> for Enum {
     fn from(decls: Vec<TsEnumMember>) -> Self {
-        Enum {
-            members: decls
-                .into_iter()
-                .map(|member| {
-                    let member_name = member_name(&member.id);
-                    if member.init.is_some() {
-                        println!("TODO enum member init {:?}", &member_name);
-                    }
-                    member_name
-                })
-                .collect(),
-        }
+        Enum { members: decls.into_iter().map(|member| member_name(&member.id)).collect() }
     }
 }
 
