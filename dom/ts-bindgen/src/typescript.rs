@@ -53,13 +53,8 @@ pub struct TsModule {
 
 impl Debug for TsModule {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut module = f.debug_set();
-
-        module.entries(&self.enums);
-        module.entries(&self.classes);
-        module.entries(&self.children);
-
-        module.finish()
+        f.debug_list().entries(&self.enums).entries(&self.classes).finish()?;
+        f.debug_map().entries(&self.children).finish()
     }
 }
 
@@ -217,8 +212,9 @@ impl TsModule {
 
 struct Class {
     name: Name,
-    constructors: Vec<Ctor>,
-    methods: Vec<Method>,
+    constructors: Vec<Func>,
+    statics: BTreeMap<Name, Func>,
+    methods: BTreeMap<Name, Func>,
 }
 
 impl From<ClassDecl> for Class {
@@ -226,6 +222,7 @@ impl From<ClassDecl> for Class {
         let mut new = Class {
             name: class.ident.sym.to_string().into(),
             constructors: Default::default(),
+            statics: Default::default(),
             methods: Default::default(),
         };
 
@@ -256,24 +253,23 @@ impl From<ClassDecl> for Class {
 }
 
 impl Class {
+    fn ty(&self) -> Ty {
+        Ty {} // TODO return *this*'s type
+    }
+
     fn add_constructor(&mut self, ctor: Constructor) {
-        self.constructors.push(Ctor {
-            for_class: self.name.clone(),
-            params: ctor
-                .params
-                .into_iter()
-                .map(|param| match param {
-                    ParamOrTsParamProp::Param(p) => p.into(),
-                    ParamOrTsParamProp::TsParamProp(t) => {
-                        todo!("support ts 'param props' from swc ast {:#?}", t);
-                    }
-                })
-                .collect(),
-        });
+        self.constructors.push(Func::ctor(&self, ctor.params));
     }
 
     fn add_method(&mut self, method: ClassMethod) {
-        self.methods.push(method.into());
+        let name = prop_name(method.key);
+        let func = Func::from(method.function);
+
+        if method.is_static {
+            self.statics.insert(name, func);
+        } else {
+            self.methods.insert(name, func);
+        }
     }
 }
 
@@ -282,61 +278,56 @@ impl Debug for Class {
         let mut f = f.debug_struct(&self.name.0);
 
         for ctor in &self.constructors {
-            f.field("constructor", &ctor); // TODO better way to structure these?
+            f.field("constructor", &ctor);
         }
 
-        for method in &self.methods {
-            f.field("method", &method); // TODO better way to structure these?
-        }
-
-        f.finish()
-    }
-}
-
-struct Ctor {
-    for_class: Name,
-    params: Vec<TsParam>,
-}
-
-impl Debug for Ctor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let new = format!("new {}", &self.for_class);
-        let mut f = f.debug_tuple(&new);
-
-        for p in &self.params {
-            f.field(p);
+        for (name, function) in &self.methods {
+            f.field(&name.0, function);
         }
 
         f.finish()
     }
 }
 
-struct Method {
-    name: Name,
+struct Func {
     params: Vec<TsParam>,
     returns: Option<Ty>,
 }
 
-impl From<ClassMethod> for Method {
-    fn from(method: ClassMethod) -> Self {
-        let name = prop_name(method.key);
-
-        let mut params = vec![];
-        // TODO iterate over params
-
-        let returns = None; // TODO
-
-        Self { name, params, returns }
+impl Func {
+    fn ctor(class: &Class, params: Vec<ParamOrTsParamProp>) -> Self {
+        Self {
+            params: params
+                .into_iter()
+                .map(|param| match param {
+                    ParamOrTsParamProp::Param(p) => p.into(),
+                    ParamOrTsParamProp::TsParamProp(t) => {
+                        todo!("support ts 'param props' from swc ast {:#?}", t);
+                    }
+                })
+                .collect(),
+            returns: Some(class.ty()),
+        }
     }
 }
 
-impl Debug for Method {
+impl From<Function> for Func {
+    fn from(function: Function) -> Self {
+        Self { params: function.params.into_iter().map(From::from).collect(), returns: None }
+    }
+}
+
+impl Debug for Func {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let mut tup = f.debug_tuple(&self.name.0);
-        for p in &self.params {
-            tup.field(p);
+        if self.params.is_empty() {
+            write!(f, "()")?;
+        } else {
+            let mut tup = f.debug_tuple("");
+            for p in &self.params {
+                tup.field(p);
+            }
+            tup.finish()?;
         }
-        tup.finish()?;
 
         if let Some(ret) = &self.returns { write!(f, " -> {:?}", ret) } else { Ok(()) }
     }
@@ -345,6 +336,7 @@ impl Debug for Method {
 struct TsParam {
     name: Name,
     optional: bool,
+    rest: bool,
     ty: Ty,
 }
 
@@ -354,7 +346,12 @@ impl From<Param> for TsParam {
             Pat::Ident(i) => {
                 let name = i.sym.to_string().into();
                 let ty = i.type_ann.into();
-                Self { name, ty, optional: i.optional }
+                Self { name, ty, rest: false, optional: i.optional }
+            }
+            Pat::Rest(r) => {
+                let name = r.arg.expect_ident().sym.to_string().into();
+                let ty = r.type_ann.into();
+                Self { name, ty, rest: true, optional: false }
             }
             other => todo!("other parameter types like {:#?}", other),
         }
@@ -363,8 +360,9 @@ impl From<Param> for TsParam {
 
 impl Debug for TsParam {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let rest = if self.rest { "..." } else { "" };
         let optional = if self.optional { "?" } else { "" };
-        write!(f, "{}{}: {:?}", &self.name, optional, &self.ty)
+        write!(f, "{}{}{}: {:?}", rest, &self.name, optional, &self.ty)
     }
 }
 
@@ -390,7 +388,6 @@ impl From<Option<TsTypeAnn>> for Ty {
     }
 }
 
-#[derive(Debug)]
 struct Enum {
     name: Name,
     members: Vec<Name>,
@@ -411,6 +408,16 @@ impl From<TsEnumDecl> for Enum {
             })
             .collect();
         Enum { name, members }
+    }
+}
+
+impl Debug for Enum {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let mut tup = f.debug_tuple(&self.name.0);
+        for member in &self.members {
+            tup.field(member);
+        }
+        tup.finish()
     }
 }
 
