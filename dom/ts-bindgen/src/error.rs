@@ -10,16 +10,25 @@ pub enum BindingError {
     #[error("reading input failed")]
     ReadInputFile(io::Error),
 
-    #[error("parsing")]
-    ParseInputFile { source: ParseError },
-
     #[error("writing output failed")]
     WriteOutFile(io::Error),
+
+    #[error("processing typescript failed")]
+    Typescript {
+        #[from]
+        source: TypescriptError,
+    },
 }
 
-impl From<SwcError> for BindingError {
+#[derive(Debug, Error)]
+pub enum TypescriptError {
+    #[error("parsing failed")]
+    ParseInputFile { source: ParseError },
+}
+
+impl From<SwcError> for TypescriptError {
     fn from(e: SwcError) -> Self {
-        BindingError::ParseInputFile { source: e.into() }
+        TypescriptError::ParseInputFile { source: e.into() }
     }
 }
 
