@@ -1,5 +1,9 @@
 use crate::{error::TypescriptError, wasm::WasmBindgenImport};
-use std::{collections::BTreeMap, fmt::Debug, str::FromStr};
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 use swc_common::BytePos;
 use swc_ecma_ast::*;
 use swc_ecma_parser::{lexer::input::StringInput, Parser, Syntax, TsConfig};
@@ -20,11 +24,43 @@ pub fn parse_d_ts(contents: &str) -> Result<Module, TypescriptError> {
     Ok(parser.parse_typescript_module()?)
 }
 
-#[derive(Debug)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
+struct Name(String);
+
+impl From<String> for Name {
+    fn from(s: String) -> Self {
+        Name(s.to_string())
+    }
+}
+
+impl Debug for Name {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&self.0)
+    }
+}
+
+impl Display for Name {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&self.0)
+    }
+}
+
 pub struct TsModule {
-    children: BTreeMap<String, TsModule>,
-    classes: BTreeMap<String, Class>,
-    enums: BTreeMap<String, Enum>,
+    enums: Vec<Enum>,
+    classes: Vec<Class>,
+    children: BTreeMap<Name, TsModule>,
+}
+
+impl Debug for TsModule {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let mut module = f.debug_set();
+
+        module.entries(&self.enums);
+        module.entries(&self.classes);
+        module.entries(&self.children);
+
+        module.finish()
+    }
 }
 
 impl FromStr for TsModule {
@@ -132,14 +168,14 @@ impl TsModule {
     fn add_var(&mut self, var: VarDecl) {
         for decl in var.decls {
             let name = match decl.name {
-                Pat::Ident(n) => n.sym.to_string(),
+                Pat::Ident(n) => Name::from(n.sym.to_string()),
                 other => {
                     todo!("i guess implement support for assignments to {:?}", other);
                 }
             };
 
             if let Some(init) = decl.init {
-                todo!("i guess support initializing {:?} {} {:?}", &var.kind, name, init);
+                todo!("i guess support initializing {:?} {:?} {:?}", &var.kind, name, init);
             }
         }
     }
@@ -149,9 +185,7 @@ impl TsModule {
     }
 
     fn add_class(&mut self, class: ClassDecl) {
-        let class: Class = class.into();
-        let name = class.name.clone();
-        self.classes.insert(name, class);
+        self.classes.push(class.into());
     }
 
     fn add_interface(&mut self, _interface: TsInterfaceDecl) {
@@ -163,9 +197,7 @@ impl TsModule {
     }
 
     fn add_enum(&mut self, decl: TsEnumDecl) {
-        let new: Enum = decl.into();
-        let name = new.name.clone();
-        self.enums.insert(name, new);
+        self.enums.push(decl.into());
     }
 
     fn add_ts_module(&mut self, id: TsModuleName, body: Option<TsNamespaceBody>) {
@@ -183,20 +215,17 @@ impl TsModule {
     }
 }
 
-#[derive(Debug)]
 struct Class {
-    name: String,
-    constructor: Option<()>,
-    properties: BTreeMap<String, ()>,
-    methods: BTreeMap<String, ()>,
+    name: Name,
+    constructors: Vec<Ctor>,
+    methods: Vec<Method>,
 }
 
 impl From<ClassDecl> for Class {
     fn from(class: ClassDecl) -> Self {
         let mut new = Class {
-            name: class.ident.sym.to_string(),
-            constructor: None,
-            properties: Default::default(),
+            name: class.ident.sym.to_string().into(),
+            constructors: Default::default(),
             methods: Default::default(),
         };
 
@@ -206,9 +235,11 @@ impl From<ClassDecl> for Class {
 
         for member in class.class.body {
             match member {
-                ClassMember::Constructor(ctor) => new.set_constructor(ctor),
+                ClassMember::Constructor(ctor) => new.add_constructor(ctor),
                 ClassMember::Method(method) => new.add_method(method),
-                ClassMember::ClassProp(prop) => new.add_property(prop),
+                ClassMember::ClassProp(_) => {
+                    println!("TODO figure out if we care about class properties")
+                }
                 ClassMember::PrivateMethod(_) => {
                     println!("TODO figure out if we care about private methods")
                 }
@@ -225,35 +256,156 @@ impl From<ClassDecl> for Class {
 }
 
 impl Class {
-    fn set_constructor(&mut self, ctor: Constructor) {
-        println!("TODO constructors");
+    fn add_constructor(&mut self, ctor: Constructor) {
+        self.constructors.push(Ctor {
+            for_class: self.name.clone(),
+            params: ctor
+                .params
+                .into_iter()
+                .map(|param| match param {
+                    ParamOrTsParamProp::Param(p) => p.into(),
+                    ParamOrTsParamProp::TsParamProp(t) => {
+                        todo!("support ts 'param props' from swc ast {:#?}", t);
+                    }
+                })
+                .collect(),
+        });
     }
 
     fn add_method(&mut self, method: ClassMethod) {
-        println!("TODO class methods");
+        self.methods.push(method.into());
     }
+}
 
-    fn add_property(&mut self, prop: ClassProp) {
-        println!("TODO class properties");
+impl Debug for Class {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let mut f = f.debug_struct(&self.name.0);
+
+        for ctor in &self.constructors {
+            f.field("constructor", &ctor); // TODO better way to structure these?
+        }
+
+        for method in &self.methods {
+            f.field("method", &method); // TODO better way to structure these?
+        }
+
+        f.finish()
+    }
+}
+
+struct Ctor {
+    for_class: Name,
+    params: Vec<TsParam>,
+}
+
+impl Debug for Ctor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let new = format!("new {}", &self.for_class);
+        let mut f = f.debug_tuple(&new);
+
+        for p in &self.params {
+            f.field(p);
+        }
+
+        f.finish()
+    }
+}
+
+struct Method {
+    name: Name,
+    params: Vec<TsParam>,
+    returns: Option<Ty>,
+}
+
+impl From<ClassMethod> for Method {
+    fn from(method: ClassMethod) -> Self {
+        let name = prop_name(method.key);
+
+        let mut params = vec![];
+        // TODO iterate over params
+
+        let returns = None; // TODO
+
+        Self { name, params, returns }
+    }
+}
+
+impl Debug for Method {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let mut tup = f.debug_tuple(&self.name.0);
+        for p in &self.params {
+            tup.field(p);
+        }
+        tup.finish()?;
+
+        if let Some(ret) = &self.returns { write!(f, " -> {:?}", ret) } else { Ok(()) }
+    }
+}
+
+struct TsParam {
+    name: Name,
+    optional: bool,
+    ty: Ty,
+}
+
+impl From<Param> for TsParam {
+    fn from(param: Param) -> TsParam {
+        match param.pat {
+            Pat::Ident(i) => {
+                let name = i.sym.to_string().into();
+                let ty = i.type_ann.into();
+                Self { name, ty, optional: i.optional }
+            }
+            other => todo!("other parameter types like {:#?}", other),
+        }
+    }
+}
+
+impl Debug for TsParam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let optional = if self.optional { "?" } else { "" };
+        write!(f, "{}{}: {:?}", &self.name, optional, &self.ty)
+    }
+}
+
+#[derive(Debug)]
+struct Ty {
+    // TODO figure out a repr for not-yet-resolved types
+}
+
+impl From<TsType> for Ty {
+    fn from(_ty: TsType) -> Ty {
+        // TODO ...stuff
+        Ty {}
+    }
+}
+
+impl From<Option<TsTypeAnn>> for Ty {
+    fn from(ann: Option<TsTypeAnn>) -> Ty {
+        if let Some(ann) = ann {
+            (*ann.type_ann).into()
+        } else {
+            Ty {} // TODO make an Any/universal type i guess?
+        }
     }
 }
 
 #[derive(Debug)]
 struct Enum {
-    name: String,
-    members: Vec<String>,
+    name: Name,
+    members: Vec<Name>,
 }
 
 impl From<TsEnumDecl> for Enum {
     fn from(decl: TsEnumDecl) -> Self {
-        let name = decl.id.sym.to_string();
+        let name = decl.id.sym.to_string().into();
         let members = decl
             .members
             .into_iter()
             .map(|member| {
                 let member_name = member_name(&member.id);
                 if member.init.is_some() {
-                    println!("TODO enum member init {}.{}", &name, &member_name);
+                    println!("TODO enum member init {:?}.{:?}", &name, &member_name);
                 }
                 member_name
             })
@@ -262,20 +414,31 @@ impl From<TsEnumDecl> for Enum {
     }
 }
 
-fn member_name(id: &TsEnumMemberId) -> String {
+fn member_name(id: &TsEnumMemberId) -> Name {
     match id {
         TsEnumMemberId::Ident(i) => &i.sym,
         TsEnumMemberId::Str(s) => &s.value,
     }
     .to_string()
+    .into()
 }
 
-fn module_name(id: &TsModuleName) -> String {
+fn module_name(id: &TsModuleName) -> Name {
     match id {
         TsModuleName::Ident(i) => &i.sym,
         TsModuleName::Str(s) => &s.value,
     }
     .to_string()
+    .into()
+}
+
+fn prop_name(key: PropName) -> Name {
+    match key {
+        PropName::Ident(i) => i.sym.to_string().into(),
+        PropName::Str(s) => s.value.to_string().into(),
+        PropName::Num(n) => n.value.to_string().into(),
+        PropName::Computed(c) => todo!("support computed property names: {:#?}", c),
+    }
 }
 
 impl TsModule {
