@@ -290,6 +290,8 @@ impl Debug for Class {
 }
 
 struct Func {
+    is_generator: bool,
+    is_async: bool,
     params: Vec<TsParam>,
     returns: Option<Ty>,
 }
@@ -297,6 +299,8 @@ struct Func {
 impl Func {
     fn ctor(class: &Class, params: Vec<ParamOrTsParamProp>) -> Self {
         Self {
+            is_async: false,
+            is_generator: false,
             params: params
                 .into_iter()
                 .map(|param| match param {
@@ -313,16 +317,25 @@ impl Func {
 
 impl From<Function> for Func {
     fn from(function: Function) -> Self {
-        Self { params: function.params.into_iter().map(From::from).collect(), returns: None }
+        Self {
+            is_async: function.is_async,
+            is_generator: function.is_generator,
+            params: function.params.into_iter().map(From::from).collect(),
+            returns: function.return_type.map(From::from),
+        }
     }
 }
 
 impl Debug for Func {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let asyncness = if self.is_async { "async " } else { "" };
+        let genny = if self.is_generator { "*" } else { "" };
+        let prelude = format!("{}function{} ", asyncness, genny);
+
         if self.params.is_empty() {
-            write!(f, "()")?;
+            write!(f, "{}()", prelude)?;
         } else {
-            let mut tup = f.debug_tuple("");
+            let mut tup = f.debug_tuple(&prelude);
             for p in &self.params {
                 tup.field(p);
             }
@@ -378,13 +391,15 @@ impl From<TsType> for Ty {
     }
 }
 
+impl From<TsTypeAnn> for Ty {
+    fn from(ann: TsTypeAnn) -> Ty {
+        (*ann.type_ann).into()
+    }
+}
+
 impl From<Option<TsTypeAnn>> for Ty {
     fn from(ann: Option<TsTypeAnn>) -> Ty {
-        if let Some(ann) = ann {
-            (*ann.type_ann).into()
-        } else {
-            Ty {} // TODO make an Any/universal type i guess?
-        }
+        ann.map(From::from).unwrap_or(Ty {}) // TODO make an Any/universal type i guess?
     }
 }
 
