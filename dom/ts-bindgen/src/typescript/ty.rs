@@ -6,7 +6,7 @@ use std::{
 };
 use swc_ecma_ast::{
     TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeElement,
-    TsTypeParam, TsTypeParamDecl, TsUnionOrIntersectionType,
+    TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsUnionOrIntersectionType,
 };
 
 use super::{Func, Name};
@@ -27,12 +27,27 @@ pub enum Ty {
     Never,
     Array(Box<Ty>),
     Tuple(Vec<Ty>),
-    Named(Name),
     Fn(Box<Func>),
     Ctor(Box<Func>),
     Lit(Vec<Ty>),
     Union(Vec<Ty>),
     Intersection(Vec<Ty>),
+
+    /// A Named type is basically any reference to another type.
+    Named {
+        name: Name,
+        params: Vec<Ty>,
+    },
+}
+
+impl Ty {
+    pub fn named(name: &Name) -> Self {
+        Ty::Named { name: name.clone(), params: Default::default() }
+    }
+
+    pub fn param_instances(opt: Option<TsTypeParamInstantiation>) -> Vec<Ty> {
+        opt.map(|p| p.params.into_iter().map(|p| Ty::from(*p)).collect()).unwrap_or_default()
+    }
 }
 
 impl From<TsType> for Ty {
@@ -52,7 +67,9 @@ impl From<TsType> for Ty {
                 TsKeywordTypeKind::TsNullKeyword => Ty::Null,
                 TsKeywordTypeKind::TsNeverKeyword => Ty::Never,
             },
-            TsType::TsTypeRef(r) => Ty::Named(r.type_name.into()),
+            TsType::TsTypeRef(r) => {
+                Ty::Named { name: r.type_name.into(), params: Ty::param_instances(r.type_params) }
+            }
             TsType::TsArrayType(a) => Ty::Array(Box::new((*a.elem_type).into())),
             TsType::TsTupleType(t) => {
                 Ty::Tuple(t.elem_types.into_iter().map(|t| t.ty.into()).collect())
@@ -127,7 +144,21 @@ impl Debug for Ty {
                 }
                 f.finish()
             }
-            Ty::Named(name) => write!(f, "{}", name),
+            Ty::Named { name, params } => {
+                write!(f, "{}", name)?;
+
+                if !params.is_empty() {
+                    write!(f, "<")?;
+                    for (i, p) in params.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{:?}", p)?;
+                    }
+                    write!(f, ">")?;
+                }
+                Ok(())
+            }
             Ty::Fn(fun) => write!(f, "{:?}", fun),
             Ty::Ctor(ctor) => write!(f, "new {:?}", ctor),
             Ty::Lit(members) => f.debug_set().entries(members).finish(),

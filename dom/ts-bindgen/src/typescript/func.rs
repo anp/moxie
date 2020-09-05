@@ -32,7 +32,7 @@ impl Func {
                     }
                 })
                 .collect(),
-            returns: Some(Ty::Named(name.clone())),
+            returns: Some(Ty::named(name)),
         }
     }
 }
