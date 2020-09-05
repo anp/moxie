@@ -5,6 +5,7 @@ use super::{Name, TsParam, Ty};
 
 #[derive(Clone)]
 pub struct Func {
+    is_ctor: bool,
     is_generator: bool,
     is_async: bool,
     params: Vec<TsParam>,
@@ -14,6 +15,7 @@ pub struct Func {
 impl Func {
     pub fn ctor(name: &Name, params: Vec<ParamOrTsParamProp>) -> Self {
         Self {
+            is_ctor: true,
             is_async: false,
             is_generator: false,
             params: params
@@ -33,6 +35,7 @@ impl Func {
 impl From<Function> for Func {
     fn from(function: Function) -> Self {
         Self {
+            is_ctor: false,
             is_async: function.is_async,
             is_generator: function.is_generator,
             params: function.params.into_iter().map(From::from).collect(),
@@ -44,6 +47,7 @@ impl From<Function> for Func {
 impl From<TsFnType> for Func {
     fn from(function: TsFnType) -> Self {
         Self {
+            is_ctor: false,
             is_generator: false,
             is_async: false,
             returns: Some(function.type_ann.into()),
@@ -55,6 +59,7 @@ impl From<TsFnType> for Func {
 impl From<TsConstructorType> for Func {
     fn from(function: TsConstructorType) -> Self {
         Self {
+            is_ctor: true,
             is_generator: false,
             is_async: false,
             returns: Some(function.type_ann.into()),
@@ -65,9 +70,10 @@ impl From<TsConstructorType> for Func {
 
 impl Debug for Func {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let fun = if self.is_ctor { "new" } else { "function" };
         let asyncness = if self.is_async { "async " } else { "" };
         let genny = if self.is_generator { "*" } else { "" };
-        let prelude = format!("{}function{} ", asyncness, genny);
+        let prelude = format!("{}{}{} ", asyncness, fun, genny);
 
         if self.params.is_empty() {
             write!(f, "{}()", prelude)?;
@@ -79,6 +85,6 @@ impl Debug for Func {
             tup.finish()?;
         }
 
-        if let Some(ret) = &self.returns { write!(f, " -> {:?}", ret) } else { Ok(()) }
+        if let Some(ret) = &self.returns { write!(f, ": {:?}", ret) } else { Ok(()) }
     }
 }
