@@ -50,7 +50,12 @@ impl Class {
     }
 
     fn add_method(&mut self, method: ClassMethod) {
-        let name = prop_name(method.key);
+        let name = match method.key {
+            PropName::Ident(i) => i.sym.to_string().into(),
+            PropName::Str(s) => s.value.to_string().into(),
+            PropName::Num(n) => n.value.to_string().into(),
+            PropName::Computed(c) => todo!("computed property names: {:#?}", c),
+        };
         let func = Func::from(method.function);
 
         if method.is_static {
@@ -80,14 +85,5 @@ impl Debug for Class {
         }
 
         f.entries(&self.statics).entries(&self.methods).finish()
-    }
-}
-
-fn prop_name(key: PropName) -> Name {
-    match key {
-        PropName::Ident(i) => i.sym.to_string().into(),
-        PropName::Str(s) => s.value.to_string().into(),
-        PropName::Num(n) => n.value.to_string().into(),
-        PropName::Computed(c) => todo!("computed property names: {:#?}", c),
     }
 }
