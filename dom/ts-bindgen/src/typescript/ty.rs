@@ -1,7 +1,10 @@
 #![allow(unused)]
 
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::{TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn};
+use swc_ecma_ast::{
+    TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeElement,
+    TsUnionOrIntersectionType,
+};
 
 use super::{Func, Name};
 
@@ -24,6 +27,9 @@ pub enum Ty {
     Named(Name),
     Fn(Box<Func>),
     Ctor(Box<Func>),
+    Lit(Vec<Ty>),
+    Union(Vec<Ty>),
+    Intersection(Vec<Ty>),
 }
 
 impl From<TsType> for Ty {
@@ -43,10 +49,7 @@ impl From<TsType> for Ty {
                 TsKeywordTypeKind::TsNullKeyword => Ty::Null,
                 TsKeywordTypeKind::TsNeverKeyword => Ty::Never,
             },
-            TsType::TsTypeRef(r) => Ty::Named(match r.type_name {
-                TsEntityName::Ident(i) => i.sym.to_string().into(),
-                TsEntityName::TsQualifiedName(n) => todo!("qualified type references"),
-            }),
+            TsType::TsTypeRef(r) => Ty::Named(r.type_name.into()),
             TsType::TsArrayType(a) => Ty::Array(Box::new((*a.elem_type).into())),
             TsType::TsTupleType(t) => {
                 Ty::Tuple(t.elem_types.into_iter().map(|t| t.ty.into()).collect())
@@ -55,18 +58,14 @@ impl From<TsType> for Ty {
                 TsFnOrConstructorType::TsFnType(func) => Ty::Fn(Box::new(func.into())),
                 TsFnOrConstructorType::TsConstructorType(ctor) => Ty::Ctor(Box::new(ctor.into())),
             },
-            TsType::TsTypeLit(l) => {
-                println!("TODO type literals in annotations");
-                Ty::Any
+            TsType::TsTypeLit(l) => Ty::Lit(l.members.into_iter().map(Ty::from).collect()),
+            TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsUnionType(u)) => {
+                Ty::Union(u.types.into_iter().map(|t| Ty::from(*t)).collect())
             }
-            TsType::TsUnionOrIntersectionType(u) => {
-                println!("TODO union/intersect types in annotations");
-                Ty::Any
+            TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(i)) => {
+                Ty::Intersection(i.types.into_iter().map(|t| Ty::from(*t)).collect())
             }
-            TsType::TsParenthesizedType(p) => {
-                println!("TODO paren'sized types");
-                Ty::Any
-            }
+            TsType::TsParenthesizedType(p) => Ty::from(*p.type_ann),
             TsType::TsOptionalType(o) => todo!("optional types"),
             TsType::TsRestType(r) => todo!("rest types"),
             TsType::TsTypeQuery(q) => todo!("type queries"),
@@ -79,6 +78,19 @@ impl From<TsType> for Ty {
             TsType::TsLitType(l) => todo!("literal types"),
             TsType::TsTypePredicate(p) => todo!("predicates"),
             TsType::TsImportType(i) => todo!("import types"),
+        }
+    }
+}
+
+impl From<TsTypeElement> for Ty {
+    fn from(elem: TsTypeElement) -> Self {
+        println!("TODO type element");
+        match elem {
+            TsTypeElement::TsPropertySignature(p) => Ty::Any,
+            TsTypeElement::TsCallSignatureDecl(c) => Ty::Any,
+            TsTypeElement::TsConstructSignatureDecl(c) => Ty::Any,
+            TsTypeElement::TsMethodSignature(m) => Ty::Any,
+            TsTypeElement::TsIndexSignature(i) => Ty::Any,
         }
     }
 }
@@ -115,6 +127,21 @@ impl Debug for Ty {
             Ty::Named(name) => write!(f, "{}", name),
             Ty::Fn(fun) => write!(f, "{:?}", fun),
             Ty::Ctor(ctor) => write!(f, "new {:?}", ctor),
+            Ty::Lit(members) => f.debug_set().entries(members).finish(),
+            Ty::Union(members) => {
+                let mut tup = f.debug_tuple("∪");
+                for m in members {
+                    tup.field(m);
+                }
+                tup.finish()
+            }
+            Ty::Intersection(members) => {
+                let mut tup = f.debug_tuple("∩");
+                for m in members {
+                    tup.field(m);
+                }
+                tup.finish()
+            }
         }
     }
 }
