@@ -3,7 +3,7 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use swc_ecma_ast::{
     TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeElement,
-    TsUnionOrIntersectionType,
+    TsTypeParam, TsUnionOrIntersectionType,
 };
 
 use super::{Func, Name};
@@ -143,5 +143,34 @@ impl Debug for Ty {
                 tup.finish()
             }
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct TyParam {
+    constraint: Option<Ty>,
+    default: Option<Ty>,
+}
+
+impl From<TsTypeParam> for TyParam {
+    fn from(param: TsTypeParam) -> Self {
+        Self {
+            constraint: param.constraint.map(|c| Ty::from(*c)),
+            default: param.default.map(|d| Ty::from(*d)),
+        }
+    }
+}
+
+impl Debug for TyParam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        if let Some(constraint) = &self.constraint {
+            write!(f, ": {:?}", constraint)?;
+        }
+
+        if let Some(default) = &self.default {
+            write!(f, " = {:?}", default)?;
+        }
+
+        Ok(())
     }
 }

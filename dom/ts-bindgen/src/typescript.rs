@@ -19,7 +19,7 @@ pub use interface::Interface;
 pub use module::TsModule;
 pub use name::Name;
 pub use param::TsParam;
-pub use ty::Ty;
+pub use ty::{Ty, TyParam};
 
 pub fn parse_d_ts(contents: &str) -> Result<Module, TypescriptError> {
     let input = StringInput::new(contents, BytePos(0), BytePos(0));

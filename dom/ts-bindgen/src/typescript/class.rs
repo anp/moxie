@@ -2,11 +2,14 @@ use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
 };
-use swc_ecma_ast::{ClassDecl, ClassMember, ClassMethod, ClassProp, Constructor, Expr, PropName};
+use swc_ecma_ast::{
+    ClassDecl, ClassMember, ClassMethod, ClassProp, Constructor, Expr, PropName, TsTypeParam,
+};
 
-use super::{Func, Name, Ty};
+use super::{Func, Name, Ty, TyParam};
 
 pub struct Class {
+    ty_params: BTreeMap<Name, TyParam>,
     constructors: Vec<Func>,
     properties: BTreeMap<Name, Ty>,
     statics: BTreeMap<Name, Func>,
@@ -16,6 +19,7 @@ pub struct Class {
 impl From<ClassDecl> for Class {
     fn from(class: ClassDecl) -> Self {
         let mut new = Class {
+            ty_params: Default::default(),
             constructors: Default::default(),
             properties: Default::default(),
             statics: Default::default(),
@@ -24,7 +28,12 @@ impl From<ClassDecl> for Class {
 
         let name = Name::from(class.ident.sym.to_string());
 
-        // TODO type params
+        if let Some(types) = class.class.type_params {
+            for p in types.params {
+                new.add_ty_param(p);
+            }
+        }
+
         // TODO super class & type params
         // TODO implemented interfaces
 
@@ -45,6 +54,10 @@ impl From<ClassDecl> for Class {
 }
 
 impl Class {
+    fn add_ty_param(&mut self, param: TsTypeParam) {
+        self.ty_params.insert(param.name.sym.to_string().into(), TyParam::from(param));
+    }
+
     fn add_constructor(&mut self, name: &Name, ctor: Constructor) {
         self.constructors.push(Func::ctor(name, ctor.params));
     }
@@ -76,6 +89,10 @@ impl Class {
 
 impl Debug for Class {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        if !self.ty_params.is_empty() {
+            f.debug_map().entries(&self.ty_params).finish()?;
+        }
+
         let mut f = f.debug_map();
         f.entries(&self.properties);
 
