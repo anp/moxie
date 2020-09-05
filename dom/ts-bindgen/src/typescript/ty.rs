@@ -1,9 +1,12 @@
 #![allow(unused)]
 
-use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Formatter, Result as FmtResult},
+};
 use swc_ecma_ast::{
     TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeElement,
-    TsTypeParam, TsUnionOrIntersectionType,
+    TsTypeParam, TsTypeParamDecl, TsUnionOrIntersectionType,
 };
 
 use super::{Func, Name};
@@ -150,6 +153,20 @@ impl Debug for Ty {
 pub struct TyParam {
     constraint: Option<Ty>,
     default: Option<Ty>,
+}
+
+impl TyParam {
+    pub fn make_map(opt: Option<TsTypeParamDecl>) -> BTreeMap<Name, TyParam> {
+        let mut map = BTreeMap::new();
+
+        if let Some(decl) = opt {
+            for p in decl.params {
+                map.insert(p.name.sym.to_string().into(), p.into());
+            }
+        }
+
+        map
+    }
 }
 
 impl From<TsTypeParam> for TyParam {

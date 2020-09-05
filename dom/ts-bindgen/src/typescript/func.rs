@@ -1,13 +1,17 @@
-use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Formatter, Result as FmtResult},
+};
 use swc_ecma_ast::{Function, ParamOrTsParamProp, TsConstructorType, TsFnType};
 
-use super::{Name, TsParam, Ty};
+use super::{Name, TsParam, Ty, TyParam};
 
 #[derive(Clone)]
 pub struct Func {
     is_ctor: bool,
     is_generator: bool,
     is_async: bool,
+    ty_params: BTreeMap<Name, TyParam>,
     params: Vec<TsParam>,
     returns: Option<Ty>,
 }
@@ -18,6 +22,7 @@ impl Func {
             is_ctor: true,
             is_async: false,
             is_generator: false,
+            ty_params: Default::default(), // constructors only have the class' ty params
             params: params
                 .into_iter()
                 .map(|param| match param {
@@ -38,6 +43,7 @@ impl From<Function> for Func {
             is_ctor: false,
             is_async: function.is_async,
             is_generator: function.is_generator,
+            ty_params: TyParam::make_map(function.type_params),
             params: function.params.into_iter().map(From::from).collect(),
             returns: function.return_type.map(From::from),
         }
@@ -50,6 +56,7 @@ impl From<TsFnType> for Func {
             is_ctor: false,
             is_generator: false,
             is_async: false,
+            ty_params: TyParam::make_map(function.type_params),
             returns: Some(function.type_ann.into()),
             params: function.params.into_iter().map(From::from).collect(),
         }
@@ -62,6 +69,7 @@ impl From<TsConstructorType> for Func {
             is_ctor: true,
             is_generator: false,
             is_async: false,
+            ty_params: TyParam::make_map(function.type_params),
             returns: Some(function.type_ann.into()),
             params: function.params.into_iter().map(From::from).collect(),
         }
