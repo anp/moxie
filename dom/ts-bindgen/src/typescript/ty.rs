@@ -82,9 +82,9 @@ impl From<TsType> for Ty {
     }
 }
 
+// TODO make traits from interfaces
 impl From<TsTypeElement> for Ty {
     fn from(elem: TsTypeElement) -> Self {
-        println!("TODO type element");
         match elem {
             TsTypeElement::TsPropertySignature(p) => Ty::Any,
             TsTypeElement::TsCallSignatureDecl(c) => Ty::Any,
