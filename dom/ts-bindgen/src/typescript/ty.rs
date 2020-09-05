@@ -1,9 +1,9 @@
 #![allow(unused)]
 
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::{TsEntityName, TsKeywordTypeKind, TsType, TsTypeAnn};
+use swc_ecma_ast::{TsEntityName, TsFnOrConstructorType, TsKeywordTypeKind, TsType, TsTypeAnn};
 
-use super::Name;
+use super::{Func, Name};
 
 #[derive(Clone)]
 pub enum Ty {
@@ -22,6 +22,8 @@ pub enum Ty {
     Array(Box<Ty>),
     Tuple(Vec<Ty>),
     Named(Name),
+    Fn(Box<Func>),
+    Ctor(Box<Func>),
 }
 
 impl From<TsType> for Ty {
@@ -41,21 +43,21 @@ impl From<TsType> for Ty {
                 TsKeywordTypeKind::TsNullKeyword => Ty::Null,
                 TsKeywordTypeKind::TsNeverKeyword => Ty::Never,
             },
-            TsType::TsFnOrConstructorType(_) => {
-                println!("TODO function or ctor type in annotation");
-                Ty::Any
-            }
             TsType::TsTypeRef(r) => Ty::Named(match r.type_name {
                 TsEntityName::Ident(i) => i.sym.to_string().into(),
                 TsEntityName::TsQualifiedName(n) => todo!("qualified type references"),
             }),
-            TsType::TsTypeLit(l) => {
-                println!("TODO type literals in annotations");
-                Ty::Any
-            }
             TsType::TsArrayType(a) => Ty::Array(Box::new((*a.elem_type).into())),
             TsType::TsTupleType(t) => {
                 Ty::Tuple(t.elem_types.into_iter().map(|t| t.ty.into()).collect())
+            }
+            TsType::TsFnOrConstructorType(fn_or_ctor) => match fn_or_ctor {
+                TsFnOrConstructorType::TsFnType(func) => Ty::Fn(Box::new(func.into())),
+                TsFnOrConstructorType::TsConstructorType(ctor) => Ty::Ctor(Box::new(ctor.into())),
+            },
+            TsType::TsTypeLit(l) => {
+                println!("TODO type literals in annotations");
+                Ty::Any
             }
             TsType::TsUnionOrIntersectionType(u) => {
                 println!("TODO union/intersect types in annotations");
@@ -111,6 +113,8 @@ impl Debug for Ty {
                 f.finish()
             }
             Ty::Named(name) => write!(f, "{}", name),
+            Ty::Fn(fun) => write!(f, "{:?}", fun),
+            Ty::Ctor(ctor) => write!(f, "new {:?}", ctor),
         }
     }
 }

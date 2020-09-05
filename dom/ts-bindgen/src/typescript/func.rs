@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use swc_ecma_ast::{Function, ParamOrTsParamProp};
+use swc_ecma_ast::{Function, ParamOrTsParamProp, TsConstructorType, TsFnType};
 
 use super::{Name, TsParam, Ty};
 
+#[derive(Clone)]
 pub struct Func {
     is_generator: bool,
     is_async: bool,
@@ -36,6 +37,28 @@ impl From<Function> for Func {
             is_generator: function.is_generator,
             params: function.params.into_iter().map(From::from).collect(),
             returns: function.return_type.map(From::from),
+        }
+    }
+}
+
+impl From<TsFnType> for Func {
+    fn from(function: TsFnType) -> Self {
+        Self {
+            is_generator: false,
+            is_async: false,
+            returns: Some(function.type_ann.into()),
+            params: function.params.into_iter().map(From::from).collect(),
+        }
+    }
+}
+
+impl From<TsConstructorType> for Func {
+    fn from(function: TsConstructorType) -> Self {
+        Self {
+            is_generator: false,
+            is_async: false,
+            returns: Some(function.type_ann.into()),
+            params: function.params.into_iter().map(From::from).collect(),
         }
     }
 }
