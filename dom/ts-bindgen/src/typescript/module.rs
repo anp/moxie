@@ -121,7 +121,13 @@ impl TsModule {
     }
 
     fn to_tokens_under_path(&self, name: &Name, tokens: &mut TokenStream) {
-        tokens.extend(quote! { pub mod #name { #self } })
+        tokens.extend(quote! {
+            pub mod #name {
+                use super::*;
+                use wasm_bindgen::prelude::*;
+                #self
+            }
+        })
     }
 }
 
@@ -136,29 +142,31 @@ fn module_name(id: &TsModuleName) -> Name {
 
 impl ToTokens for TsModule {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let mut inner_tokens = TokenStream::new();
+        let mut own_tokens = TokenStream::new();
 
         // TODO typescript aliases, enums, interfaces(traits)
         // TODO module variables
 
         for (name, class) in &self.classes {
-            class.to_tokens_under_name(name, &mut inner_tokens);
+            class.to_tokens_under_name(name, &mut own_tokens);
         }
 
         for (name, function) in &self.functions {
-            function.to_tokens_under_name(name, &mut inner_tokens);
+            function.to_tokens_under_name(name, &mut own_tokens);
         }
 
+        let mut child_tokens = TokenStream::new();
         for (name, module) in &self.children {
             // TODO pass the parent path through somehow
-            module.to_tokens_under_path(name, &mut inner_tokens);
+            module.to_tokens_under_path(name, &mut child_tokens);
         }
 
         tokens.extend(quote! {
             #[wasm_bindgen] // TODO module import path
             extern "C" {
-                #inner_tokens
+                #own_tokens
             }
+            #child_tokens
         });
     }
 }
