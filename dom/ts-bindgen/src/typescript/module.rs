@@ -1,4 +1,5 @@
-use crate::{error::TypescriptError, wasm::WasmBindgenImport};
+use proc_macro2::TokenStream;
+use quote::{quote, ToTokens};
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -11,12 +12,14 @@ use swc_ecma_ast::{
 use super::{class::Class, enums::Enum, func::Func, interface::Interface, name::Name, ty::Ty};
 
 pub struct TsModule {
-    variables: BTreeMap<Name, Ty>,
     aliases: BTreeMap<Name, Ty>,
     enums: BTreeMap<Name, Enum>,
-    classes: BTreeMap<Name, Class>,
     interfaces: BTreeMap<Name, Interface>,
+
+    classes: BTreeMap<Name, Class>,
+    variables: BTreeMap<Name, Ty>,
     functions: BTreeMap<Name, Func>,
+
     children: BTreeMap<Name, TsModule>,
 }
 
@@ -117,8 +120,8 @@ impl TsModule {
         }
     }
 
-    pub fn import_with_wasm_bindgen(&self) -> Result<WasmBindgenImport, TypescriptError> {
-        todo!("{:?}", self)
+    fn to_tokens_under_path(&self, name: &Name, tokens: &mut TokenStream) {
+        tokens.extend(quote! { pub mod #name { #self } })
     }
 }
 
@@ -129,4 +132,33 @@ fn module_name(id: &TsModuleName) -> Name {
     }
     .to_string()
     .into()
+}
+
+impl ToTokens for TsModule {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let mut inner_tokens = TokenStream::new();
+
+        // TODO typescript aliases, enums, interfaces(traits)
+        // TODO module variables
+
+        for (name, class) in &self.classes {
+            class.to_tokens_under_name(name, &mut inner_tokens);
+        }
+
+        for (name, function) in &self.functions {
+            function.to_tokens_under_name(name, &mut inner_tokens);
+        }
+
+        for (name, module) in &self.children {
+            // TODO pass the parent path through somehow
+            module.to_tokens_under_path(name, &mut inner_tokens);
+        }
+
+        tokens.extend(quote! {
+            #[wasm_bindgen] // TODO module import path
+            extern "C" {
+                #inner_tokens
+            }
+        });
+    }
 }

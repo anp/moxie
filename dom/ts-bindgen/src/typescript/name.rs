@@ -1,10 +1,25 @@
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, ToTokens};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use swc_ecma_ast::TsEntityName;
 
 #[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Name {
+    // TODO preserve span from TS file
     segments: Vec<String>,
     dotted: String,
+}
+
+impl Name {
+    pub fn dot(&self, rhs: &Name) -> Self {
+        let mut segments = self.segments.clone();
+        segments.extend(rhs.segments.clone());
+        Self::from(segments)
+    }
+
+    pub fn terminal(&self) -> &str {
+        self.segments.last().unwrap()
+    }
 }
 
 impl From<String> for Name {
@@ -55,5 +70,16 @@ impl Debug for Name {
 impl Display for Name {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(&self.dotted)
+    }
+}
+
+impl ToTokens for Name {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let segments: Vec<_> =
+            self.segments.iter().map(|s| Ident::new(s, Span::call_site())).collect();
+
+        tokens.extend(quote! {
+            #(#segments).*
+        })
     }
 }

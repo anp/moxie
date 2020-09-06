@@ -1,3 +1,5 @@
+use proc_macro2::TokenStream;
+use quote::ToTokens;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use swc_ecma_ast::{Param, Pat, TsFnParam};
 
@@ -53,5 +55,11 @@ impl Debug for TsParam {
         let rest = if self.rest { "..." } else { "" };
         let optional = if self.optional { "?" } else { "" };
         write!(f, "{}{}{}: {:?}", rest, &self.name, optional, &self.ty)
+    }
+}
+
+impl ToTokens for TsParam {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        // TODO
     }
 }

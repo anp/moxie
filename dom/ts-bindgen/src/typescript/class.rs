@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -72,6 +73,10 @@ impl Class {
             other => panic!("only ident exprs supported for property keys, found: {:?}", other),
         };
         self.properties.insert(name, prop.type_ann.map(Ty::from).unwrap_or(Ty::Any));
+    }
+
+    pub fn to_tokens_under_name(&self, _name: &Name, _tokens: &mut TokenStream) {
+        todo!("add class to tokens")
     }
 }
 

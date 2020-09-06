@@ -1,4 +1,4 @@
-use quote::ToTokens;
+use quote::quote;
 use std::{
     env, fs,
     io::{prelude::*, Result as IoResult},
@@ -8,7 +8,6 @@ use std::{
 
 pub mod error;
 pub mod typescript;
-pub mod wasm;
 
 use error::BindingError;
 use typescript::TsModule;
@@ -46,6 +45,7 @@ pub fn d_ts_buildscript(
     println!("cargo:rerun-if-changed={}", input_path.display());
     let input = fs::read_to_string(input_path).map_err(BindingError::ReadInputFile)?;
     let contents = make_bindings(&input)?;
+    // TODO add header explaining generated code, hash of index.d.ts
     fs::write(output_path, contents).map_err(BindingError::WriteOutFile)?;
     Ok(())
 }
@@ -54,15 +54,17 @@ pub fn d_ts_buildscript(
 /// Rust bindings to it, returning the generated Rust code as a string.
 pub fn make_bindings(input: &str) -> Result<String, BindingError> {
     let defs: TsModule = input.parse()?;
-    let imports = defs.import_with_wasm_bindgen()?;
-    let output = imports.to_token_stream().to_string();
+    let output = quote! {
+        use wasm_bindgen::prelude::*;
+        #defs
+    }
+    .to_string();
     if let Ok(formatted) = rustfmt(&output) { Ok(formatted) } else { Ok(output) }
 }
 
 fn rustfmt(code: &str) -> IoResult<String> {
     let mut cmd = Command::new("rustfmt").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
-    let mut stdin = cmd.stdin.take().unwrap();
-    stdin.write_all(code.as_bytes())?;
+    cmd.stdin.as_mut().unwrap().write_all(code.as_bytes())?;
 
     let output = cmd.wait_with_output()?;
     if !output.status.success() {
