@@ -124,14 +124,14 @@ impl From<TsTypeAnn> for Ty {
 impl Debug for Ty {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Ty::Any => write!(f, "Any"),
+            Ty::Any => write!(f, "any"),
             Ty::Unknown => write!(f, "Unknown"),
-            Ty::Number => write!(f, "Number"),
+            Ty::Number => write!(f, "number"),
             Ty::Object => write!(f, "Object"),
-            Ty::Boolean => write!(f, "Boolean"),
+            Ty::Boolean => write!(f, "boolean"),
             Ty::BigInt => write!(f, "BigInt"),
-            Ty::String => write!(f, "String"),
-            Ty::Symbol => write!(f, "Symbol"),
+            Ty::String => write!(f, "string"),
+            Ty::Symbol => write!(f, "symbol"),
             Ty::Void => write!(f, "Void"),
             Ty::Undefined => write!(f, "undefined"),
             Ty::Null => write!(f, "null"),
@@ -159,8 +159,7 @@ impl Debug for Ty {
                 }
                 Ok(())
             }
-            Ty::Fn(fun) => write!(f, "{:?}", fun),
-            Ty::Ctor(ctor) => write!(f, "new {:?}", ctor),
+            Ty::Fn(fun) | Ty::Ctor(fun) => write!(f, "{:?}", fun),
             Ty::Lit(members) => f.debug_set().entries(members).finish(),
             Ty::Union(members) => {
                 let mut tup = f.debug_tuple("∪");
