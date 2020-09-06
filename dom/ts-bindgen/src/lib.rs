@@ -1,5 +1,10 @@
 use quote::ToTokens;
-use std::{env, fs, path::Path};
+use std::{
+    env, fs,
+    io::{prelude::*, Result as IoResult},
+    path::Path,
+    process::{Command, Stdio},
+};
 
 pub mod error;
 pub mod typescript;
@@ -40,11 +45,29 @@ pub fn d_ts_buildscript(
 
     println!("cargo:rerun-if-changed={}", input_path.display());
     let input = fs::read_to_string(input_path).map_err(BindingError::ReadInputFile)?;
-
-    let defs: TsModule = input.parse()?;
-    let imports = defs.import_with_wasm_bindgen()?;
-    let contents = imports.to_token_stream().to_string();
-
+    let contents = make_bindings(&input)?;
     fs::write(output_path, contents).map_err(BindingError::WriteOutFile)?;
     Ok(())
+}
+
+/// Parses `input` as a typescript definitions module and generates a module of
+/// Rust bindings to it, returning the generated Rust code as a string.
+pub fn make_bindings(input: &str) -> Result<String, BindingError> {
+    let defs: TsModule = input.parse()?;
+    let imports = defs.import_with_wasm_bindgen()?;
+    let output = imports.to_token_stream().to_string();
+    if let Ok(formatted) = rustfmt(&output) { Ok(formatted) } else { Ok(output) }
+}
+
+fn rustfmt(code: &str) -> IoResult<String> {
+    let mut cmd = Command::new("rustfmt").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
+    let mut stdin = cmd.stdin.take().unwrap();
+    stdin.write_all(code.as_bytes())?;
+
+    let output = cmd.wait_with_output()?;
+    if !output.status.success() {
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "rustfmt command failed"))
+    } else {
+        Ok(String::from_utf8(output.stdout).expect("rustfmt always returns utf8"))
+    }
 }
