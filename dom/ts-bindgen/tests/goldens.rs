@@ -18,10 +18,17 @@ macro_rules! golden_test {
             }
 
             let input = std::fs::read_to_string(input_path).expect("reading test input");
-            let expected = std::fs::read_to_string(expect_path).expect("reading expected output");
+            let expected = std::fs::read_to_string(expect_path)
+                .expect("reading expected output")
+                .split("// @@ end-expected @@ //")
+                .next()
+                .unwrap()
+                .to_string();
 
             let actual = make_bindings(&input).expect("generating bindings");
             assert_eq!(actual, expected);
         }
     };
 }
+
+golden_test!(bare_function);
