@@ -7,9 +7,11 @@ Commands all assume the working directory is the repository root.
 Build the example and start the project's local HTTP server:
 
 ```
-$ cargo build-dom-todo
+$ cargo build-dom-todo     # for live-watching rebuilds use `cargo dom-flow`
 $ cargo ofl serve
 ```
+
+In VSCode the same can be accomplished by running the `dom crates` and `project server` tasks.
 
 ## Using
 
@@ -25,18 +27,18 @@ Unit & integration tests can be run with `cargo test-dom-todo`.
 End-to-end tests are run with [Cypress](https://cypress.io) which requires
 [Node.js](https://nodejs.org) to run.
 
+If you've already followed the [serving](#serving) instructions the e2e tests can be run from the
+Cypress UI directly. Start the test runner with the `cypress` VSCode task or run the following:
+
+```
+$ cd dom/examples/todo/e2e; npx cypress run
+```
+
+#### One-off
+
 The tests require a running HTTP server and a current build. The `test-dom-todo-e2e` cargo command
-starts an HTTP server for the test and only requires a build to have been run first:
+runs a build, and starts an HTTP server for the test before running it:
 
 ```
-$ cargo build-dom-todo
 $ cargo test-dom-todo-e2e
-```
-
-If you've already followed the [serving](#serving) instructions the e2e tests should be run
-directly:
-
-```
-$ cd dom/examples/todo/e2e
-$ npx cypress run
 ```
