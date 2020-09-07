@@ -90,13 +90,10 @@ pub fn boot(root: moxie_dom::raw::sys::Node) {
     info!("running");
 }
 
+/// Included as a module within the crate rather than a separate file because
+/// cargo is grumpy about resolving the crate-under-test.
 #[cfg(test)]
-mod tests {
-    use wasm_bindgen_test::*;
-    wasm_bindgen_test_configure!(run_in_browser);
+mod integration_tests;
 
-    #[wasm_bindgen_test]
-    pub fn hello_browser() {
-        println!("hello");
-    }
-}
+#[cfg(test)]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
