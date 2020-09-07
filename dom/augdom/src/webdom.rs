@@ -135,8 +135,8 @@ impl crate::Dom for sys::Node {
         e.map(sys::HtmlElement::inner_text).unwrap_or_default()
     }
 
-    fn dispatch<E: crate::event::Event>(&self) {
-        E::dispatch(self);
+    fn dispatch<E: crate::event::Event>(&self, event: E) {
+        event.dispatch(self);
     }
 
     fn query_selector(&self, selectors: &str) -> Option<Self> {

@@ -168,7 +168,7 @@ impl crate::Dom for Rc<VirtNode> {
         todo!("traverse the virtnode tree and accumulate text");
     }
 
-    fn dispatch<E: crate::event::Event>(&self) {
+    fn dispatch<E: crate::event::Event>(&self, event: E) {
         todo!("...need to add event handling to rsdom");
     }
 
