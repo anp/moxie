@@ -19,6 +19,8 @@ pub struct RunOpts {
     cmd: String,
     /// working directory for the command
     cwd: PathBuf,
+    /// cargo command to run before launching tests
+    cargo_before: Option<String>,
     /// args to pass the command
     #[options(free)]
     args: Vec<String>,
@@ -36,6 +38,13 @@ impl RunOpts {
                 std::process::abort();
             }
         });
+
+        if let Some(cargo_cmd) = self.cargo_before {
+            let status = Command::new("cargo").arg(&cargo_cmd).status()?;
+            if !status.success() {
+                bail!("`cargo {}` failed with status {:?}", cargo_cmd, status);
+            }
+        }
 
         info!("checking server...");
         let url = format!("http://[::1]:{}", self.port);
