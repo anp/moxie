@@ -10,16 +10,27 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:honk.boot"
+		"onView:focus"
 	],
 	"main": "./extension.js",
 	"contributes": {
-		"commands": [
-			{
-				"command": "honk.boot",
-				"title": "honk"
-			}
-		]
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "honk",
+					"title": "honk",
+					"icon": "static/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"honk": [
+				{
+					"id": "focus",
+					"name": "focused items"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"lint": "eslint .",

@@ -105,6 +105,17 @@ clippy-dom = """clippy
 """
 
 ####################################################################################################
+# honk, the awful replacement for ofl
+
+honk-flow = """
+watch --clear
+    -x test-ts-bindgen
+    -x build-honk-vscode
+"""
+
+build-honk-vscode = "wa-pack-build honk/editors/vscode"
+
+####################################################################################################
 # ofl
 
 ofl = "run --manifest-path ofl/Cargo.toml --release --"

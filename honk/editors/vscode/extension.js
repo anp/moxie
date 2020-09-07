@@ -3,14 +3,13 @@ const vscode = require('vscode');
 function activate(context) {
 	// only executed once when extension is activated
 	console.log('honkity honk');
+	vscode.window.showInformationMessage('honk starting...');
 
+	// const focusProvider = new FocusProvider(vscode.workspace.rootPath);
+	// vscode.window.registerTreeDataProvider('focus', focusProvider);
 	// TODO make this a panel thingy
-	let disposable = vscode.commands.registerCommand('honk.boot', function () {
-		// executed every time command is executed
-		vscode.window.showInformationMessage('honk');
-	});
 
-	context.subscriptions.push(disposable);
+	vscode.window.showInformationMessage('honk started');
 }
 exports.activate = activate;
 

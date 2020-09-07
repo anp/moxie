@@ -41,6 +41,8 @@ members = [
     "dom/ts-bindgen",
     "dyn-cache",
     "honk",
+    "honk/editors/vscode",
+    "honk/editors/vscode/sys",
     "illicit",
     "illicit/macro",
     "mox",
