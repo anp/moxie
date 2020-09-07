@@ -6,7 +6,11 @@ use crate::Node;
 use {
     crate::webdom,
     prettiest::Pretty,
-    std::fmt::{Debug, Formatter, Result as FmtResult},
+    std::{
+        default::Default,
+        fmt::{Debug, Formatter, Result as FmtResult},
+        ops::{Deref, DerefMut},
+    },
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
@@ -17,8 +21,18 @@ pub trait Event: AsRef<web_sys::Event> + JsCast {
     /// The name used to register for this event in `addEventListener`.
     const NAME: &'static str;
 
-    /// Dispatch a new event of this type to the provided target.
-    fn dispatch(target: &sys::EventTarget);
+    /// The builder type returned by `new()`.
+    type Builder: Default + EventBuilder<Output = Self>;
+
+    /// Make a new event, returning a builder.
+    fn new() -> Self::Builder {
+        Self::Builder::default()
+    }
+
+    /// Dispatch this event to the provided target.
+    fn dispatch(self, target: &sys::EventTarget) {
+        sys::EventTarget::dispatch_event(target, self.as_ref()).unwrap();
+    }
 }
 
 /// An event that can be received as the first argument to a handler callback.
@@ -96,10 +110,17 @@ macro_rules! event_ty {
 
 #[cfg(feature = "webdom")]
 macro_rules! event_ty {
-    ($(#[$attr:meta])* $name:ident, $ty_str:expr, $parent_ty:ty) => {
+    (
+        $(#[$attr:meta])* $name:ident,
+        $ty_str:expr, $parent_ty:ty,
+        $builder:ident, $init_ty:ty
+    ) => {
         $(#[$attr])*
         #[wasm_bindgen]
         pub struct $name($parent_ty);
+
+        /// A builder for events.
+        pub struct $builder($init_ty);
 
         impl AsRef<web_sys::Event> for $name {
             fn as_ref(&self) -> &web_sys::Event {
@@ -136,11 +157,7 @@ macro_rules! event_ty {
 
         impl Event for $name {
             const NAME: &'static str = $ty_str;
-
-            fn dispatch(target: &sys::EventTarget) {
-                let event = <$parent_ty>::new($ty_str).unwrap();
-                sys::EventTarget::dispatch_event(target, event.as_ref()).unwrap();
-            }
+            type Builder = $builder;
         }
 
         impl Debug for $name {
@@ -148,8 +165,105 @@ macro_rules! event_ty {
                 self.0.pretty().fmt(f)
             }
         }
+
+        impl Default for $builder {
+            fn default() -> Self {
+                Self(<$init_ty>::new())
+            }
+        }
+
+        impl EventBuilder for $builder {
+            type Output = $name;
+            fn build(&mut self) -> $name {
+                $name(($name::NAME, &mut self.0).build())
+            }
+        }
+
+        impl Deref for $builder {
+            type Target = $init_ty;
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        // TODO delete this impl and make typed event builders of our own so calls can be chained
+        impl DerefMut for $builder {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.0
+            }
+        }
     };
+    ($(#[$attr:meta])* $name:ident, $ty_str:expr, sys::$parent_ty:ty) => {paste::paste! {
+        event_ty! {
+            $(#[$attr])* $name, $ty_str,
+            sys::$parent_ty,
+            [<$name Builder>],
+            sys::[<$parent_ty Init>]
+        }
+    }};
 }
+
+/// A builder for an event.
+pub trait EventBuilder {
+    /// The event produced by the builder.
+    type Output;
+
+    /// Build, returning the output.
+    fn build(&mut self) -> Self::Output;
+}
+
+macro_rules! impl_event_builder_for_dict {
+    (@$raw:ident::$new:ident, $init:ty) => {
+        impl EventBuilder for (&'static str, &mut $init) {
+            type Output = sys::$raw;
+            fn build(&mut self) -> Self::Output {
+                <sys::$raw>::$new(self.0, &self.1).unwrap()
+            }
+        }
+    };
+    (@$raw:ident, $init:ty) => {
+        impl_event_builder_for_dict!(@$raw::new_with_event_init_dict, $init);
+    };
+    [$($raw:ident $(::$new:ident)?,)+] => {paste::paste! {
+        $( impl_event_builder_for_dict!(@$raw $(::$new)?, sys::[<$raw Init>]); )+
+    }};
+}
+
+impl_event_builder_for_dict![
+    AnimationEvent,
+    BlobEvent,
+    CloseEvent,
+    CompositionEvent,
+    DeviceMotionEvent,
+    DeviceOrientationEvent,
+    DragEvent,
+    ErrorEvent,
+    Event,
+    FetchEvent::new,
+    FocusEvent::new_with_focus_event_init_dict,
+    GamepadEvent,
+    HashChangeEvent,
+    IdbVersionChangeEvent,
+    KeyboardEvent::new_with_keyboard_event_init_dict,
+    MessageEvent,
+    MouseEvent::new_with_mouse_event_init_dict,
+    NotificationEvent::new,
+    OfflineAudioCompletionEvent::new,
+    PageTransitionEvent,
+    PointerEvent,
+    PopStateEvent,
+    ProgressEvent,
+    PushEvent,
+    SpeechRecognitionEvent,
+    SpeechSynthesisErrorEvent::new,
+    SpeechSynthesisEvent::new,
+    StorageEvent,
+    TouchEvent,
+    TransitionEvent,
+    UiEvent,
+    UserProximityEvent,
+    WheelEvent,
+];
 
 event_ty! {
     /// The loading of a resource has been aborted. [MDN documentation][mdn]

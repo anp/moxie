@@ -133,7 +133,7 @@ pub trait Dom: Sized {
     /// order. The normal event processing rules (including the capturing
     /// and optional bubbling phase) also apply to events dispatched
     /// manually with `dispatchEvent()`.
-    fn dispatch<E: event::Event>(&self);
+    fn dispatch<E: event::Event>(&self, event: E);
 
     /// Returns the first descendant of `self` which matches the specified
     /// [selectors].
@@ -360,12 +360,12 @@ impl Dom for Node {
         }
     }
 
-    fn dispatch<E: event::Event>(&self) {
+    fn dispatch<E: event::Event>(&self, event: E) {
         match self {
             #[cfg(feature = "webdom")]
-            Node::Concrete(n) => <sys::Node as Dom>::dispatch::<E>(n),
+            Node::Concrete(n) => <sys::Node as Dom>::dispatch(n, event),
             #[cfg(feature = "rsdom")]
-            Node::Virtual(n) => <Rc<VirtNode> as Dom>::dispatch::<E>(n),
+            Node::Virtual(n) => <Rc<VirtNode> as Dom>::dispatch(n, event),
         }
     }
 
