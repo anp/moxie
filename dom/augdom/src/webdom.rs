@@ -6,6 +6,7 @@ use crate::document;
 use futures::{channel::mpsc::UnboundedReceiver, Stream};
 use prettiest::Pretty;
 use std::{
+    any::type_name,
     io::Write,
     pin::Pin,
     task::{Context, Poll},
@@ -27,7 +28,13 @@ impl Callback {
     {
         let cb = Closure::wrap(Box::new(move |raw: JsValue| match raw.dyn_into() {
             Ok(value) => cb(value),
-            Err(v) => error!(value = %v.pretty(), "received unexpected value in callback"),
+            Err(v) => {
+                error!(
+                    failed_cast_to = %type_name::<T>(),
+                    value = %v.pretty(),
+                    "received unexpected value in callback",
+                );
+            }
         }) as Box<dyn FnMut(JsValue)>);
         Self { cb }
     }
