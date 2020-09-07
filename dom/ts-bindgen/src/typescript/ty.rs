@@ -1,7 +1,5 @@
 #![allow(unused)]
 
-use proc_macro2::TokenStream;
-use quote::ToTokens;
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -178,12 +176,6 @@ impl Debug for Ty {
                 tup.finish()
             }
         }
-    }
-}
-
-impl ToTokens for Ty {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        // TODO
     }
 }
 

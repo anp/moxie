@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-proc-macro2 = "1"
-quote = "1"
+anyhow = "1"
 swc_common = { version = "0.10.1", features = [ "tty-emitter" ] }
 swc_ecma_ast = "0.30.0"
 swc_ecma_parser = "0.36.2"
 thiserror = "1.0.20"
+wasm-bindgen-webidl = "0.2.67"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

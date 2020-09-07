@@ -18,6 +18,9 @@ pub enum BindingError {
         #[from]
         source: TypescriptError,
     },
+
+    #[error("generating wasm bindgen from webidl failed")]
+    WasmBindgen(#[source] anyhow::Error),
 }
 
 #[derive(Debug, Error)]

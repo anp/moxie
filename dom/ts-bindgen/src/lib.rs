@@ -1,4 +1,3 @@
-use quote::quote;
 use std::{
     env, fs,
     io::{prelude::*, Result as IoResult},
@@ -54,11 +53,11 @@ pub fn d_ts_buildscript(
 /// Rust bindings to it, returning the generated Rust code as a string.
 pub fn make_bindings(input: &str) -> Result<String, BindingError> {
     let defs: TsModule = input.parse()?;
-    let output = quote! {
-        use wasm_bindgen::prelude::*;
-        #defs
-    }
-    .to_string();
+    let defs = defs.as_webidl();
+    let features =
+        wasm_bindgen_webidl::compile(&defs, "", wasm_bindgen_webidl::Options { features: false })
+            .map_err(BindingError::WasmBindgen)?;
+    let output = features.into_iter().map(|(_, f)| f.code).collect::<Vec<_>>().join("\n");
     if let Ok(formatted) = rustfmt(&output) { Ok(formatted) } else { Ok(output) }
 }
 

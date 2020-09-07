@@ -1,5 +1,3 @@
-use proc_macro2::TokenStream;
-use quote::quote;
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -36,24 +34,6 @@ impl Func {
                 .collect(),
             returns: Some(Ty::named(name)),
         }
-    }
-
-    fn bindgen_attrs(&self) -> TokenStream {
-        quote! {
-            // TODO function import attributes
-        }
-    }
-
-    pub fn to_tokens_under_name(&self, name: &Name, tokens: &mut TokenStream) {
-        let ret = if let Some(ret) = &self.returns { Some(quote!(-> #ret)) } else { None };
-        let params = &self.params;
-
-        let attrs = self.bindgen_attrs();
-
-        tokens.extend(quote! {
-            #[wasm_bindgen #attrs]
-            pub fn #name(#(#params),*) #ret;
-        })
     }
 }
 

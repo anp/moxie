@@ -26,6 +26,9 @@ macro_rules! golden_test {
                 .to_string();
 
             let actual = make_bindings(&input).expect("generating bindings");
+
+            // TODO use an env var to decide whether to assert or bless the generated
+            // binding
             assert_eq!(actual, expected);
         }
     };
