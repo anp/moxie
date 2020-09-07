@@ -1,0 +1,53 @@
+{
+  "_from": "@types/vscode@^1.48.0",
+  "_id": "@types/vscode@1.48.0",
+  "_inBundle": false,
+  "_integrity": "sha512-sZJKzsJz1gSoFXcOJWw3fnKl2sseUgZmvB4AJZS+Fea+bC/jfGPVhmFL/FfQHld/TKtukVONsmoD3Pkyx9iadg==",
+  "_location": "/@types/vscode",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "@types/vscode@^1.48.0",
+    "name": "@types/vscode",
+    "escapedName": "@types%2fvscode",
+    "scope": "@types",
+    "rawSpec": "^1.48.0",
+    "saveSpec": null,
+    "fetchSpec": "^1.48.0"
+  },
+  "_requiredBy": [
+    "#DEV:/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@types/vscode/-/vscode-1.48.0.tgz",
+  "_shasum": "c1841ccf80086d53b35a9d7f2eb3b4d949bd2d2f",
+  "_spec": "@types/vscode@^1.48.0",
+  "_where": "D:\\code\\moxie\\honk\\editors\\vscode\\honk",
+  "bugs": {
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/issues"
+  },
+  "bundleDependencies": false,
+  "contributors": [
+    {
+      "name": "Visual Studio Code Team, Microsoft",
+      "url": "https://github.com/Microsoft"
+    }
+  ],
+  "dependencies": {},
+  "deprecated": false,
+  "description": "TypeScript definitions for Visual Studio Code",
+  "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped#readme",
+  "license": "MIT",
+  "main": "",
+  "name": "@types/vscode",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+    "directory": "types/vscode"
+  },
+  "scripts": {},
+  "typeScriptVersion": "3.0",
+  "types": "index.d.ts",
+  "typesPublisherContentHash": "9ec5712e8a8f2248ce0b94cb917bf09a78e28301913f399a71c003c5612d4b6d",
+  "version": "1.48.0"
+}
