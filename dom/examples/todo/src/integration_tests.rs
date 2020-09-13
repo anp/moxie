@@ -31,16 +31,7 @@ impl Deref for Test {
 
 impl Test {
     fn new() -> Self {
-        tracing_wasm::set_as_global_default_with_config(tracing_wasm::WASMLayerConfig {
-            report_logs_in_console: true,
-            report_logs_in_timings: false,
-            use_console_color: false,
-        });
-        std::panic::set_hook(Box::new(|info| {
-            error!(?info, "crashed");
-        }));
-        info!("tracing initialized");
-
+        super::setup_tracing();
         let root = document().create_element("div");
         document().body().append_child(&root);
         super::boot(root.expect_concrete().clone());
