@@ -11,6 +11,7 @@ repository = "https://github.com/anp/moxie.git"
 crate-type = [ "cdylib" ]
 
 [dependencies]
+console_error_panic_hook = "0.1.6"
 illicit = { path = "../../../illicit" }
 mox = { path = "../../../mox" }
 moxie-dom = { path = "../../" }
