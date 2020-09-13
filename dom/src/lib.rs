@@ -17,7 +17,7 @@ pub mod text;
 pub mod prelude {
     #[cfg(feature = "webdom")]
     pub use crate::raw::sys;
-    pub use crate::raw::{document, event, event::TargetExt as _, Dom as _};
+    pub use crate::raw::{document, event, Dom as _};
     pub use moxie::{cache, cache_state, cache_with, once, once_with, state, Key};
 
     pub use crate::{
