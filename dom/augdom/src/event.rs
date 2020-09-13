@@ -1,6 +1,6 @@
 //! Event types.
 
-use crate::{Dom, Node};
+use crate::Node;
 
 #[cfg(feature = "webdom")]
 use {
@@ -14,21 +14,6 @@ use {
     wasm_bindgen::{prelude::*, JsCast},
     web_sys as sys,
 };
-
-/// Convenience methods for dispatching events to targets.
-pub trait TargetExt {
-    /// Dispatch a click event to the target.
-    fn click(&self);
-}
-
-impl<N> TargetExt for N
-where
-    N: Dom,
-{
-    fn click(&self) {
-        self.dispatch(Click::new().build());
-    }
-}
 
 /// An event that can be received as the first argument to a handler callback.
 #[cfg(feature = "webdom")]

@@ -24,9 +24,102 @@
 //! [DOM]: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction
 //! [DOM Testing Library]: https://testing-library.com/docs/dom-testing-library/intro
 
-use super::Dom;
+use crate::{
+    event::{Blur, Click, Event, EventBuilder, KeyDown, KeyUp},
+    Dom, Node,
+};
 use futures::prelude::*;
 use std::fmt::Debug;
+
+/// Convenience methods for dispatching events to targets, primarily useful for
+/// testing.
+pub trait TargetExt {
+    /// Dispatch a click event to the target.
+    fn click(&self) {
+        self.event(Click::new().build());
+    }
+
+    /// "Type" the provided text followed by the `<Enter>` key.
+    fn keyboardln(&self, contents: &str) {
+        self.keyboard(contents);
+        self.enter();
+        self.blur();
+    }
+
+    /// "Type" the provided text.
+    fn keyboard(&self, contents: &str) {
+        let mut prev = 0;
+        // skip the first index because it's always 0
+        for (next, _) in contents.char_indices().skip(1) {
+            self.key(Key::Text(&contents[prev..next]));
+            prev = next;
+        }
+        // the loop always leaves a key left at the end to clean up
+        self.key(Key::Text(&contents[prev..]));
+    }
+
+    /// "Press" the `<Enter>` key.
+    fn enter(&self) {
+        self.key(Key::Enter);
+    }
+
+    /// Dismiss the target, causing it to lose focus.
+    fn blur(&self) {
+        self.event(Blur::new().build());
+    }
+
+    /// Emit a pair of keydown/keyup events with `key`.
+    fn key(&self, key: Key<'_>);
+
+    /// Dispatch the given event to this target.
+    fn event<E>(&self, event: E)
+    where
+        E: Event;
+}
+
+/// A keyboard "key" which can be entered.
+pub enum Key<'a> {
+    /// The enter key.
+    Enter,
+    /// A non-modifier key.
+    Text(&'a str),
+}
+
+impl TargetExt for Node {
+    fn key(&self, key: Key<'_>) {
+        let key_str = match key {
+            Key::Enter => "Enter",
+            Key::Text(key) => {
+                match self {
+                    #[cfg(feature = "webdom")]
+                    Node::Concrete(n) => {
+                        use wasm_bindgen::JsCast;
+                        // TODO append the key to our value if we're a textarea
+                        if let Some(input) = n.dyn_ref::<web_sys::HtmlInputElement>() {
+                            let new_input = input.value() + key;
+                            input.set_value(&new_input);
+                        }
+                    }
+                    #[cfg(feature = "rsdom")]
+                    Node::Virtual(_) => (), // TODO support events for virtual nodes
+                }
+                key
+            }
+        };
+
+        let mut down = KeyDown::new();
+        down.key(key_str);
+        self.event(down.build());
+
+        let mut up = KeyUp::new();
+        up.key(key_str);
+        self.event(up.build());
+    }
+
+    fn event<E: Event>(&self, event: E) {
+        Dom::dispatch(self, event);
+    }
+}
 
 /// A type which can be queried as a DOM container, returning results from its
 /// subtree.
