@@ -1,21 +1,40 @@
-use moxie_dom::prelude::*;
+use moxie_dom::{prelude::*, raw::Node};
+use tracing::*;
 use wasm_bindgen_test::wasm_bindgen_test;
 
-#[must_use = "needs to live as long as the test"]
-fn boot_test() -> impl Drop {
-    let document = document();
-    let body = document.body();
-
-    let root = document.create_element("div");
-    body.append_child(&root);
-    let ret = scopeguard::guard(root.clone(), move |root| {
-        body.remove_child(&root).unwrap();
-    });
-    super::boot(root.expect_concrete().clone());
-    ret
+#[wasm_bindgen_test]
+pub async fn add_2_todos() {
+    let test = Test::new();
 }
 
-#[wasm_bindgen_test]
-pub async fn hello_browser() {
-    let _booted = boot_test();
+struct Test {
+    root: Node,
+}
+
+impl Test {
+    fn new() -> Self {
+        tracing_wasm::set_as_global_default_with_config(tracing_wasm::WASMLayerConfig {
+            report_logs_in_console: true,
+            report_logs_in_timings: false,
+            use_console_color: false,
+        });
+        std::panic::set_hook(Box::new(|info| {
+            error!(?info, "crashed");
+        }));
+        info!("tracing initialized");
+
+        let root = document().create_element("div");
+        document().body().append_child(&root);
+        super::boot(root.expect_concrete().clone());
+        Test { root }
+    }
+}
+
+impl Drop for Test {
+    fn drop(&mut self) {
+        document().body().remove_child(&self.root);
+        // TODO blur active element just to be safe
+        // TODO stop app and block until cleaned up
+        // TODO clear local storage
+    }
 }
