@@ -43,17 +43,35 @@ pub mod webdom;
 pub mod event;
 pub mod testing;
 
-/// Returns the current window. Panics if no window is available.
-#[cfg(feature = "webdom")]
-pub fn window() -> sys::Window {
-    sys::window().expect("must run from within a `window`")
+/// Returns the current document. Panics if called outside a valid context.
+pub fn document() -> Document {
+    #[cfg(feature = "rsdom")]
+    match illicit::get::<Document>() {
+        Ok(d) => return d.clone(),
+        _e => {
+            #[cfg(not(feature = "webdom"))]
+            {
+                _e.unwrap()
+            }
+            #[cfg(feature = "webdom")]
+            {
+                concrete_document()
+            }
+        }
+    }
+
+    #[cfg(all(feature = "webdom", not(feature = "rsdom")))]
+    concrete_document()
 }
 
-/// Returns the current document. Panics if called outside a web document
-/// context.
 #[cfg(feature = "webdom")]
-pub fn document() -> sys::Document {
-    window().document().expect("must run from within a `window` with a valid `document`")
+fn concrete_document() -> Document {
+    Document::Concrete(
+        sys::window()
+            .expect("must run from within a `window`")
+            .document()
+            .expect("must run from within a `window` with a valid `document`"),
+    )
 }
 
 /// A value which implements a subset of the web's document object model.
@@ -92,12 +110,6 @@ pub trait Dom: Sized {
         }
         String::from_utf8(buf.into_inner()).unwrap()
     }
-
-    /// Create a new element within the same tree as the method receiver.
-    fn create_element(&self, ty: &str) -> Self;
-
-    /// Create a new text node within the same tree as the method receiver.
-    fn create_text_node(&self, contents: &str) -> Self;
 
     /// Get an attribute from this DOM node.
     fn get_attribute(&self, name: &str) -> Option<String>;
@@ -151,6 +163,98 @@ pub trait Dom: Sized {
     fn observe_mutations(&self) -> Self::Observer;
 }
 
+/// The current document.
+#[derive(Clone)]
+pub enum Document {
+    /// A handle to a concrete document.
+    #[cfg(feature = "webdom")]
+    Concrete(sys::Document),
+
+    /// A virtual environment's document.
+    #[cfg(feature = "rsdom")]
+    Virtual {
+        /// The virtual document's head.
+        head: Rc<VirtNode>,
+        /// The virtual document's body.
+        body: Rc<VirtNode>,
+    },
+}
+
+impl Document {
+    /// Create a new document for virtual rendering, inside or outside of the
+    /// browser.
+    #[cfg(feature = "rsdom")]
+    pub fn new_virtual() -> Self {
+        Document::Virtual {
+            head: VirtNode::create_element("head"),
+            body: VirtNode::create_element("body"),
+        }
+    }
+
+    /// Return this document's head.
+    pub fn head(&self) -> Node {
+        match self {
+            #[cfg(feature = "webdom")]
+            Document::Concrete(d) => {
+                let head = d.head().unwrap();
+                let node: &sys::Node = head.as_ref();
+                Node::Concrete(node.clone())
+            }
+            #[cfg(feature = "rsdom")]
+            Document::Virtual { head, .. } => Node::Virtual(head.clone()),
+        }
+    }
+
+    /// Return this document's body.
+    pub fn body(&self) -> Node {
+        match self {
+            #[cfg(feature = "webdom")]
+            Document::Concrete(d) => {
+                let body = d.body().unwrap();
+                let node: &sys::Node = body.as_ref();
+                Node::Concrete(node.clone())
+            }
+            #[cfg(feature = "rsdom")]
+            Document::Virtual { body, .. } => Node::Virtual(body.clone()),
+        }
+    }
+
+    /// Create a new element in this document.
+    pub fn create_element(&self, ty: &str) -> Node {
+        match self {
+            #[cfg(feature = "webdom")]
+            Document::Concrete(d) => {
+                let elem = d.create_element(ty).unwrap();
+                let node: &sys::Node = elem.as_ref();
+                Node::Concrete(node.clone())
+            }
+            #[cfg(feature = "rsdom")]
+            Document::Virtual { .. } => Node::Virtual(VirtNode::create_element(ty)),
+        }
+    }
+
+    /// Create a new text node in this document.
+    pub fn create_text_node(&self, contents: &str) -> Node {
+        match self {
+            #[cfg(feature = "webdom")]
+            Document::Concrete(d) => {
+                let text = d.create_text_node(contents);
+                let node: &sys::Node = text.as_ref();
+                Node::Concrete(node.clone())
+            }
+            #[cfg(feature = "rsdom")]
+            Document::Virtual { .. } => Node::Virtual(VirtNode::create_text_node(contents)),
+        }
+    }
+}
+
+impl Debug for Document {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        <Node as Debug>::fmt(&self.head(), f)?;
+        <Node as Debug>::fmt(&self.body(), f)
+    }
+}
+
 /// A `Node` in the augmented DOM.
 #[derive(Clone)]
 pub enum Node {
@@ -163,34 +267,6 @@ pub enum Node {
     /// that Rust supports.
     #[cfg(feature = "rsdom")]
     Virtual(Rc<VirtNode>),
-}
-
-impl Node {
-    /// By default, make a new `Node` from web-sys' DOM APIs. Returns a new
-    /// virtual node if compiled without web-sys support.
-    #[cfg(feature = "webdom")]
-    pub fn new(ty: &str) -> Self {
-        Self::new_concrete(ty)
-    }
-
-    /// By default, make a new `Node` from web-sys' DOM APIs. Returns a new
-    /// virtual node if compiled without web-sys support.
-    #[cfg(not(feature = "webdom"))]
-    pub fn new(ty: &str) -> Self {
-        Self::new_virtual(ty)
-    }
-
-    /// Make a new `Node` from web-sys' DOM API.
-    #[cfg(feature = "webdom")]
-    pub fn new_concrete(ty: &str) -> Self {
-        Node::Concrete(document().create_element(ty).unwrap().into())
-    }
-
-    /// Make a new `Node` from augdom's DOM emulation API.
-    #[cfg(feature = "rsdom")]
-    pub fn new_virtual(ty: &str) -> Self {
-        Node::Virtual(rsdom::create_element(ty))
-    }
 }
 
 impl Debug for Node {
@@ -240,26 +316,6 @@ impl Dom for Node {
         }
     }
 
-    fn create_element(&self, ty: &str) -> Self {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(n) => Node::Concrete(n.create_element(ty)),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(n) => Node::Virtual(n.create_element(ty)),
-        }
-    }
-
-    fn create_text_node(&self, contents: &str) -> Self {
-        match self {
-            #[cfg(feature = "webdom")]
-            Node::Concrete(n) => Node::Concrete(n.create_text_node(contents)),
-
-            #[cfg(feature = "rsdom")]
-            Node::Virtual(n) => Node::Virtual(n.create_text_node(contents)),
-        }
-    }
-
     fn first_child(&self) -> Option<Self> {
         match self {
             #[cfg(feature = "webdom")]
@@ -306,7 +362,7 @@ impl Dom for Node {
         }
     }
 
-    fn replace_child(&self, new_child: &Node, existing: &Node) {
+    fn replace_child(&self, new_child: &Self, existing: &Self) {
         match self {
             #[cfg(feature = "webdom")]
             Node::Concrete(n) => {
@@ -448,37 +504,41 @@ pub enum MutationRecord {
 
 #[cfg(test)]
 mod tests {
-    use super::{event::*, testing::Query, *};
+    use super::{
+        testing::{Query, TargetExt},
+        *,
+    };
     use std::mem::forget as cleanup_with_test;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
     fn example_dom() -> Node {
-        let div = Node::new("div");
+        let document = document();
+        let div = document.create_element("div");
 
-        let label = Node::new("label");
+        let label = document.create_element("label");
         label.set_attribute("for", "username");
-        label.append_child(&label.create_text_node("Username"));
+        label.append_child(&document.create_text_node("Username"));
         div.append_child(&label);
 
-        let input = Node::new("input");
+        let input = document.create_element("input");
         input.set_attribute("id", "username");
         div.append_child(&input);
 
-        let button = Node::new("button");
-        button.append_child(&button.create_text_node("Print Username"));
+        let button = document.create_element("button");
+        button.append_child(&document.create_text_node("Print Username"));
         div.append_child(&button);
 
         let container_for_callback = div.clone();
         let onclick = event::EventHandle::new(&button, move |_: event::Click| {
             // on a click, add this dom node to the parent in a callback
+            let (input, document) = (input.clone(), document.clone());
             let div = container_for_callback.clone();
-            let input = input.clone();
             let cb = move || {
-                let printed_name_container = Node::new("div");
+                let printed_name_container = document.create_element("div");
                 printed_name_container.set_attribute("data-testid", "printed-username");
-                let input_text = div.create_text_node(&input.get_attribute("value").unwrap());
+                let input_text = document.create_text_node(&input.get_attribute("value").unwrap());
                 printed_name_container.append_child(&input_text);
                 div.append_child(&printed_name_container);
             };
@@ -486,7 +546,8 @@ mod tests {
             // fire the callback on a timer
             let cb = Closure::wrap(Box::new(cb) as Box<dyn FnMut()>);
             let empty_args = js_sys::Array::new();
-            window()
+            sys::window()
+                .expect("must be able to retrieve window")
                 .set_timeout_with_callback_and_timeout_and_arguments(
                     cb.as_ref().unchecked_ref(),
                     500,
@@ -508,7 +569,7 @@ mod tests {
         let input = container.find().by_label_text("Username").one().unwrap();
         input.set_attribute("value", ada);
 
-        container.find().by_text("Print Username").one().unwrap().dispatch::<Click>();
+        container.find().by_text("Print Username").one().unwrap().click();
         let printed = container.find().by_test_id("printed-username").until().one().await.unwrap();
 
         assert_eq!(printed.get_inner_text(), ada);

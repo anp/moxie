@@ -108,7 +108,6 @@ mod tests {
         });
 
         tester.run_once();
-        let root = augdom::Node::Virtual(root);
 
         assert_eq!(
             &root.outer_html(),

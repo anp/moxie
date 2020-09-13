@@ -69,8 +69,8 @@ mod tests {
 
     #[wasm_bindgen_test::wasm_bindgen_test]
     pub async fn list_filtering() {
-        let root = document().create_element("div").unwrap();
-        crate::App::boot(
+        let root = document().create_element("div");
+        crate::App::boot_fn(
             &[Todo::new("first"), Todo::new("second"), Todo::new("third")],
             root.clone(),
             main_section,

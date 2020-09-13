@@ -20,13 +20,22 @@ pub struct VirtNode {
     data: VirtData,
 }
 
-/// Create a new virtual element of the provided type.
-pub fn create_element(ty: &str) -> Rc<VirtNode> {
-    Rc::new(VirtNode {
-        parent: Cell::new(None),
-        children: RefCell::new(vec![]),
-        data: VirtData::Elem { tag: ty.to_string(), attrs: RefCell::new(vec![]) },
-    })
+impl VirtNode {
+    pub(crate) fn create_element(ty: &str) -> Rc<VirtNode> {
+        Rc::new(VirtNode {
+            parent: Cell::new(None),
+            children: RefCell::new(vec![]),
+            data: VirtData::Elem { tag: ty.to_string(), attrs: RefCell::new(vec![]) },
+        })
+    }
+
+    pub(crate) fn create_text_node(contents: &str) -> Rc<VirtNode> {
+        Rc::new(VirtNode {
+            parent: Cell::new(None),
+            children: RefCell::new(vec![]),
+            data: VirtData::Text(contents.to_string()),
+        })
+    }
 }
 
 impl crate::Dom for Rc<VirtNode> {
@@ -61,23 +70,11 @@ impl crate::Dom for Rc<VirtNode> {
         }
     }
 
-    fn create_element(&self, ty: &str) -> Rc<VirtNode> {
-        create_element(ty)
-    }
-
-    fn create_text_node(&self, contents: &str) -> Rc<VirtNode> {
-        Rc::new(VirtNode {
-            parent: Cell::new(None),
-            children: RefCell::new(vec![]),
-            data: VirtData::Text(contents.to_string()),
-        })
-    }
-
-    fn first_child(&self) -> Option<Rc<VirtNode>> {
+    fn first_child(&self) -> Option<Self> {
         self.children.borrow().get(0).cloned()
     }
 
-    fn next_sibling(&self) -> Option<Rc<VirtNode>> {
+    fn next_sibling(&self) -> Option<Self> {
         let parent = self.parent.replace(None);
         parent.and_then(|w| w.upgrade()).and_then(|parent| {
             self.parent.replace(Some(Rc::downgrade(&parent)));
@@ -168,7 +165,7 @@ impl crate::Dom for Rc<VirtNode> {
         todo!("traverse the virtnode tree and accumulate text");
     }
 
-    fn dispatch<E: crate::event::Event>(&self, event: E) {
+    fn dispatch<E: crate::event::Event>(&self, _event: E) {
         todo!("...need to add event handling to rsdom");
     }
 

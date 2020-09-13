@@ -95,8 +95,8 @@ mod tests {
 
     #[wasm_bindgen_test::wasm_bindgen_test]
     pub async fn single_item() {
-        let root = document().create_element("div").unwrap();
-        crate::App::boot(&[Todo::new("weeeee")], root.clone(), || {
+        let root = document().create_element("div");
+        crate::App::boot_fn(&[Todo::new("weeeee")], root.clone(), || {
             let todo = &illicit::expect::<Key<Vec<Todo>>>()[0];
             todo_item(todo)
         });

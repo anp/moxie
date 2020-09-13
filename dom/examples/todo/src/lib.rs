@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 use filter::Visibility;
 use header::input_header;
 use main_section::main_section;
@@ -51,13 +53,18 @@ impl App {
         illicit::Layer::new().offer(self.todos).offer(self.visibility).enter(f)
     }
 
-    pub fn boot<Root: Node + 'static>(
+    pub fn boot(node: impl Into<moxie_dom::raw::Node>) {
+        Self::boot_fn(&[], node, todo_app)
+    }
+
+    fn boot_fn<Root: Node + 'static>(
         default_todos: &[Todo],
         node: impl Into<moxie_dom::raw::Node>,
         mut root: impl FnMut() -> Root + 'static,
     ) {
         let defaults = default_todos.to_vec();
         moxie_dom::boot(node, move || defaults.clone().offer(|| App::current().enter(&mut root)));
+        info!("running");
     }
 }
 
@@ -86,8 +93,7 @@ pub fn setup_tracing() {
 
 #[wasm_bindgen]
 pub fn boot(root: moxie_dom::raw::sys::Node) {
-    App::boot(&[], root, todo_app);
-    info!("running");
+    App::boot(root);
 }
 
 /// Included as a module within the crate rather than a separate file because

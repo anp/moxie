@@ -1,4 +1,4 @@
-use augdom::{event::Click, testing::Query};
+use augdom::testing::{Query, TargetExt};
 use mox::mox;
 use moxie_dom::{
     elements::html::{button, div},
@@ -60,7 +60,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[wasm_bindgen_test]
 pub async fn binds_to_div() {
     let render_counter_as_child = || mox!(<div><counter button_text="child" value=9/></div>);
-    let test_root = augdom::Node::new("div");
+    let test_root = document().create_element("div");
     moxie_dom::boot(test_root.clone(), render_counter_as_child);
 
     assert_eq!(
@@ -74,17 +74,17 @@ pub async fn binds_to_div() {
 #[wasm_bindgen_test]
 pub async fn renders_and_interacts() {
     let render_counter = || mox!(<counter button_text="foo" value=0/>);
-    let test_root = augdom::Node::new("div");
+    let test_root = document().create_element("div");
     moxie_dom::boot(test_root.clone(), render_counter);
 
     assert_eq!(test_root.first_child().unwrap().to_string(), "<button>foo (0)</button>",);
     let button = test_root.find().by_text("foo (0)").until().one().await.unwrap();
 
-    button.dispatch::<Click>();
+    button.click();
     test_root.find().by_text("foo (1)").until().one().await.unwrap();
     assert_eq!(test_root.first_child().unwrap().to_string(), "<button>foo (1)</button>",);
 
-    button.dispatch::<Click>();
+    button.click();
     test_root.find().by_text("foo (2)").until().one().await.unwrap();
     assert_eq!(test_root.first_child().unwrap().to_string(), "<button>foo (2)</button>",);
 }

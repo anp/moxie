@@ -23,7 +23,6 @@ fn mini_list() {
 
     let (mut web_tester, web_div) = WebRuntime::in_web_div(list);
     let (mut virtual_tester, rsdom_root) = WebRuntime::in_rsdom_div(list);
-    let web_root_node: &sys::Node = web_div.as_ref();
 
     web_tester.run_once();
     virtual_tester.run_once();
@@ -31,14 +30,8 @@ fn mini_list() {
     let expected_html = r#"<div><ul class="listywisty"><li>first</li><li class="item">second</li><li>third</li></ul></div>"#;
 
     assert_eq!(
-        sys::Element::outer_html(&web_div),
         expected_html,
-        "expected HTML must match the natively produced outer_html",
-    );
-
-    assert_eq!(
-        expected_html,
-        &augdom::Dom::outer_html(web_root_node),
+        web_div.outer_html(),
         "our outer_html implementation must match the expected HTML",
     );
 
@@ -59,7 +52,7 @@ fn mini_list() {
 
     assert_eq!(
         expected_pretty_html,
-        &(String::from("\n") + &web_root_node.pretty_outer_html(2)),
+        &(String::from("\n") + &web_div.pretty_outer_html(2)),
         "pretty HTML produced from DOM nodes must match expected",
     );
 
@@ -94,7 +87,8 @@ fn mutiple_event_listeners() {
     web_tester.run_once(); // Initial rendering
 
     // Retreive the HtmlElement of to the <button> tag
-    let web_root_element: &sys::Element = web_div.as_ref();
+    let web_root_node: &sys::Node = web_div.expect_concrete();
+    let web_root_element: &sys::Element = web_root_node.dyn_ref().unwrap();
     let button_element = web_root_element
         .first_element_child()
         .and_then(|node| node.dyn_into::<sys::HtmlElement>().ok())

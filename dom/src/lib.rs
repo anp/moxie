@@ -16,8 +16,8 @@ pub mod text;
 /// A module for glob-importing the most commonly used moxie-dom items.
 pub mod prelude {
     #[cfg(feature = "webdom")]
-    pub use augdom::{document, sys};
-    pub use augdom::{event, Dom as _};
+    pub use crate::raw::sys;
+    pub use crate::raw::{document, event, event::TargetExt as _, Dom as _};
     pub use moxie::{cache, cache_state, cache_with, once, once_with, state, Key};
 
     pub use crate::{
@@ -80,7 +80,7 @@ where
 
     let (mut tester, root) = embed::WebRuntime::in_rsdom_div(root);
     tester.run_once();
-    let outer = augdom::Node::Virtual(root).pretty_outer_html(2);
+    let outer = root.pretty_outer_html(2);
     // TODO(#185) remove this hack
     // because we use the indented version, we know that only at the top and bottom
     // is what we want
@@ -110,7 +110,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub async fn hello_browser() {
-        let root = augdom::document().create_element("div").unwrap();
+        let root = augdom::document().create_element("div");
         boot(root.clone(), || {
             mox::mox! {
                 <div>

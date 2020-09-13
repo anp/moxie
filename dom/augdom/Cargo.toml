@@ -19,12 +19,13 @@ all-features = true
 
 [features]
 default = ["webdom"]
-rsdom = []
+rsdom = ["illicit"]
 webdom = ["gloo-timers", "js-sys", "prettiest", "wasm-bindgen", "web-sys"]
 
 [dependencies]
 futures = "0.3.5"
 gloo-timers = { version = "0.2.1", features = ["futures"], optional = true }
+illicit = { version = "1", path = "../../illicit", optional = true }
 paste = "1"
 quick-xml = "0.20.0"
 static_assertions = "1"
@@ -46,6 +47,7 @@ features = [
     "Element",
     "EventTarget",
     "HtmlElement",
+    "HtmlHeadElement",
     "NamedNodeMap",
     "Node",
     "NodeList",
