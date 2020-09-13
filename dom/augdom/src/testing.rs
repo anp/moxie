@@ -29,7 +29,7 @@ use crate::{
     Dom, Node,
 };
 use futures::prelude::*;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 /// Convenience methods for dispatching events to targets, primarily useful for
 /// testing.
@@ -165,9 +165,14 @@ pub enum QueryError<'a, N> {
 
 /// Executes a search strategy over a DOM container's subtree via depth-first
 /// pre-order traversal.
-#[derive(Debug)]
 pub struct Finder<'n, N> {
     target: &'n N,
+}
+
+impl<'n, N: Debug> Debug for Finder<'n, N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:#?}", &self.target)
+    }
 }
 
 macro_rules! strat_method {
