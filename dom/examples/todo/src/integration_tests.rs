@@ -5,7 +5,7 @@ use moxie_dom::{
         Node,
     },
 };
-use std::ops::Deref;
+use std::{fmt::Debug, ops::Deref};
 use tracing::*;
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -15,7 +15,6 @@ pub async fn add_2_todos() {
     let (first, second) = ("learn testing", "be cool");
     test.add_todo(first).await;
     test.add_todo(second).await;
-    test.assert_todos(&[first, second]).await;
 }
 
 #[wasm_bindgen_test]
@@ -44,23 +43,33 @@ impl Test {
         Test { root }
     }
 
-    #[track_caller]
-    async fn assert_todos(&self, expected: &[&str]) {
-        assert_eq!(
-            self.query_selector_all(".todo-list li")
-                .iter()
-                .map(|t| t.get_inner_text())
-                .collect::<Vec<_>>(),
-            expected
-        );
+    fn todos(&self) -> Vec<String> {
+        self.query_selector_all(".todo-list li")
+            .iter()
+            .map(|t| t.get_inner_text())
+            .collect::<Vec<_>>()
     }
 
+    #[track_caller]
+    fn assert_todos<Expected>(&self, expected: &[Expected])
+    where
+        String: PartialEq<Expected>,
+        Expected: Debug,
+    {
+        assert_eq!(self.todos(), expected);
+    }
+
+    /// Add a new todo to the list, asserting that the list only grows by the
+    /// one item.
     async fn add_todo(&self, todo: &str) {
+        let mut expected = self.todos();
+        expected.push(todo.to_owned());
+
+        // actually input the new todo
         self.input().keyboardln(todo);
         // wait for it to show up
-        // TODO make sure it shows up at the end
-        // TODO assert there's only one matching <li>
         self.find().by_text(todo).until().many().await.unwrap();
+        self.assert_todos(&expected[..]);
     }
 
     async fn add_default_todos(&self) {
@@ -69,7 +78,6 @@ impl Test {
         for todo in expected {
             self.add_todo(todo).await;
         }
-        self.assert_todos(expected).await;
     }
 
     fn input(&self) -> Node {
