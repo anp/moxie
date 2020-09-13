@@ -16,7 +16,7 @@ pub fn begin() {
     }));
 
     tracing::info!("mounting moxie-dom to root");
-    moxie_dom::boot(document().body().unwrap(), root);
+    moxie_dom::boot(document().body(), root);
 }
 
 #[topo::nested]
@@ -42,13 +42,13 @@ fn root() -> Div {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use augdom::{event::Click, testing::Query};
+    use augdom::testing::{Query, TargetExt};
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
     pub async fn hello_browser() {
-        let test_root = augdom::Node::new("div");
+        let test_root = document().create_element("div");
         moxie_dom::boot(test_root.clone(), root);
 
         let button = test_root.find().by_text("increment").until().one().await.unwrap();
@@ -63,9 +63,9 @@ mod tests {
 </div>"#
         );
 
-        button.dispatch::<Click>();
+        button.click();
         test_root.find().by_text("hello world from moxie! (1)").until().one().await.unwrap();
-        button.dispatch::<Click>();
+        button.click();
         test_root.find().by_text("hello world from moxie! (2)").until().one().await.unwrap();
     }
 }

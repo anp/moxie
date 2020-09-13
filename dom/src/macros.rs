@@ -90,7 +90,6 @@ macro_rules! element {
         ///
         /// A function for creating a builder which will accept attributes and produce the element.
         #[topo::nested]
-        #[illicit::from_env(parent: &crate::cached_node::CachedNode)]
         pub fn $name() -> [<$name:camel Builder>] {
             #[allow(unused)]
             use augdom::Dom;
@@ -98,7 +97,7 @@ macro_rules! element {
             use crate::interfaces::node::Node;
 
             let elem = moxie::cache(stringify!($name), |ty| {
-                parent.raw_node().create_element(ty)
+                $crate::prelude::document().create_element(ty)
             });
             [<$name:camel Builder>] { inner: crate::cached_node::CachedNode::new(elem) }
         }

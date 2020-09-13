@@ -2,7 +2,6 @@
 //! `web-sys` crate and `wasm-bindgen`.
 
 use super::Node;
-use crate::document;
 use futures::{channel::mpsc::UnboundedReceiver, Stream};
 use prettiest::Pretty;
 use std::{
@@ -85,14 +84,6 @@ impl crate::Dom for sys::Node {
         } else {
             unreachable!("augdom only creates elements and text nodes. this is a bug.");
         }
-    }
-
-    fn create_element(&self, ty: &str) -> Self {
-        document().create_element(ty).unwrap().into()
-    }
-
-    fn create_text_node(&self, contents: &str) -> Self {
-        document().create_text_node(contents).into()
     }
 
     fn first_child(&self) -> Option<Self> {

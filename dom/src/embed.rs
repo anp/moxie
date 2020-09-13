@@ -24,13 +24,11 @@ impl WebRuntime {
         let parent = parent.into();
         WebRuntime {
             inner: RunLoop::new(Box::new(move || {
-                illicit::Layer::new().offer(CachedNode::new(parent.clone())).enter(|| {
-                    let new_root = topo::call(|| root());
+                let parent = CachedNode::new(parent.clone());
+                let new_root = topo::call(|| root());
 
-                    let parent = &*illicit::expect::<CachedNode>();
-                    parent.ensure_child_attached(new_root.to_bind());
-                    parent.remove_trailing_children();
-                });
+                parent.ensure_child_attached(new_root.to_bind());
+                parent.remove_trailing_children();
             })),
         }
     }
@@ -55,8 +53,8 @@ mod web_impl {
         /// with which it is returned.
         pub fn in_web_div<Root: Child + 'static>(
             root: impl FnMut() -> Root + 'static,
-        ) -> (Self, augdom::sys::Element) {
-            let container = augdom::document().create_element("div").unwrap();
+        ) -> (Self, augdom::Node) {
+            let container = augdom::document().create_element("div");
             let mut rt = WebRuntime::new(container.clone(), root);
             rt.inner.set_task_executor(WebSpawner);
             (rt, container)
@@ -96,9 +94,12 @@ impl WebRuntime {
     /// Create a new virtual `div` and use that as the parent node for the
     /// runtime with which it is returned.
     pub fn in_rsdom_div<Root: Child>(
-        root: impl FnMut() -> Root + 'static,
-    ) -> (Self, std::rc::Rc<augdom::rsdom::VirtNode>) {
-        let container = augdom::rsdom::create_element("div");
+        mut root: impl FnMut() -> Root + 'static,
+    ) -> (Self, augdom::Node) {
+        use illicit::AsContext;
+        let document = crate::raw::Document::new_virtual();
+        let container = document.create_element("div");
+        let root = move || document.clone().offer(&mut root);
         (WebRuntime::new(container.clone(), root), container)
     }
 }

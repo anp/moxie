@@ -3,16 +3,15 @@
 use crate::{
     cached_node::CachedNode,
     interfaces::content_categories::{FlowContent, PhrasingContent},
+    prelude::*,
 };
-use augdom::Dom;
 use moxie::cache;
 
 /// Create a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
 /// This is normally called by the `moxie::mox!` macro.
 #[topo::nested]
-#[illicit::from_env(parent: &CachedNode)]
 pub fn text(s: impl AsRef<str>) -> Text {
-    let text_node = cache(s.as_ref(), |s| parent.raw_node().create_text_node(s));
+    let text_node = cache(s.as_ref(), |s| document().create_text_node(s));
     Text(CachedNode::new(text_node))
 }
 
