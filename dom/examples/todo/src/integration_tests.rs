@@ -12,9 +12,8 @@ use wasm_bindgen_test::wasm_bindgen_test;
 #[wasm_bindgen_test]
 pub async fn add_2_todos() {
     let test = Test::new();
-    let (first, second) = ("learn testing", "be cool");
-    test.add_todo(first).await;
-    test.add_todo(second).await;
+    test.add_todo("learn testing").await;
+    test.add_todo("be cool").await;
 }
 
 #[wasm_bindgen_test]
