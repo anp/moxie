@@ -1,3 +1,10 @@
+//! Integration tests for TodoMVC.
+//!
+//! A module within the application rather than a "proper" integration test
+//! because cargo and wasm-pack are conspiring to make that not build somehow.
+//! The workaround for now is to make this a module of the app itself, so we
+//! have to be on our best behavior and only use public API.
+
 use moxie_dom::{
     prelude::*,
     raw::{
@@ -35,10 +42,14 @@ impl Deref for Test {
 
 impl Test {
     fn new() -> Self {
-        super::setup_tracing();
+        // Please only use public functions from the crate, see module docs for
+        // explanation.
+        use super::{boot, setup_tracing};
+
+        setup_tracing();
         let root = document().create_element("div");
         document().body().append_child(&root);
-        super::boot(root.expect_concrete().clone());
+        boot(root.expect_concrete().clone());
         Test { root }
     }
 
