@@ -47,7 +47,7 @@ pub mod testing;
 pub fn document() -> Document {
     #[cfg(feature = "rsdom")]
     match illicit::get::<Document>() {
-        Ok(d) => return d.clone(),
+        Ok(d) => d.clone(),
         _e => {
             #[cfg(not(feature = "webdom"))]
             {
