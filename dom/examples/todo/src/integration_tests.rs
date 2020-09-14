@@ -28,6 +28,13 @@ pub async fn add_default_todos() {
     Test::new().add_default_todos().await;
 }
 
+#[allow(unused)] // TODO add back wasm_bindgen_test when we have a full page load to test autofocus
+async fn initial_open_focuses_input() {
+    let _test = Test::new();
+    let focused = document().active_element().unwrap();
+    assert_eq!(focused.get_attribute("className").unwrap(), "new-todo");
+}
+
 struct Test {
     root: Node,
 }

@@ -219,6 +219,16 @@ impl Document {
         }
     }
 
+    /// Returns the currently focused element, if any.
+    pub fn active_element(&self) -> Option<Node> {
+        match self {
+            #[cfg(feature = "webdom")]
+            Document::Concrete(d) => d.active_element().map(Into::into),
+            #[cfg(feature = "rsdom")]
+            Document::Virtual { body, .. } => Some(body.clone().into()),
+        }
+    }
+
     /// Create a new element in this document.
     pub fn create_element(&self, ty: &str) -> Node {
         match self {
