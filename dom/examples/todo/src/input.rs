@@ -30,8 +30,9 @@ pub fn text_input(
             onkeydown={move |keypress| {
                 if keypress.key() == "Enter" {
                     let value = input_value(keypress);
-                    if !value.is_empty() {
-                        on_save(value);
+                    let trimmed = value.trim();
+                    if !trimmed.is_empty() {
+                        on_save(trimmed.to_owned());
                     }
                     clear_text.set("".into());
                 }
