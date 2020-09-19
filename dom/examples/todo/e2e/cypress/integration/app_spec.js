@@ -51,11 +51,12 @@ describe('TodoMVC - Moxie DOM', function () {
     cy.get('.todo-list li').should('have.length', 2)
   })
 
-  context('When page is initially opened', function () {
-    it('should focus on the todo input field', function () {
-      cy.focused().should('have.class', 'new-todo')
-    })
-  })
+  // TODO(https://github.com/cypress-io/cypress/issues/6207) uncomment
+  // context('When page is initially opened', function () {
+  //   it('should focus on the todo input field', function () {
+  //     cy.get('.new-todo').should('have.focus')
+  //   })
+  // })
 
   context('No Todos', function () {
     it('should hide #main and #footer', function () {
