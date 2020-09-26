@@ -99,5 +99,6 @@ Things to update:
 * `.cargo/config`
 * `.github/workflows/main.yml`
 * `index.html`
+* `README.md`
 
 (Dependabot discovers the workspace members from the root manifest.)

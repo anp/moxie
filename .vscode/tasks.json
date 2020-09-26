@@ -4,14 +4,11 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "core crates",
+            "label": "core",
             "type": "shell",
             "presentation": {
                 "group": "main",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -23,14 +20,11 @@
             ]
         },
         {
-            "label": "dom crates",
+            "label": "dom",
             "type": "shell",
             "presentation": {
                 "group": "main",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -42,7 +36,23 @@
             ]
         },
         {
-            "label": "project website",
+            "label": "honk",
+            "type": "shell",
+            "presentation": {
+                "group": "main",
+                "panel": "dedicated"
+            },
+            "isBackground": true,
+            "command": "cargo",
+            "args": [
+                "honk-flow"
+            ],
+            "problemMatcher": [
+                "$rustc-watch"
+            ]
+        },
+        {
+            "label": "website",
             "type": "shell",
             "presentation": {
                 "group": "tools",
@@ -61,7 +71,7 @@
             ]
         },
         {
-            "label": "project server",
+            "label": "server",
             "type": "shell",
             "presentation": {
                 "group": "tools",
@@ -78,7 +88,7 @@
             "problemMatcher": []
         },
         {
-            "label": "ofl crates",
+            "label": "ofl",
             "type": "shell",
             "presentation": {
                 "group": "tools",
@@ -125,9 +135,6 @@
             "presentation": {
                 "group": "tools",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "npx",

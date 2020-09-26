@@ -1,0 +1,16 @@
+[package]
+name = "honk"
+version = "0.1.0"
+description = "an awful billed system"
+categories = ["command-line-utilities", "development-tools::build-utils"]
+keywords = ["build", "workflow", "project", "interactive"]
+readme = "CHANGELOG.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
+
+[dependencies]
