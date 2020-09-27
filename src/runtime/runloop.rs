@@ -9,6 +9,10 @@ use std::{
 };
 
 /// A [`Runtime`] that is bound with a particular root function.
+///
+/// If running in a context with an async executor, can be consumed as a
+/// [`futures::Stream`] of [`crate::runtime::Revision`]s in order to provide
+/// the [`super::Runtime`] with a [`std::task::Waker`].
 pub struct RunLoop<Root> {
     inner: Runtime,
     root: Root,

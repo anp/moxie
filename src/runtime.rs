@@ -1,19 +1,5 @@
-//! Integration points for the moxie runtime. Generally not called directly by
-//! applications.
-//!
-//! To integrate moxie with an existing system, a `Runtime` must be created with
-//! a user-provided root closure to execute each `Revision`. If the embedding
-//! system will change its scheduling based on mutations of moxie state
-//! variables (e.g. scheduling a new frame render), then it should also call
-//! `Runtime::set_state_change_waker` to be notified when state values have been
-//! updated.
-//!
-//! Once these have been created, the embedding system should call
-//! `Runtime::run_once` whenever appropriate for the context. This may be on a
-//! regular cadence (i.e. once per frame interval) or only when state mutations
-//! have occurred (as is the default in [moxie-dom]).
-//!
-//! [moxie-dom]: https://docs.rs/moxie-dom
+//! [`Runtime`]s are the primary integration point between moxie and
+//! embedding environments.
 
 mod context;
 mod runloop;
@@ -55,14 +41,71 @@ impl std::fmt::Debug for Revision {
     }
 }
 
-/// The primary integration point between `moxie` and an embedding environment.
-/// Owns the cache and state for a moxie application. Each instance is
-/// independent.
+/// A [`Runtime`] is the primary integration point between moxie and an
+/// embedder. Each independent instance is responsible for an event loop and
+/// tracks time using a [`Revision`] which it increments on each iteration of
+/// the loop. Owns the cache and state for a given context.
 ///
-/// ## Minimal Example
+/// # Key considerations
 ///
-/// This example has no side effects in its root closure, and doesn't have any
-/// state variables which might require mutation wakeups.
+/// ## Event Loops
+///
+/// moxie assumes that it will be responsible for interfacing with or managing
+/// an event loop with the basic structure:
+///
+/// 1. enter loop
+/// 2. present interface
+/// 3. wait for changes
+/// 4. goto (2)
+///
+/// Step (2) is implemented in [`Runtime::run_once`], and the user code run by
+/// that method is expected to register the runtime for wakeups on future
+/// events. Step (3) is implemented by the embedder, waiting until the runtime's
+/// change notification waker is invoked.
+///
+/// ## Change notifications
+///
+/// Each runtime should be provided with a [`std::task::Waker`] that will notify
+/// the embedding environment to run the loop again. This is done by calling
+/// [`Runtime::set_state_change_waker`].
+///
+/// For scenarios without an obvious "main thread" this can be done for you by
+/// binding a root function to a  [`RunLoop`] which implements
+/// [`std::future::Future`] and can be spawned as a task onto an executor. For
+/// more nuanced scenarios it can be necessary to write your own waker to ensure
+/// scheduling compatible with the embedding environment. By default a no-op
+/// waker is provided.
+///
+/// The most common way of notifying a runtime of a change is to update a
+/// state variable.
+///
+/// ## Caching
+///
+/// When a runtime is repeatedly invoking the same code for every [`Revision`]
+/// there's likely to be a lot of repetitive work. This might be something
+/// complex like a slow computation over the set of visible items, or it might
+/// be something simple like using the same DOM node for a given button on every
+/// [`Revision`].
+///
+/// While not strictly *necessary* to integrate moxie, much of the runtime's
+/// potential value comes from identifying work that's repeated across frames
+/// and storing it in the runtime's cache instead of recomputing every time.
+///
+/// Internally the runtime hosts a [dyn-cache] instance which is
+/// garbage-collected at the end of each [`Revision`]. All cached values are
+/// stored there and evicted at the end of revisions where they went unused.
+/// This behavior also provides deterministic drop timing for values cached by
+/// the runtime.
+///
+/// ## Tasks
+///
+/// Each runtime expects to be able to spawn futures as async tasks, provided
+/// with [`Runtime::set_task_executor`]. By default a no-op spawner is provided.
+///
+/// # Minimal Example
+///
+/// This example has no side effects in its root function, and doesn't have any
+/// state variables which might require change notifications.
 ///
 /// ```
 /// # use moxie::runtime::{Revision, Runtime};
@@ -73,6 +116,8 @@ impl std::fmt::Debug for Revision {
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
+///
+/// [dyn-cache]: https://docs.rs/dyn-cache
 pub struct Runtime {
     revision: Revision,
     cache: SharedLocalCache,
