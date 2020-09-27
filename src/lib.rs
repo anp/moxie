@@ -386,6 +386,67 @@ where
 /// Load a value from the future returned by `init` whenever `capture` changes,
 /// returning the result of calling `with` with the loaded value. Cancels the
 /// running future after any revision during which this call was not made.
+///
+/// # Example
+///
+/// ```
+/// use futures::{channel::oneshot, executor::LocalPool};
+/// use moxie::{load_with, runtime::RunLoop};
+/// use std::{
+///     sync::{
+///         atomic::{AtomicU64, Ordering},
+///         mpsc::channel,
+///     },
+///     task::Poll,
+/// };
+///
+/// let epoch = AtomicU64::new(0);
+/// let (send_futs, recv_futs) = channel();
+///
+/// let mut rt = RunLoop::new(|| {
+///     // loads a new future when epoch changes
+///     load_with(
+///         &epoch.load(Ordering::Relaxed),
+///         |_| {
+///             let (sender, receiver) = oneshot::channel();
+///             send_futs.send(sender).unwrap();
+///             receiver
+///         },
+///         // makes this equivalent to load(...)
+///         |res| res.clone(),
+///     )
+/// });
+///
+/// let mut exec = LocalPool::new();
+/// rt.set_task_executor(exec.spawner());
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run_until_stalled();
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// // resolve the future
+/// let sender = recv_futs.recv().unwrap();
+/// assert!(recv_futs.try_recv().is_err(), "only one channel is created per epoch");
+///
+/// sender.send(()).unwrap();
+///
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+///
+/// // force the future to be reinitialized
+/// epoch.store(1, Ordering::Relaxed);
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// // resolve the future
+/// let sender = recv_futs.recv().unwrap();
+/// assert!(recv_futs.try_recv().is_err(), "only one channel is created per epoch");
+///
+/// sender.send(()).unwrap();
+///
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn load_with<Arg, Input, Fut, Output, Ret>(
@@ -404,6 +465,31 @@ where
 }
 
 /// Calls [`load_with`] but never re-initializes the loading future.
+///
+/// # Example
+///
+/// ```
+/// use futures::{channel::oneshot, executor::LocalPool};
+/// use moxie::{load_once_with, runtime::RunLoop};
+/// use std::task::Poll;
+///
+/// let (sender, receiver) = oneshot::channel();
+/// let mut receiver = Some(receiver);
+/// let mut rt = RunLoop::new(|| load_once_with(|| receiver.take().unwrap(), |res| res.clone()));
+///
+/// let mut exec = LocalPool::new();
+/// rt.set_task_executor(exec.spawner());
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run_until_stalled();
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// sender.send(()).unwrap();
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn load_once_with<Fut, Output, Ret>(
@@ -420,6 +506,31 @@ where
 
 /// Calls [`load_with`], never re-initializes the loading future, and clones the
 /// returned value on each revision once the future has completed and returned.
+///
+/// # Example
+///
+/// ```
+/// use futures::{channel::oneshot, executor::LocalPool};
+/// use moxie::{load_once, runtime::RunLoop};
+/// use std::task::Poll;
+///
+/// let (sender, receiver) = oneshot::channel();
+/// let mut receiver = Some(receiver);
+/// let mut rt = RunLoop::new(|| load_once(|| receiver.take().unwrap()));
+///
+/// let mut exec = LocalPool::new();
+/// rt.set_task_executor(exec.spawner());
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run_until_stalled();
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// sender.send(()).unwrap();
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn load_once<Fut, Output>(init: impl FnOnce() -> Fut) -> Poll<Output>
@@ -433,6 +544,64 @@ where
 /// Load a value from a future, cloning it on subsequent revisions after it is
 /// first returned. Re-initializes the loading future if the capture argument
 /// changes from previous revisions.
+///
+/// # Example
+///
+/// ```
+/// use futures::{channel::oneshot, executor::LocalPool};
+/// use moxie::{load, runtime::RunLoop};
+/// use std::{
+///     sync::{
+///         atomic::{AtomicU64, Ordering},
+///         mpsc::channel,
+///     },
+///     task::Poll,
+/// };
+///
+/// let epoch = AtomicU64::new(0);
+/// let (send_futs, recv_futs) = channel();
+///
+/// let mut rt = RunLoop::new(|| {
+///     // loads a new future when epoch changes
+///     load(&epoch.load(Ordering::Relaxed), |e| {
+///         let (sender, receiver) = oneshot::channel();
+///         send_futs.send((*e, sender)).unwrap();
+///         receiver
+///     })
+/// });
+///
+/// let mut exec = LocalPool::new();
+/// rt.set_task_executor(exec.spawner());
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+/// exec.run_until_stalled();
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// // resolve the future
+/// let (created_in_epoch, sender) = recv_futs.recv().unwrap();
+/// assert!(recv_futs.try_recv().is_err(), "only one channel is created per epoch");
+/// assert_eq!(created_in_epoch, 0);
+///
+/// sender.send(()).unwrap();
+///
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+///
+/// // force the future to be reinitialized
+/// epoch.store(1, Ordering::Relaxed);
+///
+/// assert_eq!(rt.run_once(), Poll::Pending);
+///
+/// // resolve the future
+/// let (created_in_epoch, sender) = recv_futs.recv().unwrap();
+/// assert!(recv_futs.try_recv().is_err(), "only one channel is created per epoch");
+/// assert_eq!(created_in_epoch, 1);
+///
+/// sender.send(()).unwrap();
+///
+/// exec.run();
+/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn load<Arg, Input, Fut, Output>(
