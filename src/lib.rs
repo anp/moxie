@@ -64,6 +64,7 @@ use std::{
     borrow::Borrow,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     future::Future,
+    hash::{Hash, Hasher},
     ops::Deref,
     sync::Arc,
     task::Poll,
@@ -242,7 +243,7 @@ where
 /// the runtime. Commits should be shared and used within the context of a
 /// single [`crate::runtime::Revision`], being re-loaded from the state variable
 /// each time.
-#[derive(Eq, PartialEq)]
+#[derive(Eq, Hash, PartialEq)]
 pub struct Commit<State> {
     id: CallId,
     inner: Arc<State>,
@@ -371,6 +372,14 @@ impl<State> PartialEq for Key<State> {
     /// initialized in different revisions.
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.var, &other.var)
+    }
+}
+
+impl<State> Eq for Key<State> {}
+
+impl<State> Hash for Key<State> {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.id.hash(hasher);
     }
 }
 
