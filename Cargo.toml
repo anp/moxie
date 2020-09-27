@@ -2,7 +2,7 @@ cargo-features = ["named-profiles"] # for coverage
 
 [package]
 name = "moxie"
-version = "0.3.0-pre"
+version = "0.7.0"
 description = "Incremental runtime for interactive software."
 categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
 keywords = ["incremental", "memoize", "intern", "reactive"]
