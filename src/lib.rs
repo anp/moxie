@@ -1,62 +1,57 @@
 //! moxie aims to empower everyone to build reliable and efficient human
-//! interfaces. This crate implements a lightweight & platform-agnostic UI
-//! runtime which powers a declarative style for creating interfaces and
-//! attempts to minimize latency and general overhead.
+//! interfaces.
 //!
-//! # Memoization
+//! moxie supports incremental "declarative" Rust code for interactive systems.
+//! It comes with a lightweight "event loop runtime" that supports granular
+//! reuse of arbitrary work, state change notifications, and async loaders.
 //!
-//! Memoization is the core tool which moxie provides to store data across
-//! `Revision`s and to minimize the incremental work performed when an update
-//! triggers the next `Revision`. Calls to the cache_\* topological functions
-//! will perform memoization specific to the current position within the
-//! function call topology, as other topologically-nested functions do.
+//! Most users of this crate will do so through a "moxie embedding" like
+//! [moxie-dom] which is responsible for integrating moxie with a broader
+//! environment. The functions in this module are applicable to any moxie
+//! embedding but end users should not expect to set up their own embedding (see
+//! the [`runtime`] module for information on embeddings).
 //!
-//! During [run_once] the cache and other runtime context is an [environment
-//! value](illicit::Layer). Cache calls write to this storage to store
-//! results. At the end of [run_once], this storage is garbage-collected,
-//! dropping values which were not referenced, marking them as live.
+//! ## Revisions
 //!
-//! Memoized values are dropped in a deterministic manner when replaced or no
-//! longer referenced, modeling side-effectful lifecycle. Storing a type whose
-//! liveness represents the effect being "active" allows us to perform the
-//! effect when creating the stored value and to undo the effect when the stored
-//! value is `Drop`ped.
+//! The [`runtime::Revision`] is a core concept for a moxie
+//! [`runtime::Runtime`]: it's the notion of time passing. In typical
+//! embeddings, every frame results in a new revision.
 //!
-//! Initializing a cached value at a particular callsite offers a simple API
-//! for incremental computations. Further, placing mutations in the initializer
-//! for a cache variable offers a path to minimizing the mutations or other side
-//! effects performed while describing the interface.
+//! ## Topologically nested functions
 //!
-//! # State
+//! The functions in this module are intended to be called repeatedly, possibly
+//! on every revision. The results returned must be **stable across revisions**,
+//! so we use the [topo] crate to provide stable cache keys for each invocation.
+//! Each function in the root module is annotated with `#[topo::nested]` and
+//! will inherit the [`topo::CallId`] within which it's called.
 //!
-//! TODO(#95)
+//! ## Caching
 //!
-//! # Loading
+//! Nearly all UIs benefit from reusing results between frames, in moxie this is
+//! supported by the [`cache`], [`cache_with`], [`once`], and [`once_with`]
+//! functions. Values returned from cached closures are available in subsequent
+//! [`runtime::Revision`]s at the same callsite and are dropped from the cache
+//! at the end of the first revision where they were not used.
 //!
-//! TODO(#95)
+//! ## State
 //!
-//! # UI Runtime
+//! State variables are stored in the cache and can be mutated in between
+//! revisions. They are declared with the [`cache_state`] and [`state`]
+//! functions which return a [`Commit`] for reading the current value and a
+//! [`Key`] for updating it. Updates to state variables wake the runtime,
+//! initiating a new revision.
 //!
-//! A UI runtime is responsible for maintaining consistency between a program's
-//! desired output and the rendered output over time. The desired output is
-//! expected to change over time as a result of events from the "outside world."
-//! This might be due to user input or events caused by asynchronous tasks
-//! requested by a user.
+//! ## Loading Futures
 //!
-//! The rendered output is usually modelled or expressed in terms of a visual or
-//! semantic hierarchy, or a tree. The relationships between elements in the
-//! tree partition the space in which the elements are rendered, subdividing it
-//! among their children. These relationships may or may not be concretely
-//! encoded within data structures or they may purely be the result of some side
-//! effects which occur in a particular order (e.g. mutating a display list for
-//! a GPU).
+//! Futures can be "loaded" by the runtime using the [`load`], [`load_with`],
+//! [`load_once`], and [`load_once_with`] functions. These functions ensure the
+//! future is spawned to an async executor and return its status on every
+//! revision. When the future has completed, `Poll::Ready` is returned on
+//! each revision. If a revision occurs without referencing the pending future,
+//! the task is cancelled.
 //!
-//! This process of performing the tasks to render the output is usually done in
-//! a loop, iterating either once per fixed interval (e.g. 60 frames per second
-//! or every 16.67 milliseconds) or when activated by the occurrence of events.
-//!
-//! [run_once]: crate::runtime::Runtime::run_once
-//! [topo]: https://docs.rs/topo
+//! [moxie-dom]: https://docs.rs/moxie-dom
+//! [topo]: https://docs.rs/topo/
 
 #![forbid(unsafe_code)]
 #![deny(clippy::all, missing_docs)]
