@@ -57,6 +57,7 @@
 #![deny(clippy::all, missing_docs)]
 
 pub mod runtime;
+pub mod testing;
 
 use crate::runtime::{Context, Var};
 use parking_lot::Mutex;
@@ -79,12 +80,47 @@ use topo::CallId;
 ///
 /// Otherwise, calls `arg.to_owned()` to get an `Input` and calls `init` to get
 /// an `Output`. It calls `with` on the `Output` to get a `Ret` value, stores
-/// the `(Input, Output)` in the cache afresh, and returns the `Ret`.
+/// the `(Input, Output)` in the cache, and returns `Ret`.
 ///
-/// It is technically possible to nest calls to `cache_with` and other functions
-/// in this module, but the values they store won't be correctly retained across
-/// `Revision`s until we track dependency information. As a result, it's not
-/// recommended.
+/// # Example
+///
+/// ```
+/// use moxie::{cache_with, runtime::RunLoop, testing::CountsClones};
+/// use std::sync::atomic::{AtomicU64, Ordering};
+///
+/// let epoch = AtomicU64::new(0);
+/// let num_created = AtomicU64::new(0);
+///
+/// // this runtime holds a single state variable
+/// // which is reinitialized whenever we change `epoch` above
+/// let mut rt = RunLoop::new(|| {
+///     let cached = cache_with(
+///         &epoch.load(Ordering::Relaxed),
+///         |_| {
+///             num_created.fetch_add(1, Ordering::Relaxed);
+///             CountsClones::default()
+///         },
+///         // this makes it equivalent to calling moxie::once(...)
+///         CountsClones::clone,
+///     );
+///
+///     (num_created.load(Ordering::Relaxed), cached.clone_count())
+/// });
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 1, "the first value is always cached");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+///
+/// epoch.store(1, Ordering::Relaxed); // invalidates the cache
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 2, "reinitialized once after epoch changed");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn cache_with<Arg, Input, Output, Ret>(
@@ -101,18 +137,45 @@ where
     rt.cache.cache_with(&CallId::current(), arg, init, with)
 }
 
-/// Memoizes `expr` once at the callsite. Runs `with` on every iteration.
+/// Caches `init` once in the current [`topo::CallId`]. Runs `with` on every
+/// [`runtime::Revision`].
+///
+/// # Example
+///
+/// ```
+/// use moxie::{once_with, runtime::RunLoop, testing::CountsClones};
+/// use std::sync::atomic::{AtomicU64, Ordering};
+///
+/// let num_created = AtomicU64::new(0);
+/// let mut rt = RunLoop::new(|| {
+///     let cached = once_with(
+///         || {
+///             num_created.fetch_add(1, Ordering::Relaxed);
+///             CountsClones::default()
+///         },
+///         // this makes it equivalent to calling moxie::once(...)
+///         CountsClones::clone,
+///     );
+///     (num_created.load(Ordering::Relaxed), cached.clone_count())
+/// });
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 1, "the first value is always cached");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn once_with<Output, Ret>(
-    expr: impl FnOnce() -> Output,
+    init: impl FnOnce() -> Output,
     with: impl FnOnce(&Output) -> Ret,
 ) -> Ret
 where
     Output: 'static,
     Ret: 'static,
 {
-    rt.cache.cache_with(&CallId::current(), &(), |&()| expr(), with)
+    rt.cache.cache_with(&CallId::current(), &(), |&()| init(), with)
 }
 
 /// Memoizes `init` at this callsite, cloning a cached `Output` if it exists and
@@ -121,6 +184,41 @@ where
 /// `init` takes a reference to `Input` so that the cache can
 /// compare future calls' arguments against the one used to produce the stored
 /// value.
+///
+/// # Example
+///
+/// ```
+/// use moxie::{cache, runtime::RunLoop, testing::CountsClones};
+/// use std::sync::atomic::{AtomicU64, Ordering};
+///
+/// let epoch = AtomicU64::new(0);
+/// let num_created = AtomicU64::new(0);
+///
+/// // this runtime holds a single state variable
+/// // which is reinitialized whenever we change `epoch` above
+/// let mut rt = RunLoop::new(|| {
+///     let cached = cache(&epoch.load(Ordering::Relaxed), |_| {
+///         num_created.fetch_add(1, Ordering::Relaxed);
+///         CountsClones::default()
+///     });
+///
+///     (num_created.load(Ordering::Relaxed), cached.clone_count())
+/// });
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 1, "the first value is always cached");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+///
+/// epoch.store(1, Ordering::Relaxed);
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 2, "reinitialized once after epoch changed");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn cache<Arg, Input, Output>(arg: &Arg, init: impl FnOnce(&Input) -> Output) -> Output
@@ -132,20 +230,74 @@ where
     rt.cache.cache(&CallId::current(), arg, init)
 }
 
-/// Runs the provided expression once per [`topo::CallId`]. The provided value
-/// will always be cloned on subsequent calls unless dropped from storage and
-/// reinitialized in a later `Revision`.
+/// Runs `init` once per [`topo::CallId`]. The provided value
+/// will always be cloned on subsequent calls unless first dropped from storage
+/// before being re-initialized.
+///
+/// # Example
+///
+/// ```
+/// use moxie::{once, runtime::RunLoop, testing::CountsClones};
+/// use std::sync::atomic::{AtomicU64, Ordering};
+///
+/// let num_created = AtomicU64::new(0);
+/// let mut rt = RunLoop::new(|| {
+///     let cached = once(|| {
+///         num_created.fetch_add(1, Ordering::Relaxed);
+///         CountsClones::default()
+///     });
+///     (num_created.load(Ordering::Relaxed), cached.clone_count())
+/// });
+///
+/// for i in 1..1_000 {
+///     let (num_created, num_clones) = rt.run_once();
+///     assert_eq!(num_created, 1, "the first value is always cached");
+///     assert_eq!(num_clones, i, "cloned once per revision");
+/// }
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
-pub fn once<Output>(expr: impl FnOnce() -> Output) -> Output
+pub fn once<Output>(init: impl FnOnce() -> Output) -> Output
 where
     Output: Clone + 'static,
 {
-    rt.cache.cache(&CallId::current(), &(), |()| expr())
+    rt.cache.cache(&CallId::current(), &(), |()| init())
 }
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable.
+///
+/// # Example
+///
+/// ```
+/// use futures::task::waker;
+/// use moxie::{runtime::RunLoop, state, testing::BoolWaker};
+///
+/// // this runtime holds a single state variable
+/// let mut rt = RunLoop::new(|| state(|| 0u64));
+///
+/// let track_wakes = BoolWaker::new();
+/// rt.set_state_change_waker(waker(track_wakes.clone()));
+///
+/// let (first_commit, first_key) = rt.run_once();
+/// assert_eq!(*first_commit, 0, "no updates yet");
+/// assert!(!track_wakes.is_woken(), "no updates yet");
+///
+/// first_key.set(0); // this is a no-op
+/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert!(!track_wakes.is_woken(), "no updates yet");
+///
+/// first_key.set(1);
+/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert!(track_wakes.is_woken());
+///
+/// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
+/// assert_eq!(*second_key, 1);
+/// assert_eq!(*second_commit, 1);
+/// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
+/// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
+/// assert_eq!(first_key, second_key, "same state variable");
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn state<Output>(init: impl FnOnce() -> Output) -> (Commit<Output>, Key<Output>)
@@ -157,6 +309,66 @@ where
 
 /// Root a state variable at this callsite, returning a [`Key`] to the state
 /// variable. Re-initializes the state variable if the capture `arg` changes.
+///
+/// # Example
+///
+/// ```
+/// use moxie::{cache_state, runtime::RunLoop, testing::BoolWaker};
+/// use std::sync::atomic::{AtomicU64, Ordering};
+///
+/// let epoch = AtomicU64::new(0);
+///
+/// // this runtime holds a single state variable
+/// // which is reinitialized whenever we change `epoch` above
+/// let mut rt = RunLoop::new(|| cache_state(&epoch.load(Ordering::Relaxed), |e| *e));
+///
+/// let track_wakes = BoolWaker::new();
+/// rt.set_state_change_waker(futures::task::waker(track_wakes.clone()));
+///
+/// let (first_commit, first_key) = rt.run_once();
+/// assert_eq!(*first_commit, 0, "no updates yet");
+/// assert!(!track_wakes.is_woken(), "no updates yet");
+///
+/// first_key.set(0); // this is a no-op
+/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert!(!track_wakes.is_woken(), "no updates yet");
+///
+/// first_key.set(1);
+/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert!(track_wakes.is_woken());
+///
+/// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
+/// assert_eq!(*second_key, 1);
+/// assert_eq!(*second_commit, 1);
+/// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
+/// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
+/// assert_eq!(first_key, second_key, "same state variable");
+///
+/// // start the whole thing over again
+/// epoch.store(2, Ordering::Relaxed);
+///
+/// let (third_commit, third_key) = rt.run_once();
+/// assert_ne!(third_key, second_key, "different state variable");
+///
+/// // the rest is repeated from above with slight modifications
+/// assert_eq!(*third_commit, 2);
+/// assert!(!track_wakes.is_woken());
+///
+/// third_key.set(2);
+/// assert_eq!(*third_key, 2);
+/// assert!(!track_wakes.is_woken());
+///
+/// third_key.set(3);
+/// assert_eq!(*third_key, 2);
+/// assert!(track_wakes.is_woken());
+///
+/// let (fourth_commit, fourth_key) = rt.run_once();
+/// assert_eq!(*fourth_key, 3);
+/// assert_eq!(*fourth_commit, 3);
+/// assert_eq!(*third_commit, 2);
+/// assert!(!track_wakes.is_woken());
+/// assert_eq!(third_key, fourth_key);
+/// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
 pub fn cache_state<Arg, Input, Output>(
@@ -243,6 +455,8 @@ where
 /// the runtime. Commits should be shared and used within the context of a
 /// single [`crate::runtime::Revision`], being re-loaded from the state variable
 /// each time.
+///
+/// See [`state`] and [`cache_state`] for examples.
 #[derive(Eq, Hash, PartialEq)]
 pub struct Commit<State> {
     id: CallId,
@@ -283,9 +497,11 @@ where
 
 /// A `Key` offers access to a state variable. The key allows reads of the state
 /// variable through a snapshot taken when the `Key` was created. Writes are
-/// supported with [Key::update] and [Key::set].
+/// supported with [`Key::update`] and [`Key::set`].
 ///
-/// They are created with the `cache_state` and `state` functions.
+/// They are created with the [`cache_state`] and [`state`] functions.
+///
+/// See [`state`] and [`cache_state`] for examples.
 pub struct Key<State> {
     id: CallId,
     commit_at_root: Commit<State>,
@@ -313,6 +529,38 @@ impl<State> Key<State> {
     ///
     /// [Runtime]: crate::runtime::Runtime
     /// [run_once]: crate::runtime::Runtime::run_once
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use futures::task::waker;
+    /// use moxie::{runtime::RunLoop, state, testing::BoolWaker};
+    ///
+    /// // this runtime holds a single state variable
+    /// let mut rt = RunLoop::new(|| state(|| 0u64));
+    ///
+    /// let track_wakes = BoolWaker::new();
+    /// rt.set_state_change_waker(waker(track_wakes.clone()));
+    ///
+    /// let (first_commit, first_key) = rt.run_once();
+    /// assert_eq!(*first_commit, 0, "no updates yet");
+    /// assert!(!track_wakes.is_woken(), "no updates yet");
+    ///
+    /// first_key.update(|_| None); // this is a no-op
+    /// assert_eq!(*first_key, 0, "no updates yet");
+    /// assert!(!track_wakes.is_woken(), "no updates yet");
+    ///
+    /// first_key.update(|prev| Some(prev + 1));
+    /// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+    /// assert!(track_wakes.is_woken());
+    ///
+    /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
+    /// assert_eq!(*second_key, 1);
+    /// assert_eq!(*second_commit, 1);
+    /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
+    /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
+    /// assert_eq!(first_key, second_key, "same state variable");
+    /// ```
     pub fn update(&self, updater: impl FnOnce(&State) -> Option<State>) {
         let mut var = self.var.lock();
         if let Some(new) = updater(var.latest()) {
@@ -328,6 +576,8 @@ where
     /// Commits a new state value if it is unequal to the current value and the
     /// state variable is still live. Has the same properties as
     /// [update](Key::update) regarding waking the runtime.
+    ///
+    /// See [`state`] and [`cache_state`] for examples.
     pub fn set(&self, new: State) {
         self.update(|prev| if prev == &new { None } else { Some(new) });
     }

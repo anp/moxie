@@ -13,6 +13,7 @@ reuse of arbitrary work, state change notifications, and async loaders.
 - Support borrowed arguments to cache functions to avoid cloning on every revision.
 - Common trait implementations for `Key`.
 - Updated crate & module docs.
+- Testing utilities in `testing` module.
 
 ### Removed
 
