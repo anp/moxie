@@ -91,6 +91,8 @@ After a release, all version numbers should be incremented and have `-pre` re-ap
 expected to bump the version number of the crate they're modifying behind the `-pre` suffix as well
 as updating the relevant CHANGELOGs.
 
+Changing the version of a crate in the repository should be done by running `cargo ofl versions`.
+
 #### New crates
 
 Things to update:
