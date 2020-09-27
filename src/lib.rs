@@ -2,7 +2,7 @@
 //! interfaces.
 //!
 //! moxie supports incremental "declarative" Rust code for interactive systems.
-//! It comes with a lightweight "event loop runtime" that supports granular
+//! It comes with a lightweight event loop runtime that supports granular
 //! reuse of arbitrary work, state change notifications, and async loaders.
 //!
 //! Most users of this crate will do so through a "moxie embedding" like
