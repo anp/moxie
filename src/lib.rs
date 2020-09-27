@@ -567,6 +567,16 @@ impl<State> Key<State> {
             var.enqueue_commit(new);
         }
     }
+
+    /// Set a new value for the state variable, immediately taking effect.
+    fn force(&self, new: State) {
+        self.var.lock().enqueue_commit(new);
+    }
+
+    // TODO(#197) delete this and remove the Deref impl
+    fn refresh(&mut self) {
+        self.commit_at_root = runtime::Var::root(self.var.clone()).0;
+    }
 }
 
 impl<State> Key<State>
