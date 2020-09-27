@@ -68,9 +68,12 @@ impl Context {
         Output: 'static,
         Ret: 'static,
     {
-        let (result, set_result): (_, Key<Poll<Output>>) =
-            self.cache_state(id, &(), |()| Poll::Pending);
+        let (_, set_result): (_, Key<Poll<Output>>) = self.cache_state(id, &(), |()| Poll::Pending);
+        let mut set_result2 = set_result.clone();
         self.cache.hold(id, arg, |arg| {
+            // before we spawn the new task we need to mark it pending
+            set_result.force(Poll::Pending);
+
             let (fut, aborter) = abortable(init(arg));
             let task = async move {
                 if let Ok(to_store) = fut.await {
@@ -84,7 +87,9 @@ impl Context {
             scopeguard::guard(aborter, |a| a.abort())
         });
 
-        match &*result {
+        set_result2.refresh();
+
+        match &*set_result2 {
             Poll::Ready(ref stored) => Poll::Ready(with(stored)),
             Poll::Pending => Poll::Pending,
         }
