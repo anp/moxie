@@ -6,7 +6,7 @@ reuse of arbitrary work, state change notifications, and async loaders.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.7.0] - unreleased
+## [0.7.0] - 2020-09-27
 
 ### Added
 
