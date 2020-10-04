@@ -22,15 +22,24 @@ impl WebRuntime {
         mut root: impl FnMut() -> Root + 'static,
     ) -> Self {
         let parent = parent.into();
-        WebRuntime {
+
+        #[cfg_attr(not(feature = "webdom"), allow(unused_mut))]
+        let mut new = Self {
             inner: RunLoop::new(Box::new(move || {
                 let parent = CachedNode::new(parent.clone());
                 let new_root = topo::call(|| root());
 
                 parent.ensure_child_attached(new_root.to_bind());
                 parent.remove_trailing_children();
-            })),
+            }) as Box<dyn FnMut()>),
+        };
+
+        #[cfg(feature = "webdom")]
+        {
+            new.use_web_spawner();
         }
+
+        new
     }
 
     /// Run the root function in a fresh `moxie::Revision`. See
@@ -55,9 +64,11 @@ mod web_impl {
             root: impl FnMut() -> Root + 'static,
         ) -> (Self, augdom::Node) {
             let container = augdom::document().create_element("div");
-            let mut rt = WebRuntime::new(container.clone(), root);
-            rt.inner.set_task_executor(WebSpawner);
-            (rt, container)
+            (WebRuntime::new(container.clone(), root), container)
+        }
+
+        pub(super) fn use_web_spawner(&mut self) {
+            self.inner.set_task_executor(WebSpawner);
         }
 
         /// Pass ownership of this runtime to a "loop" which runs with
