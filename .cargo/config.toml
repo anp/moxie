@@ -60,12 +60,16 @@ build-times = "build --workspace --all-targets --all-features -Z timings"
 
 dom-flow = """
 watch --clear
+    -x build-dom-counter-fn
+    -x build-dom-counter-struct
     -x build-dom-todo
     -x build-dom-hacking
     -x test-prettiest
     -x test-dom
     -x test-dom-doc
     -x test-augdom
+    -x test-dom-counter-fn
+    -x test-dom-counter-struct
     -x test-dom-todo
     -x test-dom-lib-browser
     -x test-dom-drivertest
@@ -78,12 +82,16 @@ wa-pack-build = "wa-pack build --target web --out-name index"
 wa-test = "wa-pack test --chrome --headless"
 
 build-dom-lib = "wa-pack-build dom"
+build-dom-counter-fn = "wa-pack-build dom/examples/counter_fn"
+build-dom-counter-struct = "wa-pack-build dom/examples/counter_struct"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
 
 # browser tests
 test-augdom = "wa-test dom/augdom"
 test-prettiest = "wa-test dom/prettiest"
+test-dom-counter-fn = "wa-test dom/examples/counter_fn"
+test-dom-counter-struct = "wa-test dom/examples/counter_struct"
 test-dom-lib-browser = "wa-test dom"
 test-dom-drivertest = "wa-test dom/examples/drivertest"
 test-dom-hacking = "wa-test dom/examples/hacking"

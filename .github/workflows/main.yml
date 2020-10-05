@@ -126,6 +126,8 @@ jobs:
     - run: cargo test-prettiest
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
+    - run: cargo test-dom-counter-fn
+    - run: cargo test-dom-counter-struct
     - run: cargo test-dom-hacking
     - run: cargo test-dom-todo
     - run: cargo test-dom-drivertest
@@ -168,6 +170,8 @@ jobs:
           ofl/target/doc
           target
 
+    - run: cargo build-dom-counter-fn
+    - run: cargo build-dom-counter-struct
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
     - run: cargo docs-all
