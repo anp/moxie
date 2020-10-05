@@ -72,6 +72,9 @@ use std::{
 };
 use topo::CallId;
 
+#[doc(inline)]
+pub use moxie_macros::updater;
+
 /// Cache the return of the `init` function.
 ///
 /// If the cache has a stored `(Input, Output)` for the current [`topo::CallId`]
@@ -759,6 +762,22 @@ where
     /// See [`state`] and [`cache_state`] for examples.
     pub fn set(&self, new: State) {
         self.update(|prev| if prev == &new { None } else { Some(new) });
+    }
+}
+
+impl<State> Key<State>
+where
+    State: Clone + PartialEq,
+{
+    /// Mutates a copy of the current state, committing the update if it results
+    /// in a change. Has the same properties as [update](Key::update)
+    /// See [`state`] and [`cache_state`] for examples.
+    pub fn mutate(&self, op: impl FnOnce(&mut State)) {
+        self.update(|prev| {
+            let mut new = prev.clone();
+            op(&mut new);
+            if prev == &new { None } else { Some(new) }
+        });
     }
 }
 

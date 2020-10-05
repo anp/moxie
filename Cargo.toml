@@ -2,7 +2,7 @@ cargo-features = ["named-profiles"] # for coverage
 
 [package]
 name = "moxie"
-version = "0.7.0"
+version = "0.7.1-pre"
 description = "Incremental runtime for interactive software."
 categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
 keywords = ["incremental", "memoize", "intern", "reactive"]
@@ -19,6 +19,7 @@ edition = "2018"
 dyn-cache = { path = "dyn-cache", version = "0.12.0"}
 futures = "0.3.5"
 illicit = { path = "illicit", version = "1.1.1"}
+moxie-macros = { path = "macros", version = "0.1.0" }
 parking_lot = "0.11"
 scopeguard = "1"
 topo = { path = "topo", version = "0.13.0"}
@@ -41,6 +42,7 @@ members = [
     "dyn-cache",
     "illicit",
     "illicit/macro",
+    "macros",
     "mox",
     "mox/impl",
     "topo",

@@ -6,6 +6,14 @@ reuse of arbitrary work, state change notifications, and async loaders.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.7.1] - unreleased
+
+### Added
+
+- `Key::mutate` allows naive clone-update-compare access to a state variable.
+- `#[moxie::updater(...)]` attribute macro supports creating a `Key` wrapper with shorthand for
+  mutating methods.
+
 ## [0.7.0] - 2020-09-27
 
 ### Added
