@@ -23,7 +23,7 @@ crate-type = [ "cdylib", "rlib", ]
 [features]
 default = ["webdom"]
 rsdom = ["augdom/rsdom"]
-webdom = ["augdom/webdom", "raf", "wasm-bindgen-futures"]
+webdom = ["augdom/webdom", "raf", "wasm-bindgen", "wasm-bindgen-futures"]
 
 [dependencies]
 augdom = { path = "augdom", version = "0.2.0-pre"}
@@ -36,6 +36,7 @@ topo = { path = "../topo", version = "0.13.0"}
 
 # web-only
 raf = { path = "raf", version = "0.2.0-pre", optional = true }
+wasm-bindgen = { version = "0.2.68", optional = true }
 wasm-bindgen-futures = { version = "0.4.13", optional = true }
 
 [dev-dependencies]
