@@ -1,6 +1,6 @@
 [package]
 name = "local-wasm-pack"
-version = "0.1.0-pre"
+version = "0.1.0"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 publish = false

@@ -1,6 +1,6 @@
 [package]
 name = "counter-moxie-dom-struct"
-version = "0.1.0-pre"
+version = "0.1.0"
 publish = false
 description = "an example counter for moxie-dom"
 edition = "2018"

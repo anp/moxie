@@ -1,7 +1,7 @@
 [package]
 name = "todomvc-moxie"
 description = "TodoMVC clone with moxie-dom"
-version = "0.1.0-pre"
+version = "0.1.0"
 publish = false
 edition = "2018"
 license-file = "../../../../LICENSE-MIT"

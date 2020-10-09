@@ -778,7 +778,7 @@ dependencies = [
 
 [[package]]
 name = "local-wasm-pack"
-version = "0.1.0-pre"
+version = "0.1.0"
 dependencies = [
  "pretty_env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
