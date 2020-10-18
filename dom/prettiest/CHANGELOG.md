@@ -5,6 +5,18 @@ for Javascript values in the [wasm-bindgen](https://docs.rs/wasm-bindgen) crate.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.2.1] - 2020-10-18
+
+###
+
+- Output should be (more) stable across browser versions.
+
+### Changed
+
+- `Prettified` sorts object properties for each prototype before printing.
+- `Prettified` prints functions for each prototype after the properties from that prototype and
+  before the properties of the preceding prototype.
+
 ## [0.2.0] - 2020-08-22
 
 ### Added
