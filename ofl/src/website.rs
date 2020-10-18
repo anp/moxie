@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use gumdrop::Options;
 use mdbook::MDBook;
 use std::{
@@ -59,8 +59,12 @@ impl DistOpts {
             let rel_path = relative.display();
             debug!({ %rel_path }, "copying path");
             let destination = output_path.join(relative);
-            std::fs::create_dir_all(destination.parent().unwrap())?;
-            std::fs::copy(path, destination)?;
+            let parent = destination.parent().unwrap();
+            std::fs::create_dir_all(&parent)
+                .with_context(|| format!("creating {}", parent.display()))?;
+            std::fs::copy(&path, &destination).with_context(|| {
+                format!("copying {} to {}", path.display(), destination.display())
+            })?;
         }
 
         Ok(())
@@ -78,7 +82,7 @@ impl DistOpts {
 
         info!("discovering files to copy");
         let mut to_copy = vec![];
-        'entries: for entry in walkdir::WalkDir::new(root_path) {
+        for entry in walkdir::WalkDir::new(root_path) {
             let path = entry?.path().to_owned();
 
             match path.extension() {
@@ -88,9 +92,14 @@ impl DistOpts {
 
             for prefix in &skip_prefixes {
                 if path.starts_with(prefix) {
-                    continue 'entries;
+                    continue;
                 }
             }
+
+            if path.components().find(|c| c.as_os_str() == "node_modules").is_some() {
+                continue;
+            }
+
             to_copy.push(path);
         }
         Ok(to_copy)
