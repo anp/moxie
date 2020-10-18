@@ -7,7 +7,7 @@ use js_sys::{
     WeakSet,
 };
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, BTreeSet, HashSet},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     rc::Rc,
 };
@@ -143,12 +143,14 @@ impl Debug for Prettified {
             f.finish()
         } else if let Some(obj) = self.value.dyn_ref::<Object>() {
             let mut proto = obj.clone();
-            let mut functions = Vec::new();
             let mut props_seen = HashSet::new();
             let name = obj.constructor().name().as_string().unwrap();
             let mut f = f.debug_struct(&name);
 
             loop {
+                let mut functions = BTreeSet::new();
+                let mut props = BTreeMap::new();
+
                 for raw_key in Object::get_own_property_names(&proto).iter() {
                     let key = raw_key.as_string().expect("object keys are always strings");
                     if (key.starts_with("__") && key.ends_with("__"))
@@ -162,12 +164,21 @@ impl Debug for Prettified {
                     if let Ok(value) = Reflect::get(&obj, &raw_key) {
                         props_seen.insert(key.clone());
                         if value.is_function() {
-                            functions.push(key);
+                            functions.insert(key);
                         } else {
-                            f.field(&key, &self.child(&value));
+                            props.insert(key, self.child(&value));
                         }
                     }
                 }
+
+                for (key, value) in props {
+                    f.field(&key, &value);
+                }
+
+                for key in functions {
+                    f.field(&key, &JsFunction);
+                }
+
                 proto = Object::get_prototype_of(proto.as_ref());
                 if proto.is_falsy() || proto.constructor().name().as_string().unwrap() == "Object" {
                     // we've reached the end of the prototype chain
@@ -175,9 +186,6 @@ impl Debug for Prettified {
                 }
             }
 
-            for key in functions {
-                f.field(&key, &JsFunction);
-            }
             f.finish()
         } else {
             write!(f, "unknown ({:?})", &self.value)
@@ -301,40 +309,40 @@ mod tests {
             received_event.pretty().skip_property("timeStamp").to_string(),
             r#"KeyboardEvent {
     isTrusted: false,
-    DOM_KEY_LOCATION_STANDARD: 0,
     DOM_KEY_LOCATION_LEFT: 1,
-    DOM_KEY_LOCATION_RIGHT: 2,
     DOM_KEY_LOCATION_NUMPAD: 3,
-    key: "",
-    code: "",
-    location: 0,
-    ctrlKey: false,
-    shiftKey: false,
+    DOM_KEY_LOCATION_RIGHT: 2,
+    DOM_KEY_LOCATION_STANDARD: 0,
     altKey: false,
+    charCode: 70,
+    code: "",
+    ctrlKey: false,
+    isComposing: false,
+    key: "",
+    keyCode: 0,
+    location: 0,
     metaKey: false,
     repeat: false,
-    isComposing: false,
-    charCode: 70,
-    keyCode: 0,
-    view: [Window],
+    shiftKey: false,
+    constructor: [Function],
+    getModifierState: [Function],
+    initKeyboardEvent: [Function],
     detail: 0,
     sourceCapabilities: null,
+    view: [Window],
     which: 0,
-    NONE: 0,
-    CAPTURING_PHASE: 1,
+    initUIEvent: [Function],
     AT_TARGET: 2,
     BUBBLING_PHASE: 3,
-    type: "keydown",
-    target: <input/>,
-    currentTarget: null,
-    eventPhase: 0,
+    CAPTURING_PHASE: 1,
+    NONE: 0,
     bubbles: true,
-    cancelable: true,
-    defaultPrevented: false,
-    composed: false,
-    srcElement: <input/>,
-    returnValue: true,
     cancelBubble: false,
+    cancelable: true,
+    composed: false,
+    currentTarget: null,
+    defaultPrevented: false,
+    eventPhase: 0,
     path: [
         <input/>,
         <body/>,
@@ -342,15 +350,15 @@ mod tests {
         [Document],
         [Window],
     ],
-    getModifierState: [Function],
-    initKeyboardEvent: [Function],
-    constructor: [Function],
-    initUIEvent: [Function],
+    returnValue: true,
+    srcElement: <input/>,
+    target: <input/>,
+    type: "keydown",
     composedPath: [Function],
-    stopPropagation: [Function],
-    stopImmediatePropagation: [Function],
-    preventDefault: [Function],
     initEvent: [Function],
+    preventDefault: [Function],
+    stopImmediatePropagation: [Function],
+    stopPropagation: [Function],
 }"#,
         );
     }
