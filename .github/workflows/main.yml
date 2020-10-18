@@ -17,7 +17,7 @@ jobs:
     - name: ensure lockfile up to date
       run: cargo generate-lockfile --manifest-path ofl/Cargo.toml
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.build == 'macos'
+      if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
         echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
@@ -65,7 +65,7 @@ jobs:
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.build == 'macos'
+      if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
         echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
@@ -111,7 +111,7 @@ jobs:
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.build == 'macos'
+      if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
         echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
@@ -156,7 +156,7 @@ jobs:
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.build == 'macos'
+      if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
         echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
