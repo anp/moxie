@@ -6,8 +6,8 @@ use actix_web::{
     middleware, web, App, HttpServer,
 };
 use actix_web_actors::ws;
+use anyhow::Error;
 use crossbeam::channel::{select, unbounded as chan, Receiver, Sender};
-use failure::Error;
 use futures::{
     future::{LocalBoxFuture, Ready},
     FutureExt, TryFutureExt,

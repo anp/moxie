@@ -1,5 +1,5 @@
+use anyhow::Error;
 use dialoguer::{Confirm, Select};
-use failure::Error;
 use gumdrop::Options;
 use semver::Version;
 use std::{
@@ -62,7 +62,10 @@ impl Versions {
 
         println!("{}", pending_updates.join("\n"));
 
-        failure::ensure!(Confirm::new().with_prompt("proceed?").interact()?);
+        anyhow::ensure!(
+            Confirm::new().with_prompt("proceed?").interact()?,
+            "user must agree to proceed"
+        );
 
         let mut to_write = BTreeSet::new();
         for (package, new_version, dependents) in updates {
