@@ -67,7 +67,8 @@ impl DistOpts {
         let skip_prefixes =
             vec![output_path.to_path_buf(), root_path.join(".vscode"), root_path.join("ofl")];
 
-        let exts = vec!["css", "html", "ico", "js", "map", "png", "svg", "txt", "wasm", "woff"];
+        let exts =
+            vec!["css", "html", "ico", "js", "json", "map", "png", "svg", "txt", "wasm", "woff"];
 
         let output = output_path.display();
         info!({ %output }, "cleaning");
