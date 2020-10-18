@@ -1,4 +1,4 @@
-use failure::{bail, Error};
+use anyhow::{bail, Error};
 use gumdrop::Options;
 use std::{
     path::PathBuf,

@@ -1,6 +1,6 @@
+use anyhow::{bail, Context, Error};
 use cargo_metadata::{Package, PackageId};
 use crates_io_api as crates;
-use failure::{bail, Error, ResultExt};
 use gumdrop::Options;
 use semver::Version;
 use std::path::PathBuf;

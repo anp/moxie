@@ -1,4 +1,4 @@
-use failure::Error;
+use anyhow::Error;
 use gumdrop::Options;
 use std::path::{Path, PathBuf};
 use tracing::*;

@@ -1,5 +1,5 @@
+use anyhow::{Context, Error};
 use cargo_metadata::{Metadata, Package, PackageId};
-use failure::{Error, ResultExt};
 use git2::{ObjectType, Repository, Signature};
 use std::{
     collections::BTreeMap,

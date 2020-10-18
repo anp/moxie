@@ -1,7 +1,10 @@
-use failure::{Error, SyncFailure};
+use anyhow::Error;
 use gumdrop::Options;
 use mdbook::MDBook;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 use tracing::*;
 
 #[derive(Debug, Options)]
@@ -93,3 +96,26 @@ impl DistOpts {
         Ok(to_copy)
     }
 }
+
+#[derive(Debug)]
+struct SyncFailure<E>(Mutex<E>);
+
+impl<E> SyncFailure<E>
+where
+    E: std::error::Error,
+{
+    fn new(e: E) -> Self {
+        Self(Mutex::new(e))
+    }
+}
+
+impl<E> std::fmt::Display for SyncFailure<E>
+where
+    E: std::error::Error,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.lock().unwrap().fmt(f)
+    }
+}
+
+impl<E> std::error::Error for SyncFailure<E> where E: std::error::Error {}

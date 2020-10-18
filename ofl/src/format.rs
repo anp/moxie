@@ -1,4 +1,4 @@
-use failure::{bail, Error, ResultExt};
+use anyhow::{bail, Context, Error};
 use gumdrop::Options;
 use std::{path::Path, process::Command};
 use tracing::*;
