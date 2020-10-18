@@ -13,6 +13,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
+
+    - name: ensure lockfile up to date
+      run: cargo generate-lockfile --manifest-path ofl/Cargo.toml --locked
+    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
+      if: matrix.build == 'macos'
+      run: |
+        brew install gnu-tar
+        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
@@ -54,6 +62,21 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
+    - name: ensure lockfile up to date
+      run: cargo generate-lockfile --locked
+    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
+      if: matrix.build == 'macos'
+      run: |
+        brew install gnu-tar
+        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          target
+
     # collect ofl coverage with the root target dir to get into the same report
     - run: bin/ofl coverage collect test-ofl
       env:
@@ -85,6 +108,21 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
+    - name: ensure lockfile up to date
+      run: cargo generate-lockfile --locked
+    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
+      if: matrix.build == 'macos'
+      run: |
+        brew install gnu-tar
+        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          target
+
     - run: cargo test-prettiest
     - run: cargo test-augdom
     - run: cargo test-dom-lib-browser
@@ -114,6 +152,22 @@ jobs:
     # TODO(actions/download-artifact#14) undo hack
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
+
+    - name: ensure lockfile up to date
+      run: cargo generate-lockfile --locked
+    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
+      if: matrix.build == 'macos'
+      run: |
+        brew install gnu-tar
+        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+    - uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        path: |
+          ~/.cargo/git
+          ~/.cargo/registry
+          ofl/target/doc
+          target
 
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
