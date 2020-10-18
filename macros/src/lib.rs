@@ -1,12 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-/// Applied to impl blocks, this macro defines a new "updater" wrapper type that
-/// holds a [`moxie::Key`] and forwards all receiver-mutating methods. Useful
-/// for defining interactions for a stateful component with less boilerplate.
-///
-/// Requires the name of the updater struct to generate in the arguments to the
-/// attribute.
 #[proc_macro_attribute]
 pub fn updater(name: TokenStream, input: TokenStream) -> TokenStream {
     let name: syn::Ident = syn::parse(name).unwrap();
@@ -17,13 +11,10 @@ pub fn updater(name: TokenStream, input: TokenStream) -> TokenStream {
     let mut updater_items = vec![];
 
     for item in &impls.items {
-        match item {
-            syn::ImplItem::Method(method) => {
-                if let Some(updater_method) = make_updater_method(method) {
-                    updater_items.push(syn::ImplItem::Method(updater_method));
-                }
+        if let syn::ImplItem::Method(method) = item {
+            if let Some(updater_method) = make_updater_method(method) {
+                updater_items.push(syn::ImplItem::Method(updater_method));
             }
-            _ => (),
         }
     }
 
