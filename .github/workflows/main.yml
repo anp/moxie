@@ -132,11 +132,11 @@ jobs:
     - run: cargo test-dom-todo
     - run: cargo test-dom-drivertest
 
-    - run: cd dom/examples/todo/e2e; npm ci
-    - name: todomvc e2e tests
-      run: cargo test-dom-todo-e2e --record
-      env:
-        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+    # - run: cd dom/examples/todo/e2e; npm ci
+    # - name: todomvc e2e tests
+    #   run: cargo test-dom-todo-e2e --record
+    #   env:
+    #     CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
 
   website:
     needs: ofl
