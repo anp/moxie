@@ -190,8 +190,8 @@ html_element! {
 
 html_element! {
     /// The [HTML `<meta>` element][mdn] represents [metadata] that cannot be represented by other
-    /// HTML meta-related elements, like [`<base>`][base], [`<link>`][link], [`<script>`][script],
-    /// [`<style>`][style] or [`<title>`][title].
+    /// HTML meta-related elements, like [`<base>`], [`<link>`], [`<script>`], [`<style>`] or
+    /// [`<title>`].
     ///
     /// Note: the attribute `name` has a specific meaning for the `<meta>` element, and the
     /// `itemprop` attribute must not be set on the same `<meta>` element that has any existing
@@ -199,11 +199,11 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
     /// [metadata]: https://developer.mozilla.org/en-US/docs/Glossary/Metadata
-    /// [base]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-    /// [link]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
-    /// [script]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
-    /// [style]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-    /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
+    /// [`<base>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    /// [`<link>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+    /// [`<script>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+    /// [`<style>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+    /// [`<title>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     <meta>
 
     categories {
