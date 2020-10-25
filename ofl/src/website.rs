@@ -96,7 +96,7 @@ impl DistOpts {
                 }
             }
 
-            if path.components().find(|c| c.as_os_str() == "node_modules").is_some() {
+            if path.components().any(|c| c.as_os_str() == "node_modules") {
                 continue;
             }
 
