@@ -1,14 +1,15 @@
+use anyhow::{bail, Context, Error};
 use cargo_metadata::{Metadata, Package, PackageId};
-use failure::{Error, ResultExt};
 use git2::{ObjectType, Repository, Signature};
 use std::{
     collections::BTreeMap,
-    path::Path,
+    path::{Path, PathBuf},
     process::{Command, Output},
 };
-use tracing::info;
+use tracing::{error, info};
 
 pub struct Workspace {
+    pub project_root: PathBuf,
     pub metadata: Metadata,
     pub ofl_metadata: Metadata,
     pub rustfmt_toolchain: String,
@@ -17,13 +18,14 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn get(project_root: impl AsRef<Path>) -> Result<Self, Error> {
-        let project_root = project_root.as_ref();
+        let project_root = project_root.as_ref().to_path_buf();
 
         Ok(Self {
-            metadata: metadata_for_directory(project_root)?,
-            ofl_metadata: metadata_for_directory(project_root.join("ofl"))?,
-            rustfmt_toolchain: rustfmt_toolchain(project_root),
-            repo: Repository::open(project_root)?,
+            metadata: metadata_for_directory(&project_root)?,
+            ofl_metadata: metadata_for_directory(&project_root.join("ofl"))?,
+            rustfmt_toolchain: rustfmt_toolchain(&project_root),
+            repo: Repository::open(&project_root)?,
+            project_root,
         })
     }
 
@@ -73,6 +75,41 @@ impl Workspace {
         let tag = self.repo.tag(name, &head, &tagger, message, false)?;
         info!({ %name, %message, %tag }, "created tag");
         Ok(())
+    }
+
+    pub fn member_checksum(&self, id: &PackageId) -> Result<Vec<u8>, Error> {
+        let package = self.get_member(id).unwrap(); // TODO return an error?
+        info!({ %package.name, %package.version }, "packaging");
+
+        let output = std::process::Command::new("cargo")
+            .arg("package")
+            .arg("--no-verify")
+            .arg("--manifest-path")
+            .arg(&package.manifest_path)
+            .output()?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8(output.stderr).context("output as utf8")?;
+            let stdout = String::from_utf8(output.stdout).context("output as utf8")?;
+            error!(
+                "failed to package {}
+stderr:
+{}
+stdout:
+{}",
+                package.manifest_path.display(),
+                stderr,
+                stdout,
+            );
+            bail!("cargo failure");
+        }
+
+        let filename = format!("{}-{}.crate", package.name, package.version);
+        // TODO get the actual target directory rather than assuming we know the layout
+        // TODO(#179) backdate the commit in .cargo_vcs_info.json before checksumming
+        let crate_file = self.project_root.join("target").join("package").join(filename);
+        let contents = std::fs::read(crate_file)?;
+        Ok(crypto_hash::digest(crypto_hash::Algorithm::SHA256, &contents))
     }
 }
 

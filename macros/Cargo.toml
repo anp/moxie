@@ -1,6 +1,6 @@
 [package]
 name = "moxie-macros"
-version = "0.1.0"
+version = "0.1.0-pre"
 description = "Macros for the moxie crate."
 readme = "../CHANGELOG.md"
 

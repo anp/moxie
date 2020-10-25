@@ -1,7 +1,10 @@
-use failure::{Error, SyncFailure};
+use anyhow::{Context, Error};
 use gumdrop::Options;
 use mdbook::MDBook;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 use tracing::*;
 
 #[derive(Debug, Options)]
@@ -56,8 +59,12 @@ impl DistOpts {
             let rel_path = relative.display();
             debug!({ %rel_path }, "copying path");
             let destination = output_path.join(relative);
-            std::fs::create_dir_all(destination.parent().unwrap())?;
-            std::fs::copy(path, destination)?;
+            let parent = destination.parent().unwrap();
+            std::fs::create_dir_all(&parent)
+                .with_context(|| format!("creating {}", parent.display()))?;
+            std::fs::copy(&path, &destination).with_context(|| {
+                format!("copying {} to {}", path.display(), destination.display())
+            })?;
         }
 
         Ok(())
@@ -75,7 +82,7 @@ impl DistOpts {
 
         info!("discovering files to copy");
         let mut to_copy = vec![];
-        'entries: for entry in walkdir::WalkDir::new(root_path) {
+        for entry in walkdir::WalkDir::new(root_path) {
             let path = entry?.path().to_owned();
 
             match path.extension() {
@@ -85,11 +92,39 @@ impl DistOpts {
 
             for prefix in &skip_prefixes {
                 if path.starts_with(prefix) {
-                    continue 'entries;
+                    continue;
                 }
             }
+
+            if path.components().any(|c| c.as_os_str() == "node_modules") {
+                continue;
+            }
+
             to_copy.push(path);
         }
         Ok(to_copy)
     }
 }
+
+#[derive(Debug)]
+struct SyncFailure<E>(Mutex<E>);
+
+impl<E> SyncFailure<E>
+where
+    E: std::error::Error,
+{
+    fn new(e: E) -> Self {
+        Self(Mutex::new(e))
+    }
+}
+
+impl<E> std::fmt::Display for SyncFailure<E>
+where
+    E: std::error::Error,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.lock().unwrap().fmt(f)
+    }
+}
+
+impl<E> std::error::Error for SyncFailure<E> where E: std::error::Error {}
