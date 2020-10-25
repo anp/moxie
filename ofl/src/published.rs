@@ -1,8 +1,7 @@
 use anyhow::{bail, Context, Error};
 use cargo_metadata::{Package, PackageId};
-use crates_io_api as crates;
+use crates_index::Index;
 use gumdrop::Options;
-use semver::Version;
 use std::path::PathBuf;
 use tracing::*;
 
@@ -19,6 +18,7 @@ pub struct EnsurePublished {
 impl EnsurePublished {
     pub fn run(self, root: PathBuf) -> Result<(), Error> {
         let workspace = Workspace::get(&root)?;
+        info!(workspace = %root.display(), "identifying packages to publish");
         let to_publish = packages_to_publish(&workspace)?;
         for id in to_publish {
             let package = &workspace.metadata[&id];
@@ -38,11 +38,16 @@ impl EnsurePublished {
 }
 
 fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
+    let index = Index::new_cargo_default();
+    info!("updating cargo index");
+    index.retrieve_or_update()?;
+
     let members = workspace.local_members();
     let mut to_publish_ids = vec![];
 
     for member in members {
         let package = &workspace.metadata[&member];
+        let version_str = package.version.to_string();
 
         let manifest = std::fs::read_to_string(&package.manifest_path)?;
         if manifest.contains("publish = false") {
@@ -50,10 +55,14 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
             continue;
         }
 
-        if package.version.is_prerelease()
-            || crates_io_has(&package.name, &package.version).unwrap_or(false)
+        if package.version.is_prerelease() {
+            info!({ %package.name, %package.version }, "skipping pre-release version");
+        } else if index
+            .crate_(&package.name)
+            .map(|c| c.versions().iter().any(|v| v.version() == version_str))
+            .unwrap_or_default()
         {
-            info!({ %package.name, %package.version }, "skipping");
+            info!({ %package.name, %package.version }, "skipping already-published version");
         } else {
             to_publish_ids.push(member);
         }
@@ -94,16 +103,4 @@ stdout:
     }
 
     Ok(())
-}
-
-fn crates_io_has(name: &str, version: &Version) -> Result<bool, Error> {
-    info!({ %name, %version }, "checking crates.io for");
-
-    let client = crates::SyncClient::new("ofl", std::time::Duration::from_secs(1))?;
-    let krate = client.full_crate(name, true /* all_versions */)?;
-    let versions = &krate.versions;
-
-    let current_version_str = version.to_string();
-
-    Ok(versions.iter().map(|v| &v.num).any(|v| v == &current_version_str))
 }
