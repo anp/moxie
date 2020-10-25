@@ -44,6 +44,7 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
 
     let members = workspace.local_members();
     let mut to_publish_ids = vec![];
+    let mut mismatched_checksums = vec![];
 
     for member in members {
         let package = &workspace.metadata[&member];
@@ -51,12 +52,12 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
 
         let manifest = std::fs::read_to_string(&package.manifest_path)?;
         if manifest.contains("publish = false") {
-            info!({ %package.name }, "skipping `publish = false`");
+            debug!({ %package.name }, "skipping `publish = false`");
             continue;
         }
 
         if package.version.is_prerelease() {
-            info!({ %package.name, %package.version }, "skipping pre-release version");
+            debug!({ %package.name, %package.version }, "skipping pre-release version");
             continue;
         }
 
@@ -66,12 +67,29 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
                     { name = %published.name(), version = %published.version() },
                     "found already-published",
                 );
-                // TODO(#179) ensure the checksums match
+
+                let current_checksum = workspace.member_checksum(&package.id)?;
+                if &current_checksum != published.checksum() {
+                    error!({ name = %published.name() }, "checksums don't match crates.io");
+                    error!("consider running `cargo ofl versions` to update its version");
+                    mismatched_checksums.push(package.name.clone());
+                } else {
+                    info!({ name = %published.name() }, "checksum matches crates.io");
+                }
+
                 continue;
             }
         }
 
         to_publish_ids.push(member);
+    }
+
+    if !mismatched_checksums.is_empty() {
+        bail!(
+            "{} crates' checksums were a mismatch to what's published without updated version \
+             numbers.",
+            mismatched_checksums.len()
+        );
     }
 
     let to_publish =
