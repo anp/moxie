@@ -199,11 +199,11 @@ html_element! {
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
     /// [metadata]: https://developer.mozilla.org/en-US/docs/Glossary/Metadata
-    /// [base]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-    /// [link]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
-    /// [script]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
-    /// [style]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-    /// [title]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
+    /// [`<base>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    /// [`<link>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+    /// [`<script>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+    /// [`<style>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+    /// [`<title>`]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
     <meta>
 
     categories {
