@@ -16,34 +16,47 @@ impl Versions {
     pub fn run(self, project_root: PathBuf) -> Result<(), Error> {
         let workspace = crate::workspace::Workspace::get(project_root)?;
 
-        let moxie_crates = workspace.local_members();
+        let mut moxie_crates = workspace
+            .local_members()
+            .into_iter()
+            .map(|id| workspace.get_member(&id).unwrap())
+            .collect::<Vec<_>>();
+        moxie_crates.sort_by_key(|c| &c.name);
 
-        // TODO prompt for a subset of crates to update
+        // prompt the user for which crates' versions they want bumped
+        let mut choose_updates = Select::new();
+        for krate in &moxie_crates {
+            choose_updates.item(&krate.name);
+        }
+
+        let to_update_idx = choose_updates.with_prompt("Select crates to update:").interact()?;
+        let to_update = moxie_crates[to_update_idx].clone();
 
         let mut updates = Vec::new();
         let mut updated_manifests = moxie_crates
             .iter()
-            .map(|id| {
-                let moxie_crate = workspace.get_member(&id).unwrap();
+            .map(|moxie_crate| {
                 let manifest_contents = std::fs::read_to_string(&moxie_crate.manifest_path)?;
                 let manifest: Document = manifest_contents.parse()?;
                 Ok((moxie_crate.name.clone(), (moxie_crate, manifest)))
             })
             .collect::<Result<BTreeMap<_, _>, Error>>()?;
-        for id in moxie_crates {
-            let moxie_crate = workspace.get_member(&id).unwrap();
 
-            if let Some(registries) = &moxie_crate.publish {
-                if registries.is_empty() {
-                    continue;
-                }
+        if let Some(registries) = &to_update.publish {
+            if registries.is_empty() {
+                info!("TODO figure out why this happens again?");
+                return Ok(());
             }
+        }
 
-            let new_version = prompt_for_new_version(&moxie_crate.name, &moxie_crate.version)?;
+        let new_version = prompt_for_new_version(&to_update.name, &to_update.version)?;
 
-            if new_version != moxie_crate.version {
-                updates.push((moxie_crate, new_version, workspace.local_dependents(&id)));
-            }
+        if new_version != to_update.version {
+            updates.push((
+                to_update.clone(),
+                new_version,
+                workspace.local_dependents(&to_update.id),
+            ));
         }
 
         let mut pending_updates = vec![String::from("crates to update:")];
