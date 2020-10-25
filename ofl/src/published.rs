@@ -57,15 +57,21 @@ fn packages_to_publish(workspace: &Workspace) -> Result<Vec<PackageId>, Error> {
 
         if package.version.is_prerelease() {
             info!({ %package.name, %package.version }, "skipping pre-release version");
-        } else if index
-            .crate_(&package.name)
-            .map(|c| c.versions().iter().any(|v| v.version() == version_str))
-            .unwrap_or_default()
-        {
-            info!({ %package.name, %package.version }, "skipping already-published version");
-        } else {
-            to_publish_ids.push(member);
+            continue;
         }
+
+        if let Some(krate) = index.crate_(&package.name) {
+            if let Some(published) = krate.versions().iter().find(|v| v.version() == version_str) {
+                info!(
+                    { name = %published.name(), version = %published.version() },
+                    "found already-published",
+                );
+                // TODO(#179) ensure the checksums match
+                continue;
+            }
+        }
+
+        to_publish_ids.push(member);
     }
 
     let to_publish =
