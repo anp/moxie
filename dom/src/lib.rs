@@ -98,7 +98,7 @@ pub use paste::paste as __paste;
 pub use augdom as raw;
 
 /// The "boot sequence" for a moxie-dom instance creates a
-/// [crate::embed::WebRuntime] with the provided arguments and begins scheduling
+/// [`crate::embed::DomLoop`] with the provided arguments and begins scheduling
 /// its execution with `requestAnimationFrame` on state changes.
 ///
 /// If you need to schedule your root function more or less frequently than when
@@ -106,7 +106,7 @@ pub use augdom as raw;
 /// granular control over scheduling.
 ///
 /// In terms of the embed module's APIs, this function constructs a new
-/// [`WebRuntime`](crate::embed::WebRuntime) and begins scheduling it with an
+/// [`crate::embed::DomLoop`] and begins scheduling it with an
 /// [`AnimationFrameScheduler`](raf::AnimationFrameScheduler) which requests an
 /// animation frame only when there are updates to state variables.
 ///
@@ -116,14 +116,14 @@ pub fn boot<Root>(new_parent: impl Into<augdom::Node>, root: impl FnMut() -> Roo
 where
     Root: interfaces::node::Child + 'static,
 {
-    embed::WebRuntime::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
+    embed::DomLoop::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
 
-/// Runs the provided closure once and produces a prettified HTML string from
-/// the contents.
+/// Run the provided root function's in a virtual document context, returning
+/// its result.
 ///
-/// If you need more control over the output of the HTML, see the implementation
-/// of this function.
+/// Does not provide a task spawner, as a result functions which attempt to call
+/// [`moxie::load`] (and its related functions) will panic.
 ///
 /// Requires the `rsdom` feature.
 #[cfg(any(feature = "rsdom", doc))]
@@ -133,7 +133,7 @@ where
 {
     use augdom::Dom;
 
-    let (mut tester, root) = embed::WebRuntime::in_rsdom_div(root);
+    let (mut tester, root) = embed::DomLoop::new_virtual(root);
     tester.run_once();
     let outer = root.pretty_outer_html(2);
     // TODO(#185) remove this hack

@@ -26,7 +26,7 @@ rsdom = ["augdom/rsdom"]
 webdom = ["augdom/webdom", "raf", "wasm-bindgen", "wasm-bindgen-futures"]
 
 [dependencies]
-augdom = { path = "augdom", version = "0.2.0-pre"}
+augdom = { path = "augdom", version = "0.2.0-pre", default-features = false }
 futures = "0.3.5"
 illicit = { path = "../illicit", version = "1.1.1"}
 moxie = { path = "../", version = "0.7.1-pre"}
