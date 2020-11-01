@@ -40,7 +40,7 @@ macro_rules! attr_method {
         #[topo::nested]
         $publicity fn $attr(self, to_set: bool) -> Self {
             #[allow(unused)]
-            use crate::interfaces::element::Element;
+            use crate::interfaces::element::ElementBuilder;
             if to_set {
                 self.attribute(attr_name!($attr), "")
             } else {
@@ -65,7 +65,7 @@ macro_rules! attr_method {
         #[topo::nested]
         $publicity fn $attr(self, to_set: $arg) -> Self {
             #[allow(unused)]
-            use crate::interfaces::element::Element;
+            use crate::interfaces::element::ElementBuilder;
             self.attribute(attr_name!($attr), to_set.to_string())
         }
     };
@@ -94,7 +94,7 @@ macro_rules! element {
             #[allow(unused)]
             use augdom::Dom;
             #[allow(unused)]
-            use crate::interfaces::node::Node;
+            use crate::interfaces::node::NodeWrapper;
 
             let elem = moxie::cache(stringify!($name), |ty| {
                 $crate::prelude::document().create_element(ty)
@@ -110,8 +110,8 @@ macro_rules! element {
             inner: crate::cached_node::CachedNode,
         }
 
-        impl crate::interfaces::element::Element for [<$name:camel Builder>] {}
-        impl crate::interfaces::node::Node for [<$name:camel Builder>] {}
+        impl crate::interfaces::element::ElementBuilder for [<$name:camel Builder>] {}
+        impl crate::interfaces::node::NodeWrapper for [<$name:camel Builder>] {}
 
         impl [<$name:camel Builder>] {
             /// Initialize the element with all of the attributes so far.
@@ -162,12 +162,13 @@ macro_rules! element {
             inner: crate::cached_node::CachedNode,
         }
 
-        impl crate::interfaces::node::Node for [<$name:camel>] {}
+        impl crate::interfaces::node::NodeWrapper for [<$name:camel>] {}
         impl crate::interfaces::node::sealed::Memoized for [<$name:camel>] {
             fn node(&self) -> &crate::cached_node::CachedNode {
                 &self.inner
             }
         }
+        impl crate::interfaces::element::Element for [<$name:camel>] {}
 
         // content categories
         $($(
@@ -178,7 +179,7 @@ macro_rules! element {
 }
 
 /// Define an HTML element type, which is essentially an `element!` with the
-/// `HtmlElement` and `GlobalEventHandler` traits.
+/// `HtmlElementBuilder` and `GlobalEventHandler` traits.
 macro_rules! html_element {
     (
         $(#[$outer:meta])*
@@ -191,7 +192,7 @@ macro_rules! html_element {
             $($rem)*
         }
 
-        impl crate::interfaces::html_element::HtmlElement for [<$name:camel Builder>] {}
+        impl crate::interfaces::html_element::HtmlElementBuilder for [<$name:camel Builder>] {}
         impl crate::interfaces::global_events::GlobalEventHandler for [<$name:camel Builder>] {}
 
         impl<E> crate::interfaces::event_target::EventTarget<E> for [<$name:camel Builder>]

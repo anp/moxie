@@ -8,7 +8,7 @@ use illicit::AsContext;
 use mox::mox;
 use moxie_dom::{
     elements::sectioning::{section, Section},
-    interfaces::node::Node,
+    interfaces::element::Element,
     prelude::*,
 };
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -57,7 +57,7 @@ impl App {
         Self::boot_fn(&[], node, todo_app)
     }
 
-    fn boot_fn<Root: Node + 'static>(
+    fn boot_fn<Root: Element + 'static>(
         default_todos: &[Todo],
         node: impl Into<moxie_dom::raw::Node>,
         mut root: impl FnMut() -> Root + 'static,

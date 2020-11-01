@@ -14,8 +14,11 @@ pub(crate) mod sealed {
 /// allowing those types to be treated similarly; for example, inheriting the
 /// same set of methods, or being testable in the same way.
 ///
-/// Note: this trait cannot be implemented outside of this crate.
-pub trait Node: sealed::Memoized + Sized {
+/// Note: this trait cannot be implemented outside of this crate and is not
+/// intended for direct use in most cases. See the
+/// [`crate::interfaces::element`], module and its siblings, as well as the
+/// [`Parent`] and [`Child`] traits in this module.
+pub trait NodeWrapper: sealed::Memoized + Sized {
     /// Retrieves access to the raw HTML element underlying the (CachedNode).
     ///
     /// Because this offers an escape hatch around the memoized mutations, it
@@ -41,7 +44,7 @@ pub trait Child {
 
 impl<N> Child for N
 where
-    N: Node,
+    N: NodeWrapper,
 {
     fn to_bind(&self) -> &augdom::Node {
         self.raw_node_that_has_sharp_edges_please_be_careful()
@@ -50,9 +53,9 @@ where
 
 /// A node which accepts children.
 ///
-/// > Note: `C` is constrained by `Child` rather than `Node` to allow custom
-/// components to be bound directly to DOM types.
-pub trait Parent<C: Child>: Node {
+/// > Note: `C` is constrained by `Child` rather than `NodeWrapper` to allow
+/// custom components to be bound directly to DOM types.
+pub trait Parent<C: Child>: NodeWrapper {
     /// Add a child to this node.
     fn child(self, child: C) -> Self {
         self.node().ensure_child_attached(child.to_bind());

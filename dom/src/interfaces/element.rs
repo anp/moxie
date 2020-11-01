@@ -12,8 +12,8 @@
 /// Note: this trait cannot be implemented outside of this crate.
 ///
 /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Element
-/// [HTMLElement]: [HtmlElement]
-pub trait Element: crate::interfaces::node::Node {
+/// [HTMLElement]: [HtmlElementBuilder]
+pub trait ElementBuilder: crate::interfaces::node::NodeWrapper {
     /// Declare an attribute of the element, mutating the actual element's
     /// attribute when the passed value changes.
     ///
@@ -43,3 +43,6 @@ pub trait Element: crate::interfaces::node::Node {
         style
     }
 }
+
+/// A built Element. See [`ElementBuilder`] docs for more details.
+pub trait Element: crate::interfaces::node::NodeWrapper {}

@@ -1,7 +1,7 @@
 //! EventTarget is a DOM interface implemented by objects that can receive
 //! events and may have listeners for them.
 
-use crate::interfaces::node::Node;
+use crate::interfaces::node::NodeWrapper;
 use augdom::event::{Event, EventHandle};
 use moxie::cache_with;
 
@@ -16,7 +16,7 @@ use moxie::cache_with;
 /// setting event handlers via onevent properties and attributes.
 ///
 /// Note: this trait cannot be implemented outside of this crate.
-pub trait EventTarget<Ev>: Node
+pub trait EventTarget<Ev>: NodeWrapper
 where
     Ev: 'static + Event,
 {

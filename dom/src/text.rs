@@ -24,7 +24,7 @@ impl crate::interfaces::node::sealed::Memoized for Text {
         &self.0
     }
 }
-impl crate::interfaces::node::Node for Text {}
+impl crate::interfaces::node::NodeWrapper for Text {}
 
 impl FlowContent for Text {}
 impl PhrasingContent for Text {}
