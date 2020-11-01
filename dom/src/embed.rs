@@ -22,9 +22,9 @@ impl DomLoop {
     /// On its own, a `WebRuntime` is inert and must either have its `run_once`
     /// method called when a re-render is needed, or be scheduled with
     /// [`DomLoop::animation_frame_scheduler`].
-    pub fn new<Root: Child>(
+    pub fn new<Root: Child + 'static>(
         parent: impl Into<augdom::Node>,
-        mut root: impl FnMut() -> Root + 'static,
+        mut root: impl (FnMut() -> Root) + 'static,
     ) -> Self {
         let parent = parent.into();
 
@@ -50,10 +50,10 @@ impl DomLoop {
     /// Internally calls [`DomLoop::new`].
     #[cfg(feature = "rsdom")]
     pub fn new_virtual<Root: Child + 'static>(
-        root: impl FnMut() -> Root + 'static,
-    ) -> (Self, augdom::Node) {
-        let virt = augdom::in_virtual_document(|| augdom::document().create_element("div"))();
-        (Self::new(virt.clone(), augdom::in_virtual_document(root)), virt)
+        parent: impl Into<augdom::Node>,
+        root: impl (FnMut() -> Root) + 'static,
+    ) -> Self {
+        Self::new(parent, augdom::in_virtual_document(root))
     }
 
     /// Run the root function in a fresh `moxie::Revision` and bind the returned

@@ -119,38 +119,6 @@ where
     embed::DomLoop::new(new_parent.into(), root).animation_frame_scheduler().run_on_wake();
 }
 
-/// Run the provided root function's in a virtual document context, returning
-/// its result.
-///
-/// Does not provide a task spawner, as a result functions which attempt to call
-/// [`moxie::load`] (and its related functions) will panic.
-///
-/// Requires the `rsdom` feature.
-#[cfg(any(feature = "rsdom", doc))]
-pub fn render_html<Root>(root: impl FnMut() -> Root + 'static) -> String
-where
-    Root: interfaces::node::Child + 'static,
-{
-    use augdom::Dom;
-
-    let (mut tester, root) = embed::DomLoop::new_virtual(root);
-    tester.run_once();
-    let outer = root.pretty_outer_html(2);
-    // TODO(#185) remove this hack
-    // because we use the indented version, we know that only at the top and bottom
-    // is what we want
-    outer.lines().filter(|l| *l != "<div>" && *l != "</div>").map(|l| l.split_at(2).1).fold(
-        String::new(),
-        |mut fragment, line| {
-            if !fragment.is_empty() {
-                fragment.push('\n');
-            }
-            fragment.push_str(line);
-            fragment
-        },
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{

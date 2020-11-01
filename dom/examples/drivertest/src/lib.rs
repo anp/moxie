@@ -23,7 +23,8 @@ fn mini_list() {
 
     let web_div = augdom::document().create_element("div");
     let mut web_tester = DomLoop::new(web_div.clone(), list);
-    let (mut virtual_tester, rsdom_root) = DomLoop::new_virtual(list);
+    let rsdom_root = augdom::create_virtual_element("div");
+    let mut virtual_tester = DomLoop::new_virtual(rsdom_root.clone(), list);
 
     web_tester.run_once();
     virtual_tester.run_once();

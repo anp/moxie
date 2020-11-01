@@ -3,6 +3,7 @@ extern crate gotham_derive;
 #[macro_use]
 extern crate serde_derive;
 
+use augdom::Dom;
 use gotham::{
     router::{builder::*, Router},
     state::{FromState, State},
@@ -10,6 +11,7 @@ use gotham::{
 use mox::mox;
 use moxie_dom::{
     elements::text_content::{li, ul, Ul},
+    embed::DomLoop,
     prelude::*,
 };
 
@@ -39,8 +41,10 @@ fn parts_handler(state: State) -> (State, String) {
         let path = PathExtractor::borrow_from(&state);
         path.parts.to_owned()
     };
-    let res = moxie_dom::render_html(move || simple_list(&parts));
-    (state, res)
+    let web_div = augdom::create_virtual_element("div");
+    let mut renderer = DomLoop::new_virtual(web_div.clone(), move || simple_list(&parts));
+    renderer.run_once();
+    (state, web_div.pretty_outer_html(2))
 }
 
 fn router() -> Router {
@@ -54,7 +58,6 @@ mod tests {
     use super::*;
     use gotham::test::TestServer;
     use hyper::StatusCode;
-    use moxie_dom::embed::DomLoop;
 
     #[test]
     fn extracts_one_component() {
@@ -66,9 +69,11 @@ mod tests {
         let body = String::from_utf8(response.read_body().unwrap()).unwrap();
         assert_eq!(
             &body,
-            "<ul>
-  <li>head</li>
-</ul>",
+            r#"<div>
+  <ul>
+    <li>head</li>
+  </ul>
+</div>"#,
         );
     }
 
@@ -86,18 +91,21 @@ mod tests {
         let body = String::from_utf8(response.read_body().unwrap()).unwrap();
         assert_eq!(
             &body,
-            &"<ul>
-  <li>head</li>
-  <li>shoulders</li>
-  <li>knees</li>
-  <li>toes</li>
-</ul>",
+            &r#"<div>
+  <ul>
+    <li>head</li>
+    <li>shoulders</li>
+    <li>knees</li>
+    <li>toes</li>
+  </ul>
+</div>"#,
         );
     }
 
     #[test]
     fn basic_list_prerender() {
-        let (mut tester, root) = DomLoop::new_virtual(move || {
+        let root = augdom::create_virtual_element("div");
+        let mut tester = DomLoop::new_virtual(root.clone(), move || {
             mox! {
                 <ul class="listywisty">
                     <li>"first"</li>
