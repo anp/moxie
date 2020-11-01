@@ -1,7 +1,7 @@
 use mox::mox;
 use moxie_dom::{
     elements::html::{button, li, ul},
-    embed::WebRuntime,
+    embed::DomLoop,
     prelude::*,
 };
 use wasm_bindgen::JsCast;
@@ -21,8 +21,8 @@ fn mini_list() {
         }
     };
 
-    let (mut web_tester, web_div) = WebRuntime::in_web_div(list);
-    let (mut virtual_tester, rsdom_root) = WebRuntime::in_rsdom_div(list);
+    let (mut web_tester, web_div) = DomLoop::new(list);
+    let (mut virtual_tester, rsdom_root) = DomLoop::new_virtual(list);
 
     web_tester.run_once();
     virtual_tester.run_once();
@@ -66,7 +66,8 @@ fn mini_list() {
 #[wasm_bindgen_test]
 fn mutiple_event_listeners() {
     // Create a button with two click event listeners
-    let (mut web_tester, web_div) = WebRuntime::in_web_div(move || {
+    let web_div = augdom::document().create_element("div");
+    let mut web_tester = DomLoop::new(web_div.clone(), move || {
         // Each event listener increments a counter
         let (counter1_val, counter1) = moxie::state(|| 0u8);
         let (counter2_val, counter2) = moxie::state(|| 0u8);

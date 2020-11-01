@@ -54,7 +54,7 @@ mod tests {
     use super::*;
     use gotham::test::TestServer;
     use hyper::StatusCode;
-    use moxie_dom::embed::WebRuntime;
+    use moxie_dom::embed::DomLoop;
 
     #[test]
     fn extracts_one_component() {
@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn basic_list_prerender() {
-        let (mut tester, root) = WebRuntime::in_rsdom_div(move || {
+        let (mut tester, root) = DomLoop::new_virtual(move || {
             mox! {
                 <ul class="listywisty">
                     <li>"first"</li>

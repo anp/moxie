@@ -64,6 +64,15 @@ pub fn document() -> Document {
     concrete_document()
 }
 
+/// Wrap the provided `root` function in a virtual document and ensures that all
+/// nodes created within `root` will create virtual nodes.
+#[cfg(feature = "rsdom")]
+pub fn in_virtual_document<Root>(mut root: impl FnMut() -> Root) -> impl FnMut() -> Root {
+    use illicit::AsContext;
+    let document = Document::new_virtual();
+    move || document.clone().offer(&mut root)
+}
+
 #[cfg(feature = "webdom")]
 fn concrete_document() -> Document {
     Document::Concrete(
