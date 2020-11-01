@@ -34,7 +34,7 @@ html_element! {
         coords
 
         /// This attribute, if present, indicates that the author intends the hyperlink to be used
-        /// for downloading a resource. See <a> for a full description of the download attribute.
+        /// for downloading a resource. See `<a>` for a full description of the download attribute.
         download(bool)
 
         /// The hyperlink target for the area. Its value is a valid URL. This attribute may be
@@ -116,10 +116,10 @@ html_element! {
         controls(bool)
 
         /// This enumerated attribute indicates whether to use CORS to fetch the related audio file.
-        /// CORS-enabled resources can be reused in the <canvas> element without being tainted.
+        /// CORS-enabled resources can be reused in the `<canvas>` element without being tainted.
         ///
         /// When not present, the resource is fetched without a CORS request (i.e. without sending
-        /// the Origin: HTTP header), preventing its non-tainted used in <canvas> elements. If
+        /// the Origin: HTTP header), preventing its non-tainted used in `<canvas>` elements. If
         /// invalid, it is handled as if the enumerated keyword anonymous was used.
         ///
         /// The allowed values are:
@@ -196,8 +196,8 @@ html_element! {
         preload
 
         /// The URL of the audio to embed. This is subject to HTTP access controls. This is
-        /// optional; you may instead use the <source> element within the audio block to specify the
-        /// audio to embed.
+        /// optional; you may instead use the `<source>` element within the audio block to specify
+        /// the audio to embed.
         src
     }
 }
@@ -237,19 +237,19 @@ html_element! {
         alt
 
         /// Indicates if the fetching of the image must be done using a CORS request. Image data
-        /// from a CORS-enabled image returned from a CORS request can be reused in the <canvas>
+        /// from a CORS-enabled image returned from a CORS request can be reused in the `<canvas>`
         /// element without being marked "tainted".
         ///
         /// If the crossorigin attribute is not specified, then a non-CORS request is sent (without
         /// the Origin request header), and the browser marks the image as tainted and restricts
-        /// access to its image data, preventing its usage in <canvas> elements.
+        /// access to its image data, preventing its usage in `<canvas>` elements.
         ///
         /// If the crossorigin attribute is specified, then a CORS request is sent (with the Origin
         /// request header); but if the server does not opt into allowing cross-origin access to the
         /// image data by the origin site (by not sending any Access-Control-Allow-Origin response
         /// header, or by not including the site's origin in any Access-Control-Allow-Origin
         /// response header it does send), then the browser marks the image as tainted and restricts
-        /// access to its image data, preventing its usage in <canvas> elements.
+        /// access to its image data, preventing its usage in `<canvas>` elements.
         ///
         /// Allowed values:
         ///
@@ -279,7 +279,7 @@ html_element! {
         /// Indicates that the image is part of a server-side map. If so, the coordinates where the
         /// user clicked on the image are sent to the server.
         ///
-        /// Note: This attribute is allowed only if the <img> element is a descendant of an <a>
+        /// Note: This attribute is allowed only if the `<img>` element is a descendant of an `<a>`
         /// element with a valid href attribute. This gives users without pointing devices a
         /// fallback destination.
         ismap(bool)
@@ -319,7 +319,7 @@ html_element! {
         /// descriptor, then the sizes attribute has no effect.
         sizes
 
-        /// The image URL. Mandatory for the <img> element. On browsers supporting srcset, src is
+        /// The image URL. Mandatory for the `<img>` element. On browsers supporting srcset, src is
         /// treated like a candidate image with a pixel density descriptor 1x, unless an image with
         /// this pixel density descriptor is already defined in srcset, or unless srcset contains w
         /// descriptors.
@@ -351,8 +351,8 @@ html_element! {
 
         /// The partial URL (starting with #) of an image map associated with the element.
         ///
-        /// Note: You cannot use this attribute if the <img> element is inside an <a> or <button>
-        /// element.
+        /// Note: You cannot use this attribute if the `<img>` element is inside an `<a>` or
+        /// `<button>` element.
         usemap
     }
 }
@@ -373,7 +373,7 @@ html_element! {
         /// The name attribute gives the map a name so that it can be referenced. The attribute must
         /// be present and must have a non-empty value with no space characters. The value of the
         /// name attribute must not be a compatibility-caseless match for the value of the name
-        /// attribute of another <map> element in the same document. If the id attribute is also
+        /// attribute of another `<map>` element in the same document. If the id attribute is also
         /// specified, both attributes must have the same value.
         name
     }
@@ -430,8 +430,8 @@ html_element! {
         kind
 
         /// Address of the track (.vtt file). Must be a valid URL. This attribute must be specified
-        /// and its URL value must have the same origin as the document — unless the <audio> or
-        /// <video> parent element of the track element has a crossorigin attribute.
+        /// and its URL value must have the same origin as the document — unless the `<audio>` or
+        /// `<video>` parent element of the track element has a crossorigin attribute.
         src
 
         /// Language of the track text data. It must be a valid BCP 47 language tag. If the kind
@@ -472,7 +472,7 @@ html_element! {
         /// information about how to properly use autoplay.
         ///
         /// To disable video autoplay, autoplay="false" will not work; the video will autoplay if
-        /// the attribute is there in the <video> tag at all. To remove autoplay, the attribute
+        /// the attribute is there in the `<video>` tag at all. To remove autoplay, the attribute
         /// needs to be removed altogether.
         autoplay(bool)
 
@@ -485,8 +485,8 @@ html_element! {
         controls(bool)
 
         /// This enumerated attribute indicates whether to use CORS to fetch the related image.
-        /// CORS-enabled resources can be reused in the <canvas> element without being tainted. The
-        /// allowed values are:
+        /// CORS-enabled resources can be reused in the `<canvas>` element without being tainted.
+        /// The allowed values are:
         ///
         /// * `anonymous`: Sends a cross-origin request without a credential. In other words, it
         ///   sends the `Origin: HTTP` header without a cookie, X.509 certificate, or performing
@@ -500,7 +500,7 @@ html_element! {
         ///   usage restricted.
         ///
         /// When not present, the resource is fetched without a CORS request (i.e. without sending
-        /// the `Origin: HTTP` header), preventing its non-tainted used in <canvas> elements. If
+        /// the `Origin: HTTP` header), preventing its non-tainted used in `<canvas>` elements. If
         /// invalid, it is handled as if the enumerated keyword anonymous was used.
         crossorigin
 
@@ -569,7 +569,7 @@ html_element! {
         /// is a mere hint.
         preload
 
-        /// The URL of the video to embed. This is optional; you may instead use the <source>
+        /// The URL of the video to embed. This is optional; you may instead use the `<source>`
         /// element within the video block to specify the video to embed.
         src
 

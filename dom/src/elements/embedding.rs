@@ -51,15 +51,15 @@ html_element! {
     }
 
     attributes {
-        /// Specifies a feature policy for the <iframe>.
+        /// Specifies a feature policy for the `<iframe>`.
         allow
 
         /// The height of the frame in CSS pixels. Default is 150.
         height
 
         /// A targetable name for the embedded browsing context. This can be used in the target
-        /// attribute of the <a>, <form>, or <base> elements; the formtarget attribute of the
-        /// <input> or <button> elements; or the windowName parameter in the window.open() method.
+        /// attribute of the `<a>`, `<form>`, or `<base>` elements; the formtarget attribute of the
+        /// `<input>` or `<button>` elements; or the windowName parameter in the window.open() method.
         name
 
         /// Indicates which referrer to send when fetching the frame's resource.
@@ -106,7 +106,7 @@ html_element! {
 
         /// The URL of the page to embed. Use a value of about:blank to embed an empty page that
         /// conforms to the same-origin policy. Also note that programatically removing an
-        /// <iframe>'s src attribute (e.g. via Element.removeAttribute()) causes about:blank to be
+        /// `<iframe>`'s src attribute (e.g. via Element.removeAttribute()) causes about:blank to be
         /// loaded in the frame in Firefox (from version 65), Chromium-based browsers, and
         /// Safari/iOS.
         src
@@ -148,7 +148,7 @@ html_element! {
         data
 
         /// The form element, if any, that the object element is associated with (its form owner).
-        /// The value of the attribute must be an ID of a <form> element in the same document.
+        /// The value of the attribute must be an ID of a `<form>` element in the same document.
         form
 
         /// The height of the displayed resource, in CSS pixels. No percentages.
@@ -165,7 +165,7 @@ html_element! {
         /// to be used.
         typemustmatch(bool)
 
-        /// A hash-name reference to a <map> element; that is a '#' followed by the value of a name
+        /// A hash-name reference to a `<map>` element; that is a '#' followed by the value of a name
         /// of a map element.
         usemap
 
@@ -221,7 +221,7 @@ html_element! {
     <source>
 
     attributes {
-        /// Media query of the resource's intended media; this should be used only in a <picture>
+        /// Media query of the resource's intended media; this should be used only in a `<picture>`
         /// element.
         media
 
@@ -232,12 +232,12 @@ html_element! {
         /// have its effect only if width dimension descriptors are provided with srcset instead of
         /// pixel ratio values (200w instead of 2x for example).
         ///
-        /// The sizes attribute has an effect only when the <source> element is the direct child of
-        /// a <picture> element.
+        /// The sizes attribute has an effect only when the `<source>` element is the direct child of
+        /// a `<picture>` element.
         sizes
 
-        /// Required for <audio> and <video>, address of the media resource. The value of this
-        /// attribute is ignored when the <source> element is placed inside a <picture> element.
+        /// Required for `<audio>` and `<video>`, address of the media resource. The value of this
+        /// attribute is ignored when the `<source>` element is placed inside a `<picture>` element.
         src
 
         /// A list of one or more strings separated by commas indicating a set of possible images
@@ -254,8 +254,8 @@ html_element! {
         /// same tuple of width descriptor and pixel density descriptor. The browser chooses the
         /// most adequate image to display at a given point of time.
         ///
-        /// The srcset attribute has an effect only when the <source> element is the direct child of
-        /// a <picture> element.
+        /// The srcset attribute has an effect only when the `<source>` element is the direct child of
+        /// a `<picture>` element.
         srcset
 
         /// The MIME media type of the resource, optionally with a codecs parameter.

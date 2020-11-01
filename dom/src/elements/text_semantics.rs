@@ -66,7 +66,7 @@ html_element! {
         rel
 
         /// Where to display the linked URL, as the name for a browsing context (a tab, window, or
-        /// <iframe>). The following keywords have special meanings for where to load the URL:
+        /// `<iframe>`). The following keywords have special meanings for where to load the URL:
         ///
         /// * `_self`: the current browsing context. (Default)
         /// * `_blank`: usually a new tab, but users can configure browsers to open a new window
@@ -94,7 +94,7 @@ html_element! {
     /// optional [`title`][title] attribute can provide an expansion or description for the
     /// abbreviation.
     ///
-    /// The title attribute has a specific semantic meaning when used with the <abbr> element; it
+    /// The title attribute has a specific semantic meaning when used with the `<abbr>` element; it
     /// must contain a full human-readable description or expansion of the abbreviation. This text
     /// is often presented by browsers as a tooltip when the mouse cursor is hovered over the
     /// element.

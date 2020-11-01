@@ -26,7 +26,7 @@ html_element! {
 
     attributes {
         /// This attribute contains a positive integer indicating the number of consecutive columns
-        /// the <col> element spans. If not present, its default value is 1.
+        /// the `<col>` element spans. If not present, its default value is 1.
         span
     }
 }
@@ -45,14 +45,14 @@ html_element! {
 
     attributes {
         /// This attribute contains a positive integer indicating the number of consecutive columns
-        /// the <colgroup> element spans. If not present, its default value is 1.
+        /// the `<colgroup>` element spans. If not present, its default value is 1.
         ///
         /// > Note: This attribute is applied on the attributes of the column group, it has no
         /// > effect on the CSS styling rules associated with it or, even more, to the cells of the
         /// > column's members of the group.
         /// >
-        /// > The span attribute is not permitted if there are one or more <col> elements within the
-        /// > <colgroup>.
+        /// > The span attribute is not permitted if there are one or more `<col>` elements within
+        /// > the `<colgroup>`.
         span
     }
 }
@@ -116,13 +116,13 @@ html_element! {
         colspan
 
         /// This attribute contains a list of space-separated strings, each corresponding to the id
-        /// attribute of the <th> elements that apply to this element.
+        /// attribute of the `<th>` elements that apply to this element.
         headers
 
         /// This attribute contains a non-negative integer value that indicates for how many rows
         /// the cell extends. Its default value is 1; if its value is set to 0, it extends until the
-        /// end of the table section (<thead>, <tbody>, <tfoot>, even if implicitly defined), that
-        /// the cell belongs to. Values higher than 65534 are clipped down to 65534.
+        /// end of the table section (`<thead>`, `<tbody>`, `<tfoot>`, even if implicitly defined),
+        /// that the cell belongs to. Values higher than 65534 are clipped down to 65534.
         rowspan
     }
 }
@@ -168,23 +168,23 @@ html_element! {
         colspan
 
         /// This attribute contains a list of space-separated strings, each corresponding to the id
-        /// attribute of the <th> elements that apply to this element.
+        /// attribute of the `<th>` elements that apply to this element.
         headers
 
         /// This attribute contains a non-negative integer value that indicates for how many rows
         /// the cell extends. Its default value is 1; if its value is set to 0, it extends until the
-        /// end of the table section (<thead>, <tbody>, <tfoot>, even if implicitly defined), that
-        /// the cell belongs to. Values higher than 65534 are clipped down to 65534.
+        /// end of the table section (`<thead>`, `<tbody>`, `<tfoot>`, even if implicitly defined),
+        /// that the cell belongs to. Values higher than 65534 are clipped down to 65534.
         rowspan
 
-        /// This enumerated attribute defines the cells that the header (defined in the <th>)
+        /// This enumerated attribute defines the cells that the header (defined in the `<th>`)
         /// element relates to. It may have the following values:
         ///
         /// * `row`: The header relates to all cells of the row it belongs to.
         /// * `col`: The header relates to all cells of the column it belongs to.
         /// * `rowgroup`: The header belongs to a rowgroup and relates to all of its cells. These
         ///   cells can be placed to the right or the left of the header, depending on the value of
-        ///   the dir attribute in the <table> element.
+        ///   the dir attribute in the `<table>` element.
         /// * `colgroup`: The header belongs to a colgroup and relates to all of its cells.
         /// * `auto`
         ///
