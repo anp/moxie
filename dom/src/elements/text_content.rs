@@ -1,7 +1,7 @@
 //! Use HTML text content elements to organize blocks or sections of content
-//! placed between the opening <body> and closing </body> tags. Important for
-//! accessibility and SEO, these elements identify the purpose or structure of
-//! that content.
+//! placed between the opening `<body>` and closing `</body>` tags. Important
+//! for accessibility and SEO, these elements identify the purpose or structure
+//! of that content.
 
 html_element! {
     /// The [HTML `<blockquote>` element][mdn] (or *HTML Block Quotation Element*) indicates that
@@ -210,7 +210,7 @@ html_element! {
         /// * `1` for numbers (default)
         ///
         /// The specified type is used for the entire list unless a different type attribute is used
-        /// on an enclosed <li> element.
+        /// on an enclosed `<li>` element.
         ///
         /// > Note: Unless the type of the list number matters (like legal or technical documents
         /// where items are referenced by their number/letter), use the CSS list-style-type property

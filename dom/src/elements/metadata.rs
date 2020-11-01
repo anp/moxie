@@ -23,9 +23,9 @@ html_element! {
         href
 
         /// A keyword or author-defined name of the default browsing context to display the result
-        /// when links or forms cause navigation, for <a> or <form> elements without an explicit
+        /// when links or forms cause navigation, for `<a>` or `<form>` elements without an explicit
         /// target attribute. The attribute value targets a browsing context (such as a tab, window,
-        /// or <iframe>).
+        /// or `<iframe>`).
         ///
         /// The following keywords have special meanings:
         ///
@@ -78,31 +78,31 @@ html_element! {
 
     attributes {
         /// This attribute is only used when rel="preload" or rel="prefetch" has been set on the
-        /// <link> element. It specifies the type of content being loaded by the <link>, which is
+        /// `<link>` element. It specifies the type of content being loaded by the `<link>`, which is
         /// necessary for request matching, application of correct content security policy, and
         /// setting of correct Accept request header. Furthermore, rel="preload" uses this as a
         /// signal for request prioritization. The table below lists the valid values for this
         /// attribute and the elements or resources they apply to.
         ///
-        /// | Value    | Applies To                                                              |
-        /// | -------- | ----------------------------------------------------------------------- |
-        /// | audio    | <audio> elements                                                        |
-        /// | document | <iframe> and <frame> elements                                           |
-        /// | embed    | <embed> elements                                                        |
-        /// | fetch    | fetch, XHR (also requires <link> to contain the crossorigin attribute.) |
-        /// | font     | CSS @font-face                                                          |
-        /// | image    | <img> and <picture> elements with srcset or imageset attributes,        |
-        /// |          | SVG <image> elements, CSS *-image rules                                 |
-        /// | object   | <object> elements                                                       |
-        /// | script   | <script> elements, Worker importScripts                                 |
-        /// | style    | <link rel=stylesheet> elements, CSS @import                             |
-        /// | track    | <track> elements                                                        |
-        /// | video    | <video> elements                                                        |
-        /// | worker   | Worker, SharedWorker                                                    |
+        /// | Value    | Applies To                                                                |
+        /// | -------- | ------------------------------------------------------------------------- |
+        /// | audio    | `<audio>` elements                                                        |
+        /// | document | `<iframe>` and `<frame>` elements                                         |
+        /// | embed    | `<embed>` elements                                                        |
+        /// | fetch    | fetch, XHR (also requires `<link>` to contain the crossorigin attribute.) |
+        /// | font     | CSS @font-face                                                            |
+        /// | image    | `<img>` and `<picture>` elements with srcset or imageset attributes,      |
+        /// |          | SVG `<image>` elements, CSS *-image rules                                 |
+        /// | object   | `<object>` elements                                                       |
+        /// | script   | `<script>` elements, Worker importScripts                                 |
+        /// | style    | `<link rel=stylesheet>` elements, CSS @import                             |
+        /// | track    | `<track>` elements                                                        |
+        /// | video    | `<video>` elements                                                        |
+        /// | worker   | Worker, SharedWorker                                                      |
         as_
 
         /// This enumerated attribute indicates whether CORS must be used when fetching the
-        /// resource. CORS-enabled images can be reused in the <canvas> element without being
+        /// resource. CORS-enabled images can be reused in the `<canvas>` element without being
         /// tainted. The allowed values are:
         ///
         /// * `anonymous`: A cross-origin request (i.e. with an Origin HTTP header) is performed,
@@ -172,8 +172,8 @@ html_element! {
         /// support is a concern (especially for old IE versions).
         sizes
 
-        /// The title attribute has special semantics on the <link> element. When used on a
-        /// <link rel="stylesheet"> it defines a preferred or an alternate stylesheet. Incorrectly
+        /// The title attribute has special semantics on the `<link>` element. When used on a
+        /// `<link rel="stylesheet">` it defines a preferred or an alternate stylesheet. Incorrectly
         /// using it may cause the stylesheet to be ignored.
         title
 
@@ -190,12 +190,12 @@ html_element! {
 
 html_element! {
     /// The [HTML `<meta>` element][mdn] represents [metadata] that cannot be represented by other
-    /// HTML meta-related elements, like [`<base>`], [`<link>`], [`<script>`], [`<style>`] or
-    /// [`<title>`].
+    /// HTML meta-related elements, like [`<base>`][base], [`<link>`][link], [`<script>`][script],
+    /// [`<style>`][style] or [`<title>`][title].
     ///
-    /// Note: the attribute `name` has a specific meaning for the <meta> element, and the `itemprop`
-    /// attribute must not be set on the same <meta> element that has any existing name,
-    /// `http-equiv` or `charset` attributes.
+    /// Note: the attribute `name` has a specific meaning for the `<meta>` element, and the
+    /// `itemprop` attribute must not be set on the same `<meta>` element that has any existing
+    /// name, `http-equiv` or `charset` attributes.
     ///
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
     /// [metadata]: https://developer.mozilla.org/en-US/docs/Glossary/Metadata
