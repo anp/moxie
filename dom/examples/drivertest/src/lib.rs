@@ -21,7 +21,8 @@ fn mini_list() {
         }
     };
 
-    let (mut web_tester, web_div) = DomLoop::new(list);
+    let web_div = augdom::document().create_element("div");
+    let mut web_tester = DomLoop::new(web_div.clone(), list);
     let (mut virtual_tester, rsdom_root) = DomLoop::new_virtual(list);
 
     web_tester.run_once();

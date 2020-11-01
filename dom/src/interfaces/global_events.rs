@@ -1,7 +1,7 @@
 //! Trait for defining the methods related to the event handlers shared by all
 //! HTML elements.
 
-use crate::interfaces::{event_target::EventTarget, html_element::HtmlElement};
+use crate::interfaces::{event_target::EventTarget, html_element::HtmlElementBuilder};
 use augdom::event::*;
 
 /// An event which can be handled on any element.
@@ -18,7 +18,7 @@ macro_rules! global_events {
         ///
         /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers
         pub trait GlobalEventHandler:
-            HtmlElement
+            HtmlElementBuilder
             $(+ EventTarget<$event>)+
         {$(
             /// Set an event handler.

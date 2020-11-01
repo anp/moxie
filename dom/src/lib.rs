@@ -17,7 +17,7 @@ pub mod text;
 pub mod prelude {
     #[cfg(feature = "webdom")]
     pub use crate::raw::sys;
-    pub use crate::raw::{document, event, Dom as _, Node};
+    pub use crate::raw::{document, event, Dom as RawDom, Node as RawNode};
     pub use moxie::{cache, cache_state, cache_with, once, once_with, state, Key};
 
     pub use crate::{
@@ -29,11 +29,11 @@ pub mod prelude {
                 ListedContent as _, MetadataContent as _, PhrasingContent as _,
                 ResettableContent as _, SectioningContent as _, SubmittableContent as _,
             },
-            element::Element as _,
+            element::ElementBuilder,
             event_target::EventTarget as _,
             global_events::{GlobalEvent as _, GlobalEventHandler as _},
-            html_element::HtmlElement as _,
-            node::{Node as _, Parent as _},
+            html_element::HtmlElementBuilder,
+            node::{NodeWrapper, Parent as _},
         },
         text::text,
         Stateful,
@@ -60,7 +60,7 @@ pub trait Stateful: Debug + Sized + 'static {
 /// arguments.
 pub trait Boot: Stateful + Default {
     /// Start the app running with the provided `root`.
-    fn boot(root: impl Into<prelude::Node>) {
+    fn boot(root: impl Into<prelude::RawNode>) {
         boot(root, || {
             let (app, updater) = prelude::state(Self::default);
             app.tick(updater.into())

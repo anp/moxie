@@ -1,11 +1,11 @@
 //! Trait for the base class of HTML elements.
 
-use crate::interfaces::element::Element;
+use crate::interfaces::element::ElementBuilder;
 
 /// The HTMLElement interface represents any HTML element.
 ///
 /// Note: this trait cannot be implemented outside of this crate.
-pub trait HtmlElement: Element {
+pub trait HtmlElementBuilder: ElementBuilder {
     attr_method! {
         /// Keyboard shortcut to activate or add focus to the element.
         accesskey
