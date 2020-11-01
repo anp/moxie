@@ -73,6 +73,13 @@ pub fn in_virtual_document<Root>(mut root: impl FnMut() -> Root) -> impl FnMut()
     move || document.clone().offer(&mut root)
 }
 
+/// Create a new virtual element as part of a throwaway document. Useful for
+/// testing.
+#[cfg(feature = "rsdom")]
+pub fn create_virtual_element(ty: &str) -> Node {
+    Document::new_virtual().create_element(ty)
+}
+
 #[cfg(feature = "webdom")]
 fn concrete_document() -> Document {
     Document::Concrete(
