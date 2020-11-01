@@ -44,6 +44,15 @@ impl DomLoop {
         Self { inner }
     }
 
+    /// Run the root function in a fresh `moxie::Revision` and bind the returned
+    /// node as the child of the loop's parent.
+    pub fn run_once(&mut self) {
+        self.inner.run_once();
+    }
+}
+
+#[cfg(feature = "rsdom")]
+impl DomLoop {
     /// Construct a new `DomLoop` which will maintain the children of a virtual
     /// `<div>`.
     ///
@@ -55,14 +64,9 @@ impl DomLoop {
     ) -> Self {
         Self::new(parent, augdom::in_virtual_document(root))
     }
-
-    /// Run the root function in a fresh `moxie::Revision` and bind the returned
-    /// node as the child of the loop's parent.
-    pub fn run_once(&mut self) {
-        self.inner.run_once();
-    }
 }
 
+#[cfg(feature = "webdom")]
 impl DomLoop {
     /// Pass ownership of this runtime to a "loop" which runs with
     /// `requestAnimationFrame`.
@@ -71,20 +75,24 @@ impl DomLoop {
     }
 }
 
+#[cfg(feature = "webdom")]
 impl raf::Tick for DomLoop {
     fn tick(&mut self) {
         self.inner.run_once();
     }
 }
 
+#[cfg(feature = "webdom")]
 impl raf::Waking for DomLoop {
     fn set_waker(&mut self, wk: std::task::Waker) {
         self.inner.set_state_change_waker(wk);
     }
 }
 
+#[cfg(feature = "webdom")]
 struct WebSpawner;
 
+#[cfg(feature = "webdom")]
 impl LocalSpawn for WebSpawner {
     fn spawn_local_obj(&self, fut: LocalFutureObj<'static, ()>) -> Result<(), SpawnError> {
         wasm_bindgen_futures::spawn_local(fut);
