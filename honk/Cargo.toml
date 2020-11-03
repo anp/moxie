@@ -1,0 +1,21 @@
+[package]
+name = "honk"
+version = "7.0.0"
+description = "An awful billed system."
+categories = []
+keywords = ["build", "task", "cargo", "make"]
+readme = "README.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
+
+[dependencies]
+argh = "0.1.4"
+color-eyre = "0.5.6"
+starlark = "0.3.1"
+tracing = "0.1.21"
+tracing-subscriber = { version = "0.2.15", features = ["fmt"] }
