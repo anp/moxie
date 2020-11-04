@@ -61,7 +61,7 @@ impl Workspace {
             &types,
             &self.vfs,
         )
-        .map_err(HonkError::Eval)?;
+        .map_err(|diagnostic| HonkError::Eval { diagnostic, map: map.clone() })?;
 
         warn!("TODO run formatters");
         warn!("TODO run build/test");
@@ -73,7 +73,7 @@ impl Workspace {
 #[derive(Debug, Error)]
 enum HonkError {
     #[error("evaluation error: TODO print it here")]
-    Eval(codemap_diagnostic::Diagnostic),
+    Eval { diagnostic: codemap_diagnostic::Diagnostic, map: Arc<Mutex<CodeMap>> },
 
     #[error("i/o error")]
     Io {
