@@ -1,9 +1,6 @@
 use codemap::CodeMap;
 use color_eyre::eyre::Result;
-use starlark::{
-    environment::{Environment, TypeValues},
-    eval::eval as eval_starlark,
-};
+use starlark::environment::{Environment, TypeValues};
 use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
@@ -51,7 +48,7 @@ impl Workspace {
         let mut env = Environment::new("honk");
 
         info!("evaluating workspace file");
-        eval_starlark(
+        starlark::eval::eval(
             &map,
             &self.root.to_string_lossy(),
             &root_contents,
