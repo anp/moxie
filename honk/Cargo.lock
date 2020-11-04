@@ -452,6 +452,7 @@ dependencies = [
  "codemap",
  "codemap-diagnostic",
  "color-eyre",
+ "crossbeam-channel",
  "memofs",
  "starlark",
  "thiserror",

@@ -28,8 +28,7 @@ impl Workspace {
             if let Err(error) = self.converge() {
                 error!(%error, "couldn't converge current workspace revision");
             }
-            warn!("TODO wait for changes to inputs");
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            self.loader.wait_for_changes();
         }
     }
 
@@ -39,6 +38,7 @@ impl Workspace {
 
         warn!("TODO display discovered targets");
 
+        info!("finished");
         Ok(())
     }
 }
