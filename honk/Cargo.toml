@@ -15,7 +15,10 @@ edition = "2018"
 
 [dependencies]
 argh = "0.1.4"
+codemap-diagnostic = "0.1.1"
 color-eyre = "0.5.6"
+memofs = "0.1.2"
 starlark = "0.3.1"
+thiserror = "1.0.21"
 tracing = "0.1.21"
 tracing-subscriber = { version = "0.2.15", features = ["fmt"] }
