@@ -1,4 +1,5 @@
 use codemap::CodeMap;
+use codemap_diagnostic::{ColorConfig, Emitter};
 use color_eyre::eyre::Result;
 use starlark::environment::{Environment, TypeValues};
 use std::{
@@ -48,7 +49,7 @@ impl Workspace {
         let mut env = Environment::new("honk");
 
         info!("evaluating workspace file");
-        starlark::eval::eval(
+        match starlark::eval::eval(
             &map,
             &self.root.to_string_lossy(),
             &root_contents,
@@ -57,8 +58,16 @@ impl Workspace {
             &mut env,
             &types,
             &self.vfs,
-        )
-        .map_err(|diagnostic| HonkError::Eval { diagnostic, map: map.clone() })?;
+        ) {
+            Ok(_output) => todo!(),
+            Err(diagnostic) => {
+                // TODO reconcile this stderr reporting with other mechanisms like HTTP
+                let map = map.lock().unwrap();
+                let mut emitter = Emitter::stderr(ColorConfig::Auto, Some(&*map));
+                emitter.emit(&[diagnostic]);
+                return Err(HonkError::Eval);
+            }
+        }
 
         warn!("TODO run formatters");
         warn!("TODO run build/test");
@@ -69,8 +78,8 @@ impl Workspace {
 
 #[derive(Debug, Error)]
 enum HonkError {
-    #[error("evaluation error: TODO print it here")]
-    Eval { diagnostic: codemap_diagnostic::Diagnostic, map: Arc<Mutex<CodeMap>> },
+    #[error("evaluation error")]
+    Eval,
 
     #[error("i/o error")]
     Io {
