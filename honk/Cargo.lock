@@ -449,6 +449,7 @@ name = "honk"
 version = "7.0.0"
 dependencies = [
  "argh",
+ "codemap",
  "codemap-diagnostic",
  "color-eyre",
  "memofs",

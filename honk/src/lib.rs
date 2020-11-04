@@ -1,6 +1,13 @@
+use codemap::CodeMap;
 use color_eyre::eyre::Result;
-use starlark::eval::eval as eval_starlark;
-use std::path::{Path, PathBuf};
+use starlark::{
+    environment::{Environment, TypeValues},
+    eval::eval as eval_starlark,
+};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 use thiserror::Error;
 use tracing::{error, info, instrument, warn};
 
@@ -39,13 +46,19 @@ impl Workspace {
         let root_contents = std::str::from_utf8(&*root_contents)
             .map_err(|source| HonkError::ScriptEncoding { source, file: self.root.clone() })?;
 
+        let map = Arc::new(Mutex::new(CodeMap::new()));
+        let types = TypeValues::default();
+        let mut env = Environment::new("honk");
+
+        info!("evaluating workspace file");
         eval_starlark(
-            todo!(),
+            &map,
             &self.root.to_string_lossy(),
             &root_contents,
-            todo!(),
-            todo!(),
-            todo!(),
+            // TODO figure out if this is the right dialect?
+            starlark::syntax::dialect::Dialect::Bzl,
+            &mut env,
+            &types,
             &self.vfs,
         )
         .map_err(HonkError::Eval)?;
