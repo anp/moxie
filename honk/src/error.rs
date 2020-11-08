@@ -1,3 +1,4 @@
+use crate::builtins::command::{Command, Output};
 use codemap::CodeMap;
 use codemap_diagnostic::{ColorConfig, Emitter};
 use starlark::values::error::ValueError;
@@ -5,6 +6,7 @@ use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     path::PathBuf,
     str::Utf8Error,
+    string::FromUtf8Error,
     sync::{Arc, Mutex},
 };
 
@@ -21,6 +23,12 @@ pub enum Error {
         #[from]
         source: std::io::Error,
     },
+
+    #[error("failed to run command: {0:#?}")]
+    CommandFailed(Output),
+
+    #[error("`{command:?}` returned non utf-8: {source}")]
+    StdoutEncoding { source: FromUtf8Error, command: Command },
 
     #[allow(unused)]
     #[error("non utf-8 *.honk script encountered at {}", file.display())]

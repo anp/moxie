@@ -11,7 +11,7 @@ def cargo_metadata(manifest):
         ],
     ).run()
     # TODO parse stdout as json
-    return output
+    return output.stdout()
 
 
 # Discovers targets from a Cargo workspace, defined by the path to its root manifest.

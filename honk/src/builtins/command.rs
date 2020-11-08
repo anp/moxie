@@ -10,6 +10,10 @@ starlark_module! { globals =>
     Command.run(this: Command) {
         Ok(Value::new(this.run()?))
     }
+
+    Output.stdout(this: Output) {
+        Ok(Value::new(this.stdout()?))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -25,10 +29,13 @@ impl Command {
 
     #[instrument]
     pub fn run(self) -> Result<Output, Error> {
-        // TODO set working dir
-        // TODO set environment
-        let inner = std::process::Command::new(self.command).args(self.args).output()?;
-        Ok(Output { inner })
+        let output = Output {
+            // TODO set working dir
+            // TODO set environment
+            inner: std::process::Command::new(&self.command).args(&self.args).output()?,
+            command: self,
+        };
+        if output.inner.status.success() { Ok(output) } else { Err(Error::CommandFailed(output)) }
     }
 }
 
@@ -42,10 +49,17 @@ impl TypedValue for Command {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Output {
-    // TODO
+    command: Command,
     inner: std::process::Output,
+}
+
+impl Output {
+    fn stdout(&self) -> Result<String, Error> {
+        Ok(String::from_utf8(self.inner.stdout.clone())
+            .map_err(|source| Error::StdoutEncoding { source, command: self.command.clone() })?)
+    }
 }
 
 impl TypedValue for Output {
