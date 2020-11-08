@@ -10,9 +10,11 @@ use std::{
 };
 use tracing::{error, info, instrument, warn};
 
+mod command;
 mod error;
 mod vfs;
 
+use command::register_commands;
 use error::{Error, EvalError};
 use vfs::Vfs;
 
@@ -33,12 +35,13 @@ impl Workspace {
 
     pub fn new(root: impl AsRef<Path>) -> Self {
         let codemap = Arc::new(Mutex::new(CodeMap::new()));
-        Self {
-            root: root.as_ref().to_path_buf(),
-            vfs: Vfs::new(),
-            codemap,
-            type_values: Default::default(),
-        }
+
+        let (mut throwaway_env, mut type_values) =
+            starlark::stdlib::global_environment_with_extensions();
+        // TODO figure out how to do this once instead of here *and* below in `load()`?
+        register_commands(&mut throwaway_env, &mut type_values);
+
+        Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new(), codemap, type_values }
     }
 
     pub fn maintain(self) -> Result<()> {
@@ -53,7 +56,7 @@ impl Workspace {
 
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
     fn converge(&self) -> Result<(), Error> {
-        let _env = self
+        let _workspace_env = self
             .load(Self::ASSET_PATH, &self.type_values)
             .map_err(|e| EvalError::from_exception(e, self.codemap.clone()))?;
 
@@ -75,7 +78,9 @@ impl FileLoader for Workspace {
         let root_contents =
             std::str::from_utf8(&*root_contents).expect("TODO pass errors back correctly here");
 
-        let mut env = Environment::new("honk");
+        let (mut env, mut throwaway_tvs) = starlark::stdlib::global_environment_with_extensions();
+        // TODO figure out how to do this once instead of here *and* above in `new()`?
+        register_commands(&mut env, &mut throwaway_tvs);
 
         info!("evaluating");
         starlark::eval::eval(

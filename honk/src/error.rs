@@ -1,5 +1,6 @@
 use codemap::CodeMap;
 use codemap_diagnostic::{ColorConfig, Emitter};
+use starlark::values::error::ValueError;
 use std::{
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     path::PathBuf,
@@ -24,6 +25,12 @@ pub enum Error {
     #[allow(unused)]
     #[error("non utf-8 *.honk script encountered at {}", file.display())]
     ScriptEncoding { source: Utf8Error, file: PathBuf },
+}
+
+impl From<Error> for ValueError {
+    fn from(e: Error) -> Self {
+        todo!("uh do this conversion properly: {:?}", e);
+    }
 }
 
 #[derive(thiserror::Error)]

@@ -1,3 +1,20 @@
+def cargo_metadata(manifest):
+    output = command(
+        "cargo",
+        [
+            "metadata",
+            "--no-deps",  # remove this when we're ready to run rustc ourselves
+            "--format-version",
+            "1",  # only valid value at time of writing
+            "--manifest-path",
+            manifest,
+        ],
+    ).run()
+    # TODO parse stdout as json
+    return output
+
+
 # Discovers targets from a Cargo workspace, defined by the path to its root manifest.
 def cargo_workspace(manifest):
-    pass
+    metadata = cargo_metadata(manifest)
+    # TODO register discovered targets
