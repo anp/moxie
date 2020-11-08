@@ -10,11 +10,10 @@ use std::{
 };
 use tracing::{error, info, instrument, warn};
 
-mod command;
+mod builtins;
 mod error;
 mod vfs;
 
-use command::register_commands;
 use error::{Error, EvalError};
 use vfs::Vfs;
 
@@ -39,7 +38,7 @@ impl Workspace {
         let (mut throwaway_env, mut type_values) =
             starlark::stdlib::global_environment_with_extensions();
         // TODO figure out how to do this once instead of here *and* below in `load()`?
-        register_commands(&mut throwaway_env, &mut type_values);
+        builtins::register(&mut throwaway_env, &mut type_values);
 
         Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new(), codemap, type_values }
     }
@@ -80,7 +79,7 @@ impl FileLoader for Workspace {
 
         let (mut env, mut throwaway_tvs) = starlark::stdlib::global_environment_with_extensions();
         // TODO figure out how to do this once instead of here *and* above in `new()`?
-        register_commands(&mut env, &mut throwaway_tvs);
+        builtins::register(&mut env, &mut throwaway_tvs);
 
         info!("evaluating");
         starlark::eval::eval(

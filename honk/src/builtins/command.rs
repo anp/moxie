@@ -1,17 +1,8 @@
 use crate::error::Error;
-use starlark::{
-    starlark_module,
-    values::{TypedValue, Value},
-};
+use starlark::values::{TypedValue, Value};
 use tracing::instrument;
 
-// TODO submit an upstream patch to use $crate in all these macros
-use starlark::{
-    starlark_fun, starlark_parse_param_type, starlark_signature, starlark_signature_extraction,
-    starlark_signatures,
-};
-
-starlark_module! { register_commands =>
+starlark_module! { globals =>
     command(command: String, args: Vec<String>) {
         Ok(Value::new(Command::new(command, args)))
     }
