@@ -1,0 +1,3 @@
+# Discovers targets from a Cargo workspace, defined by the path to its root manifest.
+def cargo_workspace(manifest):
+    pass

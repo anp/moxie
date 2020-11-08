@@ -5,13 +5,9 @@ use std::path::PathBuf;
 /// An awful billed system.
 #[derive(Debug, FromArgs)]
 struct HonkCli {
-    /// path to `workspace.honk`.
-    #[argh(option, default = "default_workspace_path()")]
+    /// path to directory containing `workspace.honk`.
+    #[argh(option, default = "std::env::current_dir().unwrap()")]
     workspace: PathBuf,
-}
-
-fn default_workspace_path() -> PathBuf {
-    std::env::current_dir().unwrap().join("workspace.honk")
 }
 
 fn main() -> color_eyre::eyre::Result<()> {

@@ -1,25 +1,44 @@
+use codemap::CodeMap;
 use color_eyre::eyre::Result;
-use std::path::{Path, PathBuf};
+use starlark::{
+    environment::{Environment, TypeValues},
+    eval::{EvalException, FileLoader},
+};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 use tracing::{error, info, instrument, warn};
 
 mod error;
 mod vfs;
 
-use error::Error;
-use vfs::VfsLoader;
+use error::{Error, EvalError};
+use vfs::Vfs;
 
 pub struct Workspace {
     /// Path to `workspace.honk`.
     root: PathBuf,
 
-    /// Services starlark calls to `load()` and tracks changes to files we've
-    /// read.
-    loader: VfsLoader,
+    /// Tracks changes to files we've read.
+    vfs: Vfs,
+
+    codemap: Arc<Mutex<CodeMap>>,
+    type_values: TypeValues,
 }
 
 impl Workspace {
+    /// The asset path used to resolve the root of a honk workspace.
+    const ASSET_PATH: &'static str = "//workspace.honk";
+
     pub fn new(root: impl AsRef<Path>) -> Self {
-        Self { root: root.as_ref().to_path_buf(), loader: Default::default() }
+        let codemap = Arc::new(Mutex::new(CodeMap::new()));
+        Self {
+            root: root.as_ref().to_path_buf(),
+            vfs: Vfs::new(),
+            codemap,
+            type_values: Default::default(),
+        }
     }
 
     pub fn maintain(self) -> Result<()> {
@@ -28,17 +47,48 @@ impl Workspace {
             if let Err(error) = self.converge() {
                 error!(%error, "couldn't converge current workspace revision");
             }
-            self.loader.wait_for_changes();
+            self.vfs.wait_for_changes();
         }
     }
 
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
     fn converge(&self) -> Result<(), Error> {
-        let mut env = self.loader.load_workspace_env(&self.root)?;
+        let _env = self
+            .load(Self::ASSET_PATH, &self.type_values)
+            .map_err(|e| EvalError::from_exception(e, self.codemap.clone()))?;
 
         warn!("TODO display discovered targets");
 
         info!("finished");
         Ok(())
+    }
+}
+
+impl FileLoader for Workspace {
+    #[instrument(skip(self, type_values))]
+    fn load(&self, path: &str, type_values: &TypeValues) -> Result<Environment, EvalException> {
+        // TODO smarter way to resolve assets etc
+        let file = self.root.join(path.strip_prefix("//").unwrap_or(path));
+        info!(file = %file.display(), "loading");
+
+        let root_contents = self.vfs.read(&file).expect("TODO pass errors back correctly here");
+        let root_contents =
+            std::str::from_utf8(&*root_contents).expect("TODO pass errors back correctly here");
+
+        let mut env = Environment::new("honk");
+
+        info!("evaluating");
+        starlark::eval::eval(
+            &self.codemap,
+            &file.to_string_lossy(),
+            &root_contents,
+            // TODO do we ever want to restrict function definitions?
+            starlark::syntax::dialect::Dialect::Bzl,
+            &mut env,
+            type_values,
+            self,
+        )?;
+
+        Ok(env)
     }
 }
