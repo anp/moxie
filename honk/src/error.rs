@@ -30,6 +30,12 @@ pub enum Error {
     #[error("`{command:?}` returned non utf-8: {source}")]
     StdoutEncoding { source: FromUtf8Error, command: Command },
 
+    #[error("error handling JSON: {source}")]
+    JsonError {
+        #[from]
+        source: serde_json::Error,
+    },
+
     #[allow(unused)]
     #[error("non utf-8 *.honk script encountered at {}", file.display())]
     ScriptEncoding { source: Utf8Error, file: PathBuf },

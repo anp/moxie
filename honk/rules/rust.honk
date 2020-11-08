@@ -1,20 +1,22 @@
 def cargo_metadata(manifest):
-    output = command(
-        "cargo",
-        [
-            "metadata",
-            "--no-deps",  # remove this when we're ready to run rustc ourselves
-            "--format-version",
-            "1",  # only valid value at time of writing
-            "--manifest-path",
-            manifest,
-        ],
-    ).run()
-    # TODO parse stdout as json
-    return output.stdout()
+    return json_decode(  # TODO json.decode from starlark spec
+        command(
+            "cargo",
+            [
+                "metadata",
+                "--no-deps",  # remove this when we're ready to run rustc ourselves
+                "--format-version",
+                "1",  # only valid value at time of writing
+                "--manifest-path",
+                manifest,
+            ],
+        )
+        .run()
+        .stdout()
+    )
 
 
 # Discovers targets from a Cargo workspace, defined by the path to its root manifest.
 def cargo_workspace(manifest):
-    metadata = cargo_metadata(manifest)
+    return cargo_metadata(manifest)
     # TODO register discovered targets

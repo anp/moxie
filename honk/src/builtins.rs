@@ -17,8 +17,10 @@ macro_rules! starlark_module {
     };
 }
 
-mod command;
+pub mod command;
+pub mod json;
 
 pub fn register(env: &mut Environment, tvs: &mut TypeValues) {
     command::globals(env, tvs);
+    json::globals(env, tvs);
 }

@@ -454,6 +454,7 @@ dependencies = [
  "color-eyre",
  "crossbeam-channel",
  "memofs",
+ "serde_json",
  "starlark",
  "thiserror",
  "tracing",
