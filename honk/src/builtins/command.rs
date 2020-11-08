@@ -3,7 +3,8 @@ use starlark::values::{TypedValue, Value};
 use tracing::instrument;
 
 starlark_module! { globals =>
-    command(command: String, args: Vec<String>) {
+    command(command: String, args: Vec<Value>) {
+        let args = args.iter().map(Value::to_str).collect();
         Ok(Value::new(Command::new(command, args)))
     }
 
