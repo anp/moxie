@@ -18,9 +18,9 @@ def _dependency_dict_to_struct(dep):
 
 def _target_dict_to_struct(target):
     return struct(
+        name=target["name"],
         kind=target["kind"],
         crate_types=target["crate_types"],
-        name=target["name"],
         src_path=target["src_path"],
         edition=target["edition"],
         required_features=target.get("required-features"),
