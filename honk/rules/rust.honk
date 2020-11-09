@@ -1,29 +1,8 @@
-def cargo_metadata(manifest):
-    requested_version = 1  # only valid value at time of writing
-    metadata = json_decode(  # TODO json.decode from starlark spec
-        command(
-            "cargo",
-            [
-                "metadata",
-                "--no-deps",  # remove this when we're ready to run rustc ourselves
-                "--format-version",
-                requested_version,
-                "--manifest-path",
-                manifest,
-            ],
-        )
-        .run()
-        .stdout()
-    )
-
-    version = metadata["version"]
-    if version != requested_version:
-        fail(msg="Got metadata v" + version + ", expected v" + requested_version)
-
-    return metadata
-
+load("//honk/rules/rust/metadata.honk", "cargo_metadata")
 
 # Discovers targets from a Cargo workspace, defined by the path to its root manifest.
 def cargo_workspace(manifest):
-    return cargo_metadata(manifest)
-    # TODO register discovered targets
+    metadata = cargo_metadata(manifest)
+
+    for id in metadata.member_ids:
+        fail(msg=id)

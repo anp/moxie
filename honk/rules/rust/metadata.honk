@@ -1,0 +1,97 @@
+# Functions to handle https://doc.rust-lang.org/cargo/commands/cargo-metadata.html#output-format.
+
+
+def _dependency_dict_to_struct(dep):
+    return struct(
+        name=dep["name"],
+        source=dep["source"],
+        req=dep["req"],
+        kind=dep["kind"],
+        rename=dep["rename"],
+        optional=dep["optional"],
+        uses_default_features=dep["uses_default_features"],
+        features=dep["features"],
+        target=dep["target"],
+        registry=dep["registry"],
+    )
+
+
+def _target_dict_to_struct(target):
+    return struct(
+        kind=target["kind"],
+        crate_types=target["crate_types"],
+        name=target["name"],
+        src_path=target["src_path"],
+        edition=target["edition"],
+        required_features=target.get("required-features"),
+        doctest=target["doctest"],
+        test=target.get("test"),
+    )
+
+
+def _package_dict_to_struct(package):
+    dependencies = [_dependency_dict_to_struct(dep) for dep in package["dependencies"]]
+    targets = [_target_dict_to_struct(target) for target in package["targets"]]
+
+    return struct(
+        name=package["name"],
+        version=package["version"],
+        id=package["id"],
+        license=package["license"],
+        license_file=package["license_file"],
+        description=package["description"],
+        source=package["source"],
+        dependencies=dependencies,
+        targets=targets,
+        features=package["features"],
+        manifest_path=package["manifest_path"],
+        metadata=package["metadata"],
+        publish=package["publish"],
+        authors=package["authors"],
+        categories=package["categories"],
+        keywords=package["keywords"],
+        readme=package["readme"],
+        repository=package["repository"],
+        edition=package["edition"],
+        links=package["links"],
+    )
+
+
+def _metadata_dict_to_struct(metadata):
+    packages = dict()
+    for raw_package in metadata["packages"]:
+        package = _package_dict_to_struct(raw_package)
+        packages[package.id] = package
+
+    return struct(
+        version=metadata["version"],
+        root=metadata["workspace_root"],
+        target_dir=metadata["target_directory"],
+        member_ids=metadata["workspace_members"],
+        packages=packages,
+    )
+
+
+def cargo_metadata(manifest):
+    requested_version = 1  # only valid value at time of writing
+    metadata = _metadata_dict_to_struct(
+        json_decode(  # TODO json.decode from starlark spec
+            command(
+                "cargo",  # TODO get this from a specified toolchain
+                [
+                    "metadata",
+                    "--format-version",
+                    requested_version,
+                    "--manifest-path",
+                    manifest,
+                ],
+            )
+            .run()
+            .stdout()
+        )
+    )
+
+    if metadata.version != requested_version:
+        fail(msg="Got metadata v" + version + ", expected v" + requested_version)
+
+    return metadata
