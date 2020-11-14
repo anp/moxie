@@ -1,0 +1,5 @@
+def lint_crate(package):
+    """
+    Run clippy on ${package}.
+    """
+    fail(msg="TODO define clippy")

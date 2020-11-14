@@ -1,8 +1,47 @@
+load("//honk/rules/rust/clippy.honk", "lint_crate")
 load("//honk/rules/rust/metadata.honk", "cargo_metadata")
+load("//honk/rules/rust/rustfmt.honk", "format_crate")
+load("//honk/rules/rust/wasm-pack.honk", "maybe_wasm_crate")
 
-# Discovers targets from a Cargo workspace, defined by the path to its root manifest.
+
+def test_crate(package):
+    """
+    Run `cargo test --all-targets -p ${package}`.
+    """
+    fail(msg="TODO define tests")
+
+
+def doctest_crate(package):
+    """
+    Run `cargo test --doc -p ${package}`.
+    """
+    fail(msg="TODO define doctests")
+
+
+def document_crate(package):
+    """
+    Run `cargo doc --no-deps -p ${package}`.
+    """
+    fail(msg="TODO define documentation")
+
+
 def cargo_workspace(manifest):
+    """
+    Discovers targets from a Cargo workspace, defined by the path to its root ${manifest}.
+    """
     metadata = cargo_metadata(manifest)
-
     for id in metadata.member_ids:
-        fail(msg=id)
+        package = metadata.packages[id]
+
+        # mutators
+        format_crate(package)
+
+        # assets
+        # TODO discover binary targets for `honk run`
+        maybe_wasm_crate(package)
+        document_crate(package)
+
+        # "tests"
+        test_crate(package)
+        doctest_crate(package)
+        lint_crate(package)

@@ -1,0 +1,11 @@
+def has_wasm_tests(package):
+    fail(msg="TODO check for wasm-bindgen-test")
+
+
+def wasm_bindgen_test(package):
+    fail(msg="TODO define wasm-pack testing")
+
+
+def maybe_wasm_crate(package):
+    if has_wasm_tests(package):
+        wasm_bindgen_test(package)
