@@ -8,7 +8,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 mod builtins;
 mod error;
@@ -71,7 +71,7 @@ impl FileLoader for Workspace {
     fn load(&self, path: &str, type_values: &TypeValues) -> Result<Environment, EvalException> {
         // TODO smarter way to resolve assets etc
         let file = self.root.join(path.strip_prefix("//").unwrap_or(path));
-        info!(file = %file.display(), "loading");
+        debug!(file = %file.display(), "loading");
 
         let root_contents = self.vfs.read(&file).expect("TODO pass errors back correctly here");
         let root_contents =
@@ -81,7 +81,7 @@ impl FileLoader for Workspace {
         // TODO figure out how to do this once instead of here *and* above in `new()`?
         builtins::register(&mut env, &mut throwaway_tvs);
 
-        info!("evaluating");
+        debug!("evaluating");
         starlark::eval::eval(
             &self.codemap,
             &file.to_string_lossy(),
