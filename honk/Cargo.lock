@@ -458,6 +458,7 @@ dependencies = [
  "starlark",
  "thiserror",
  "tracing",
+ "tracing-error",
  "tracing-subscriber",
 ]
 
