@@ -29,6 +29,14 @@ def _target_dict_to_struct(target):
     )
 
 
+def rust_files_in_target(manifest_path, target):
+    files = set()
+
+    # TODO glob the files
+
+    return files
+
+
 def _package_dict_to_struct(package):
     dependencies = [_dependency_dict_to_struct(dep) for dep in package["dependencies"]]
     targets = [_target_dict_to_struct(target) for target in package["targets"]]
