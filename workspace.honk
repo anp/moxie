@@ -1,3 +1,5 @@
 load("//honk/rules/rust.honk", "cargo_workspace")
 
 cargo_workspace(manifest="./Cargo.toml")
+
+# TODO specify website construction & HTTP server
