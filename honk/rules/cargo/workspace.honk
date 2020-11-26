@@ -1,7 +1,7 @@
-load("//honk/rules/rust/clippy.honk", "lint_crate")
-load("//honk/rules/rust/metadata.honk", "cargo_metadata")
-load("//honk/rules/rust/rustfmt.honk", "format_crate")
-load("//honk/rules/rust/wasm-pack.honk", "maybe_wasm_crate")
+load("//honk/rules/cargo/clippy.honk", "lint_crate")
+load("//honk/rules/cargo/metadata.honk", "cargo_metadata")
+load("//honk/rules/cargo/rustfmt.honk", "format_crate")
+load("//honk/rules/cargo/wasm-pack.honk", "maybe_wasm_crate")
 
 
 def test_crate(package):

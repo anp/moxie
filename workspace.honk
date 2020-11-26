@@ -1,4 +1,4 @@
-load("//honk/rules/rust.honk", "cargo_workspace")
+load("//honk/rules/cargo/workspace.honk", "cargo_workspace")
 
 cargo_workspace(manifest="./Cargo.toml")
 

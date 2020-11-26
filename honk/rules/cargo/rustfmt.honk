@@ -1,4 +1,4 @@
-load("//honk/rules/rust/metadata.honk", "rust_files_in_target")
+load("//honk/rules/cargo/metadata.honk", "rust_files_in_target")
 
 
 def format_crate(package, check=False):

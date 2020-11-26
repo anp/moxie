@@ -70,6 +70,7 @@ impl FileLoader for Workspace {
     #[instrument(skip(self, type_values))]
     fn load(&self, path: &str, type_values: &TypeValues) -> Result<Environment, EvalException> {
         // TODO smarter way to resolve assets etc
+        // TODO handle relative paths somehow?
         let file = self.root.join(path.strip_prefix("//").unwrap_or(path));
         debug!(file = %file.display(), "loading");
 
