@@ -82,15 +82,20 @@ def _metadata_dict_to_struct(metadata):
 
 def cargo_metadata(manifest):
     requested_version = 1  # only valid value at time of writing
+
+    metadata_inputs = []
+    # TODO glob for Cargo.toml and all auto-target files
+
     metadata_command = command(
         "cargo",  # TODO get this from a specified toolchain
-        [
+        args=[
             "metadata",
             "--format-version",
             requested_version,
             "--manifest-path",
             manifest,
         ],
+        inputs=metadata_inputs,
     )
     command_output = metadata_command.run().stdout()
     # TODO json.decode from starlark spec
