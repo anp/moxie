@@ -82,22 +82,20 @@ def _metadata_dict_to_struct(metadata):
 
 def cargo_metadata(manifest):
     requested_version = 1  # only valid value at time of writing
-    metadata = _metadata_dict_to_struct(
-        json_decode(  # TODO json.decode from starlark spec
-            command(
-                "cargo",  # TODO get this from a specified toolchain
-                [
-                    "metadata",
-                    "--format-version",
-                    requested_version,
-                    "--manifest-path",
-                    manifest,
-                ],
-            )
-            .run()
-            .stdout()
-        )
+    metadata_command = command(
+        "cargo",  # TODO get this from a specified toolchain
+        [
+            "metadata",
+            "--format-version",
+            requested_version,
+            "--manifest-path",
+            manifest,
+        ],
     )
+    command_output = metadata_command.run().stdout()
+    # TODO json.decode from starlark spec
+    decoded = json_decode(command_output)
+    metadata = _metadata_dict_to_struct(decoded)
 
     if metadata.version != requested_version:
         fail(msg="Got metadata v" + version + ", expected v" + requested_version)
