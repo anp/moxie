@@ -37,6 +37,19 @@ def rust_files_in_target(manifest_path, target):
     return files
 
 
+def _custom_honk_metadata(package):
+    browser_tests = False
+    metadata = package.get("metadata")
+    if metadata:
+        honk_metadata = metadata.get("honk")
+        if honk_metadata and honk_metadata.get("browser-tests"):
+            browser_tests = True
+
+    return struct(
+        browser_tests=browser_tests,
+    )
+
+
 def _package_dict_to_struct(package):
     dependencies = [_dependency_dict_to_struct(dep) for dep in package["dependencies"]]
     targets = [_target_dict_to_struct(target) for target in package["targets"]]
@@ -62,6 +75,7 @@ def _package_dict_to_struct(package):
         repository=package["repository"],
         edition=package["edition"],
         links=package["links"],
+        honk=_custom_honk_metadata(package),
     )
 
 
