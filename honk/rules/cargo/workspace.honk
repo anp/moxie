@@ -10,10 +10,13 @@ def test_crate(package):
     """
     target(
         name="test-" + package.name,
-        command=command("cargo", ["test", "--all-targets", "--package", package.name]),
-        inputs=rust_files_in_package(package),
-        # TODO more granular output tracking somehow?
-        outputs=["target"],
+        command=command(
+            "cargo",
+            args=["test", "--all-targets", "--package", package.name],
+            inputs=rust_files_in_package(package),
+            # TODO more granular output tracking somehow?
+            outputs=["target"],
+        ),
     )
 
 
@@ -23,10 +26,13 @@ def doctest_crate(package):
     """
     target(
         name="doctest-" + package.name,
-        command=command("cargo", ["test", "--doc", "--package", package.name]),
-        inputs=rust_files_in_package(package),
-        # TODO more granular output tracking somehow?
-        outputs=["target"],
+        command=command(
+            "cargo",
+            args=["test", "--doc", "--package", package.name],
+            inputs=rust_files_in_package(package),
+            # TODO more granular output tracking somehow?
+            outputs=["target"],
+        ),
     )
 
 
@@ -36,10 +42,13 @@ def document_crate(package):
     """
     target(
         name="rustdoc-" + package.name,
-        command=command("cargo", ["doc", "--no-deps", "--package", package.name]),
-        inputs=rust_files_in_package(package),
-        # TODO more granular output tracking somehow?
-        outputs=["target/doc"],
+        command=command(
+            "cargo",
+            args=["doc", "--no-deps", "--package", package.name],
+            inputs=rust_files_in_package(package),
+            # TODO more granular output tracking somehow?
+            outputs=["target/doc"],
+        ),
     )
 
 

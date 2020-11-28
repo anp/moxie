@@ -14,6 +14,9 @@ def format_crate(package, check=False):
     for target in package.targets:
         formatter(
             name="format-" + package.name + "-" + target.name,
-            command=command("rustfmt", args + [target.src_path]),
-            affected=rust_files_in_target(package.manifest_path, target),
+            command=command(
+                "rustfmt",
+                args=args + [target.src_path],
+                inputs=rust_files_in_target(package.manifest_path, target),
+            ),
         )

@@ -6,7 +6,12 @@ use tracing::instrument;
 type Asset = Value;
 
 starlark_module! { globals =>
-    command(command: String, args: Vec<Value>, inputs: Vec<Asset> = vec![]) {
+    command(
+        command: String,
+        args: Vec<Value>,
+        inputs: Vec<Asset> = vec![],
+        outputs: Vec<Asset> = vec![]
+    ) {
         let args = args.iter().map(Value::to_str).collect();
         Ok(Value::new(Command::new(command, args, inputs)))
     }

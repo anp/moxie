@@ -44,6 +44,7 @@ impl Workspace {
     }
 
     pub fn maintain(self) -> Result<()> {
+        // TODO change current directory to workspace root?
         info!("maintaining workspace");
         loop {
             if let Err(error) = self.converge() {

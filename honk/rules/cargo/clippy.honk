@@ -9,7 +9,13 @@ def lint_crate(package):
         name="lint-" + package.name,
         command=command(
             "cargo",
-            ["clippy", "--all-targets", "--all-features", "--package", package.name],
+            args=[
+                "clippy",
+                "--all-targets",
+                "--all-features",
+                "--package",
+                package.name,
+            ],
+            inputs=rust_files_in_package(package),
         ),
-        inputs=rust_files_in_package(package),
     )
