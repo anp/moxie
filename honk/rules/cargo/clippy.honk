@@ -17,5 +17,6 @@ def lint_crate(package):
                 package.name,
             ],
             inputs=rust_files_in_package(package),
+            outputs=[],
         ),
     )

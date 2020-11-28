@@ -12,11 +12,13 @@ def format_crate(package, check=False):
         args += "--check"
 
     for target in package.targets:
+        target_files = rust_files_in_target(package.manifest_path, target)
         formatter(
             name="format-" + package.name + "-" + target.name,
             command=command(
                 "rustfmt",
                 args=args + [target.src_path],
-                inputs=rust_files_in_target(package.manifest_path, target),
+                inputs=target_files,
+                outputs=target_files,
             ),
         )

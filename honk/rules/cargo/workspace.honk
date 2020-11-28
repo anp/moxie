@@ -15,7 +15,8 @@ def test_crate(package):
             args=["test", "--all-targets", "--package", package.name],
             inputs=rust_files_in_package(package),
             # TODO more granular output tracking somehow?
-            outputs=["target"],
+            # TODO automagically convert strings for inputs/outputs
+            outputs=[path("target")],
         ),
     )
 
@@ -31,7 +32,8 @@ def doctest_crate(package):
             args=["test", "--doc", "--package", package.name],
             inputs=rust_files_in_package(package),
             # TODO more granular output tracking somehow?
-            outputs=["target"],
+            # TODO automagically convert strings for inputs/outputs
+            outputs=[path("target")],
         ),
     )
 
@@ -47,7 +49,8 @@ def document_crate(package):
             args=["doc", "--no-deps", "--package", package.name],
             inputs=rust_files_in_package(package),
             # TODO more granular output tracking somehow?
-            outputs=["target/doc"],
+            # TODO automagically convert strings for inputs/outputs
+            outputs=[path("target/doc")],
         ),
     )
 

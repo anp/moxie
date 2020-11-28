@@ -21,7 +21,7 @@ def _target_dict_to_struct(target):
         name=target["name"],
         kind=target["kind"],
         crate_types=target["crate_types"],
-        src_path=target["src_path"],
+        src_path=path(target["src_path"]),
         edition=target["edition"],
         required_features=target.get("required-features"),
         doctest=target["doctest"],
@@ -30,17 +30,28 @@ def _target_dict_to_struct(target):
 
 
 def rust_files_in_target(manifest_path, target):
-    files = set()
+    """
+    Defined in https://doc.rust-lang.org/cargo/guide/project-layout.html.
+    """
+    crate_dir = manifest_path.parent()
+    files = []
+    bin_files = crate_dir.glob("src/bin/**/*.rs")
+    for file in crate_dir.glob("src/**/*.rs"):
+        if file not in bin_files:
+            files.append(file)
 
-    # TODO glob the files
+    if target.src_path.filename() == "main.rs":
+        files.extend(target.src_path.parent().glob("**/*.rs"))
+    else:
+        files.append(target.src_path)
 
-    return files
+    return set(files)
 
 
 def rust_files_in_package(package):
     files = set()
     for target in package.targets:
-        files += rust_files_in_target(package.manifest_path, package.targets)
+        files += rust_files_in_target(package.manifest_path, target)
     return files
 
 
@@ -72,7 +83,7 @@ def _package_dict_to_struct(package):
         dependencies=dependencies,
         targets=targets,
         features=package["features"],
-        manifest_path=package["manifest_path"],
+        manifest_path=path(package["manifest_path"]),
         metadata=package["metadata"],
         publish=package["publish"],
         authors=package["authors"],
@@ -117,6 +128,7 @@ def cargo_metadata(manifest):
             manifest,
         ],
         inputs=metadata_inputs,
+        outputs=[],
     )
     command_output = metadata_command.run().stdout()
     # TODO json.decode from starlark spec

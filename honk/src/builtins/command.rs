@@ -1,19 +1,16 @@
-use crate::error::Error;
+use crate::{builtins::path::Path, error::Error};
 use starlark::values::{TypedValue, Value};
 use tracing::instrument;
-
-// TODO define an actual asset type that can be linked to vfs
-type Asset = Value;
 
 starlark_module! { globals =>
     command(
         command: String,
         args: Vec<Value>,
-        inputs: Vec<Asset> = vec![],
-        outputs: Vec<Asset> = vec![]
+        inputs: Vec<Path>,
+        outputs: Vec<Path>
     ) {
         let args = args.iter().map(Value::to_str).collect();
-        Ok(Value::new(Command::new(command, args, inputs)))
+        Ok(Value::new(Command::new(command, args, inputs, outputs)))
     }
 
     Command.run(this: Command) {
@@ -29,12 +26,13 @@ starlark_module! { globals =>
 pub struct Command {
     command: String,
     args: Vec<String>,
-    inputs: Vec<Asset>,
+    inputs: Vec<Path>,
+    outputs: Vec<Path>,
 }
 
 impl Command {
-    pub fn new(command: String, args: Vec<String>, inputs: Vec<Asset>) -> Self {
-        Self { command, args, inputs }
+    pub fn new(command: String, args: Vec<String>, inputs: Vec<Path>, outputs: Vec<Path>) -> Self {
+        Self { command, args, inputs, outputs }
     }
 
     #[instrument]
