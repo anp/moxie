@@ -20,9 +20,11 @@ macro_rules! starlark_module {
 pub mod command;
 pub mod formatter;
 pub mod json;
+pub mod target;
 
 pub fn register(env: &mut Environment, tvs: &mut TypeValues) {
     command::globals(env, tvs);
     formatter::globals(env, tvs);
     json::globals(env, tvs);
+    target::globals(env, tvs);
 }

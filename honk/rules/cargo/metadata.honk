@@ -37,6 +37,13 @@ def rust_files_in_target(manifest_path, target):
     return files
 
 
+def rust_files_in_package(package):
+    files = set()
+    for target in package.targets:
+        files += rust_files_in_target(package.manifest_path, package.targets)
+    return files
+
+
 def _custom_honk_metadata(package):
     browser_tests = False
     metadata = package.get("metadata")
