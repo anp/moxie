@@ -1,3 +1,5 @@
 def maybe_wasm_crate(package):
+    # TODO figure out a way to define wasm "binary" targets for wasm-pack
     if package.honk.browser_tests:
-        fail("TODO define wasm-bindgen-test stuff for %s" % package.name)
+        # TODO define wasm-bindgen-test stuff
+        pass
