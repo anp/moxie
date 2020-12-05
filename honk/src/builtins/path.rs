@@ -5,8 +5,17 @@ use std::{
 };
 
 starlark_module! { globals =>
+    honk_root() {
+        // TODO handle error here
+        Ok(Value::new(Path::new(std::env::current_dir().unwrap())))
+    }
+
     path(p: String) {
         Ok(Value::new(Path::new(PathBuf::from(p))))
+    }
+
+    Path.exists(this: Path) {
+        Ok(Value::new(this.exists()))
     }
 
     Path.parent(this: Path) {
@@ -15,6 +24,14 @@ starlark_module! { globals =>
 
     Path.filename(this: Path) {
         Ok(opt_typed_val(this.filename()))
+    }
+
+    Path.join(this: Path, to_join: String) {
+        Ok(Value::new(this.join(&to_join)))
+    }
+
+    Path.canonicalize(this: Path) {
+        Ok(Value::new(this.canonicalize()))
     }
 
     Path.glob(this: Path, pattern: String) {
@@ -36,12 +53,25 @@ impl Path {
         Self { inner }
     }
 
+    fn exists(&self) -> bool {
+        self.inner.exists()
+    }
+
     fn parent(&self) -> Option<Self> {
         self.inner.parent().map(|p| Self { inner: p.to_path_buf() })
     }
 
     fn filename(&self) -> Option<String> {
         self.inner.file_name().map(|n| n.to_string_lossy().to_string())
+    }
+
+    fn join(&self, to_join: &str) -> Self {
+        Self { inner: self.inner.join(to_join) }
+    }
+
+    fn canonicalize(&self) -> Self {
+        // TODO handle errors here
+        Self { inner: self.inner.canonicalize().unwrap() }
     }
 
     // TODO return a Set once exposed from starlark crate

@@ -130,4 +130,4 @@ docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"
 ####################################################################################################
 # honk
 
-honk = "run --manifest-path honk/Cargo.toml --"
+honk = "run --manifest-path honk/Cargo.toml --release --"
