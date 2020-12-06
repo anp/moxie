@@ -37,6 +37,10 @@ starlark_module! { globals =>
     Path.glob(this: Path, pattern: String) {
         Ok(Value::new(this.globs(&[pattern])))
     }
+
+    Path.globs(this: Path, patterns: Vec<String>) {
+        Ok(Value::new(this.globs(&patterns)))
+    }
 }
 
 fn opt_typed_val(v: Option<impl TypedValue>) -> Value {
