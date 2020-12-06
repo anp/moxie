@@ -90,6 +90,12 @@ impl Path {
     }
 }
 
+impl std::fmt::Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner.display().fmt(f)
+    }
+}
+
 impl TypedValue for Path {
     type Holder = starlark::values::Immutable<Self>;
 
@@ -106,7 +112,7 @@ impl TypedValue for Path {
     }
 
     fn to_repr_impl(&self, buf: &mut String) -> std::fmt::Result {
-        buf.push_str(&self.inner.to_string_lossy());
-        Ok(())
+        use std::fmt::Write;
+        write!(buf, "{}", self)
     }
 }
