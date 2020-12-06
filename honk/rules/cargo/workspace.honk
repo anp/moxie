@@ -4,6 +4,13 @@ load("//honk/rules/cargo/rustfmt.honk", "format_crate")
 load("//honk/rules/cargo/wasm-pack.honk", "maybe_wasm_crate")
 
 
+# TODO do the tests in two stages -- a build and then a run
+# something like this to discover the filename cargo makes (thanks @yaahc)
+# cargo test --no-run --message-format=json | \
+#   jq -r "select(.profile.test == true) | \
+#   .filenames[]" | grep -v dSYM - > filenames.txt
+
+
 def test_crate(package):
     """
     Run `cargo test --all-targets -p ${package}`.
