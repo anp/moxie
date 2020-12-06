@@ -1,5 +1,5 @@
 load("//honk/rules/cargo/workspace.honk", "cargo_workspace")
 
-cargo_workspace(manifest="./Cargo.toml")
+cargo_workspace(manifest="//Cargo.toml")
 
 # TODO specify website construction & HTTP server

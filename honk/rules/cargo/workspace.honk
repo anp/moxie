@@ -66,6 +66,7 @@ def cargo_workspace(manifest):
     """
     Discovers targets from a Cargo workspace, defined by the path to its root ${manifest}.
     """
+    manifest = path(manifest)
     metadata = cargo_metadata(manifest)
     for id in metadata.member_ids:
         package = metadata.packages[id]

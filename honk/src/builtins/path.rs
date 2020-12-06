@@ -7,11 +7,11 @@ use std::{
 starlark_module! { globals =>
     honk_root() {
         // TODO handle error here
-        Ok(Value::new(Path::new(std::env::current_dir().unwrap())))
+        Ok(Value::new(honk_root_impl()))
     }
 
     path(p: String) {
-        Ok(Value::new(Path::new(PathBuf::from(p))))
+        Ok(Value::new(Path::new(p)))
     }
 
     Path.exists(this: Path) {
@@ -43,6 +43,11 @@ starlark_module! { globals =>
     }
 }
 
+fn honk_root_impl() -> Path {
+    // FIXME get this from the CLI arg
+    Path { inner: std::env::current_dir().unwrap() }
+}
+
 fn opt_typed_val(v: Option<impl TypedValue>) -> Value {
     if let Some(v) = v { Value::new(v) } else { Value::new(NoneType::None) }
 }
@@ -53,8 +58,14 @@ pub struct Path {
 }
 
 impl Path {
-    fn new(inner: PathBuf) -> Self {
-        Self { inner }
+    fn new(inner: String) -> Self {
+        Self {
+            inner: if inner.starts_with("//") {
+                honk_root_impl().inner.join(inner.trim_start_matches("//"))
+            } else {
+                PathBuf::from(inner)
+            },
+        }
     }
 
     fn exists(&self) -> bool {
@@ -89,8 +100,7 @@ impl Path {
 
             // TODO glob against the vfs
             for entry in glob::glob(&full_pattern).expect("must pass a valid glob") {
-                let matched = Path::new(entry.unwrap());
-                results.push(Value::new(matched)).unwrap();
+                results.push(Value::new(Path { inner: entry.unwrap() })).unwrap();
             }
         }
 
