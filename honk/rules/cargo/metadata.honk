@@ -115,23 +115,19 @@ def _metadata_dict_to_struct(metadata):
 def cargo_metadata(manifest):
     requested_version = 1  # only valid value at time of writing
 
-    metadata_inputs = honk_root().glob("**/Cargo.toml")
-    for cargo_toml in list(metadata_inputs):
-        crate_root = cargo_toml.parent()
-        # TODO possible to do this without auto-targets from cargo?
-        #      i think we'd have to parse toml ourselves
-        metadata_inputs.append(crate_root.join("src/lib.rs"))
-
-        main_rs = crate_root.join("src/main.rs")
-        if main_rs.exists():
-            metadata_inputs.append(main_rs)
-
-        for other_dir in ["src/bin", "benches", "examples", "tests"]:
-            other_dir = path(other_dir)
-            metadata_inputs += other_dir.glob("*.rs")
-            metadata_inputs += other_dir.glob("*/main.rs")
-
-    metadata_inputs += honk_root().glob("**/Cargo.lock")
+    metadata_inputs = []
+    # TODO make incremental globs more efficient and uncomment
+    # metadata_inputs = manifest.parent().globs(
+    #     # TODO figure out a better way to exclude target
+    #     [
+    #         "**/Cargo.toml",
+    #         "**/Cargo.lock",
+    #         "**/src/*.rs",
+    #         "**/benches/**/*.rs",
+    #         "**/examples/**/*.rs",
+    #         "**/tests/**/*.rs",
+    #     ]
+    # )
 
     metadata_command = command(
         "cargo",  # TODO get this from a specified toolchain
