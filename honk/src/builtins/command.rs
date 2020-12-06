@@ -59,7 +59,33 @@ impl TypedValue for Command {
 
     fn to_repr_impl(&self, buf: &mut String) -> std::fmt::Result {
         use std::fmt::Write;
-        write!(buf, "{:?}", self)
+        write!(buf, "{}", self)
+    }
+}
+
+impl std::fmt::Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Command:")?;
+        write!(f, "\t{}", &self.command)?;
+        for arg in &self.args {
+            write!(f, " {}", arg)?;
+        }
+
+        if !self.inputs.is_empty() {
+            write!(f, "\n\tinputs:")?;
+            for input in &self.inputs {
+                write!(f, " {},", input)?;
+            }
+        }
+
+        if !self.outputs.is_empty() {
+            writeln!(f, "\n\toutputs:")?;
+            for output in &self.outputs {
+                write!(f, " {},", output)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
