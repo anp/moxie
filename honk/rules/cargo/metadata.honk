@@ -129,6 +129,7 @@ def cargo_metadata(manifest):
     #     ]
     # )
 
+    # TODO find a way to mark this volatile
     metadata_command = command(
         "cargo",  # TODO get this from a specified toolchain
         args=[
