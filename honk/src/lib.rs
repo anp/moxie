@@ -56,6 +56,7 @@ impl Workspace {
 
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
     fn converge(&self) -> Result<(), Error> {
+        debug!("constructing workspace env");
         let _workspace_env = self
             .load(Self::ASSET_PATH, &self.type_values)
             .map_err(|e| EvalError::from_exception(e, self.codemap.clone()))?;
