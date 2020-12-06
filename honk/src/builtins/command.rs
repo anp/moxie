@@ -56,6 +56,11 @@ impl TypedValue for Command {
     fn values_for_descendant_check_and_freeze(&self) -> Box<dyn Iterator<Item = Value> + '_> {
         Box::new(std::iter::empty())
     }
+
+    fn to_repr_impl(&self, buf: &mut String) -> std::fmt::Result {
+        use std::fmt::Write;
+        write!(buf, "{:?}", self)
+    }
 }
 
 #[derive(Debug, Clone)]
