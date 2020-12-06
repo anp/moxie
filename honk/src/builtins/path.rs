@@ -35,7 +35,7 @@ starlark_module! { globals =>
     }
 
     Path.glob(this: Path, pattern: String) {
-        Ok(Value::new(this.glob(&pattern)))
+        Ok(Value::new(this.globs(&[pattern])))
     }
 }
 
@@ -75,15 +75,19 @@ impl Path {
     }
 
     // TODO return a Set once exposed from starlark crate
-    fn glob(&self, pattern: &str) -> List {
+    fn globs(&self, patterns: &[impl AsRef<str>]) -> List {
         let mut results = List::default();
-        // FIXME this might be a broken way to do globs "scoped" to a parent path?
-        let full_pattern = self.inner.to_string_lossy() + "/" + pattern;
 
-        // TODO glob against the vfs
-        for entry in glob::glob(&full_pattern).expect("must pass a valid glob") {
-            let matched = Path::new(entry.unwrap());
-            results.push(Value::new(matched)).unwrap();
+        for pattern in patterns {
+            let pattern = pattern.as_ref();
+            // FIXME this might be a broken way to do globs "scoped" to a parent path?
+            let full_pattern = self.inner.to_string_lossy() + "/" + pattern;
+
+            // TODO glob against the vfs
+            for entry in glob::glob(&full_pattern).expect("must pass a valid glob") {
+                let matched = Path::new(entry.unwrap());
+                results.push(Value::new(matched)).unwrap();
+            }
         }
 
         results
