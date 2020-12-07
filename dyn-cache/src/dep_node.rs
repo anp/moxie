@@ -1,6 +1,6 @@
 use super::Liveness;
 use illicit::AsContext;
-use parking_lot::Mutex;
+use simple_mutex::Mutex;
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},

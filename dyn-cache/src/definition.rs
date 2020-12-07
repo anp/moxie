@@ -379,7 +379,7 @@ impl std::panic::RefUnwindSafe for $shared {}
 mod $test_mod {
     use super::*;
     use std::sync::Arc;
-    use parking_lot::Mutex;
+    use simple_mutex::Mutex;
 
     #[test]
     fn single_query_with_gc() {

@@ -1,5 +1,5 @@
 use crate::{Commit, Key};
-use parking_lot::Mutex;
+use simple_mutex::Mutex;
 use std::{sync::Arc, task::Waker};
 
 /// The underlying container of state variables. Vends copies of the latest

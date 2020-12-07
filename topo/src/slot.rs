@@ -1,6 +1,6 @@
 use dyn_cache::sync::SendCache;
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use simple_mutex::Mutex;
 use std::{
     any::{type_name, TypeId},
     borrow::Borrow,

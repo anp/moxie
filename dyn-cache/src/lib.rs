@@ -423,7 +423,7 @@ pub mod local {
 
 /// A thread-safe cache which requires stored types implement `Send`.
 pub mod sync {
-    use parking_lot::Mutex;
+    use simple_mutex::Mutex;
     use std::sync::Arc;
 
     define_cache!(sync, SendCache: Send, Arc, Mutex::lock);

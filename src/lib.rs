@@ -60,7 +60,7 @@ pub mod runtime;
 pub mod testing;
 
 use crate::runtime::{Context, Var};
-use parking_lot::Mutex;
+use simple_mutex::Mutex;
 use std::{
     borrow::Borrow,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
