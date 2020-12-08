@@ -11,6 +11,9 @@ load("//honk/rules/cargo/wasm-pack.honk", "maybe_wasm_crate")
 #   .filenames[]" | grep -v dSYM - > filenames.txt
 
 
+# TODO add workspace dependencies between crates
+
+
 def test_crate(package):
     """
     Run `cargo test --all-targets -p ${package}`.
