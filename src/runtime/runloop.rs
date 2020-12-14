@@ -43,12 +43,6 @@ where
         self.inner.revision()
     }
 
-    /// Sets the [`std::task::Waker`] which will be called when state variables
-    /// change.
-    pub fn set_state_change_waker(&mut self, wk: Waker) {
-        self.inner.set_state_change_waker(wk);
-    }
-
     /// Sets the executor that will be used to spawn normal priority tasks.
     pub fn set_task_executor(&mut self, sp: impl LocalSpawn + 'static) {
         self.inner.set_task_executor(sp);
@@ -56,8 +50,14 @@ where
 
     /// Run the root function once within this runtime's context, returning the
     /// result.
-    pub fn run_once(&mut self) -> Out {
-        self.inner.run_once(&mut self.root)
+    pub fn force_next(&mut self) -> Out {
+        self.inner.force_once(&mut self.root)
+    }
+
+    /// Run the root function once within this runtime's context, returning the
+    /// result.
+    pub fn force_next_with(&mut self, waker: Waker) -> Out {
+        self.inner.force_once_with(&mut self.root, waker)
     }
 
     /// Poll this runtime without exiting. Discards any value returned from the
@@ -79,14 +79,12 @@ impl<Root, Out> Stream for RunLoop<Root>
 where
     Root: FnMut() -> Out + Unpin,
 {
-    type Item = (Revision, Out);
+    type Item = Out;
 
     /// This `Stream` implementation runs a single revision for each call to
     /// `poll_next`, always returning `Poll::Ready(Some(...))`.
     fn poll_next(self: Pin<&mut Self>, cx: &mut FutContext<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        this.inner.set_state_change_waker(cx.waker().clone());
-        let out = this.run_once();
-        Poll::Ready(Some((this.inner.revision, out)))
+        this.inner.poll_once(&mut this.root, Some(cx.waker().clone())).map(|o| Some(o))
     }
 }

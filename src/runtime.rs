@@ -11,10 +11,12 @@ use futures::{
     task::{noop_waker, LocalSpawn, SpawnError},
 };
 use illicit::AsContext;
+use parking_lot::{RwLock, RwLockUpgradableReadGuard, RwLockWriteGuard};
 use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     rc::Rc,
-    task::Waker,
+    sync::{atomic::AtomicBool, Arc},
+    task::{Poll, Waker},
 };
 
 pub(crate) use context::Context;
@@ -39,6 +41,14 @@ impl std::fmt::Debug for Revision {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_fmt(format_args!("r{}", self.0))
     }
+}
+
+/// TODO
+#[derive(Debug)]
+pub struct RevisionControlSystem {
+    revision: Revision,
+    waker: Waker,
+    pending_changes: AtomicBool,
 }
 
 /// A [`Runtime`] is the primary integration point between moxie and an
@@ -112,17 +122,16 @@ impl std::fmt::Debug for Revision {
 /// let mut rt = Runtime::new();
 /// assert_eq!(rt.revision().0, 0);
 /// for i in 1..10 {
-///     rt.run_once(|| ());
+///     rt.force_once(|| ());
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
 ///
 /// [dyn-cache]: https://docs.rs/dyn-cache
 pub struct Runtime {
-    revision: Revision,
+    rcs: Arc<RwLock<RevisionControlSystem>>,
     cache: SharedLocalCache,
     spawner: Spawner,
-    wk: Waker,
 }
 
 impl Default for Runtime {
@@ -137,36 +146,76 @@ impl Runtime {
     pub fn new() -> Self {
         Self {
             spawner: Spawner(Rc::new(JunkSpawner)),
-            revision: Revision(0),
             cache: SharedLocalCache::default(),
-            wk: noop_waker(),
+            rcs: Arc::new(RwLock::new(RevisionControlSystem {
+                revision: Revision(0),
+                waker: noop_waker(),
+                pending_changes: AtomicBool::new(true),
+            })),
         }
     }
 
     /// The current revision of the runtime, or how many times `run_once` has
     /// been invoked.
     pub fn revision(&self) -> Revision {
-        self.revision
+        self.rcs.read().revision
     }
 
+    /// TODO description
+    pub fn force(&self) {
+        self.rcs.read().pending_changes.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// TODO description
+    pub fn force_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
+        self.execute(op, self.rcs.write())
+    }
+
+    /// TODO description
+    pub fn force_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Out {
+        let mut rcs_write = self.rcs.write();
+        rcs_write.waker = waker;
+        self.execute(op, rcs_write)
+    }
+
+    /// TODO description
     /// Runs the root closure once with access to the runtime context,
     /// increments the runtime's `Revision`, and drops any cached values
     /// which were not marked alive.
-    pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
-        self.revision.0 += 1;
+    pub fn poll_once<Out>(&mut self, op: impl FnOnce() -> Out, waker: Option<Waker>) -> Poll<Out> {
+        // Avoid write lock
+        if let Some(waker) = waker {
+            let mut rcs_write = self.rcs.write();
+            rcs_write.waker = waker;
+            if !rcs_write.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
+                Poll::Pending
+            } else {
+                Poll::Ready(self.execute(op, rcs_write))
+            }
+        } else {
+            let rcs_read = self.rcs.upgradable_read();
+            if !rcs_read.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
+                Poll::Pending
+            } else {
+                let rcs_write = RwLockUpgradableReadGuard::upgrade(rcs_read);
+                Poll::Ready(self.execute(op, rcs_write))
+            }
+        }
+    }
+
+    fn execute<Out>(
+        &self,
+        op: impl FnOnce() -> Out,
+        mut rcs_write: RwLockWriteGuard<RevisionControlSystem>,
+    ) -> Out {
+        rcs_write.revision.0 += 1;
+        rcs_write.pending_changes.store(false, std::sync::atomic::Ordering::Relaxed);
+        drop(rcs_write);
 
         let ret = self.context_handle().offer(|| topo::call(op));
 
         self.cache.gc();
         ret
-    }
-
-    /// Sets the [`std::task::Waker`] which will be called when state variables
-    /// receive commits. By default the runtime no-ops on a state change,
-    /// which is probably the desired behavior if the embedding system will
-    /// call `Runtime::run_once` on a regular interval regardless.
-    pub fn set_state_change_waker(&mut self, wk: Waker) {
-        self.wk = wk;
     }
 
     /// Sets the executor that will be used to spawn normal priority tasks.
@@ -210,7 +259,7 @@ mod tests {
 
         assert!(illicit::get::<u8>().is_err());
         first_byte.offer(|| {
-            topo::call(|| runtime.run_once());
+            topo::call(|| runtime.force_next());
         });
         assert!(illicit::get::<u8>().is_err());
     }
@@ -218,10 +267,10 @@ mod tests {
     #[test]
     fn tick_a_few_times() {
         let mut rt = RunLoop::new(Revision::current);
-        assert_eq!(rt.run_once(), Revision(1));
-        assert_eq!(rt.run_once(), Revision(2));
-        assert_eq!(rt.run_once(), Revision(3));
-        assert_eq!(rt.run_once(), Revision(4));
-        assert_eq!(rt.run_once(), Revision(5));
+        assert_eq!(rt.force_next(), Revision(1));
+        assert_eq!(rt.force_next(), Revision(2));
+        assert_eq!(rt.force_next(), Revision(3));
+        assert_eq!(rt.force_next(), Revision(4));
+        assert_eq!(rt.force_next(), Revision(5));
     }
 }

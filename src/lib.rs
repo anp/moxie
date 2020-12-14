@@ -116,7 +116,7 @@ pub use moxie_macros::updater;
 /// });
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 1, "the first value is always cached");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -124,7 +124,7 @@ pub use moxie_macros::updater;
 /// epoch.store(1, Ordering::Relaxed); // invalidates the cache
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 2, "reinitialized once after epoch changed");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -168,7 +168,7 @@ where
 /// });
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 1, "the first value is always cached");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -214,7 +214,7 @@ where
 /// });
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 1, "the first value is always cached");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -222,7 +222,7 @@ where
 /// epoch.store(1, Ordering::Relaxed);
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 2, "reinitialized once after epoch changed");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -258,7 +258,7 @@ where
 /// });
 ///
 /// for i in 1..1_000 {
-///     let (num_created, num_clones) = rt.run_once();
+///     let (num_created, num_clones) = rt.force_next();
 ///     assert_eq!(num_created, 1, "the first value is always cached");
 ///     assert_eq!(num_clones, i, "cloned once per revision");
 /// }
@@ -285,22 +285,21 @@ where
 /// let mut rt = RunLoop::new(|| state(|| 0u64));
 ///
 /// let track_wakes = BoolWaker::new();
-/// rt.set_state_change_waker(waker(track_wakes.clone()));
 ///
-/// let (first_commit, first_key) = rt.run_once();
+/// let (first_commit, first_key) = rt.force_next_with(waker(track_wakes.clone()));
 /// assert_eq!(*first_commit, 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
-/// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(*second_key, 1);
+/// let (second_commit, second_key) = rt.force_next(); // this commits the pending update
+/// assert_eq!(**second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -331,22 +330,21 @@ where
 /// let mut rt = RunLoop::new(|| cache_state(&epoch.load(Ordering::Relaxed), |e| *e));
 ///
 /// let track_wakes = BoolWaker::new();
-/// rt.set_state_change_waker(futures::task::waker(track_wakes.clone()));
 ///
-/// let (first_commit, first_key) = rt.run_once();
+/// let (first_commit, first_key) = rt.force_next_with(futures::task::waker(track_wakes.clone()));
 /// assert_eq!(*first_commit, 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
-/// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(*second_key, 1);
+/// let (second_commit, second_key) = rt.force_next(); // this commits the pending update
+/// assert_eq!(**second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -355,7 +353,7 @@ where
 /// // start the whole thing over again
 /// epoch.store(2, Ordering::Relaxed);
 ///
-/// let (third_commit, third_key) = rt.run_once();
+/// let (third_commit, third_key) = rt.force_next();
 /// assert_ne!(third_key, second_key, "different state variable");
 ///
 /// // the rest is repeated from above with slight modifications
@@ -363,15 +361,15 @@ where
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(2);
-/// assert_eq!(*third_key, 2);
+/// assert_eq!(**third_key.commit_at_root(), 2);
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(3);
-/// assert_eq!(*third_key, 2);
+/// assert_eq!(**third_key.commit_at_root(), 2);
 /// assert!(track_wakes.is_woken());
 ///
-/// let (fourth_commit, fourth_key) = rt.run_once();
-/// assert_eq!(*fourth_key, 3);
+/// let (fourth_commit, fourth_key) = rt.force_next();
+/// assert_eq!(**fourth_key.commit_at_root(), 3);
 /// assert_eq!(*fourth_commit, 3);
 /// assert_eq!(*third_commit, 2);
 /// assert!(!track_wakes.is_woken());
@@ -428,9 +426,9 @@ where
 /// let mut exec = LocalPool::new();
 /// rt.set_task_executor(exec.spawner());
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run_until_stalled();
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// // resolve the future
 /// let sender = recv_futs.recv().unwrap();
@@ -439,12 +437,12 @@ where
 /// sender.send(()).unwrap();
 ///
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 ///
 /// // force the future to be reinitialized
 /// epoch.store(1, Ordering::Relaxed);
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// // resolve the future
 /// let sender = recv_futs.recv().unwrap();
@@ -453,7 +451,7 @@ where
 /// sender.send(()).unwrap();
 ///
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 /// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
@@ -488,15 +486,15 @@ where
 /// let mut exec = LocalPool::new();
 /// rt.set_task_executor(exec.spawner());
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run_until_stalled();
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// sender.send(()).unwrap();
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 /// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
@@ -529,15 +527,15 @@ where
 /// let mut exec = LocalPool::new();
 /// rt.set_task_executor(exec.spawner());
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run_until_stalled();
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// sender.send(()).unwrap();
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 /// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
@@ -581,9 +579,9 @@ where
 /// let mut exec = LocalPool::new();
 /// rt.set_task_executor(exec.spawner());
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 /// exec.run_until_stalled();
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// // resolve the future
 /// let (created_in_epoch, sender) = recv_futs.recv().unwrap();
@@ -593,12 +591,12 @@ where
 /// sender.send(()).unwrap();
 ///
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 ///
 /// // force the future to be reinitialized
 /// epoch.store(1, Ordering::Relaxed);
 ///
-/// assert_eq!(rt.run_once(), Poll::Pending);
+/// assert_eq!(rt.force_next(), Poll::Pending);
 ///
 /// // resolve the future
 /// let (created_in_epoch, sender) = recv_futs.recv().unwrap();
@@ -608,7 +606,7 @@ where
 /// sender.send(()).unwrap();
 ///
 /// exec.run();
-/// assert_eq!(rt.run_once(), Poll::Ready(Ok(())));
+/// assert_eq!(rt.force_next(), Poll::Ready(Ok(())));
 /// ```
 #[topo::nested]
 #[illicit::from_env(rt: &Context)]
@@ -691,6 +689,11 @@ impl<State> Key<State> {
         self.id
     }
 
+    /// Returns the `Commit` of the current `Revision`
+    pub fn commit_at_root(&self) -> &Commit<State> {
+        &self.commit_at_root
+    }
+
     /// Runs `updater` with a reference to the state variable's latest value,
     /// and enqueues a commit to the variable if `updater` returns `Some`.
     /// Returns the `Revision` at which the state variable was last rooted
@@ -717,22 +720,21 @@ impl<State> Key<State> {
     /// let mut rt = RunLoop::new(|| state(|| 0u64));
     ///
     /// let track_wakes = BoolWaker::new();
-    /// rt.set_state_change_waker(waker(track_wakes.clone()));
     ///
-    /// let (first_commit, first_key) = rt.run_once();
+    /// let (first_commit, first_key) = rt.force_next_with(waker(track_wakes.clone()));
     /// assert_eq!(*first_commit, 0, "no updates yet");
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|_| None); // this is a no-op
-    /// assert_eq!(*first_key, 0, "no updates yet");
+    /// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|prev| Some(prev + 1));
-    /// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+    /// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
     /// assert!(track_wakes.is_woken());
     ///
-    /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-    /// assert_eq!(*second_key, 1);
+    /// let (second_commit, second_key) = rt.force_next(); // this commits the pending update
+    /// assert_eq!(**second_key.commit_at_root(), 1);
     /// assert_eq!(*second_commit, 1);
     /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
     /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -748,11 +750,6 @@ impl<State> Key<State> {
     /// Set a new value for the state variable, immediately taking effect.
     fn force(&self, new: State) {
         self.var.lock().enqueue_commit(new);
-    }
-
-    // TODO(#197) delete this and remove the Deref impl
-    fn refresh(&mut self) {
-        self.commit_at_root = runtime::Var::root(self.var.clone()).0;
     }
 }
 
@@ -789,14 +786,6 @@ where
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
         Self { id: self.id, commit_at_root: self.commit_at_root.clone(), var: self.var.clone() }
-    }
-}
-
-impl<State> Deref for Key<State> {
-    type Target = State;
-
-    fn deref(&self) -> &Self::Target {
-        self.commit_at_root.deref()
     }
 }
 
@@ -885,7 +874,7 @@ mod tests {
             for i in 0..5 {
                 assert_eq!(rt.revision().0, i);
 
-                rt.run_once();
+                rt.force_next();
 
                 assert_eq!(rt.revision().0, i + 1);
             }
@@ -909,7 +898,7 @@ mod tests {
                 }
                 assert_eq!(ids.len(), 10);
             });
-            rt.run_once();
+            rt.force_next();
         });
     }
 
@@ -925,10 +914,10 @@ mod tests {
                 counts
             });
 
-            let first_counts = rt.run_once();
+            let first_counts = rt.force_next();
             assert_eq!(first_counts.len(), num_iters, "each mutation must be called exactly once");
 
-            let second_counts = rt.run_once();
+            let second_counts = rt.force_next();
             assert_eq!(
                 second_counts.len(),
                 0,
@@ -965,8 +954,8 @@ mod tests {
                     "runtime's root block should run exactly twice per loop_ct value"
                 );
 
-                rt.run_once();
-                rt.run_once();
+                rt.force_next();
+                rt.force_next();
             }
         })
     }
@@ -991,14 +980,14 @@ mod tests {
         });
         rt.set_task_executor(pool.spawner());
 
-        assert_eq!(rt.run_once(), Poll::Pending, "no values received when nothing sent");
-        assert_eq!(rt.run_once(), Poll::Pending, "no values received, and we aren't blocking");
+        assert_eq!(rt.force_next(), Poll::Pending, "no values received when nothing sent");
+        assert_eq!(rt.force_next(), Poll::Pending, "no values received, and we aren't blocking");
 
         send.send(5u8).unwrap();
         pool.run_until_stalled();
-        assert_eq!(rt.run_once(), Poll::Ready(5), "we need to receive the value we sent");
+        assert_eq!(rt.force_next(), Poll::Ready(5), "we need to receive the value we sent");
         assert_eq!(
-            rt.run_once(),
+            rt.force_next(),
             Poll::Ready(5),
             "the value we sent must be cached because its from a oneshot channel"
         );
@@ -1028,19 +1017,19 @@ mod tests {
         rt.set_task_executor(pool.spawner());
 
         pool.run_until_stalled();
-        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert_eq!(rt.force_next(), Some(Poll::Pending));
         assert!(!send.is_canceled(), "interest expressed, receiver must be live");
 
         pool.run_until_stalled();
-        assert_eq!(rt.run_once(), Some(Poll::Pending));
+        assert_eq!(rt.force_next(), Some(Poll::Pending));
         assert!(!send.is_canceled(), "interest still expressed, receiver must be live");
 
         pool.run_until_stalled();
-        assert_eq!(rt.run_once(), None);
+        assert_eq!(rt.force_next(), None);
         assert!(!send.is_canceled(), "interest dropped, task live for another revision");
 
         pool.run_until_stalled();
-        assert_eq!(rt.run_once(), None);
+        assert_eq!(rt.force_next(), None);
         assert!(send.is_canceled(), "interest dropped, task dropped");
 
         assert!(
