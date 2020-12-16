@@ -25,6 +25,8 @@ impl super::Runtime {
     where
         Root: FnMut() -> Out,
     {
+        // RunLoop always forces first revision
+        self.force();
         RunLoop { inner: self, root }
     }
 }
@@ -35,12 +37,18 @@ where
 {
     /// Creates a new `Runtime` attached to the provided root function.
     pub fn new(root: Root) -> RunLoop<Root> {
-        RunLoop { root, inner: Runtime::new() }
+        Runtime::new().looped(root)
     }
 
     /// Returns the runtime's current Revision.
     pub fn revision(&self) -> Revision {
         self.inner.revision()
+    }
+
+    /// Sets the [`std::task::Waker`] which will be called when state variables
+    /// change.
+    pub fn set_state_change_waker(&mut self, wk: Waker) {
+        self.inner.set_state_change_waker(wk);
     }
 
     /// Sets the executor that will be used to spawn normal priority tasks.
@@ -50,14 +58,19 @@ where
 
     /// Run the root function once within this runtime's context, returning the
     /// result.
-    pub fn force_next(&mut self) -> Out {
-        self.inner.force_once(&mut self.root)
+    pub fn run_once(&mut self) -> Out {
+        self.inner.run_once(&mut self.root)
     }
 
     /// Run the root function once within this runtime's context, returning the
     /// result.
-    pub fn force_next_with(&mut self, waker: Waker) -> Out {
-        self.inner.force_once_with(&mut self.root, waker)
+    pub fn run_once_with(&mut self, waker: Waker) -> Out {
+        self.inner.run_once_with(&mut self.root, waker)
+    }
+
+    /// TODO description
+    pub fn force(&self) {
+        self.inner.force()
     }
 
     /// Poll this runtime without exiting. Discards any value returned from the
@@ -85,6 +98,6 @@ where
     /// `poll_next`, always returning `Poll::Ready(Some(...))`.
     fn poll_next(self: Pin<&mut Self>, cx: &mut FutContext<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        this.inner.poll_once(&mut this.root, Some(cx.waker().clone())).map(|o| Some(o))
+        this.inner.poll_once_with(&mut this.root, cx.waker().clone()).map(Some)
     }
 }

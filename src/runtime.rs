@@ -43,7 +43,7 @@ impl std::fmt::Debug for Revision {
     }
 }
 
-/// TODO
+/// TODO description
 #[derive(Debug)]
 pub struct RevisionControlSystem {
     revision: Revision,
@@ -122,7 +122,7 @@ pub struct RevisionControlSystem {
 /// let mut rt = Runtime::new();
 /// assert_eq!(rt.revision().0, 0);
 /// for i in 1..10 {
-///     rt.force_once(|| ());
+///     rt.run_once(|| ());
 ///     assert_eq!(rt.revision(), Revision(i));
 /// }
 /// ```
@@ -150,7 +150,8 @@ impl Runtime {
             rcs: Arc::new(RwLock::new(RevisionControlSystem {
                 revision: Revision(0),
                 waker: noop_waker(),
-                pending_changes: AtomicBool::new(true),
+                // require the first revision to be forced
+                pending_changes: AtomicBool::new(false),
             })),
         }
     }
@@ -166,40 +167,40 @@ impl Runtime {
         self.rcs.read().pending_changes.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
-    /// TODO description
-    pub fn force_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
+    /// Runs the root closure once with access to the runtime context,
+    /// increments the runtime's `Revision`, and drops any cached values
+    /// which were not marked alive.
+    pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
         self.execute(op, self.rcs.write())
     }
 
     /// TODO description
-    pub fn force_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Out {
+    pub fn run_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Out {
         let mut rcs_write = self.rcs.write();
         rcs_write.waker = waker;
         self.execute(op, rcs_write)
     }
 
     /// TODO description
-    /// Runs the root closure once with access to the runtime context,
-    /// increments the runtime's `Revision`, and drops any cached values
-    /// which were not marked alive.
-    pub fn poll_once<Out>(&mut self, op: impl FnOnce() -> Out, waker: Option<Waker>) -> Poll<Out> {
+    pub fn poll_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Poll<Out> {
         // Avoid write lock
-        if let Some(waker) = waker {
-            let mut rcs_write = self.rcs.write();
-            rcs_write.waker = waker;
-            if !rcs_write.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
-                Poll::Pending
-            } else {
-                Poll::Ready(self.execute(op, rcs_write))
-            }
+        let rcs_read = self.rcs.upgradable_read();
+        if !rcs_read.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
+            Poll::Pending
         } else {
-            let rcs_read = self.rcs.upgradable_read();
-            if !rcs_read.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
-                Poll::Pending
-            } else {
-                let rcs_write = RwLockUpgradableReadGuard::upgrade(rcs_read);
-                Poll::Ready(self.execute(op, rcs_write))
-            }
+            let rcs_write = RwLockUpgradableReadGuard::upgrade(rcs_read);
+            Poll::Ready(self.execute(op, rcs_write))
+        }
+    }
+
+    /// TODO description
+    pub fn poll_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Poll<Out> {
+        let mut rcs_write = self.rcs.write();
+        rcs_write.waker = waker;
+        if !rcs_write.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
+            Poll::Pending
+        } else {
+            Poll::Ready(self.execute(op, rcs_write))
         }
     }
 
@@ -216,6 +217,18 @@ impl Runtime {
 
         self.cache.gc();
         ret
+    }
+
+    /// Sets the [`std::task::Waker`] which will be called when state variables
+    /// receive commits. By default the runtime no-ops on a state change,
+    /// which is probably the desired behavior if the embedding system will
+    /// call `Runtime::run_once` on a regular interval regardless.
+    pub fn set_state_change_waker(&mut self, waker: Waker) {
+        let mut rcs_write = self.rcs.write();
+        rcs_write.waker = waker;
+        if rcs_write.pending_changes.load(std::sync::atomic::Ordering::Relaxed) {
+            rcs_write.waker.wake_by_ref();
+        }
     }
 
     /// Sets the executor that will be used to spawn normal priority tasks.
@@ -259,7 +272,7 @@ mod tests {
 
         assert!(illicit::get::<u8>().is_err());
         first_byte.offer(|| {
-            topo::call(|| runtime.force_next());
+            topo::call(|| runtime.run_once());
         });
         assert!(illicit::get::<u8>().is_err());
     }
@@ -267,10 +280,10 @@ mod tests {
     #[test]
     fn tick_a_few_times() {
         let mut rt = RunLoop::new(Revision::current);
-        assert_eq!(rt.force_next(), Revision(1));
-        assert_eq!(rt.force_next(), Revision(2));
-        assert_eq!(rt.force_next(), Revision(3));
-        assert_eq!(rt.force_next(), Revision(4));
-        assert_eq!(rt.force_next(), Revision(5));
+        assert_eq!(rt.run_once(), Revision(1));
+        assert_eq!(rt.run_once(), Revision(2));
+        assert_eq!(rt.run_once(), Revision(3));
+        assert_eq!(rt.run_once(), Revision(4));
+        assert_eq!(rt.run_once(), Revision(5));
     }
 }

@@ -30,12 +30,12 @@ impl<State> Var<State> {
     pub fn root(var: Arc<Mutex<Self>>) -> (Commit<State>, Key<State>) {
         let (id, commit_at_root) = {
             let mut var = var.lock();
-            let Revision(current) = Revision::current();
+            let current = Revision::current();
 
             // stage pending commit if it's from previous revision
             match var.pending {
-                Some((Revision(pending), _)) if pending < current => {
-                    var.staged = Some(var.pending.take().unwrap().1)
+                Some((revision, _)) if revision < current => {
+                    var.staged = var.pending.take().map(|(_r, c)| c)
                 }
                 _ => (),
             }
@@ -56,7 +56,7 @@ impl<State> Var<State> {
         self.pending
             .as_ref()
             .map(|(_revision, ref commit)| commit)
-            .or(self.staged.as_ref())
+            .or_else(|| self.staged.as_ref())
             .unwrap_or(&self.current)
     }
 
@@ -64,14 +64,15 @@ impl<State> Var<State> {
     /// complete asynchronously when the state variable is next rooted in a
     /// topological function, flushing the pending commit.
     pub fn enqueue_commit(&mut self, state: State) {
+        let new_commit = Commit { inner: Arc::new(state), id: self.id };
         let rcs_read = self.rcs.read();
-        let rev = rcs_read.revision;
-        if let Some(pending) = self.pending.take() {
-            if pending.0 < rev {
-                self.staged = Some(pending.1);
-            }
+        let current = rcs_read.revision;
+
+        match self.pending.replace((current, new_commit)) {
+            Some((revision, old_commit)) if revision < current => self.staged = Some(old_commit),
+            _ => (),
         }
-        self.pending = Some((rev, Commit { inner: Arc::new(state), id: self.id }));
+
         rcs_read.pending_changes.store(true, std::sync::atomic::Ordering::Relaxed);
         rcs_read.waker.wake_by_ref();
     }

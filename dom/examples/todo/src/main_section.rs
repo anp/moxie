@@ -35,8 +35,8 @@ pub fn toggle(default_checked: bool) -> Span {
 #[illicit::from_env(todos: &Key<Vec<Todo>>, visibility: &Key<Visibility>)]
 pub fn todo_list() -> Ul {
     let mut list = ul().class("todo-list");
-    for todo in todos.iter() {
-        if visibility.should_show(todo) {
+    for todo in todos.commit_at_root().iter() {
+        if visibility.commit_at_root().should_show(todo) {
             list = list.child(todo_item(todo));
         }
     }
@@ -46,17 +46,18 @@ pub fn todo_list() -> Ul {
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn main_section() -> Section {
-    let num_complete = todos.iter().filter(|t| t.completed).count();
+    let num_complete = todos.commit_at_root().iter().filter(|t| t.completed).count();
 
     let mut section = section().class("main");
 
-    if !todos.is_empty() {
-        section = section.child(toggle(num_complete == todos.len()));
+    if !todos.commit_at_root().is_empty() {
+        section = section.child(toggle(num_complete == todos.commit_at_root().len()));
     }
     section = section.child(todo_list());
 
-    if !todos.is_empty() {
-        section = section.child(filter_footer(num_complete, todos.len() - num_complete));
+    if !todos.commit_at_root().is_empty() {
+        section =
+            section.child(filter_footer(num_complete, todos.commit_at_root().len() - num_complete));
     }
 
     section.build()
