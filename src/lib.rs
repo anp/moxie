@@ -784,6 +784,15 @@ impl<State> Clone for Key<State> {
     }
 }
 
+// TODO(#197) delete this and remove the Deref impl
+impl<State> Deref for Key<State> {
+    type Target = State;
+
+    fn deref(&self) -> &Self::Target {
+        self.commit_at_root.deref()
+    }
+}
+
 impl<State> Debug for Key<State>
 where
     State: Debug,
