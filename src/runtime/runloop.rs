@@ -73,6 +73,16 @@ where
         self.inner.force()
     }
 
+    /// TODO description
+    pub fn poll_once(&mut self) -> Poll<Out> {
+        self.inner.poll_once(&mut self.root)
+    }
+
+    /// TODO description
+    pub fn poll_once_with(&mut self, waker: Waker) -> Poll<Out> {
+        self.inner.poll_once_with(&mut self.root, waker)
+    }
+
     /// Poll this runtime without exiting. Discards any value returned from the
     /// root function. The future yields in between revisions and is woken on
     /// state changes.
@@ -98,6 +108,6 @@ where
     /// `poll_next`, always returning `Poll::Ready(Some(...))`.
     fn poll_next(self: Pin<&mut Self>, cx: &mut FutContext<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        this.inner.poll_once_with(&mut this.root, cx.waker().clone()).map(Some)
+        this.poll_once_with(cx.waker().clone()).map(Some)
     }
 }
