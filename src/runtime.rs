@@ -43,9 +43,8 @@ impl std::fmt::Debug for Revision {
     }
 }
 
-/// TODO description
 #[derive(Debug)]
-pub struct RevisionControlSystem {
+pub(crate) struct RevisionControlSystem {
     revision: Revision,
     waker: Waker,
     pending_changes: AtomicBool,
@@ -75,16 +74,18 @@ pub struct RevisionControlSystem {
 ///
 /// ## Change notifications
 ///
-/// Each runtime should be provided with a [`std::task::Waker`] that will notify
+/// Each runtime should be provided with a [`Waker`] that will notify
 /// the embedding environment to run the loop again. This is done by calling
-/// [`Runtime::set_state_change_waker`].
+/// [`Runtime::set_state_change_waker`] or
+/// [`Runtime::poll_once`][Runtime::poll_once]
+/// [`(_with)`][Runtime::poll_once_with].
 ///
 /// For scenarios without an obvious "main thread" this can be done for you by
-/// binding a root function to a  [`RunLoop`] which implements
-/// [`std::future::Future`] and can be spawned as a task onto an executor. For
-/// more nuanced scenarios it can be necessary to write your own waker to ensure
-/// scheduling compatible with the embedding environment. By default a no-op
-/// waker is provided.
+/// binding a root function to a [`RunLoop`] which implements
+/// [`futures::Stream`] and can be spawned as a task onto an executor.
+/// For more nuanced scenarios it can be necessary to write your own waker to
+/// ensure scheduling compatible with the embedding environment. By default a
+/// no-op waker is provided.
 ///
 /// The most common way of notifying a runtime of a change is to update a
 /// state variable.
@@ -150,38 +151,41 @@ impl Runtime {
             rcs: Arc::new(RwLock::new(RevisionControlSystem {
                 revision: Revision(0),
                 waker: noop_waker(),
-                // require the first revision to be forced
+                // require the first revision to be forced?
                 pending_changes: AtomicBool::new(false),
             })),
         }
     }
 
-    /// The current revision of the runtime, or how many times `run_once` has
-    /// been invoked.
+    /// The current revision of the runtime, or how many runs occurred.
     pub fn revision(&self) -> Revision {
         self.rcs.read().revision
     }
 
-    /// TODO description
-    pub fn force(&self) {
-        self.rcs.read().pending_changes.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    /// Runs the root closure once with access to the runtime context,
-    /// increments the runtime's `Revision`, and drops any cached values
-    /// which were not marked alive.
+    /// Runs the root closure once with access to the runtime context and drops
+    /// any cached values which were not marked alive. `Revision` is
+    /// incremented at the start of a run.
     pub fn run_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Out {
         self.execute(op, self.rcs.write())
     }
 
-    /// TODO description
+    /// Runs the root closure once with access to the runtime context and drops
+    /// any cached values which were not marked alive. `Waker` is set for the
+    /// next `Revision`, which starts after the start of the run.
     pub fn run_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Out {
         let mut rcs_write = self.rcs.write();
         rcs_write.waker = waker;
         self.execute(op, rcs_write)
     }
 
-    /// TODO description
+    /// Forces the next `Revision` without any changes.
+    pub fn force(&self) {
+        self.rcs.read().pending_changes.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// If change occured durig the last `Revision` then calls `run_once`
+    /// else returns `Poll::Pending`. It is required to force your
+    /// first revision to register your state variables!
     pub fn poll_once<Out>(&mut self, op: impl FnOnce() -> Out) -> Poll<Out> {
         // Avoid write lock
         let rcs_read = self.rcs.upgradable_read();
@@ -193,7 +197,9 @@ impl Runtime {
         }
     }
 
-    /// TODO description
+    /// If change occured durig the last `Revision` then calls `run_once_with`
+    /// else returns [`Poll::Pending`]. It is required to force your
+    /// first revision to register your state variables!
     pub fn poll_once_with<Out>(&mut self, op: impl FnOnce() -> Out, waker: Waker) -> Poll<Out> {
         let mut rcs_write = self.rcs.write();
         rcs_write.waker = waker;
@@ -219,8 +225,9 @@ impl Runtime {
         ret
     }
 
-    /// Sets the [`std::task::Waker`] which will be called when state variables
-    /// receive commits. By default the runtime no-ops on a state change,
+    /// Sets the [`Waker`] which will be called when state variables
+    /// receive commits or if current `Revision` already has any received
+    /// commits. By default the runtime no-ops on a state change,
     /// which is probably the desired behavior if the embedding system will
     /// call `Runtime::run_once` on a regular interval regardless.
     pub fn set_state_change_waker(&mut self, waker: Waker) {

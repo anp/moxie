@@ -73,7 +73,7 @@ use std::{
 use topo::CallId;
 
 /// Applied to impl blocks, this macro defines a new "updater" wrapper type that
-/// holds a [`crate::Key`] and forwards all receiver-mutating methods. Useful
+/// holds a [`Key`] and forwards all receiver-mutating methods. Useful
 /// for defining interactions for a stateful component with less boilerplate.
 ///
 /// Requires the name of the updater struct to generate in the arguments to the
@@ -628,7 +628,7 @@ where
 ///
 /// Reads through a commit are not guaranteed to be the latest value visible to
 /// the runtime. Commits should be shared and used within the context of a
-/// single [`crate::runtime::Revision`], being re-loaded from the state variable
+/// single [`runtime::Revision`], being re-loaded from the state variable
 /// each time.
 ///
 /// See [`state`] and [`cache_state`] for examples.
