@@ -20,7 +20,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
-        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
@@ -68,7 +68,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
-        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
@@ -114,7 +114,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
-        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
@@ -160,7 +160,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install gnu-tar
-        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
