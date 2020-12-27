@@ -77,8 +77,8 @@ watch --clear
     -x clippy-dom
 """
 
-wa-pack = "run --release --manifest-path dom/local-wasm-pack/Cargo.toml --"
-wa-pack-build = "wa-pack build --dev --target web --out-name index"
+wa-pack = "run --manifest-path dom/local-wasm-pack/Cargo.toml --"
+wa-pack-build = "wa-pack build --target web --out-name index"
 wa-test = "wa-pack test --chrome --headless"
 
 build-dom-lib = "wa-pack-build dom"
