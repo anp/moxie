@@ -5,6 +5,9 @@ version = "0.1.0"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [dependencies]
 augdom = { path = "../../augdom", features = ["rsdom"] }
 mox = { path = "../../../mox" }

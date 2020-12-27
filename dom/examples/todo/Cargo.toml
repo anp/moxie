@@ -7,6 +7,9 @@ edition = "2018"
 license-file = "../../../../LICENSE-MIT"
 repository = "https://github.com/anp/moxie.git"
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [lib]
 crate-type = [ "cdylib" ]
 
