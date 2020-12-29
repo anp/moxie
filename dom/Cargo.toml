@@ -23,7 +23,14 @@ crate-type = [ "cdylib", "rlib", ]
 [features]
 default = ["webdom"]
 rsdom = ["augdom/rsdom"]
-webdom = ["augdom/webdom", "raf", "wasm-bindgen", "wasm-bindgen-futures"]
+webdom = [
+    "augdom/webdom",
+    "moxie/wasm-bindgen",
+    "raf",
+    "topo/wasm-bindgen",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+]
 
 [dependencies]
 augdom = { path = "augdom", version = "0.2.0-pre", default-features = false }
@@ -32,7 +39,7 @@ illicit = { path = "../illicit", version = "1.1.1"}
 moxie = { path = "../", version = "0.7.1-pre"}
 paste = "1.0.0"
 scopeguard = "1"
-topo = { path = "../topo", version = "0.13.0"}
+topo = { path = "../topo", version = "0.13.1"}
 
 # web-only
 raf = { path = "raf", version = "0.2.0-pre", optional = true }

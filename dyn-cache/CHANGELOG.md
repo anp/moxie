@@ -5,6 +5,12 @@ invocations.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.12.1] - 2020-12-28
+
+### Added
+
+- `wasm-bindgen` cargo feature which enables correct usage of parking_lot on wasm32 targets.
+
 ## [0.12.0] - 2020-08-09
 
 ### Changed

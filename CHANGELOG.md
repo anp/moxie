@@ -13,6 +13,7 @@ reuse of arbitrary work, state change notifications, and async loaders.
 - `Key::mutate` allows naive clone-update-compare access to a state variable.
 - `#[moxie::updater(...)]` attribute macro supports creating a `Key` wrapper with shorthand for
   mutating methods.
+- `wasm-bindgen` cargo feature which enables correct usage of parking_lot on wasm32 targets.
 
 ## [0.7.0] - 2020-09-27
 
