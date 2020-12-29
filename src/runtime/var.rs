@@ -9,8 +9,8 @@ use super::{Revision, RevisionControlSystem};
 pub(crate) struct Var<State> {
     current: Commit<State>,
     id: topo::CallId,
-    // can only contain commits from previous revisions
-    staged: Option<Commit<State>>,
+    // can only contain commit from current revision
+    // make proper checks inside methods!
     pending: Option<(Revision, Commit<State>)>,
     rcs: Arc<RwLock<RevisionControlSystem>>,
 }
@@ -22,7 +22,7 @@ impl<State> Var<State> {
         inner: State,
     ) -> Arc<Mutex<Self>> {
         let current = Commit { id, inner: Arc::new(inner) };
-        Arc::new(Mutex::new(Var { id, current, rcs, staged: None, pending: None }))
+        Arc::new(Mutex::new(Var { id, current, rcs, pending: None }))
     }
 
     /// Attach this `Var` to its callsite, performing any pending commit and
@@ -30,19 +30,13 @@ impl<State> Var<State> {
     pub fn root(var: Arc<Mutex<Self>>) -> (Commit<State>, Key<State>) {
         let (id, commit_at_root) = {
             let mut var = var.lock();
+            // This function is always called within it's context
             let current = Revision::current();
 
-            // stage pending commit if it's from previous revision
-            match var.pending {
-                Some((revision, _)) if revision < current => {
-                    var.staged = var.pending.take().map(|(_r, c)| c)
-                }
-                _ => (),
-            }
-
-            // perform staged commit
-            if let Some(staged) = var.staged.take() {
-                var.current = staged;
+            // Replace current commit with pending commit if it is from the past revision
+            match var.pending.take() {
+                Some((revision, commit)) if revision < current => var.current = commit,
+                still_pending => var.pending = still_pending,
             }
 
             (var.id, var.current.clone())
@@ -53,15 +47,19 @@ impl<State> Var<State> {
 
     /// Returns a reference to the latest value, pending or committed.
     pub fn latest(&self) -> &State {
-        self.pending
-            .as_ref()
-            .map(|(_revision, ref commit)| commit)
-            .or_else(|| self.staged.as_ref())
-            .unwrap_or(&self.current)
+        self.pending.as_ref().map(|(_r, c)| c).unwrap_or(&self.current)
     }
 
-    ///
-    pub fn current_commit(&self) -> &Commit<State> {
+    /// Returns a reference to the current commit.
+    pub fn current_commit(&mut self) -> &Commit<State> {
+        let current = self.rcs.read().revision;
+
+        // Replace current commit with pending commit if it is from the past revision
+        match self.pending.take() {
+            Some((revision, commit)) if revision < current => self.current = commit,
+            still_pending => self.pending = still_pending,
+        }
+
         &self.current
     }
 
@@ -73,8 +71,9 @@ impl<State> Var<State> {
         let rcs_read = self.rcs.read();
         let current = rcs_read.revision;
 
+        // Replace current commit with pending commit if it is from the past revision
         match self.pending.replace((current, new_commit)) {
-            Some((revision, old_commit)) if revision < current => self.staged = Some(old_commit),
+            Some((revision, old_commit)) if revision < current => self.current = old_commit,
             _ => (),
         }
 
