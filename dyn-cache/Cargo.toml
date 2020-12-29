@@ -1,6 +1,6 @@
 [package]
 name = "dyn-cache"
-version = "0.12.0"
+version = "0.12.1"
 description = "Query cache indexed by type."
 categories = ["caching", "rust-patterns"]
 keywords = ["incremental", "memoize", "intern", "cache"]
@@ -13,12 +13,16 @@ repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
+[features]
+default = []
+wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
+
 [dependencies]
 downcast-rs = "1.1.1"
 hash_hasher = "2.0.3"
 hashbrown = "0.9.0"
 illicit = { path = "../illicit", version = "1.1.1"}
-parking_lot = { version = "0.11.0", features = ["wasm-bindgen"]}
+parking_lot = "0.11.0"
 paste = "1.0.0"
 
 [dev-dependencies]

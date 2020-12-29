@@ -6,6 +6,12 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.13.1] - 2020-12-28
+
+### Added
+
+- `wasm-bindgen` cargo feature which enables correct usage of parking_lot on wasm32 targets.
+
 ## [0.13.0] - 2020-07-19
 
 ### Removed
@@ -47,7 +53,7 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 - #[nested] allows specifying a `slot`.
 - `cache::{Cache, GlobalCache}` types for storing interned and memoized values.
-- `cache::{SharedCache, SharedGlobalCache}` types for safe multiple-owner access to caches, 
+- `cache::{SharedCache, SharedGlobalCache}` types for safe multiple-owner access to caches,
   implementing `cache_with` with careful locking to allow nested calls in the future.
 - `root` free function for allowing one to re-root a call topology (i.e. if running inside of a
   broader one).
