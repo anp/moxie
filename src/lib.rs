@@ -291,15 +291,15 @@ where
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
+/// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
+/// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
 /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(**second_key.commit_at_root(), 1);
+/// assert_eq!(*second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -336,15 +336,15 @@ where
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
+/// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
+/// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
 /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(**second_key.commit_at_root(), 1);
+/// assert_eq!(*second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -361,15 +361,15 @@ where
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(2);
-/// assert_eq!(**third_key.commit_at_root(), 2);
+/// assert_eq!(*third_key.commit_at_root(), 2);
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(3);
-/// assert_eq!(**third_key.commit_at_root(), 2);
+/// assert_eq!(*third_key.commit_at_root(), 2);
 /// assert!(track_wakes.is_woken());
 ///
 /// let (fourth_commit, fourth_key) = rt.run_once();
-/// assert_eq!(**fourth_key.commit_at_root(), 3);
+/// assert_eq!(*fourth_key.commit_at_root(), 3);
 /// assert_eq!(*fourth_commit, 3);
 /// assert_eq!(*third_commit, 2);
 /// assert!(!track_wakes.is_woken());
@@ -679,7 +679,6 @@ where
 /// See [`state`] and [`cache_state`] for examples.
 pub struct Key<State> {
     id: CallId,
-    commit_at_root: Commit<State>,
     var: Arc<Mutex<Var<State>>>,
 }
 
@@ -690,8 +689,8 @@ impl<State> Key<State> {
     }
 
     /// Returns the `Commit` of the current `Revision`
-    pub fn commit_at_root(&self) -> &Commit<State> {
-        &self.commit_at_root
+    pub fn commit_at_root(&self) -> Commit<State> {
+        self.var.lock().current_commit().clone()
     }
 
     /// Runs `updater` with a reference to the state variable's latest value,
@@ -726,15 +725,15 @@ impl<State> Key<State> {
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|_| None); // this is a no-op
-    /// assert_eq!(**first_key.commit_at_root(), 0, "no updates yet");
+    /// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|prev| Some(prev + 1));
-    /// assert_eq!(**first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
+    /// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
     /// assert!(track_wakes.is_woken());
     ///
     /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-    /// assert_eq!(**second_key.commit_at_root(), 1);
+    /// assert_eq!(*second_key.commit_at_root(), 1);
     /// assert_eq!(*second_commit, 1);
     /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
     /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -780,16 +779,7 @@ where
 
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
-        Self { id: self.id, commit_at_root: self.commit_at_root.clone(), var: self.var.clone() }
-    }
-}
-
-// TODO(#197) delete this and remove the Deref impl
-impl<State> Deref for Key<State> {
-    type Target = State;
-
-    fn deref(&self) -> &Self::Target {
-        self.commit_at_root.deref()
+        Self { id: self.id, var: self.var.clone() }
     }
 }
 
@@ -798,7 +788,7 @@ where
     State: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.commit_at_root.fmt(f)
+        self.commit_at_root().fmt(f)
     }
 }
 
@@ -807,7 +797,7 @@ where
     State: Display,
 {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.commit_at_root.fmt(f)
+        self.commit_at_root().fmt(f)
     }
 }
 

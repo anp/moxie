@@ -49,7 +49,7 @@ pub fn filter_link(to_set: Visibility) -> Li {
     mox! {
         <li>
             <a style="cursor: pointer;"
-             class={if **visibility.commit_at_root() == to_set { "selected" } else { "" }}
+             class={if *visibility.commit_at_root() == to_set { "selected" } else { "" }}
              onclick={move |_| visibility.set(to_set)}>
                 {% "{}", to_set }
             </a>

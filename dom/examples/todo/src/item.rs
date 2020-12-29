@@ -97,7 +97,8 @@ mod tests {
     pub async fn single_item() {
         let root = document().create_element("div");
         crate::App::boot_fn(&[Todo::new("weeeee")], root.clone(), || {
-            let todo = &illicit::expect::<Key<Vec<Todo>>>()[0];
+            let todos_key = &illicit::expect::<Key<Vec<Todo>>>();
+            let todo = &todos_key.commit_at_root()[0];
             todo_item(todo)
         });
 

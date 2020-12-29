@@ -48,7 +48,7 @@ impl<State> Var<State> {
             (var.id, var.current.clone())
         };
 
-        (commit_at_root.clone(), Key { id, commit_at_root, var })
+        (commit_at_root, Key { id, var })
     }
 
     /// Returns a reference to the latest value, pending or committed.
@@ -58,6 +58,11 @@ impl<State> Var<State> {
             .map(|(_revision, ref commit)| commit)
             .or_else(|| self.staged.as_ref())
             .unwrap_or(&self.current)
+    }
+
+    ///
+    pub fn current_commit(&self) -> &Commit<State> {
+        &self.current
     }
 
     /// Initiate a commit to the state variable. The commit will actually
