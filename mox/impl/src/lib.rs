@@ -2,13 +2,12 @@ extern crate proc_macro;
 
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use proc_macro_error::{abort, emit_error, proc_macro_error, Diagnostic, Level, ResultExt};
-use proc_macro_hack::proc_macro_hack;
 use quote::{quote, ToTokens};
 use snax::{ParseError, SnaxAttribute, SnaxFragment, SnaxItem, SnaxSelfClosingTag, SnaxTag};
 use std::borrow::Cow;
 
+#[proc_macro]
 #[proc_macro_error(allow_not_macro)]
-#[proc_macro_hack]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let item = snax::parse(input.into()).map_err(Error::SnaxError).unwrap_or_abort();
     let item = MoxItem::from(item);
