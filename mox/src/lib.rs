@@ -127,7 +127,6 @@
 /// ```
 ///
 /// [JSX]: https://facebook.github.io/jsx/
-#[proc_macro_hack::proc_macro_hack(support_nested)]
 pub use mox_impl::mox;
 
 #[doc(hidden)]

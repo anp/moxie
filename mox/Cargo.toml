@@ -14,10 +14,8 @@ authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
 [dependencies]
-mox-impl = { path = "impl", version = "0.10.0"}
-proc-macro-hack = "0.5"
-proc-macro-nested = "0.1.3"
-topo = { path = "../topo", version = "0.13.1"}
+mox-impl = { path = "impl", version = "0.10.0" }
+topo = { path = "../topo", version = "0.13.1" }
 
 [dev-dependencies]
 derive_builder = "0.9"
