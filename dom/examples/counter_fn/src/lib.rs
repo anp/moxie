@@ -10,7 +10,7 @@ pub fn boot(root: moxie_dom::raw::sys::Node) {
         mox! {
             <div>
                 <button onclick={move |_| decrementer.mutate(|count| *count -= 1)}>"-"</button>
-                {% "{}", count }
+                { count }
                 <button onclick={move |_| incrementer.mutate(|count| *count += 1)}>"+"</button>
             </div>
         }

@@ -40,7 +40,26 @@ pub trait NodeWrapper: sealed::Memoized + Sized {
 pub trait Child {
     /// Returns the "raw" node for this child to bind to its parent.
     fn to_bind(&self) -> &augdom::Node;
+
+    /// Identity transform
+    fn into_child(self) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
 }
+
+/// Convert `impl std::fmt::Display` into the `impl Child`
+pub trait DisplayIntoChild: std::fmt::Display + Sized {
+    /// Wrap `impl std::fmt::Display` into the `text` node
+    fn into_child(self) -> crate::text::Text {
+        // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
+        crate::text::text(format!("{}", self))
+    }
+}
+
+impl<T> DisplayIntoChild for T where T: std::fmt::Display + Sized {}
 
 impl<N> Child for N
 where

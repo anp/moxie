@@ -54,7 +54,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
             <input class="toggle" type="checkbox" checked={todo.completed} onclick={on_click} />
 
             <label ondblclick={move |_| editing.set(true)}>
-                {% "{}", todo.title }
+                { todo.title }
             </label>
 
             <button class="destroy" onclick={move |_| {
