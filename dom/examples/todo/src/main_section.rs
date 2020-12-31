@@ -9,7 +9,7 @@ use moxie_dom::{
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) -> Span {
     let todos = todos.clone();
-    let on_click = move |_| {
+    let onclick = move |_| {
         todos.update(|t| {
             Some(
                 t.iter()
@@ -25,8 +25,8 @@ pub fn toggle(default_checked: bool) -> Span {
 
     mox! {
         <span>
-            <input class="toggle-all" type="checkbox" checked={default_checked} />
-            <label onclick={on_click}/>
+            <input class="toggle-all" type="checkbox" checked=default_checked />
+            <label onclick />
         </span>
     }
 }

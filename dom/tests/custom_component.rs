@@ -46,7 +46,7 @@ impl CounterBuilder {
         let text = text.unwrap_or_default();
 
         let button = mox! {
-            <button onclick={move |_| set_value.update(|n| Some(n + 1))}>
+            <button onclick = move |_| set_value.update(|n| Some(n + 1))>
                 {format_args!("{} ({})", text, value)}
             </button>
         };

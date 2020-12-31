@@ -24,10 +24,10 @@ pub fn text_input(
     }
 
     mox! {
-        <input type="text" placeholder={placeholder} value={&text} autofocus={true}
-            class={if editing { "edit new-todo" } else { "new-todo"}}
-            onchange={move |change| set_text.set(input_value(change))}
-            onkeydown={move |keypress| {
+        <input type="text" placeholder value=&text autofocus=true
+            class = if editing { "edit new-todo" } else { "new-todo" }
+            onchange = move |change| set_text.set(input_value(change))
+            onkeydown = move |keypress| {
                 if keypress.key() == "Enter" {
                     let value = input_value(keypress);
                     let trimmed = value.trim();
@@ -36,6 +36,6 @@ pub fn text_input(
                     }
                     clear_text.set("".into());
                 }
-            }} />
+            } />
     }
 }

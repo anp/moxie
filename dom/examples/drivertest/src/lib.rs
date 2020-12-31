@@ -78,8 +78,8 @@ fn mutiple_event_listeners() {
 
         mox! {
             <button
-                onclick={ move |_| counter1.update(increment) }
-                onclick={ move |_| counter2.update(increment) }
+                onclick = move |_| counter1.update(increment)
+                onclick = move |_| counter2.update(increment)
             >
                 // Display the values of the counters
                 {format_args!("counter1 = {}, counter2 = {}", &counter1_val, &counter2_val)}
