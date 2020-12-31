@@ -224,11 +224,10 @@ impl ToTokens for MoxTag {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self { name, value } = self;
-        let value = match value {
-            Some(value) => value.to_token_stream(),
-            None => quote! {()},
+        match value {
+            Some(value) => tokens.extend(quote!(.#name(#value))),
+            None => tokens.extend(quote!(.#name(#name))),
         };
-        tokens.extend(quote!(.#name(#value)));
     }
 }
 
