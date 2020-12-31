@@ -23,7 +23,7 @@ pub fn clear_completed_button(num_complete: usize) -> Button {
     let remove_completed =
         move |_| todos.update(|t| Some(t.iter().filter(|t| !t.completed).cloned().collect()));
     mox! {
-        <button class="clear-completed" disabled={num_complete == 0} onclick={remove_completed}>
+        <button class="clear-completed" disabled=num_complete==0 onclick=remove_completed>
             "Clear completed"
         </button>
     }

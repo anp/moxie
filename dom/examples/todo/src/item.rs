@@ -31,7 +31,7 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
     let id = todo.id;
     let toggle_todos = todos.clone();
 
-    let on_click = move |_| {
+    let onclick = move |_| {
         toggle_todos.update(|t| {
             Some(
                 t.iter()
@@ -51,9 +51,9 @@ fn item_with_buttons(todo: Todo, editing: Key<bool>) -> Div {
 
     mox! {
         <div class="view">
-            <input class="toggle" type="checkbox" checked={todo.completed} onclick={on_click} />
+            <input class="toggle" type="checkbox" checked=todo.completed onclick />
 
-            <label ondblclick={move |_| editing.set(true)}>
+            <label ondblclick = move |_| editing.set(true)>
                 { todo.title }
             </label>
 

@@ -9,9 +9,9 @@ pub fn boot(root: moxie_dom::raw::sys::Node) {
         let decrementer = incrementer.clone();
         mox! {
             <div>
-                <button onclick={move |_| decrementer.mutate(|count| *count -= 1)}>"-"</button>
+                <button onclick = move |_| decrementer.mutate(|count| *count -= 1)>"-"</button>
                 { count }
-                <button onclick={move |_| incrementer.mutate(|count| *count += 1)}>"+"</button>
+                <button onclick = move |_| incrementer.mutate(|count| *count += 1)>"+"</button>
             </div>
         }
     });

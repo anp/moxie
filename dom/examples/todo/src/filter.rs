@@ -49,8 +49,8 @@ pub fn filter_link(to_set: Visibility) -> Li {
     mox! {
         <li>
             <a style="cursor: pointer;"
-             class={if *visibility == to_set { "selected" } else { "" }}
-             onclick={move |_| visibility.set(to_set)}>
+             class = if *visibility == to_set { "selected" } else { "" }
+             onclick = move |_| visibility.set(to_set)>
                 { to_set }
             </a>
         </li>
