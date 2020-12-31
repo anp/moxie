@@ -82,7 +82,7 @@ fn mutiple_event_listeners() {
                 onclick={ move |_| counter2.update(increment) }
             >
                 // Display the values of the counters
-                {% "counter1 = {}, counter2 = {}", &counter1_val, &counter2_val }
+                {format_args!("counter1 = {}, counter2 = {}", &counter1_val, &counter2_val)}
             </button>
         }
     });

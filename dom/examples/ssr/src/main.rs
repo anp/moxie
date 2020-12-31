@@ -31,7 +31,7 @@ struct PathExtractor {
 fn simple_list(items: &[String]) -> Ul {
     let mut list = ul();
     for item in items {
-        list = list.child(mox!(<li>{% "{}", item }</li>));
+        list = list.child(mox!(<li>{ item }</li>));
     }
     list.build()
 }

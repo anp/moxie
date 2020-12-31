@@ -27,7 +27,7 @@ impl Stateful for Counter {
         mox! {
             <div>
                 <button onclick={move |_| updater.decrement()}>"-"</button>
-                {% "{}", self.0 }
+                { self.0 }
                 <button onclick={move |_| updater2.increment()}>"+"</button>
             </div>
         }
