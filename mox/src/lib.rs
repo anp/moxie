@@ -22,21 +22,22 @@
 ///
 /// ## Fragments
 ///
-/// Fragments are not currently supported.
+/// Fragments are not yet supported. Depends on [this issue](https://github.com/stoically/syn-rsx/issues/8).
 ///
 /// ## Content/Text
 ///
-/// Text nodes are wrapped in calls to `text(...)`.
+/// Any child that is not a tag but some sort of an expression (see below)
+/// additionally is calling `.into_child()` method.
 ///
-/// If an expression is a formatter, the arguments are wrapped
-/// in the `format!(...)` macro before being treated as a text node.
+/// You can pass a string literal (`"text"`) or expression (`{format!(...)}`) as
+/// a text. Make sure required methods are implemented.
 ///
 /// # Inputs
 ///
 /// Each macro invocation must resolve to a single item. Items can be tags,
 /// fragments, or content.
 ///
-/// [snax](https://docs.rs/snax) is used to tokenize the input as [JSX]\(ish\).
+/// [syn-rsx](https://docs.rs/syn-rsx) is used to tokenize the input as [JSX]\(ish\).
 ///
 /// ## Tags
 ///
@@ -68,13 +69,8 @@
 ///
 /// ## Expressions
 ///
-/// Raw Rust expressions can be inserted as a child node. They are delimited
-/// with `{` and `}`.
-///
-/// ## Format expressions
-///
-/// Expressions can optionally be opened with `{%` to denote a "formatter" item.
-/// The enclosed tokens are passed
+/// Raw Rust expressions can be inserted as a child node. They have to be a
+/// literal or be delimited with `{` and `}`.
 ///
 /// # Example
 ///
