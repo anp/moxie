@@ -25,14 +25,6 @@
 /// Fragments are not yet supported. See [this issue](https://github.com/anp/moxie/issues/232)
 /// for discussion.
 ///
-/// ## Content/Text
-///
-/// Any child that is not a tag but some sort of an expression (see below)
-/// additionally is calling `.into_child()` method.
-///
-/// You can pass a string literal (`"text"`) or expression (`{format!(...)}`) as
-/// a text. Make sure required methods are implemented.
-///
 /// # Inputs
 ///
 /// Each macro invocation must resolve to a single item. Items can be tags,
@@ -62,16 +54,17 @@
 ///
 /// If there are no children the tag can be "self-closing": `<NAME ... />`.
 ///
+/// Each child can be either another tag, a Rust literal, or a Rust block (an
+/// expression wrapped in `{` and `}`).
+///
+/// Literals and expressions have `.into_child()` appended to them before being
+/// passed to `.child(...)`.
+///
 /// ## Fragments
 ///
 /// Fragments are opened with `<>` and closed with `</>`. Their only purpose is
 /// to provide a parent for children. They do not accept arguments or
 /// attributes.
-///
-/// ## Expressions
-///
-/// Raw Rust expressions can be inserted as a child node. They have to be a
-/// literal or be delimited with `{` and `}`.
 ///
 /// # Example
 ///

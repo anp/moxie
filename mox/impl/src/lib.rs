@@ -3,7 +3,12 @@ extern crate proc_macro;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::convert::TryFrom;
-use syn::{parse::Parse, parse_macro_input, spanned::Spanned};
+use syn::{
+    parse::{Error as SynError, Parse},
+    parse_macro_input,
+    spanned::Spanned,
+};
+use syn_rsx::{NodeName, NodeType};
 
 #[proc_macro]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -47,11 +52,10 @@ impl TryFrom<syn_rsx::Node> for MoxItem {
     type Error = syn::parse::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        use syn_rsx::NodeType::*;
         match node.node_type {
-            Element => MoxTag::try_from(node).map(MoxItem::Tag),
-            Attribute => Err(node_parse_error(&node, "MoxItem")),
-            Text | Block => MoxExpr::try_from(node).map(MoxItem::Expr),
+            NodeType::Element => MoxTag::try_from(node).map(MoxItem::Tag),
+            NodeType::Attribute => Err(node_parse_error(&node, "MoxItem")),
+            NodeType::Text | NodeType::Block => MoxExpr::try_from(node).map(MoxItem::Expr),
         }
     }
 }
@@ -60,39 +64,40 @@ impl TryFrom<syn_rsx::Node> for MoxTag {
     type Error = syn::parse::Error;
 
     fn try_from(mut node: syn_rsx::Node) -> syn::Result<Self> {
-        use syn_rsx::NodeType::*;
         match node.node_type {
-            Element => Ok({
-                let attributes: syn::Result<Vec<MoxAttr>> =
-                    node.attributes.drain(..).map(|node| MoxAttr::try_from(node)).collect();
-                let attributes = attributes?;
-
-                let children: syn::Result<Vec<MoxItem>> =
-                    node.children.drain(..).map(|node| MoxItem::try_from(node)).collect();
-                let children = children?;
-
-                Self { name: MoxTag::validate_name(node.name.unwrap())?, attributes, children }
+            NodeType::Element => Ok(Self {
+                name: MoxTag::validate_name(node.name.unwrap())?,
+                attributes: node
+                    .attributes
+                    .drain(..)
+                    .map(|node| MoxAttr::try_from(node))
+                    .collect::<syn::Result<Vec<_>>>()?,
+                children: node
+                    .children
+                    .drain(..)
+                    .map(|node| MoxItem::try_from(node))
+                    .collect::<syn::Result<Vec<_>>>()?,
             }),
-            Attribute | Text | Block => Err(node_parse_error(&node, "MoxTag")),
+            NodeType::Attribute | NodeType::Text | NodeType::Block => {
+                Err(node_parse_error(&node, "MoxTag"))
+            }
         }
     }
 }
 
 impl MoxTag {
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::ExprPath> {
-        use syn::parse::Error;
-        use syn_rsx::NodeName;
-
         match name {
             NodeName::Path(mut expr_path) => {
                 mangle_expr_path(&mut expr_path);
                 Ok(expr_path)
             }
             NodeName::Dash(punctuated) => {
-                Err(Error::new(punctuated.span(), "Dash tag name syntax isn't supported"))
+                // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
+                Err(SynError::new(punctuated.span(), "Dash tag name syntax isn't supported"))
             }
             NodeName::Colon(punctuated) => {
-                Err(Error::new(punctuated.span(), "Colon tag name syntax isn't supported"))
+                Err(SynError::new(punctuated.span(), "Colon tag name syntax isn't supported"))
             }
         }
     }
@@ -108,10 +113,11 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
     type Error = syn::parse::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        use syn_rsx::NodeType::*;
         match node.node_type {
-            Element | Text | Block => Err(node_parse_error(&node, "MoxAttr")),
-            Attribute => {
+            NodeType::Element | NodeType::Text | NodeType::Block => {
+                Err(node_parse_error(&node, "MoxAttr"))
+            }
+            NodeType::Attribute => {
                 Ok(MoxAttr { name: MoxAttr::validate_name(node.name.unwrap())?, value: node.value })
             }
         }
@@ -120,10 +126,9 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
 
 impl MoxAttr {
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
-        use syn::{parse::Error, punctuated::Pair, PathSegment};
-        use syn_rsx::NodeName;
+        use syn::{punctuated::Pair, PathSegment};
 
-        let invalid_error = |span| Error::new(span, "Invalid name for an attribute");
+        let invalid_error = |span| SynError::new(span, "Invalid name for an attribute");
 
         match name {
             NodeName::Path(syn::ExprPath {
@@ -143,10 +148,11 @@ impl MoxAttr {
                 }
             }
             NodeName::Dash(punctuated) => {
-                Err(Error::new(punctuated.span(), "Dash attribute name syntax isn't supported"))
+                // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
+                Err(SynError::new(punctuated.span(), "Dash attribute name syntax isn't supported"))
             }
             NodeName::Colon(punctuated) => {
-                Err(Error::new(punctuated.span(), "Colon attribute name syntax isn't supported"))
+                Err(SynError::new(punctuated.span(), "Colon attribute name syntax isn't supported"))
             }
             name => Err(invalid_error(name.span())),
         }
@@ -165,30 +171,25 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
     type Error = syn::parse::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        use syn_rsx::NodeType::*;
         match node.node_type {
-            Element | Attribute => Err(node_parse_error(&node, "MoxExpr")),
-            Text | Block => Ok(MoxExpr { expr: node.value.unwrap() }),
+            NodeType::Element | NodeType::Attribute => Err(node_parse_error(&node, "MoxExpr")),
+            NodeType::Text | NodeType::Block => Ok(MoxExpr { expr: node.value.unwrap() }),
         }
     }
 }
 
-fn node_parse_error(node: &syn_rsx::Node, failed: &'static str) -> syn::parse::Error {
-    use syn_rsx::NodeType::*;
-    syn::parse::Error::new(node_span(&node), match node.node_type {
-        Element => format!("Cannot parse element as a {}", failed),
-        Attribute => format!("Cannot parse attribute as a {}", failed),
-        Text => format!("Cannot parse text as a {}", failed),
-        Block => format!("Cannot parse block as a {}", failed),
-    })
+fn node_parse_error(node: &syn_rsx::Node, mox_type_name: &'static str) -> syn::parse::Error {
+    SynError::new(
+        node_span(&node),
+        format!("Cannot parse {} as a {}", node.node_type, mox_type_name),
+    )
 }
 
 fn node_span(syn_rsx::Node { name, value, node_type, .. }: &syn_rsx::Node) -> Span {
-    use syn_rsx::NodeType::*;
     // TODO get the span for the whole tag, see `https://github.com/rust-lang/rust/issues/54725`
     match node_type {
-        Element | Attribute => name.as_ref().unwrap().span(),
-        Text | Block => value.as_ref().unwrap().span(),
+        NodeType::Element | NodeType::Attribute => name.as_ref().unwrap().span(),
+        NodeType::Text | NodeType::Block => value.as_ref().unwrap().span(),
     }
 }
 

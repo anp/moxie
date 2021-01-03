@@ -1,5 +1,9 @@
 //! Traits for nodes in the DOM tree.
 
+use std::fmt::Display;
+
+use crate::text::{text, Text};
+
 /// This module is pub(crate) to ensure only the correct wrapper types access
 /// untyped nodes via the traits defined here.
 pub(crate) mod sealed {
@@ -37,31 +41,33 @@ pub trait NodeWrapper: sealed::Memoized + Sized {
 }
 
 /// A value which can be bound as a child to a DOM node.
-pub trait Child {
+pub trait Child: Sized {
     /// Returns the "raw" node for this child to bind to its parent.
     fn to_bind(&self) -> &augdom::Node;
 
-    /// Identity transform used to satisfy `mox!`'s syntax contract for a value to be used
-    /// directly as a child.
-    fn into_child(self) -> Self
-    where
-        Self: Sized,
-    {
+    /// Identity transform used to satisfy `mox!`'s syntax contract for a value
+    /// to be used directly as a child.
+    fn into_child(self) -> Self {
         self
     }
 }
 
 /// Allows values which `impl Display` to be used directly as `mox!` children,
-/// converting them into text nodes.
-pub trait DisplayIntoChild: std::fmt::Display + Sized {
-    /// Wrap `impl std::fmt::Display` into the `text` node
-    fn into_child(self) -> crate::text::Text {
-        // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
-        crate::text::text(format!("{}", self))
-    }
+/// converting them into text nodes. Can be implemented for your type.
+pub trait TextChild: Sized {
+    /// Wrap self into the `text` node
+    fn into_child(self) -> Text;
 }
 
-impl<T> DisplayIntoChild for T where T: std::fmt::Display + Sized {}
+impl<T> TextChild for T
+where
+    T: Display + Sized,
+{
+    fn into_child(self) -> Text {
+        // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
+        text(format!("{}", self))
+    }
+}
 
 impl<N> Child for N
 where
