@@ -33,7 +33,7 @@ pub mod prelude {
             event_target::EventTarget as _,
             global_events::{GlobalEvent as _, GlobalEventHandler as _},
             html_element::HtmlElementBuilder,
-            node::{Child as _, DisplayIntoChild as _, NodeWrapper, Parent as _},
+            node::{Child as _, NodeWrapper, Parent as _, TextChild as _},
         },
         text::text,
         Stateful,
