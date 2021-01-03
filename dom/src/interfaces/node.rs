@@ -41,7 +41,8 @@ pub trait Child {
     /// Returns the "raw" node for this child to bind to its parent.
     fn to_bind(&self) -> &augdom::Node;
 
-    /// Identity transform
+    /// Identity transform used to satisfy `mox!`'s syntax contract for a value to be used
+    /// directly as a child.
     fn into_child(self) -> Self
     where
         Self: Sized,
@@ -50,7 +51,8 @@ pub trait Child {
     }
 }
 
-/// Convert `impl std::fmt::Display` into the `impl Child`
+/// Allows values which `impl Display` to be used directly as `mox!` children,
+/// converting them into text nodes.
 pub trait DisplayIntoChild: std::fmt::Display + Sized {
     /// Wrap `impl std::fmt::Display` into the `text` node
     fn into_child(self) -> crate::text::Text {
