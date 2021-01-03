@@ -22,7 +22,8 @@
 ///
 /// ## Fragments
 ///
-/// Fragments are not yet supported. Depends on [this issue](https://github.com/stoically/syn-rsx/issues/8).
+/// Fragments are not yet supported. See [this issue](https://github.com/anp/moxie/issues/232)
+/// for discussion.
 ///
 /// ## Content/Text
 ///
