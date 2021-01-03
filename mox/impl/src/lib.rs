@@ -49,7 +49,7 @@ impl Parse for MoxItem {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxItem {
-    type Error = syn::parse::Error;
+    type Error = SynError;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -61,7 +61,7 @@ impl TryFrom<syn_rsx::Node> for MoxItem {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxTag {
-    type Error = syn::parse::Error;
+    type Error = SynError;
 
     fn try_from(mut node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -110,7 +110,7 @@ fn mangle_expr_path(name: &mut syn::ExprPath) {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxAttr {
-    type Error = syn::parse::Error;
+    type Error = SynError;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -168,7 +168,7 @@ fn mangle_ident(ident: &mut syn::Ident) {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxExpr {
-    type Error = syn::parse::Error;
+    type Error = SynError;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -178,7 +178,7 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
     }
 }
 
-fn node_parse_error(node: &syn_rsx::Node, mox_type_name: &'static str) -> syn::parse::Error {
+fn node_parse_error(node: &syn_rsx::Node, mox_type_name: &'static str) -> SynError {
     SynError::new(
         node_span(&node),
         format!("Cannot parse {} as a {}", node.node_type, mox_type_name),
