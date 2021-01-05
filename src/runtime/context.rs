@@ -1,28 +1,24 @@
-use super::{Revision, Spawner, Var};
+use super::{Revision, RevisionControlSystem, Spawner, Var};
 use crate::{Commit, Key};
 use dyn_cache::local::SharedLocalCache;
 use futures::future::abortable;
-use std::{
-    borrow::Borrow,
-    future::Future,
-    task::{Poll, Waker},
-};
+use parking_lot::RwLock;
+use std::{borrow::Borrow, future::Future, sync::Arc, task::Poll};
 
 /// A handle to the current [`Runtime`] which is offered via [`illicit`]
 /// contexts and provides access to the current revision, cache storage,
 /// task spawning, and the waker for the loop.
 #[derive(Debug)]
 pub(crate) struct Context {
-    revision: Revision,
+    rcs: Arc<RwLock<RevisionControlSystem>>,
     pub cache: SharedLocalCache,
     spawner: Spawner,
-    waker: Waker,
 }
 
 impl Context {
     /// Returns the revision for which this context was created.
     pub fn revision(&self) -> Revision {
-        self.revision
+        self.rcs.read().revision
     }
 
     /// Load a [`crate::state::Var`] with the provided argument and initializer.
@@ -40,7 +36,7 @@ impl Context {
     {
         let var = self
             .cache
-            .cache(id, arg, |arg| Var::new(topo::CallId::current(), self.waker.clone(), init(arg)));
+            .cache(id, arg, |arg| Var::new(topo::CallId::current(), self.rcs.clone(), init(arg)));
         Var::root(var)
     }
 
@@ -68,28 +64,31 @@ impl Context {
         Output: 'static,
         Ret: 'static,
     {
-        let (_, set_result): (_, Key<Poll<Output>>) = self.cache_state(id, &(), |()| Poll::Pending);
-        let mut set_result2 = set_result.clone();
-        self.cache.hold(id, arg, |arg| {
-            // before we spawn the new task we need to mark it pending
-            set_result.force(Poll::Pending);
+        let var = self.cache.cache_with(
+            id,
+            arg,
+            |arg| {
+                // before we spawn the new task we need to mark it pending
+                let var = Var::new(topo::CallId::current(), self.rcs.clone(), Poll::Pending);
 
-            let (fut, aborter) = abortable(init(arg));
-            let task = async move {
-                if let Ok(to_store) = fut.await {
-                    set_result.update(|_| Some(Poll::Ready(to_store)));
-                }
-            };
-            self.spawner
-                .0
-                .spawn_local_obj(Box::pin(task).into())
-                .expect("that set_task_executor has been called");
-            scopeguard::guard(aborter, |a| a.abort())
-        });
+                let (fut, aborter) = abortable(init(arg));
 
-        set_result2.refresh();
+                let var2 = var.clone();
+                let task = async move {
+                    if let Ok(to_store) = fut.await {
+                        var2.lock().enqueue_commit(Poll::Ready(to_store));
+                    }
+                };
+                self.spawner
+                    .0
+                    .spawn_local_obj(Box::pin(task).into())
+                    .expect("that set_task_executor has been called");
+                (var, scopeguard::guard(aborter, |a| a.abort()))
+            },
+            |(var, _)| var.clone(),
+        );
 
-        match &*set_result2 {
+        match *Var::root(var).0 {
             Poll::Ready(ref stored) => Poll::Ready(with(stored)),
             Poll::Pending => Poll::Pending,
         }
@@ -98,11 +97,6 @@ impl Context {
 
 impl super::Runtime {
     pub(crate) fn context_handle(&self) -> Context {
-        Context {
-            revision: self.revision,
-            spawner: self.spawner.clone(),
-            cache: self.cache.clone(),
-            waker: self.wk.clone(),
-        }
+        Context { rcs: self.rcs.clone(), spawner: self.spawner.clone(), cache: self.cache.clone() }
     }
 }

@@ -73,7 +73,7 @@ use std::{
 use topo::CallId;
 
 /// Applied to impl blocks, this macro defines a new "updater" wrapper type that
-/// holds a [`crate::Key`] and forwards all receiver-mutating methods. Useful
+/// holds a [`Key`] and forwards all receiver-mutating methods. Useful
 /// for defining interactions for a stateful component with less boilerplate.
 ///
 /// Requires the name of the updater struct to generate in the arguments to the
@@ -285,22 +285,21 @@ where
 /// let mut rt = RunLoop::new(|| state(|| 0u64));
 ///
 /// let track_wakes = BoolWaker::new();
-/// rt.set_state_change_waker(waker(track_wakes.clone()));
 ///
-/// let (first_commit, first_key) = rt.run_once();
+/// let (first_commit, first_key) = rt.run_once_with(waker(track_wakes.clone()));
 /// assert_eq!(*first_commit, 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
 /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(*second_key, 1);
+/// assert_eq!(*second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -331,22 +330,21 @@ where
 /// let mut rt = RunLoop::new(|| cache_state(&epoch.load(Ordering::Relaxed), |e| *e));
 ///
 /// let track_wakes = BoolWaker::new();
-/// rt.set_state_change_waker(futures::task::waker(track_wakes.clone()));
 ///
-/// let (first_commit, first_key) = rt.run_once();
+/// let (first_commit, first_key) = rt.run_once_with(futures::task::waker(track_wakes.clone()));
 /// assert_eq!(*first_commit, 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(0); // this is a no-op
-/// assert_eq!(*first_key, 0, "no updates yet");
+/// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
 /// assert!(!track_wakes.is_woken(), "no updates yet");
 ///
 /// first_key.set(1);
-/// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+/// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
 /// assert!(track_wakes.is_woken());
 ///
 /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-/// assert_eq!(*second_key, 1);
+/// assert_eq!(*second_key.commit_at_root(), 1);
 /// assert_eq!(*second_commit, 1);
 /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
 /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -363,15 +361,15 @@ where
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(2);
-/// assert_eq!(*third_key, 2);
+/// assert_eq!(*third_key.commit_at_root(), 2);
 /// assert!(!track_wakes.is_woken());
 ///
 /// third_key.set(3);
-/// assert_eq!(*third_key, 2);
+/// assert_eq!(*third_key.commit_at_root(), 2);
 /// assert!(track_wakes.is_woken());
 ///
 /// let (fourth_commit, fourth_key) = rt.run_once();
-/// assert_eq!(*fourth_key, 3);
+/// assert_eq!(*fourth_key.commit_at_root(), 3);
 /// assert_eq!(*fourth_commit, 3);
 /// assert_eq!(*third_commit, 2);
 /// assert!(!track_wakes.is_woken());
@@ -630,7 +628,7 @@ where
 ///
 /// Reads through a commit are not guaranteed to be the latest value visible to
 /// the runtime. Commits should be shared and used within the context of a
-/// single [`crate::runtime::Revision`], being re-loaded from the state variable
+/// single [`runtime::Revision`], being re-loaded from the state variable
 /// each time.
 ///
 /// See [`state`] and [`cache_state`] for examples.
@@ -681,7 +679,6 @@ where
 /// See [`state`] and [`cache_state`] for examples.
 pub struct Key<State> {
     id: CallId,
-    commit_at_root: Commit<State>,
     var: Arc<Mutex<Var<State>>>,
 }
 
@@ -689,6 +686,11 @@ impl<State> Key<State> {
     /// Returns the `topo::CallId` at which the state variable is bound.
     pub fn id(&self) -> CallId {
         self.id
+    }
+
+    /// Returns the `Commit` of the current `Revision`
+    pub fn commit_at_root(&self) -> Commit<State> {
+        self.var.lock().current_commit().clone()
     }
 
     /// Runs `updater` with a reference to the state variable's latest value,
@@ -717,22 +719,21 @@ impl<State> Key<State> {
     /// let mut rt = RunLoop::new(|| state(|| 0u64));
     ///
     /// let track_wakes = BoolWaker::new();
-    /// rt.set_state_change_waker(waker(track_wakes.clone()));
     ///
-    /// let (first_commit, first_key) = rt.run_once();
+    /// let (first_commit, first_key) = rt.run_once_with(waker(track_wakes.clone()));
     /// assert_eq!(*first_commit, 0, "no updates yet");
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|_| None); // this is a no-op
-    /// assert_eq!(*first_key, 0, "no updates yet");
+    /// assert_eq!(*first_key.commit_at_root(), 0, "no updates yet");
     /// assert!(!track_wakes.is_woken(), "no updates yet");
     ///
     /// first_key.update(|prev| Some(prev + 1));
-    /// assert_eq!(*first_key, 0, "update only enqueued, not yet committed");
+    /// assert_eq!(*first_key.commit_at_root(), 0, "update only enqueued, not yet committed");
     /// assert!(track_wakes.is_woken());
     ///
     /// let (second_commit, second_key) = rt.run_once(); // this commits the pending update
-    /// assert_eq!(*second_key, 1);
+    /// assert_eq!(*second_key.commit_at_root(), 1);
     /// assert_eq!(*second_commit, 1);
     /// assert_eq!(*first_commit, 0, "previous value still held by previous pointer");
     /// assert!(!track_wakes.is_woken(), "wakes only come from updating state vars");
@@ -743,16 +744,6 @@ impl<State> Key<State> {
         if let Some(new) = updater(var.latest()) {
             var.enqueue_commit(new);
         }
-    }
-
-    /// Set a new value for the state variable, immediately taking effect.
-    fn force(&self, new: State) {
-        self.var.lock().enqueue_commit(new);
-    }
-
-    // TODO(#197) delete this and remove the Deref impl
-    fn refresh(&mut self) {
-        self.commit_at_root = runtime::Var::root(self.var.clone()).0;
     }
 }
 
@@ -788,15 +779,7 @@ where
 
 impl<State> Clone for Key<State> {
     fn clone(&self) -> Self {
-        Self { id: self.id, commit_at_root: self.commit_at_root.clone(), var: self.var.clone() }
-    }
-}
-
-impl<State> Deref for Key<State> {
-    type Target = State;
-
-    fn deref(&self) -> &Self::Target {
-        self.commit_at_root.deref()
+        Self { id: self.id, var: self.var.clone() }
     }
 }
 
@@ -805,7 +788,7 @@ where
     State: Debug,
 {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.commit_at_root.fmt(f)
+        self.commit_at_root().fmt(f)
     }
 }
 
@@ -814,7 +797,7 @@ where
     State: Display,
 {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        self.commit_at_root.fmt(f)
+        self.commit_at_root().fmt(f)
     }
 }
 
