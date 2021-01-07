@@ -4,7 +4,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::convert::TryFrom;
 use syn::{
-    parse::{Error as SynError, Parse},
+    parse::{Error as SynError, Parse, ParseStream},
     parse_macro_input,
     spanned::Spanned,
 };
@@ -19,6 +19,7 @@ pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 enum MoxItem {
     Tag(MoxTag),
     Expr(MoxExpr),
+    None,
 }
 
 struct MoxTag {
@@ -37,10 +38,14 @@ struct MoxExpr {
 }
 
 impl Parse for MoxItem {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        fn parse_fmt_expr(_parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
+            Ok(None)
+        }
+
         let parse_config = syn_rsx::ParserConfig::new()
-            .number_of_top_level_nodes(1)
-            .type_of_top_level_nodes(syn_rsx::NodeType::Element);
+            .transform_block(parse_fmt_expr)
+            .number_of_top_level_nodes(1);
         let parser = syn_rsx::Parser::new(parse_config);
         let node = parser.parse(input)?.remove(0);
 
@@ -54,8 +59,9 @@ impl TryFrom<syn_rsx::Node> for MoxItem {
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
             NodeType::Element => MoxTag::try_from(node).map(MoxItem::Tag),
-            NodeType::Attribute => Err(node_parse_error(&node, "MoxItem")),
+            NodeType::Attribute | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Text | NodeType::Block => MoxExpr::try_from(node).map(MoxItem::Expr),
+            NodeType::Comment | NodeType::Doctype => Ok(MoxItem::None),
         }
     }
 }
@@ -78,9 +84,13 @@ impl TryFrom<syn_rsx::Node> for MoxTag {
                     .map(|node| MoxItem::try_from(node))
                     .collect::<syn::Result<Vec<_>>>()?,
             }),
-            NodeType::Attribute | NodeType::Text | NodeType::Block => {
-                Err(node_parse_error(&node, "MoxTag"))
-            }
+            NodeType::Attribute
+            | NodeType::Text
+            | NodeType::Block
+            | NodeType::Comment
+            | NodeType::Doctype
+            // TODO(#232) implement
+            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
         }
     }
 }
@@ -99,6 +109,9 @@ impl MoxTag {
             NodeName::Colon(punctuated) => {
                 Err(SynError::new(punctuated.span(), "Colon tag name syntax isn't supported"))
             }
+            NodeName::Block(block) => {
+                Err(SynError::new(block.span(), "Block expression as a tag name isn't supported"))
+            }
         }
     }
 }
@@ -114,9 +127,12 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
-            NodeType::Element | NodeType::Text | NodeType::Block => {
-                Err(node_parse_error(&node, "MoxAttr"))
-            }
+            NodeType::Element
+            | NodeType::Text
+            | NodeType::Block
+            | NodeType::Comment
+            | NodeType::Doctype
+            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Attribute => {
                 Ok(MoxAttr { name: MoxAttr::validate_name(node.name.unwrap())?, value: node.value })
             }
@@ -172,25 +188,33 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
-            NodeType::Element | NodeType::Attribute => Err(node_parse_error(&node, "MoxExpr")),
+            NodeType::Element
+            | NodeType::Attribute
+            | NodeType::Comment
+            | NodeType::Doctype
+            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Text | NodeType::Block => Ok(MoxExpr { expr: node.value.unwrap() }),
         }
     }
 }
 
-fn node_parse_error(node: &syn_rsx::Node, mox_type_name: &'static str) -> SynError {
-    SynError::new(
-        node_span(&node),
-        format!("Cannot parse {} as a {}", node.node_type, mox_type_name),
-    )
+trait NodeConvertError {
+    fn node_convert_error(node: &syn_rsx::Node) -> SynError {
+        SynError::new(
+            node_span(&node),
+            format_args!("Cannot convert {} to {}", node.node_type, std::any::type_name::<Self>(),),
+        )
+    }
 }
 
-fn node_span(syn_rsx::Node { name, value, node_type, .. }: &syn_rsx::Node) -> Span {
-    // TODO get the span for the whole tag, see `https://github.com/rust-lang/rust/issues/54725`
-    match node_type {
-        NodeType::Element | NodeType::Attribute => name.as_ref().unwrap().span(),
-        NodeType::Text | NodeType::Block => value.as_ref().unwrap().span(),
-    }
+impl<T> NodeConvertError for T where T: TryFrom<syn_rsx::Node> {}
+
+fn node_span(node: &syn_rsx::Node) -> Span {
+    // TODO get the span for the whole node, see `https://github.com/stoically/syn-rsx/issues/4`
+    // Prioritize name's span then value's span then call site's span.
+    node.name_span()
+        .or_else(|| node.value.as_ref().map(|value| value.span()))
+        .unwrap_or_else(Span::call_site)
 }
 
 impl ToTokens for MoxItem {
@@ -198,6 +222,7 @@ impl ToTokens for MoxItem {
         match self {
             MoxItem::Tag(tag) => tag.to_tokens(tokens),
             MoxItem::Expr(expr) => expr.to_tokens(tokens),
+            MoxItem::None => (),
         }
     }
 }
