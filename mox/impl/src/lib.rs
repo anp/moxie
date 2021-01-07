@@ -224,7 +224,7 @@ trait NodeConvertError {
 impl<T> NodeConvertError for T where T: TryFrom<syn_rsx::Node> {}
 
 fn node_span(node: &syn_rsx::Node) -> Span {
-    // TODO get the span for the whole node, see `https://github.com/stoically/syn-rsx/issues/4`
+    // TODO get the span for the whole node, see `https://github.com/stoically/syn-rsx/issues/14`
     // Prioritize name's span then value's span then call site's span.
     node.name_span()
         .or_else(|| node.value.as_ref().map(|value| value.span()))
