@@ -6,7 +6,9 @@ use std::convert::TryFrom;
 use syn::{
     parse::{Error as SynError, Parse, ParseStream},
     parse_macro_input,
+    punctuated::Punctuated,
     spanned::Spanned,
+    token::Comma,
 };
 use syn_rsx::{NodeName, NodeType};
 
@@ -39,8 +41,19 @@ struct MoxExpr {
 
 impl Parse for MoxItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        fn parse_fmt_expr(_parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
-            Ok(None)
+        fn parse_fmt_expr(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
+            if parse_stream.peek(syn::Token![%]) {
+                parse_stream.parse::<syn::Token![%]>()?;
+                let arguments: Punctuated<syn::Expr, Comma> =
+                    Punctuated::parse_separated_nonempty(parse_stream)?;
+                if parse_stream.is_empty() {
+                    Ok(Some(quote!(format_args!(#arguments))))
+                } else {
+                    Err(parse_stream.error(format!("Expected the end, found `{}`", parse_stream)))
+                }
+            } else {
+                Ok(None)
+            }
         }
 
         let parse_config = syn_rsx::ParserConfig::new()

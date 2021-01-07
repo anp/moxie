@@ -11,7 +11,7 @@ pub fn items_remaining(num_active: usize) -> Span {
     mox! {
         <span class="todo-count">
             <strong>{bolded}</strong>
-            {format_args!(" {} left", if num_active == 1 { "item" } else { "items" })}
+            {% " {} left", if num_active == 1 { "item" } else { "items" } }
         </span>
     }
 }
