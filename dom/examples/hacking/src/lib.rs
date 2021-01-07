@@ -25,7 +25,7 @@ fn root() -> Div {
 
     let mut root = div();
 
-    root = root.child(mox! { <div>{format_args!("hello world from moxie! ({})", &count)}</div> });
+    root = root.child(mox! { <div>{% "hello world from moxie! ({})", &count }</div> });
     root = root.child(mox! {
         <button type="button" onclick = move |_| set_count.update(|c| Some(c + 1))>
             "increment"

@@ -60,6 +60,9 @@
 /// Literals and expressions have `.into_child()` appended to them before being
 /// passed to `.child(...)`.
 ///
+/// Block expressions can optionally be opened with `{%` to denote a "formatter"
+/// item. The enclosed tokens are passed to the `format_args!` macro.
+///
 /// ## Fragments
 ///
 /// Fragments are opened with `<>` and closed with `</>`. Their only purpose is
