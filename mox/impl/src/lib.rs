@@ -4,7 +4,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::convert::TryFrom;
 use syn::{
-    parse::{Error as SynError, Parse, ParseStream},
+    parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned,
@@ -67,7 +67,7 @@ impl Parse for MoxItem {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxItem {
-    type Error = SynError;
+    type Error = syn::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -80,7 +80,7 @@ impl TryFrom<syn_rsx::Node> for MoxItem {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxTag {
-    type Error = SynError;
+    type Error = syn::Error;
 
     fn try_from(mut node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -117,13 +117,13 @@ impl MoxTag {
             }
             NodeName::Dash(punctuated) => {
                 // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
-                Err(SynError::new(punctuated.span(), "Dash tag name syntax isn't supported"))
+                Err(syn::Error::new(punctuated.span(), "Dash tag name syntax isn't supported"))
             }
             NodeName::Colon(punctuated) => {
-                Err(SynError::new(punctuated.span(), "Colon tag name syntax isn't supported"))
+                Err(syn::Error::new(punctuated.span(), "Colon tag name syntax isn't supported"))
             }
             NodeName::Block(block) => {
-                Err(SynError::new(block.span(), "Block expression as a tag name isn't supported"))
+                Err(syn::Error::new(block.span(), "Block expression as a tag name isn't supported"))
             }
         }
     }
@@ -136,7 +136,7 @@ fn mangle_expr_path(name: &mut syn::ExprPath) {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxAttr {
-    type Error = SynError;
+    type Error = syn::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -157,7 +157,7 @@ impl MoxAttr {
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
         use syn::{punctuated::Pair, PathSegment};
 
-        let invalid_error = |span| SynError::new(span, "Invalid name for an attribute");
+        let invalid_error = |span| syn::Error::new(span, "Invalid name for an attribute");
 
         match name {
             NodeName::Path(syn::ExprPath {
@@ -179,11 +179,15 @@ impl MoxAttr {
             }
             NodeName::Dash(punctuated) => {
                 // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
-                Err(SynError::new(punctuated.span(), "Dash attribute name syntax isn't supported"))
+                Err(syn::Error::new(
+                    punctuated.span(),
+                    "Dash attribute name syntax isn't supported",
+                ))
             }
-            NodeName::Colon(punctuated) => {
-                Err(SynError::new(punctuated.span(), "Colon attribute name syntax isn't supported"))
-            }
+            NodeName::Colon(punctuated) => Err(syn::Error::new(
+                punctuated.span(),
+                "Colon attribute name syntax isn't supported",
+            )),
             name => Err(invalid_error(name.span())),
         }
     }
@@ -198,7 +202,7 @@ fn mangle_ident(ident: &mut syn::Ident) {
 }
 
 impl TryFrom<syn_rsx::Node> for MoxExpr {
-    type Error = SynError;
+    type Error = syn::Error;
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
@@ -213,8 +217,8 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
 }
 
 trait NodeConvertError {
-    fn node_convert_error(node: &syn_rsx::Node) -> SynError {
-        SynError::new(
+    fn node_convert_error(node: &syn_rsx::Node) -> syn::Error {
+        syn::Error::new(
             node_span(&node),
             format_args!("Cannot convert {} to {}", node.node_type, std::any::type_name::<Self>(),),
         )
