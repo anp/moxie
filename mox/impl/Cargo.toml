@@ -19,5 +19,5 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1"
 quote = "1"
-syn-rsx = "0.7.3"
+syn-rsx = "0.8.0-beta.2"
 syn = "^1"
