@@ -24,21 +24,6 @@ enum MoxItem {
     None,
 }
 
-struct MoxTag {
-    name: syn::ExprPath,
-    attributes: Vec<MoxAttr>,
-    children: Vec<MoxItem>,
-}
-
-struct MoxAttr {
-    name: syn::Ident,
-    value: Option<syn::Expr>,
-}
-
-struct MoxExpr {
-    expr: syn::Expr,
-}
-
 impl Parse for MoxItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         fn parse_fmt_expr(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
@@ -77,6 +62,22 @@ impl TryFrom<syn_rsx::Node> for MoxItem {
             NodeType::Comment | NodeType::Doctype => Ok(MoxItem::None),
         }
     }
+}
+
+impl ToTokens for MoxItem {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            MoxItem::Tag(tag) => tag.to_tokens(tokens),
+            MoxItem::Expr(expr) => expr.to_tokens(tokens),
+            MoxItem::None => (),
+        }
+    }
+}
+
+struct MoxTag {
+    name: syn::ExprPath,
+    attributes: Vec<MoxAttr>,
+    children: Vec<MoxItem>,
 }
 
 impl TryFrom<syn_rsx::Node> for MoxTag {
@@ -129,10 +130,30 @@ impl MoxTag {
     }
 }
 
-fn mangle_expr_path(name: &mut syn::ExprPath) {
-    for segment in name.path.segments.iter_mut() {
-        mangle_ident(&mut segment.ident);
+impl ToTokens for MoxTag {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let MoxTag { name, attributes, children } = self;
+
+        // this needs to be nested within other token groups, must be accumulated
+        // separately from stream
+        let mut contents = quote!();
+
+        for attr in attributes {
+            attr.to_tokens(&mut contents);
+        }
+
+        for child in children {
+            quote!(.child(#child)).to_tokens(&mut contents);
+        }
+
+        // TODO remove `topo` dependency, see `https://github.com/anp/moxie/issues/199`
+        quote!(mox::topo::call(|| { #name() #contents .build() })).to_tokens(tokens);
     }
+}
+
+struct MoxAttr {
+    name: syn::Ident,
+    value: Option<syn::Expr>,
 }
 
 impl TryFrom<syn_rsx::Node> for MoxAttr {
@@ -193,12 +214,18 @@ impl MoxAttr {
     }
 }
 
-fn mangle_ident(ident: &mut syn::Ident) {
-    let name = ident.to_string();
-    match name.as_str() {
-        "async" | "for" | "loop" | "type" => *ident = syn::Ident::new(&(name + "_"), ident.span()),
-        _ => (),
+impl ToTokens for MoxAttr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self { name, value } = self;
+        match value {
+            Some(value) => tokens.extend(quote!(.#name(#value))),
+            None => tokens.extend(quote!(.#name(#name))),
+        };
     }
+}
+
+struct MoxExpr {
+    expr: syn::Expr,
 }
 
 impl TryFrom<syn_rsx::Node> for MoxExpr {
@@ -216,6 +243,13 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
     }
 }
 
+impl ToTokens for MoxExpr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self { expr } = self;
+        quote!(#expr.into_child()).to_tokens(tokens);
+    }
+}
+
 trait NodeConvertError {
     fn node_convert_error(node: &syn_rsx::Node) -> syn::Error {
         syn::Error::new(
@@ -227,58 +261,24 @@ trait NodeConvertError {
 
 impl<T> NodeConvertError for T where T: TryFrom<syn_rsx::Node> {}
 
+fn mangle_expr_path(name: &mut syn::ExprPath) {
+    for segment in name.path.segments.iter_mut() {
+        mangle_ident(&mut segment.ident);
+    }
+}
+
+fn mangle_ident(ident: &mut syn::Ident) {
+    let name = ident.to_string();
+    match name.as_str() {
+        "async" | "for" | "loop" | "type" => *ident = syn::Ident::new(&(name + "_"), ident.span()),
+        _ => (),
+    }
+}
+
 fn node_span(node: &syn_rsx::Node) -> Span {
     // TODO get the span for the whole node, see `https://github.com/stoically/syn-rsx/issues/14`
     // Prioritize name's span then value's span then call site's span.
     node.name_span()
         .or_else(|| node.value.as_ref().map(|value| value.span()))
         .unwrap_or_else(Span::call_site)
-}
-
-impl ToTokens for MoxItem {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            MoxItem::Tag(tag) => tag.to_tokens(tokens),
-            MoxItem::Expr(expr) => expr.to_tokens(tokens),
-            MoxItem::None => (),
-        }
-    }
-}
-
-impl ToTokens for MoxTag {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let MoxTag { name, attributes, children } = self;
-
-        // this needs to be nested within other token groups, must be accumulated
-        // separately from stream
-        let mut contents = quote!();
-
-        for attr in attributes {
-            attr.to_tokens(&mut contents);
-        }
-
-        for child in children {
-            quote!(.child(#child)).to_tokens(&mut contents);
-        }
-
-        // TODO remove `topo` dependency, see `https://github.com/anp/moxie/issues/199`
-        quote!(mox::topo::call(|| { #name() #contents .build() })).to_tokens(tokens);
-    }
-}
-
-impl ToTokens for MoxAttr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { name, value } = self;
-        match value {
-            Some(value) => tokens.extend(quote!(.#name(#value))),
-            None => tokens.extend(quote!(.#name(#name))),
-        };
-    }
-}
-
-impl ToTokens for MoxExpr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { expr } = self;
-        quote!(#expr.into_child()).to_tokens(tokens);
-    }
 }
