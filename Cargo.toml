@@ -1,5 +1,3 @@
-cargo-features = ["named-profiles"] # for coverage
-
 [package]
 name = "moxie"
 version = "0.7.1-pre"

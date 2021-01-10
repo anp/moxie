@@ -1,5 +1,3 @@
-cargo-features = ["named-profiles"] # for coverage
-
 [package]
 name = "ofl"
 version = "0.2.0-alpha.0-pre"
