@@ -285,3 +285,43 @@ fn node_span(node: &syn_rsx::Node) -> Span {
         .or_else(|| node.value.as_ref().map(|value| value.span()))
         .unwrap_or_else(Span::call_site)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn fail_colon_tag_names() {
+        let input = quote! { <colon:tag:name /> };
+        syn::parse2::<MoxItem>(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn fail_block_tag_names() {
+        let input = quote! { <{"block tag name"} /> };
+        syn::parse2::<MoxItem>(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn fail_colon_attribute_names() {
+        let input = quote! { <some::tag colon:attribute:name=() /> };
+        syn::parse2::<MoxItem>(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn fail_path_attribute_names() {
+        let input = quote! { <some::tag path::attribute::name=() /> };
+        syn::parse2::<MoxItem>(input).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn fail_format_expression() {
+        let input = quote! { {% "1: {}; 2: {}", var1, var2 tail } };
+        syn::parse2::<MoxItem>(input).unwrap();
+    }
+}
