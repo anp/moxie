@@ -28,19 +28,8 @@ jobs:
           ~/.cargo/git
           ~/.cargo/registry
           ofl/target/release
-
-    - run: cargo build-times --release
+    - run: cargo build --release
       working-directory: ofl
-    - name: archive build timings
-      uses: actions/upload-artifact@v2
-      with:
-        name: ofl-build-times
-        path: "ofl/cargo-timing.html"
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ofl-timing-${{ runner.os }}
-        path: ofl/cargo-timing.html
     - uses: actions/upload-artifact@v2
       with:
         name: ofl-${{ runner.os }}

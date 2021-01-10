@@ -56,8 +56,6 @@ test-core-doc = """test --doc
 
 docs-all = "doc --workspace --no-deps --all-features"
 
-build-times = "build --workspace --all-targets --all-features -Z timings"
-
 ####################################################################################################
 # dom crates and examples
 
@@ -100,9 +98,9 @@ test-dom-drivertest = "wa-test dom/examples/drivertest"
 test-dom-hacking = "wa-test dom/examples/hacking"
 test-dom-todo = "wa-test dom/examples/todo"
 test-dom-todo-e2e = """
-ofl serve-then-run 
-    --cargo-before build-dom-todo 
-    --cwd dom/examples/todo/e2e -- 
+ofl serve-then-run
+    --cargo-before build-dom-todo
+    --cwd dom/examples/todo/e2e --
 npx cypress run
 """
 
