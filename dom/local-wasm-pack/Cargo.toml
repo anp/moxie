@@ -16,5 +16,8 @@ structopt = "0.2"
 
 [dependencies.wasm-pack]
 version = "0.9.1"
+# TODO https://github.com/rustwasm/wasm-pack/issues/954 go back to upstream
+git = "https://github.com/anp/wasm-pack.git"
+branch = "apple-silicon-rosetta"
 
 [workspace]
