@@ -109,6 +109,7 @@
 /// assert_eq!(
 ///     mox! {
 ///         <built name="alice">
+///             <!-- "This is a comment" -->
 ///             <built name="bob"/>
 ///         </built>
 ///     },

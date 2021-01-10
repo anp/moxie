@@ -143,7 +143,10 @@ impl ToTokens for MoxTag {
         }
 
         for child in children {
-            quote!(.child(#child)).to_tokens(&mut contents);
+            match child {
+                MoxItem::None => (),
+                nonempty_child => quote!(.child(#nonempty_child)).to_tokens(&mut contents),
+            }
         }
 
         // TODO remove `topo` dependency, see `https://github.com/anp/moxie/issues/199`
