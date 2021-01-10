@@ -1,6 +1,6 @@
 [package]
 name = "mox"
-version = "0.10.0"
+version = "0.11.0"
 description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
 categories = ["gui", "rust-patterns"]
 keywords = ["jsx", "xml", "builder"]
@@ -14,7 +14,7 @@ authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
 [dependencies]
-mox-impl = { path = "impl", version = "0.10.0" }
+mox-impl = { path = "impl", version = "0.11.0"}
 topo = { path = "../topo", version = "0.13.1" }
 
 [dev-dependencies]
