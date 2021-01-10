@@ -7,8 +7,28 @@
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.10.0] - unreleased
+## [0.11.0] - 2021-01-10
 
+### Added
+
+- "Attribute init shorthand" allows pulling an attribute from an identically-named binding n the
+  local scope:
+
+  ```rust
+  let onclick = |_| { ... };
+  mox!(<button onclick>"click me?"</button>)
+  ```
+
+- Module-nested tag names: `mox!(<krate::module::tag>"foo"</krate::module::tag>)`.
+- Attributes support single-expression values without braces: `<button disabled=true/>`.
+- XML comments: `mox!(<div> <!-- COMMENT HERE --> </div>)`.
+
+### Changed
+
+- `mox!` invocations are now lexed by the [syn-rsx](https://docs.rs/syn-rsx) crate.
+- Non-tag children have `.into_child()` appended to them.
+
+## [0.10.0] - 2020-07-06
 ### Removed
 
 - Support for `_=(...)` style function invocation in tags.
