@@ -90,12 +90,12 @@ impl TryFrom<syn_rsx::Node> for MoxTag {
                 attributes: node
                     .attributes
                     .drain(..)
-                    .map(|node| MoxAttr::try_from(node))
+                    .map(MoxAttr::try_from)
                     .collect::<syn::Result<Vec<_>>>()?,
                 children: node
                     .children
                     .drain(..)
-                    .map(|node| MoxItem::try_from(node))
+                    .map(MoxItem::try_from)
                     .collect::<syn::Result<Vec<_>>>()?,
             }),
             NodeType::Attribute
