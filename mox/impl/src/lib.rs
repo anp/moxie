@@ -173,6 +173,7 @@ impl MoxAttr {
                         mangle_ident(&mut ident);
                         Ok(ident)
                     }
+                    // TODO improve error handling, see `https://github.com/stoically/syn-rsx/issues/12`
                     _ => Err(invalid_error(segments.span())),
                 }
             }
@@ -256,6 +257,7 @@ impl ToTokens for MoxTag {
             quote!(.child(#child)).to_tokens(&mut contents);
         }
 
+        // TODO remove `topo` dependency, see `https://github.com/anp/moxie/issues/199`
         quote!(mox::topo::call(|| { #name() #contents .build() })).to_tokens(tokens);
     }
 }
