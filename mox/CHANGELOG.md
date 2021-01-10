@@ -11,7 +11,7 @@
 
 ### Added
 
-- "Attribute init shorthand" allows pulling an attribute from an identically-named binding n the
+- "Attribute init shorthand" allows pulling an attribute from an identically-named binding in the
   local scope:
 
   ```rust
