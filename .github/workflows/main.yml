@@ -1,3 +1,7 @@
+env:
+  # coverage collection depends on unstable features.
+  # we want the CI results to all be from the same toolchain, so we set it up here.
+  RUST_TOOLCHAIN: nightly-2021-01-10
 on:
   push:
     branches:
@@ -13,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - name: ensure lockfile up to date
       run: cargo generate-lockfile --manifest-path ofl/Cargo.toml
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
@@ -23,7 +27,7 @@ jobs:
         echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -43,6 +47,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -60,7 +65,7 @@ jobs:
         echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -89,6 +94,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -106,7 +112,7 @@ jobs:
         echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -135,6 +141,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -152,7 +159,7 @@ jobs:
         echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain')}}
+        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ env.RUST_TOOLCHAIN }}
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -177,6 +184,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -192,6 +200,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - run: rustup component add clippy
     - run: cargo clippy-ofl
     - run: cargo clippy-core
@@ -202,6 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - run: rustup install ${{ env.RUST_TOOLCHAIN }}
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
