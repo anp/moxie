@@ -19,7 +19,7 @@ crates-index = "0.16.0"
 crossbeam = "0.7.3"
 dialoguer = "0.6"
 futures = "0.3"
-git2 = "0.13.6"
+git2 = "0.13.15"
 grcov = "0.5.15"
 gumdrop = { version = "0.8", features = ["default_expr"] }
 http = "0.2"
