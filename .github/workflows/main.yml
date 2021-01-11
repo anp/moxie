@@ -33,6 +33,7 @@ jobs:
           ~/.cargo/registry
           ofl/target/release
     - run: cargo build --release
+    - run: cargo test-ofl --release
       working-directory: ofl
     - uses: actions/upload-artifact@v2
       with:
@@ -72,10 +73,6 @@ jobs:
           ~/.cargo/registry
           target
 
-    # collect ofl coverage with the root target dir to get into the same report
-    - run: bin/ofl coverage collect test-ofl
-      env:
-        CARGO_TARGET_DIR: target/
     - run: bin/ofl coverage collect test-core
     - run: bin/ofl coverage collect test-core-doc
     - run: bin/ofl coverage collect test-dom
