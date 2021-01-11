@@ -70,20 +70,19 @@ pub struct Collect {
     args: Vec<String>,
 }
 
-const RUSTDOCFLAGS: &str = "-Cpanic=abort";
-const RUSTFLAGS: &str = "-Copt-level=0 -Coverflow-checks=off -Ccodegen-units=1 \
-    -Zprofile -Zpanic_abort_tests -Clink-dead-code";
-
 impl Collect {
     /// Run cargo with the `coverage` profile and cfg enabled.
     pub fn run(&self, _project_root: impl AsRef<Path>) -> Result<(), Error> {
         let mut command = Command::new("cargo");
         command
+            .set_profile_env("CODEGEN_UNITS", "1")
+            .set_profile_env("OPT_LEVEL", "0")
+            .set_profile_env("OVERFLOW_CHECKS", "true")
+            .set_profile_env("PANIC", "abort")
+            .env("RUSTFLAGS", "-Zprofile -Clink-dead-code")
             .env("CARGO_INCREMENTAL", "0")
-            .env("RUSTDOCFLAGS", RUSTDOCFLAGS)
-            .env("RUSTFLAGS", RUSTFLAGS)
             .args(&self.args);
-        debug!({ ?command }, "running");
+        info!({ ?command }, "running");
 
         let status = command.status().context("running cargo command")?;
         if !status.success() {
@@ -92,6 +91,19 @@ impl Collect {
         }
 
         Ok(())
+    }
+}
+
+trait MutateCargoProfiles {
+    fn set_profile_env(&mut self, suffix: &str, value: &str) -> &mut Self;
+}
+
+impl MutateCargoProfiles for Command {
+    fn set_profile_env(&mut self, suffix: &str, value: &str) -> &mut Self {
+        for profile in &["dev", "release", "test", "bench"] {
+            self.env(format!("CARGO_PROFILE_{}_{}", profile, suffix), value);
+        }
+        self
     }
 }
 
