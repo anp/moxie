@@ -1,11 +1,3 @@
-[profile.coverage]
-inherits = "dev"
-codegen-units = 1
-incremental = false
-opt-level = 0
-overflow-checks = false
-panic = "abort"
-
 [alias]
 ####################################################################################################
 # core crates

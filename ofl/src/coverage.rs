@@ -70,18 +70,19 @@ pub struct Collect {
     args: Vec<String>,
 }
 
+const RUSTDOCFLAGS: &str = "-Cpanic=abort";
+const RUSTFLAGS: &str = "-Copt-level=0 -Coverflow-checks=off -Ccodegen-units=1 \
+    -Zprofile -Zpanic_abort_tests -Clink-dead-code";
+
 impl Collect {
     /// Run cargo with the `coverage` profile and cfg enabled.
     pub fn run(&self, _project_root: impl AsRef<Path>) -> Result<(), Error> {
         let mut command = Command::new("cargo");
         command
-            .env("RUSTDOCFLAGS", "-Cpanic=abort")
-            .env("RUSTFLAGS", "-Zprofile -Zpanic_abort_tests -Clink-dead-code")
-            .args(&self.args)
-            .arg("-Zunstable-options")
-            // defined in .cargo/config.toml
-            .arg("--profile")
-            .arg("coverage");
+            .env("CARGO_INCREMENTAL", "0")
+            .env("RUSTDOCFLAGS", RUSTDOCFLAGS)
+            .env("RUSTFLAGS", RUSTFLAGS)
+            .args(&self.args);
         debug!({ ?command }, "running");
 
         let status = command.status().context("running cargo command")?;
