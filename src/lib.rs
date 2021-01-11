@@ -781,7 +781,11 @@ where
         self.update(|prev| {
             let mut new = prev.clone();
             op(&mut new);
-            if prev == &new { None } else { Some(new) }
+            if prev == &new {
+                None
+            } else {
+                Some(new)
+            }
         });
     }
 }

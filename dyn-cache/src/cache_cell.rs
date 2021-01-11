@@ -29,7 +29,11 @@ impl<Input, Output> CacheCell<Input, Output> {
         Input: Borrow<Arg>,
     {
         self.dep.root(dependent);
-        if input == &self.input { Ok(&self.output) } else { Err(self.dep.as_dependent()) }
+        if input == &self.input {
+            Ok(&self.output)
+        } else {
+            Err(self.dep.as_dependent())
+        }
     }
 
     /// Store a new input/output and mark the storage live.

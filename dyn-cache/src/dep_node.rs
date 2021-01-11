@@ -125,7 +125,11 @@ impl Dependent {
     /// Returns the current incoming `Dependent`. If about to execute a
     /// top-level query this will return a null/no-op `Dependent`.
     pub fn incoming() -> Self {
-        if let Ok(dep) = illicit::get::<Self>() { dep.clone() } else { Self::default() }
+        if let Ok(dep) = illicit::get::<Self>() {
+            dep.clone()
+        } else {
+            Self::default()
+        }
     }
 
     /// Initialize the dependency query with `self` marked as its immediate
