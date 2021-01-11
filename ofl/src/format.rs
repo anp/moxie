@@ -15,15 +15,8 @@ impl Format {
     pub fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
         let workspace = Workspace::get(project_root)?;
 
-        workspace.ensure_rustfmt_toolchain()?;
-
-        let mut command = Command::new("rustup");
-        command
-            .arg("run")
-            .arg(&workspace.rustfmt_toolchain)
-            .arg("rustfmt")
-            .arg("--edition")
-            .arg("2018");
+        let mut command = Command::new("rustfmt");
+        command.arg("--edition").arg("2018");
 
         if self.check {
             command.arg("--check");
