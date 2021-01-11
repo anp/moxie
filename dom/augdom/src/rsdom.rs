@@ -133,10 +133,13 @@ impl crate::Dom for Rc<VirtNode> {
     fn get_attribute(&self, name: &str) -> Option<String> {
         match &self.data {
             VirtData::Text(_) => None,
-            VirtData::Elem { tag: _, attrs } => attrs
-                .borrow()
-                .iter()
-                .find_map(|(attr, value)| if attr == name { Some(value.clone()) } else { None }),
+            VirtData::Elem { tag: _, attrs } => attrs.borrow().iter().find_map(|(attr, value)| {
+                if attr == name {
+                    Some(value.clone())
+                } else {
+                    None
+                }
+            }),
         }
     }
 

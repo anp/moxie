@@ -31,7 +31,11 @@ impl Revision {
     /// Returns the current revision. Will return `Revision(0)` if called
     /// outside of a Runtime's execution.
     pub fn current() -> Self {
-        if let Ok(r) = illicit::get::<Context>() { r.revision() } else { Revision::default() }
+        if let Ok(r) = illicit::get::<Context>() {
+            r.revision()
+        } else {
+            Revision::default()
+        }
     }
 }
 

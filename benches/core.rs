@@ -34,8 +34,10 @@ fn run_n_times_empty(b: &mut criterion::Bencher, n: &usize) {
 fn run_repeated(c: &mut Criterion) {
     c.bench(
         "run_repeated",
-        ParameterizedBenchmark::new("run_once called several times", run_n_times_empty, vec![
-            2, 7, 23,
-        ]),
+        ParameterizedBenchmark::new(
+            "run_once called several times",
+            run_n_times_empty,
+            vec![2, 7, 23],
+        ),
     );
 }
