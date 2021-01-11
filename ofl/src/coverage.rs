@@ -44,7 +44,7 @@ impl Cleanup {
             }
 
             if let Some(ext) = entry.path().extension() {
-                if ext == "gcda" || ext == "gcno" {
+                if ext == "profraw" {
                     if let Err(e) = std::fs::remove_file(entry.path()) {
                         warn!({ %e, path = %entry.path().display() }, "couldn't remove");
                     } else {
@@ -71,16 +71,19 @@ pub struct Collect {
 }
 
 impl Collect {
-    /// Run cargo with the `coverage` profile and cfg enabled.
-    pub fn run(&self, _project_root: impl AsRef<Path>) -> Result<(), Error> {
+    pub fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
         let mut command = Command::new("cargo");
         command
-            .set_profile_env("CODEGEN_UNITS", "1")
-            .set_profile_env("OPT_LEVEL", "0")
-            .set_profile_env("OVERFLOW_CHECKS", "true")
-            .set_profile_env("PANIC", "abort")
-            .env("RUSTFLAGS", "-Zprofile -Clink-dead-code")
-            .env("CARGO_INCREMENTAL", "0")
+            .env("RUSTFLAGS", "-Zinstrument-coverage")
+            .env(
+                "LLVM_PROFILE_FILE",
+                project_root
+                    .as_ref()
+                    .join("target")
+                    .join("coverage")
+                    .join("raw")
+                    .join("coverage-%p-%m.profraw"),
+            )
             .args(&self.args);
         info!({ ?command }, "running");
 
@@ -91,19 +94,6 @@ impl Collect {
         }
 
         Ok(())
-    }
-}
-
-trait MutateCargoProfiles {
-    fn set_profile_env(&mut self, suffix: &str, value: &str) -> &mut Self;
-}
-
-impl MutateCargoProfiles for Command {
-    fn set_profile_env(&mut self, suffix: &str, value: &str) -> &mut Self {
-        for profile in &["dev", "release", "test", "bench"] {
-            self.env(format!("CARGO_PROFILE_{}_{}", profile, suffix), value);
-        }
-        self
     }
 }
 
@@ -118,7 +108,12 @@ impl Report {
         info!("parsing coverage for html report...");
         let results = parse_coverage(&source_root);
         info!("generating html report...");
-        grcov::output_html(results, Some(&*output.join("html").to_string_lossy()), 4);
+        grcov::output_html(
+            results,
+            Some(&*output.join("html").to_string_lossy()),
+            4,
+            false, /* branch_enabled */
+        );
 
         info!("parsing coverage for lcov report...");
         let results = parse_coverage(&source_root);
@@ -130,7 +125,9 @@ impl Report {
 
 fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
     let source_root = source_root.as_ref().to_owned();
-    let paths = [source_root.join("target").join("coverage").to_string_lossy().to_string()];
+    let binary_path = source_root.join("target").join("debug");
+    let paths =
+        [source_root.join("target").join("coverage").join("raw").to_string_lossy().to_string()];
     let guess_directory = false;
     let ignore_not_existing = true;
     let is_llvm = true;
@@ -190,6 +187,7 @@ fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
             receiver,
             branch_enabled,
             guess_directory,
+            &Some(binary_path),
         );
     });
     producer.join().expect("producer exits cleanly");
@@ -209,6 +207,7 @@ fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
         Some(prefix_dir),
         ignore_not_existing,
         &mut to_ignore_dirs,
+        &[], /*to_keep_dirs*/
         filter_option,
         grcov::FileFilter::new(None, None, None, None, None, None),
     )

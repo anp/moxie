@@ -48,6 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup component add llvm-tools-preview
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
