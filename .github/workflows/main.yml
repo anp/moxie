@@ -185,6 +185,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup component add rustfmt
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
