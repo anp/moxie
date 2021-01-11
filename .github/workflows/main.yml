@@ -33,6 +33,7 @@ jobs:
           ~/.cargo/registry
           ofl/target/release
     - run: cargo build --release
+      working-directory: ofl
     - run: cargo test --release
       working-directory: ofl
     - uses: actions/upload-artifact@v2
