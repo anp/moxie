@@ -1,17 +1,12 @@
 use anyhow::{Context, Error};
 use cargo_metadata::{Metadata, Package, PackageId};
 use git2::{ObjectType, Repository, Signature};
-use std::{
-    collections::BTreeMap,
-    path::Path,
-    process::{Command, Output},
-};
+use std::{collections::BTreeMap, path::Path};
 use tracing::info;
 
 pub struct Workspace {
     pub metadata: Metadata,
     pub ofl_metadata: Metadata,
-    pub rustfmt_toolchain: String,
     pub repo: Repository,
 }
 
@@ -22,7 +17,6 @@ impl Workspace {
         Ok(Self {
             metadata: metadata_for_directory(project_root)?,
             ofl_metadata: metadata_for_directory(project_root.join("ofl"))?,
-            rustfmt_toolchain: rustfmt_toolchain(project_root),
             repo: Repository::open(project_root)?,
         })
     }
@@ -33,17 +27,6 @@ impl Workspace {
 
     pub fn ofl_members(&self) -> Vec<PackageId> {
         local_metadata_members_reverse_topo(&self.ofl_metadata)
-    }
-
-    pub fn ensure_rustfmt_toolchain(&self) -> Result<Output, Error> {
-        Ok(Command::new("rustup")
-            .arg("toolchain")
-            .arg("install")
-            .arg("--component")
-            .arg("rustfmt")
-            .arg("--force")
-            .arg(&self.rustfmt_toolchain)
-            .output()?)
     }
 
     /// Returns a list of all crates which express a dependency upon `id` in
@@ -74,24 +57,6 @@ impl Workspace {
         info!({ %name, %message, %tag }, "created tag");
         Ok(())
     }
-}
-
-/// Find which rustfmt we should use, falling back to the version in
-/// rust-toolchain if need be.
-fn rustfmt_toolchain(project_root: &Path) -> String {
-    for dir in project_root.ancestors() {
-        if let Ok(tc) = std::fs::read_to_string(dir.join("rustfmt-toolchain")) {
-            return tc;
-        }
-    }
-
-    for dir in project_root.ancestors() {
-        if let Ok(tc) = std::fs::read_to_string(dir.join("rust-toolchain")) {
-            return tc;
-        }
-    }
-
-    panic!("couldn't find either a rustfmt-toolchain or a rust-toolchain file");
 }
 
 fn metadata_for_directory(dir: impl AsRef<Path>) -> Result<Metadata, Error> {
