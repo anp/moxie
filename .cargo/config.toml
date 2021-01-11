@@ -20,7 +20,6 @@ clippy-core = """clippy
 --package illicit
 --package illicit-macro
 --package mox
---package mox-impl
 --package moxie
 --package topo
 --package topo-macro
@@ -30,7 +29,6 @@ test-core = """test --all-targets
 --package illicit
 --package illicit-macro
 --package mox
---package mox-impl
 --package moxie
 --package topo
 --package topo-macro
@@ -40,7 +38,6 @@ test-core-doc = """test --doc
 --package illicit
 --package illicit-macro
 --package mox
---package mox-impl
 --package moxie
 --package topo
 --package topo-macro
