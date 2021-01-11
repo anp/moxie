@@ -207,6 +207,7 @@ jobs:
     - run: cargo clippy-dom
 
   publish:
+    if: github.ref == 'refs/heads/main'
     needs: [clippy, coverage, dom, fmt, ofl, website]
     runs-on: ubuntu-latest
     steps:
@@ -223,7 +224,6 @@ jobs:
         name: website
         path: target/website
     - name: promote website to prod, ensure crates published
-      if: github.ref == 'refs/heads/main'
       run: |
         npx netlify-cli deploy --prod --auth ${{ secrets.NETLIFY_AUTH_TOKEN }}
         cargo login ${{ secrets.CARGO_API_TOKEN }}
