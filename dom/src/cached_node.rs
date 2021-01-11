@@ -13,23 +13,24 @@ use std::{
 /// wrappers. Offers a "stringly-typed" API for mutating the contained DOM
 /// nodes, adhering fairly closely to the upstream web specs.
 pub struct CachedNode {
+    id: topo::CallId,
     last_child: Cell<Option<Node>>,
     node: Node,
 }
 
 impl CachedNode {
+    #[topo::nested]
     pub(crate) fn new(node: Node) -> Self {
-        Self { last_child: Cell::new(None), node }
+        Self { node, last_child: Cell::new(None), id: topo::CallId::current() }
     }
 
     pub(crate) fn raw_node(&self) -> &Node {
         &self.node
     }
 
-    // TODO make `self` a slot too so we can remove topo::call from mox
     // TODO accept PartialEq+ToString implementors
-    #[topo::nested(slot = "name")]
-    pub(crate) fn set_attribute(&self, name: &str, value: &str) {
+    #[topo::nested(slot = "&(self.id, name)")]
+    pub(crate) fn set_attribute(&self, name: &'static str, value: &str) {
         cache_with(
             value,
             |v| {

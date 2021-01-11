@@ -48,7 +48,6 @@ members = [
     "illicit/macro",
     "macros",
     "mox",
-    "mox/impl",
     "topo",
     "topo/macro",
 ]

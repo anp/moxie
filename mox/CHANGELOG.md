@@ -7,6 +7,16 @@
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.12.0] - 2021-01-11
+
+### Changed
+
+- `mox-impl` is no longer being published and its contents are included directly in this crate.
+
+### Removed
+
+- Dependency on `topo`.
+
 ## [0.11.0] - 2021-01-10
 
 ### Added

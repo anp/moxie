@@ -21,7 +21,7 @@ pub trait ElementBuilder: crate::interfaces::node::NodeWrapper {
     /// removes the attribute when `drop`ped, to ensure that the attribute
     /// is removed when this declaration is no longer referenced in the most
     /// recent (`moxie::Revision`).
-    fn attribute(self, name: &str, value: impl AsRef<str>) -> Self {
+    fn attribute(self, name: &'static str, value: impl AsRef<str>) -> Self {
         self.node().set_attribute(name, value.as_ref());
         self
     }
