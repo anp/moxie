@@ -7,7 +7,7 @@
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.12.0] - 2021-01-11
+## [0.12.0] - 2021-02-01
 
 ### Changed
 
