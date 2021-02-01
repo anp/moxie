@@ -2208,7 +2208,7 @@ checksum = "b89c3ce4ce14bdc6fb6beaf9ec7928ca331de5df7e5ea278375642a2f478570d"
 [[package]]
 name = "wasm-pack"
 version = "0.9.1"
-source = "git+https://github.com/anp/wasm-pack.git?branch=apple-silicon-rosetta#c2fd041a0227e3210244bcd67a3dbf67e0f4dad5"
+source = "git+https://github.com/anp/wasm-pack.git?branch=apple-silicon-rosetta#11b9eaa8c2b81b70e9e9b29f26aeb759fed04b3b"
 dependencies = [
  "atty",
  "binary-install",
