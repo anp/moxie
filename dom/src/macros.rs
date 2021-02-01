@@ -37,7 +37,6 @@ macro_rules! attr_method {
         $publicity:vis $attr:ident(bool)
     ) => {
         $(#[$outer])*
-        #[topo::nested]
         $publicity fn $attr(self, to_set: bool) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::ElementBuilder;
@@ -62,7 +61,6 @@ macro_rules! attr_method {
         $publicity:vis $attr:ident($arg:ty)
     ) => {
         $(#[$outer])*
-        #[topo::nested]
         $publicity fn $attr(self, to_set: $arg) -> Self {
             #[allow(unused)]
             use crate::interfaces::element::ElementBuilder;
