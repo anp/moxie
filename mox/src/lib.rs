@@ -20,9 +20,7 @@ use syn_rsx::{NodeName, NodeType};
 ///
 /// ## Tags
 ///
-/// Each tag expands to a function call with the same name as the tag. The
-/// function call, all attributes, and children are wrapped in [`topo::call`] to
-/// create a nested scope in the callgraph.
+/// Each tag expands to a function call with the same name as the tag.
 ///
 /// Each attribute expands to a method called on the value returned from the tag
 /// opening or the previous attribute. The attribute name is used as the method
