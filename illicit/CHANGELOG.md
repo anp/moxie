@@ -4,6 +4,18 @@ The [illicit](https://docs.rs/illicit) crate provides type-indexed thread-local 
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [1.1.2] - 2021-02-01
+
+### Changed
+
+- Internal refactors to reduce code size.
+
+## [1.1.1] - 2020-08-20
+
+### Added
+
+- Guard returned from `get()` impls `Debug`.
+
 ## [1.1.0] - 2020-07-12
 
 ### Added
@@ -19,7 +31,7 @@ Commiting to the current API for future `1.*` releases.
 ### Added
 
 - `impl From<Snapshot> for Layer` allows reusing collected snapshots.
- 
+
 ### Removed
 
 - `#![feature(track_caller)]` (requires >= nightly-2020-07-02 until 1.46 is beta/stable)

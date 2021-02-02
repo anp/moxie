@@ -6,6 +6,12 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.13.2] - 2021-02-01
+
+### Changed
+
+- Internal refactors to reduce code size.
+
 ## [0.13.1] - 2020-12-28
 
 ### Added
