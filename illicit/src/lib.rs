@@ -403,18 +403,22 @@ impl Layer {
         self
     }
 
-    /// Call `child_fn` with this layer as the local environment.
-    pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
-        let _reset_when_done_please = CURRENT_SCOPE.with(|parent| {
+    #[inline(never)]
+    fn make_guard(self) -> impl Drop {
+        CURRENT_SCOPE.with(|parent| {
             let mut parent = parent.borrow_mut();
             let parent = replace(&mut *parent, self);
 
             scopeguard::guard(parent, move |prev| {
                 CURRENT_SCOPE.with(|p| p.replace(prev));
             })
-        });
+        })
+    }
 
-        // call this out here so these calls can be nested
+    /// Call `child_fn` with this layer as the local environment.
+    #[inline(always)]
+    pub fn enter<R>(self, child_fn: impl FnOnce() -> R) -> R {
+        let _reset_when_done_please = self.make_guard();
         child_fn()
     }
 }

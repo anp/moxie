@@ -177,6 +177,7 @@ mod slot;
 /// // but when they're siblings under a single call, they produce distinct results
 /// call(|| assert_ne!(get_list_of_ids(), get_list_of_ids(), "siblings don't match"));
 /// ```
+#[inline(always)]
 #[track_caller]
 pub fn call<F, R>(op: F) -> R
 where
@@ -187,7 +188,7 @@ where
 
     let callsite = Callsite::here();
     let count = CallCount(callsite.current_count());
-    Scope::with_current(|p| p.enter_child(callsite, &count, op))
+    Scope::with_current(|p| p.make_child(callsite, &count)).enter(op)
 }
 
 /// Calls the provided function as a child of [`CallId::current`], using `slot`
@@ -264,7 +265,7 @@ where
     Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
     S: Borrow<Q> + Eq + Hash + Send + 'static,
 {
-    Scope::with_current(|p| p.enter_child(Callsite::here(), slot, op))
+    Scope::with_current(|p| p.make_child(Callsite::here(), slot)).enter(op)
 }
 
 /// Calls the provided function as the root of a new call tree, ignoring the
@@ -480,10 +481,11 @@ struct Scope {
 }
 
 impl Scope {
-    /// Mark a child Point in the topology, calling `child` within it.
-    fn enter_child<C, Q, R, S>(&self, callsite: Callsite, slot: &Q, child: C) -> R
+    /// Mark a child Point in the topology, returning an illicit layer which will reference the new
+    /// point when entered.
+    #[inline(never)] // this is only called by functions with more generic args than this one
+    fn make_child<Q, S>(&self, callsite: Callsite, slot: &Q) -> illicit::Layer
     where
-        C: FnOnce() -> R,
         Q: Eq + Hash + ToOwned<Owned = S> + ?Sized,
         S: Borrow<Q> + Eq + Hash + Send + 'static,
     {
@@ -493,7 +495,7 @@ impl Scope {
             callsite_counts: RefCell::new(Default::default()),
             id: self.id.child(callsite, slot),
         };
-        illicit::Layer::new().offer(child_point).enter(child)
+        illicit::Layer::new().offer(child_point)
     }
 
     /// Runs the provided closure with access to the current [`Point`].
