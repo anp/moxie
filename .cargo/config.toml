@@ -131,4 +131,4 @@ docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"
 # honk
 
 honk = "run --manifest-path honk/Cargo.toml --release --"
-honk-flow = "watch -w honk/src -w Cargo.toml -x honk"
+honk-flow = "watch --clear -w honk/src -w Cargo.toml -x honk"

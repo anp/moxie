@@ -1,20 +1,20 @@
-use codemap::CodeMap;
 use color_eyre::eyre::Result;
 use starlark::{
-    environment::{Environment, TypeValues},
-    eval::{EvalException, FileLoader},
+    environment::FrozenModule,
+    environment::{Globals, Module},
+    eval::{Evaluator, FileLoader},
+    syntax::{AstModule, Dialect},
 };
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
 };
 use tracing::{debug, error, info, instrument, warn};
 
-mod builtins;
+// mod builtins;
 mod error;
 mod vfs;
 
-use error::{Error, EvalError};
+use error::{Error};
 use vfs::Vfs;
 
 pub struct Workspace {
@@ -23,24 +23,14 @@ pub struct Workspace {
 
     /// Tracks changes to files we've read.
     vfs: Vfs,
-
-    codemap: Arc<Mutex<CodeMap>>,
-    type_values: TypeValues,
 }
 
 impl Workspace {
     /// The asset path used to resolve the root of a honk workspace.
-    const ASSET_PATH: &'static str = "//workspace.honk";
+    const ASSET_PATH: &'static str = "workspace.honk";
 
     pub fn new(root: impl AsRef<Path>) -> Self {
-        let codemap = Arc::new(Mutex::new(CodeMap::new()));
-
-        let (mut throwaway_env, mut type_values) =
-            starlark::stdlib::global_environment_with_extensions();
-        // TODO figure out how to do this once instead of here *and* below in `load()`?
-        builtins::register(&mut throwaway_env, &mut type_values);
-
-        Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new(), codemap, type_values }
+        Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new() }
     }
 
     pub fn maintain(self) -> Result<()> {
@@ -57,9 +47,7 @@ impl Workspace {
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
     fn converge(&self) -> Result<(), Error> {
         debug!("constructing workspace env");
-        let _workspace_env = self
-            .load(Self::ASSET_PATH, &self.type_values)
-            .map_err(|e| EvalError::from_exception(e, self.codemap.clone()))?;
+        let _workspace_env = self.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
         warn!("TODO display discovered targets");
 
@@ -68,9 +56,13 @@ impl Workspace {
     }
 }
 
+struct Revision {
+    modules: (),
+}
+
 impl FileLoader for Workspace {
-    #[instrument(skip(self, type_values))]
-    fn load(&self, path: &str, type_values: &TypeValues) -> Result<Environment, EvalException> {
+    #[instrument(skip(self))]
+    fn load(&self, path: &str) -> anyhow::Result<FrozenModule> {
         // TODO smarter way to resolve assets etc
         // TODO handle relative paths somehow?
         let file = self.root.join(path.strip_prefix("//").unwrap_or(path));
@@ -80,22 +72,20 @@ impl FileLoader for Workspace {
         let root_contents =
             std::str::from_utf8(&*root_contents).expect("TODO pass errors back correctly here");
 
-        let (mut env, mut throwaway_tvs) = starlark::stdlib::global_environment_with_extensions();
-        // TODO figure out how to do this once instead of here *and* above in `new()`?
-        builtins::register(&mut env, &mut throwaway_tvs);
+        let root_module = std::fs::read_to_string(Self::ASSET_PATH)?;
 
-        debug!("evaluating");
-        starlark::eval::eval(
-            &self.codemap,
-            &file.to_string_lossy(),
-            &root_contents,
-            // TODO do we ever want to restrict function definitions?
-            starlark::syntax::dialect::Dialect::Bzl,
-            &mut env,
-            type_values,
-            self,
-        )?;
+        let ast: AstModule =
+            AstModule::parse(Self::ASSET_PATH, root_module, &Dialect::Standard)?;
 
-        Ok(env)
+        let globals: Globals = Globals::default();
+
+        // TODO register our builtins as globals
+
+        let module: Module = Module::new();
+        let mut eval: Evaluator = Evaluator::new(&module, &globals);
+        eval.set_loader(self);
+        let _res = eval.eval_module(ast)?;
+
+        Ok(module.freeze())
     }
 }
