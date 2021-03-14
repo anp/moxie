@@ -2,6 +2,8 @@ use anyhow::{Context, Error};
 use gumdrop::Options;
 use mdbook::MDBook;
 use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -62,7 +64,17 @@ impl DistOpts {
             let parent = destination.parent().unwrap();
             std::fs::create_dir_all(&parent)
                 .with_context(|| format!("creating {}", parent.display()))?;
-            std::fs::copy(&path, &destination).with_context(|| {
+
+            // note: can't use std::fs::copy here because it generates filesystem notifs
+            // see https://github.com/notify-rs/notify/issues/259
+            let mut src = BufReader::new(
+                File::open(&path).with_context(|| format!("opening {}", path.display()))?,
+            );
+            let mut dst = BufWriter::new(
+                File::create(&destination)
+                    .with_context(|| format!("creating {}", destination.display()))?,
+            );
+            std::io::copy(&mut src, &mut dst).with_context(|| {
                 format!("copying {} to {}", path.display(), destination.display())
             })?;
         }
