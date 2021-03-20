@@ -52,6 +52,24 @@ pub trait Child: Sized {
     }
 }
 
+// TODO: Does anything else need to implement this?
+/// A builder for DOM nodes
+pub trait NodeBuilder {
+    /// The type of the DOM node
+    type Target;
+
+    /// Build, returning the output.
+    fn build(self) -> Self::Target;
+}
+
+impl<'a> NodeBuilder for Text {
+    type Target = Text;
+
+    fn build(self) -> Self::Target {
+        self
+    }
+}
+
 /// Allows values which `impl Display` to be used directly as `mox!` children,
 /// converting them into text nodes. Can be implemented for your type.
 pub trait TextChild: Sized {
@@ -84,8 +102,8 @@ where
 /// custom components to be bound directly to DOM types.
 pub trait Parent<C: Child>: NodeWrapper {
     /// Add a child to this node.
-    fn child(self, child: C) -> Self {
-        self.node().ensure_child_attached(child.to_bind());
+    fn child<T: NodeBuilder<Target = C>>(self, child: T) -> Self {
+        self.node().ensure_child_attached(child.build().to_bind());
         self
     }
 }

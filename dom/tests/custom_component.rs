@@ -2,6 +2,7 @@ use augdom::testing::{Query, TargetExt};
 use mox::mox;
 use moxie_dom::{
     elements::html::{button, div},
+    interfaces::node::NodeBuilder,
     prelude::*,
 };
 use wasm_bindgen_test::*;
@@ -38,9 +39,13 @@ impl CounterBuilder {
         self.text = Some(text.to_string());
         self
     }
+}
+
+impl NodeBuilder for CounterBuilder {
+    type Target = Counter;
 
     #[topo::nested]
-    pub fn build(self) -> Counter {
+    fn build(self) -> Counter {
         let Self { text, default_value } = self;
         let (value, set_value) = state(|| default_value.unwrap_or(0));
         let text = text.unwrap_or_default();

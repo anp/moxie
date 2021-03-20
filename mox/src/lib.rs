@@ -12,11 +12,11 @@ use syn::{
 };
 use syn_rsx::{NodeName, NodeType};
 
-/// Accepts an XML-like expression and expands it to builder method calls.
+/// Accepts an XML-like expression and expands it to method calls.
 ///
 /// # Outputs
 ///
-/// The `mox!` macro's contents are expanded to a nested builder pattern.
+/// The `mox!` macro's contents are expanded to function calls, with `.build()` called on the outmost expression.
 ///
 /// ## Tags
 ///
@@ -29,8 +29,6 @@ use syn_rsx::{NodeName, NodeType};
 /// A tag with children has each child passed as the argument to a call to
 /// `.child(...)`, one per child in order of declaration. The calls to `child`
 /// come after attributes.
-///
-/// After all attributes and children, `.build()` is called on the final value.
 ///
 /// ## Fragments
 ///
@@ -108,8 +106,8 @@ use syn_rsx::{NodeName, NodeType};
 ///         self
 ///     }
 ///
-///     fn child(mut self, child: Tag) -> Self {
-///         self.children.push(child);
+///     fn child(mut self, child: TagBuilder) -> Self {
+///         self.children.push(child.build());
 ///         self
 ///     }
 ///
@@ -136,7 +134,7 @@ use syn_rsx::{NodeName, NodeType};
 #[proc_macro]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let item = parse_macro_input!(input as MoxItem);
-    quote!(#item).into()
+    quote!(#item .build()).into()
 }
 
 enum MoxItem {
@@ -270,7 +268,7 @@ impl ToTokens for MoxTag {
             }
         }
 
-        quote!({ #name() #contents .build() }).to_tokens(tokens);
+        quote!({ #name() #contents }).to_tokens(tokens);
     }
 }
 

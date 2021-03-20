@@ -122,6 +122,7 @@ jobs:
     - run: cargo test-dom-lib-browser
     - run: cargo test-dom-counter-fn
     - run: cargo test-dom-counter-struct
+    - run: cargo test-dom-dom-builder
     - run: cargo test-dom-hacking
     - run: cargo test-dom-todo
     - run: cargo test-dom-drivertest
@@ -167,6 +168,7 @@ jobs:
 
     - run: cargo build-dom-counter-fn
     - run: cargo build-dom-counter-struct
+    - run: cargo build-dom-dom-builder
     - run: cargo build-dom-hacking
     - run: cargo build-dom-todo
     - run: cargo docs-all
