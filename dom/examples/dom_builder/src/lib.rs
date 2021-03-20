@@ -9,16 +9,8 @@ pub fn boot(root: moxie_dom::raw::sys::Node) {
         let decrementer = incrementer.clone();
 
         div()
-            .child(
-                button()
-                    .onclick(move |_| decrementer.mutate(|count| *count -= 1))
-                    .child("-".into_child()),
-            )
-            .child(count.into_child())
-            .child(
-                button()
-                    .onclick(move |_| incrementer.mutate(|count| *count += 1))
-                    .child("+".into_child()),
-            )
+            .child(button().onclick(move |_| decrementer.mutate(|count| *count -= 1)).child("-"))
+            .child(count)
+            .child(button().onclick(move |_| incrementer.mutate(|count| *count += 1)).child("+"))
     });
 }

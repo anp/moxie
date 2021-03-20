@@ -67,9 +67,6 @@ use syn_rsx::{NodeName, NodeType};
 /// Each child can be either another tag, a Rust literal, or a Rust block (an
 /// expression wrapped in `{` and `}`).
 ///
-/// Literals and expressions have `.into_child()` appended to them before being
-/// passed to `.child(...)`.
-///
 /// Block expressions can optionally be opened with `{%` to denote a "formatter"
 /// item. The enclosed tokens are passed to the `format_args!` macro.
 ///
@@ -364,10 +361,11 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
     }
 }
 
+// TODO: This produces a warning about unneccessary brackets
 impl ToTokens for MoxExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self { expr } = self;
-        quote!(#expr.into_child()).to_tokens(tokens);
+        quote!(#expr).to_tokens(tokens);
     }
 }
 

@@ -44,15 +44,8 @@ pub trait NodeWrapper: sealed::Memoized + Sized {
 pub trait Child: Sized {
     /// Returns the "raw" node for this child to bind to its parent.
     fn to_bind(&self) -> &augdom::Node;
-
-    /// Identity transform used to satisfy `mox!`'s syntax contract for a value
-    /// to be used directly as a child.
-    fn into_child(self) -> Self {
-        self
-    }
 }
 
-// TODO: Does anything else need to implement this?
 /// A builder for DOM nodes
 pub trait NodeBuilder {
     /// The type of the DOM node
@@ -62,27 +55,14 @@ pub trait NodeBuilder {
     fn build(self) -> Self::Target;
 }
 
-impl<'a> NodeBuilder for Text {
+// TODO: Better way of defining these, rather than Display
+impl<T> NodeBuilder for T
+where
+    T: Display,
+{
     type Target = Text;
 
     fn build(self) -> Self::Target {
-        self
-    }
-}
-
-/// Allows values which `impl Display` to be used directly as `mox!` children,
-/// converting them into text nodes. Can be implemented for your type.
-pub trait TextChild: Sized {
-    /// Wrap self into the `text` node
-    fn into_child(self) -> Text;
-}
-
-impl<T> TextChild for T
-where
-    T: Display + Sized,
-{
-    fn into_child(self) -> Text {
-        // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
         text(format!("{}", self))
     }
 }
