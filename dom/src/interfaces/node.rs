@@ -55,7 +55,6 @@ pub trait NodeBuilder {
     fn build(self) -> Self::Target;
 }
 
-// TODO: Better way of defining these, rather than Display
 impl<T> NodeBuilder for T
 where
     T: Display,
@@ -63,6 +62,7 @@ where
     type Target = Text;
 
     fn build(self) -> Self::Target {
+        // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
         text(format!("{}", self))
     }
 }
