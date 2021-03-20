@@ -16,7 +16,7 @@ use syn_rsx::{NodeName, NodeType};
 ///
 /// # Outputs
 ///
-/// The `mox!` macro's contents are expanded to function calls, with `.build()` called on the outmost expression.
+/// The `mox!` macro's contents are expanded to method calls, with `.build()` called on the outmost expression.
 ///
 /// ## Tags
 ///
