@@ -14,7 +14,6 @@ wasm-opt = false
 crate-type = [ "cdylib" ]
 
 [dependencies]
-mox = { path = "../../../mox" }
 moxie = { path = "../../.." }
 moxie-dom = { path = "../../" }
 wasm-bindgen = "0.2"
