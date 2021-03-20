@@ -342,8 +342,9 @@ impl ToTokens for MoxAttr {
     }
 }
 
-struct MoxExpr {
-    expr: syn::Expr,
+enum MoxExpr {
+    Text(syn::Expr),
+    Block(syn::Expr),
 }
 
 impl TryFrom<syn_rsx::Node> for MoxExpr {
@@ -356,16 +357,18 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
             | NodeType::Comment
             | NodeType::Doctype
             | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-            NodeType::Text | NodeType::Block => Ok(MoxExpr { expr: node.value.unwrap() }),
+            NodeType::Text => Ok(MoxExpr::Text(node.value.unwrap())),
+            NodeType::Block => Ok(MoxExpr::Block(node.value.unwrap())),
         }
     }
 }
 
-// TODO: This produces a warning about unneccessary brackets
 impl ToTokens for MoxExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { expr } = self;
-        quote!(#expr).to_tokens(tokens);
+        match self {
+            MoxExpr::Text(expr) => expr.to_tokens(tokens),
+            MoxExpr::Block(block) => quote!(#[allow(unused_braces)] #block).to_tokens(tokens),
+        }
     }
 }
 
