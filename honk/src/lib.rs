@@ -9,9 +9,11 @@ use tracing::{debug, error, info, instrument, warn};
 
 pub mod builtins;
 pub mod error;
+pub mod revision;
 pub mod vfs;
 
 use error::Error;
+use revision::Revision;
 use vfs::Vfs;
 
 pub(crate) type Result<T> = color_eyre::eyre::Result<T, Error>;
@@ -46,7 +48,8 @@ impl Workspace {
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
     fn converge(&mut self) -> crate::Result<()> {
         debug!("constructing workspace env");
-        let _workspace_env = self.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
+        let mut loader = RevisionLoader(self, Revision::default());
+        let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
         warn!("TODO display discovered targets");
 
@@ -55,16 +58,18 @@ impl Workspace {
     }
 }
 
-impl FileLoader for Workspace {
+struct RevisionLoader<'w>(&'w Workspace, Revision);
+
+impl<'w> FileLoader for RevisionLoader<'w> {
     #[instrument(skip(self))]
     fn load(&mut self, path: &str) -> anyhow::Result<FrozenModule> {
         // TODO smarter way to resolve assets etc
         // TODO handle relative paths somehow?
         let path = path.strip_prefix("//").unwrap_or(path);
-        let file = self.root.join(path);
+        let file = self.0.root.join(path);
         debug!(file = %file.display(), "loading");
 
-        let root_contents = self.vfs.read(&file)?;
+        let root_contents = self.0.vfs.read(&file)?;
         let root_contents = std::str::from_utf8(&*root_contents)?;
 
         let ast: AstModule = AstModule::parse(path, root_contents.to_string(), &Dialect::Standard)?;
@@ -77,9 +82,27 @@ impl FileLoader for Workspace {
         let module: Module = Module::new();
         let mut eval: Evaluator = Evaluator::new(&module, &globals);
         eval.disable_gc(); // we're going to drop this right away
+
+        let revision = self.1.clone();
+        eval.set_revision(&revision);
         eval.set_loader(self);
         let _res = eval.eval_module(ast)?;
 
         Ok(module.freeze())
+    }
+}
+
+pub trait EvaluatorExt<'r> {
+    fn set_revision(&mut self, revision: &'r Revision);
+    fn revision(&self) -> &'r Revision;
+}
+
+impl<'a> EvaluatorExt<'a> for Evaluator<'_, 'a> {
+    fn set_revision(&mut self, revision: &'a Revision) {
+        self.extra = Some(revision);
+    }
+
+    fn revision(&self) -> &'a Revision {
+        self.extra.clone().unwrap().downcast_ref().unwrap()
     }
 }
