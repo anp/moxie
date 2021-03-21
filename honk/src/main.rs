@@ -17,5 +17,5 @@ fn main() -> color_eyre::eyre::Result<()> {
     tracing::subscriber::set_global_default(subscriber)?;
     color_eyre::install()?;
     let HonkCli { workspace } = argh::from_env();
-    Workspace::new(workspace).maintain()
+    Ok(Workspace::new(workspace).maintain()?)
 }

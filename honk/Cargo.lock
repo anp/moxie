@@ -764,10 +764,13 @@ dependencies = [
  "argh",
  "color-eyre",
  "crossbeam-channel",
+ "gazebo",
  "glob",
  "memofs",
+ "once_cell",
  "serde_json",
  "starlark",
+ "starlark_module",
  "thiserror",
  "tracing",
  "tracing-error",
@@ -1560,7 +1563,7 @@ checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
 [[package]]
 name = "starlark"
 version = "0.4.0-pre"
-source = "git+https://github.com/facebookexperimental/starlark-rust?rev=3bb2016#3bb20164a18f1e0fe65ba9cfc4c5bbfc7f41f621"
+source = "git+https://github.com/facebookexperimental/starlark-rust?rev=8a8523f#8a8523fc4d7700cdea6cf8a31a56d29ee7be4764"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -1596,7 +1599,7 @@ dependencies = [
 [[package]]
 name = "starlark_module"
 version = "0.4.0-pre"
-source = "git+https://github.com/facebookexperimental/starlark-rust?rev=3bb2016#3bb20164a18f1e0fe65ba9cfc4c5bbfc7f41f621"
+source = "git+https://github.com/facebookexperimental/starlark-rust?rev=8a8523f#8a8523fc4d7700cdea6cf8a31a56d29ee7be4764"
 dependencies = [
  "gazebo",
  "proc-macro2",

@@ -1,19 +1,16 @@
-use starlark::environment::{Environment, TypeValues};
+/// To be invoked inside of an `impl TypedValue<'_> for Foo { ... }` item. Expands to an
+/// implementation of the `get_members()` method.
+macro_rules! declare_members {
+    ($register:ident) => {
+        fn get_members(&self) -> Option<&'static starlark::environment::Globals> {
+            use once_cell::sync::Lazy;
+            use starlark::environment::{Globals, GlobalsBuilder};
 
-// TODO delete this
-macro_rules! starlark_module {
-    ($($tok:tt)+) => {
-        // TODO submit an upstream patch to use $crate in all these macros
-        use starlark::{
-            starlark_fun,
-            starlark_module as raw_starlark_module,
-            starlark_parse_param_type,
-            starlark_signature,
-            starlark_signature_extraction,
-            starlark_signatures,
-        };
+            static MEMBERS: Lazy<Globals> =
+                Lazy::new(|| GlobalsBuilder::new().with($register).build());
 
-        raw_starlark_module! {$($tok)+}
+            Some(&*MEMBERS)
+        }
     };
 }
 
@@ -23,10 +20,10 @@ pub mod json;
 pub mod path;
 pub mod target;
 
-pub fn register(env: &mut Environment, tvs: &mut TypeValues) {
-    command::globals(env, tvs);
-    formatter::globals(env, tvs);
-    json::globals(env, tvs);
-    path::globals(env, tvs);
-    target::globals(env, tvs);
+pub fn register(globals: &mut starlark::environment::GlobalsBuilder) {
+    command::register(globals);
+    formatter::register(globals);
+    json::register(globals);
+    path::register(globals);
+    target::register(globals);
 }

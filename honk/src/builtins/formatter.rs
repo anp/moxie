@@ -1,9 +1,10 @@
-use crate::builtins::command::Command;
-use starlark::values::{none::NoneType, Value};
+use crate::builtins::command::RefHonkCommand;
+use starlark::{environment::GlobalsBuilder, values::none::NoneType};
 
-starlark_module! { globals =>
-    formatter(name: String, command: Command) {
-        tracing::warn!(%name, ?command, "TODO implement formatters");
-        Ok(Value::new(NoneType::None))
+#[starlark_module::starlark_module]
+pub fn register(globals: &mut GlobalsBuilder) {
+    fn formatter(name: String, command: RefHonkCommand) -> NoneType {
+        tracing::warn!(%name, command = %&*command, "TODO implement formatters");
+        Ok(NoneType)
     }
 }

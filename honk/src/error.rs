@@ -1,8 +1,6 @@
+use crate::builtins::command::Output;
 use starlark::values::ValueError;
-use std::{
-    path::PathBuf,
-    str::Utf8Error,
-};
+use std::{path::PathBuf, str::Utf8Error, string::FromUtf8Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -12,14 +10,14 @@ pub enum Error {
         source: std::io::Error,
     },
 
-    #[error("starlark error")]
+    #[error("starlark error:\n{0}")]
     StarlarkError(#[source] anyhow::Error),
 
-    // #[error("failed to run command: {0:#?}")]
-    // CommandFailed(Output),
+    #[error("failed to run command: {0:#?}")]
+    CommandFailed(Output),
 
-    // #[error("`{command}` returned non utf-8: {source}")]
-    // StdoutEncoding { source: FromUtf8Error, command: String},
+    #[error("`{command}` returned non utf-8: {source}")]
+    StdoutEncoding { source: FromUtf8Error, command: String },
 
     #[error("error handling JSON: {source}")]
     JsonError {

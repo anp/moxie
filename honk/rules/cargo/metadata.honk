@@ -45,11 +45,13 @@ def rust_files_in_target(manifest_path, target):
     else:
         files.append(target.src_path)
 
-    return set(files)
+    # FIXME restore set() call here
+    return list(files)
 
 
 def rust_files_in_package(package):
-    files = set()
+    # FIXME restore set() call here
+    files = list()
     for target in package.targets:
         files += rust_files_in_target(package.manifest_path, target)
     return files
@@ -148,6 +150,6 @@ def cargo_metadata(manifest):
     metadata = _metadata_dict_to_struct(decoded)
 
     if metadata.version != requested_version:
-        fail(msg="Got metadata v" + version + ", expected v" + requested_version)
+        fail(msg="Got metadata v" + metadata.version + ", expected v" + requested_version)
 
     return metadata

@@ -1,64 +1,45 @@
-use starlark::values::{error::ValueError, list::List, none::NoneType, TypedValue, Value};
+use starlark::{
+    environment::GlobalsBuilder,
+    starlark_immutable_value, starlark_type,
+    values::{list::List, AllocValue, Heap, TypedValue, Value},
+};
+use starlark_module::starlark_module;
 use std::{
     hash::{Hash, Hasher},
     path::PathBuf,
 };
 
-starlark_module! { globals =>
-    honk_root() {
-        // TODO handle error here
-        Ok(Value::new(honk_root_impl()))
+#[starlark_module]
+pub fn register(builder: &mut GlobalsBuilder) {
+    fn honk_root() -> HonkPath {
+        Ok(honk_root_impl())
     }
 
-    path(p: String) {
-        Ok(Value::new(Path::new(p)))
-    }
-
-    Path.exists(this: Path) {
-        Ok(Value::new(this.exists()))
-    }
-
-    Path.parent(this: Path) {
-        Ok(opt_typed_val(this.parent()))
-    }
-
-    Path.filename(this: Path) {
-        Ok(opt_typed_val(this.filename()))
-    }
-
-    Path.join(this: Path, to_join: String) {
-        Ok(Value::new(this.join(&to_join)))
-    }
-
-    Path.canonicalize(this: Path) {
-        Ok(Value::new(this.canonicalize()))
-    }
-
-    Path.glob(this: Path, pattern: String) {
-        Ok(Value::new(this.globs(&[pattern])))
-    }
-
-    Path.globs(this: Path, patterns: Vec<String>) {
-        Ok(Value::new(this.globs(&patterns)))
+    fn path(p: &str) -> HonkPath {
+        Ok(HonkPath::new(p))
     }
 }
 
-fn honk_root_impl() -> Path {
+fn honk_root_impl() -> HonkPath {
     // FIXME get this from the CLI arg
-    Path { inner: std::env::current_dir().unwrap() }
+    HonkPath { inner: std::env::current_dir().unwrap() }
 }
 
-fn opt_typed_val(v: Option<impl TypedValue>) -> Value {
-    if let Some(v) = v { Value::new(v) } else { Value::new(NoneType::None) }
+fn opt_typed_val<'h>(heap: &'h Heap, v: Option<impl AllocValue<'h>>) -> Value<'h> {
+    if let Some(v) = v {
+        heap.alloc(v)
+    } else {
+        Value::new_none()
+    }
 }
 
 #[derive(Clone, Debug, Hash)]
-pub struct Path {
+pub struct HonkPath {
     inner: PathBuf,
 }
 
-impl Path {
-    fn new(inner: String) -> Self {
+impl HonkPath {
+    fn new(inner: &str) -> Self {
         Self {
             inner: if inner.starts_with("//") {
                 honk_root_impl().inner.join(inner.trim_start_matches("//"))
@@ -90,7 +71,7 @@ impl Path {
     }
 
     // TODO return a Set once exposed from starlark crate
-    fn globs(&self, patterns: &[impl AsRef<str>]) -> List {
+    fn globs<'h>(&self, heap: &'h Heap, patterns: &[impl AsRef<str>]) -> List<'h> {
         let mut results = List::default();
 
         for pattern in patterns {
@@ -100,7 +81,7 @@ impl Path {
 
             // TODO glob against the vfs
             for entry in glob::glob(&full_pattern).expect("must pass a valid glob") {
-                results.push(Value::new(Path { inner: entry.unwrap() })).unwrap();
+                results.push(heap.alloc(HonkPath { inner: entry.unwrap() }));
             }
         }
 
@@ -108,29 +89,57 @@ impl Path {
     }
 }
 
-impl std::fmt::Display for Path {
+impl std::fmt::Display for HonkPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.inner.display().fmt(f)
     }
 }
 
-impl TypedValue for Path {
-    type Holder = starlark::values::Immutable<Self>;
-
-    const TYPE: &'static str = "Path";
-
-    fn values_for_descendant_check_and_freeze(&self) -> Box<dyn Iterator<Item = Value> + '_> {
-        Box::new(std::iter::empty())
+#[starlark_module::starlark_module]
+fn register_path_methods(globals: &mut GlobalsBuilder) {
+    fn exists(this: RefHonkPath) -> bool {
+        Ok(this.exists())
     }
 
-    fn get_hash(&self) -> Result<u64, ValueError> {
+    fn parent(this: RefHonkPath) -> Value<'v> {
+        Ok(opt_typed_val(heap, this.parent()))
+    }
+
+    fn filename(this: RefHonkPath) -> Value<'v> {
+        Ok(opt_typed_val(heap, this.filename()))
+    }
+
+    fn join(this: RefHonkPath, to_join: &str) -> HonkPath {
+        Ok(this.join(&to_join))
+    }
+
+    fn canonicalize(this: RefHonkPath) -> HonkPath {
+        Ok(this.canonicalize())
+    }
+
+    fn glob(this: RefHonkPath, pattern: &str) -> List<'v> {
+        Ok(this.globs(heap, &[pattern]))
+    }
+
+    fn globs(this: RefHonkPath, patterns: Vec<&str>) -> List<'v> {
+        Ok(this.globs(heap, &patterns))
+    }
+}
+
+impl TypedValue<'_> for HonkPath {
+    starlark_type!("path");
+    declare_members!(register_path_methods);
+
+    fn get_hash(&self) -> anyhow::Result<u64> {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         self.hash(&mut hasher);
         Ok(hasher.finish())
     }
 
-    fn to_repr_impl(&self, buf: &mut String) -> std::fmt::Result {
+    fn collect_repr(&self, collector: &mut String) {
         use std::fmt::Write;
-        write!(buf, "{}", self)
+        write!(collector, "{}", self).expect("when can write! into a string even fail???");
     }
 }
+
+starlark_immutable_value!(pub HonkPath);
