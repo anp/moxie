@@ -145,8 +145,7 @@ def cargo_metadata(manifest):
         outputs=[],
     )
     command_output = metadata_command.run().stdout()
-    # TODO json.decode from starlark spec
-    decoded = json_decode(command_output)
+    decoded = json.decode(command_output)
     metadata = _metadata_dict_to_struct(decoded)
 
     if metadata.version != requested_version:
