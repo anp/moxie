@@ -26,7 +26,7 @@ pub struct Workspace {
 
 impl Workspace {
     /// The asset path used to resolve the root of a honk workspace.
-    const ASSET_PATH: &'static str = "workspace.honk";
+    const ASSET_PATH: &'static str = "WORKSPACE.honk";
 
     pub fn new(root: impl AsRef<Path>) -> Self {
         Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new() }
