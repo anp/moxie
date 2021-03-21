@@ -64,9 +64,8 @@ impl FileLoader for Workspace {
         let file = self.root.join(path);
         debug!(file = %file.display(), "loading");
 
-        let root_contents = self.vfs.read(&file).expect("TODO pass errors back correctly here");
-        let root_contents =
-            std::str::from_utf8(&*root_contents).expect("TODO pass errors back correctly here");
+        let root_contents = self.vfs.read(&file)?;
+        let root_contents = std::str::from_utf8(&*root_contents)?;
 
         let ast: AstModule = AstModule::parse(path, root_contents.to_string(), &Dialect::Standard)?;
 
@@ -77,6 +76,7 @@ impl FileLoader for Workspace {
             .build();
         let module: Module = Module::new();
         let mut eval: Evaluator = Evaluator::new(&module, &globals);
+        eval.disable_gc(); // we're going to drop this right away
         eval.set_loader(self);
         let _res = eval.eval_module(ast)?;
 
