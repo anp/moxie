@@ -5,7 +5,7 @@ use starlark::{
     syntax::{AstModule, Dialect},
 };
 use std::path::{Path, PathBuf};
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, info, instrument};
 
 pub mod builtins;
 pub mod error;
@@ -51,7 +51,7 @@ impl Workspace {
         let mut loader = RevisionLoader(self, Revision::default());
         let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
-        warn!("TODO display discovered targets");
+        info!(revision = ?loader.1, "discovered targets");
 
         info!("finished");
         Ok(())

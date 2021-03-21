@@ -1,7 +1,7 @@
-use crate::builtins::command::RefHonkCommand;
+use crate::builtins::command::{HonkCommand, RefHonkCommand};
 use gazebo::any::AnyLifetime;
 use parking_lot::Mutex;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(AnyLifetime, Clone, Debug, Default)]
 pub struct Revision {
@@ -19,14 +19,17 @@ impl Revision {
 }
 
 #[derive(Debug, Default)]
-struct RevisionState {}
+struct RevisionState {
+    formatters: BTreeMap<String, HonkCommand>,
+    targets: BTreeMap<String, HonkCommand>,
+}
 
 impl RevisionState {
     fn register_formatter(&mut self, name: &str, command: RefHonkCommand) {
-        tracing::warn!(%name, command = %&*command, "TODO implement formatters");
+        self.formatters.insert(name.to_owned(), command.clone());
     }
 
     fn register_target(&mut self, name: &str, command: RefHonkCommand) {
-        tracing::warn!(%name, command = %&*command, "TODO implement targets");
+        self.targets.insert(name.to_owned(), command.clone());
     }
 }
