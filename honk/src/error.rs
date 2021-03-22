@@ -28,6 +28,15 @@ pub enum Error {
     #[allow(unused)]
     #[error("non utf-8 *.honk script encountered at {}", file.display())]
     ScriptEncoding { source: Utf8Error, file: PathBuf },
+
+    #[error("graph contains cycles but cycles are not allowed because fixpoints suuuuck")]
+    GraphContainsCycles,
+
+    #[error(
+        "graph must have all nodes reachable as a single \
+        connected component, found {num_components} components"
+    )]
+    GraphIsSplit { num_components: usize },
 }
 
 impl From<Error> for ValueError {

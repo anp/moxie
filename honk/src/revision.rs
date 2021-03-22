@@ -1,6 +1,9 @@
-use crate::builtins::{
-    command::{HonkCommand, RefHonkCommand},
-    path::HonkPath,
+use crate::{
+    builtins::{
+        command::{HonkCommand, RefHonkCommand},
+        path::HonkPath,
+    },
+    error::Error,
 };
 use gazebo::any::AnyLifetime;
 use parking_lot::Mutex;
@@ -61,9 +64,14 @@ impl RevisionState {
             graph.dep(idx, graph.formatted());
         }
 
-        // TODO validate the dep graph?
-
-        Ok(graph)
+        let num_components = petgraph::algo::connected_components(&graph.inner);
+        if num_components != 1 {
+            Err(Error::GraphIsSplit { num_components })
+        } else if petgraph::algo::is_cyclic_directed(&graph.inner) {
+            Err(Error::GraphContainsCycles)
+        } else {
+            Ok(graph)
+        }
     }
 }
 
