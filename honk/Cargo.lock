@@ -769,6 +769,7 @@ dependencies = [
  "memofs",
  "once_cell",
  "parking_lot",
+ "petgraph",
  "serde_json",
  "starlark",
  "starlark_module",

@@ -27,10 +27,10 @@ pub fn register(builder: &mut GlobalsBuilder) {
 
 #[derive(Clone, Debug)]
 pub struct HonkCommand {
-    command: String,
-    args: Vec<String>,
-    inputs: Vec<HonkPath>,
-    outputs: Vec<HonkPath>,
+    pub command: String,
+    pub args: Vec<String>,
+    pub inputs: Vec<HonkPath>,
+    pub outputs: Vec<HonkPath>,
 }
 
 impl HonkCommand {

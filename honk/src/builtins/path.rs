@@ -33,7 +33,7 @@ fn opt_typed_val<'h>(heap: &'h Heap, v: Option<impl AllocValue<'h>>) -> Value<'h
     }
 }
 
-#[derive(Clone, Debug, Hash)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct HonkPath {
     inner: PathBuf,
 }

@@ -51,7 +51,10 @@ impl Workspace {
         let mut loader = RevisionLoader(self, Revision::default());
         let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
-        info!(revision = ?loader.1, "discovered targets");
+        let build = loader.1.resolve()?;
+        debug!(?build, "discovered targets");
+
+        tracing::warn!("uh run some builds i guess?");
 
         info!("finished");
         Ok(())
