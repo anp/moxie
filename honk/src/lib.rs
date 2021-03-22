@@ -34,7 +34,7 @@ impl Workspace {
         Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new() }
     }
 
-    pub fn maintain(mut self) -> crate::Result<()> {
+    pub fn maintain(self) -> crate::Result<()> {
         // TODO change current directory to workspace root?
         info!("maintaining workspace");
         loop {
@@ -46,7 +46,7 @@ impl Workspace {
     }
 
     #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
-    fn converge(&mut self) -> crate::Result<()> {
+    fn converge(&self) -> crate::Result<()> {
         debug!("constructing workspace env");
         let mut loader = RevisionLoader(self, Revision::default());
         let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
