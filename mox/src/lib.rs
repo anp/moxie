@@ -75,6 +75,12 @@ use syn_rsx::{NodeName, NodeType};
 /// Block expressions can optionally be opened with `{%` to denote a "formatter"
 /// item. The enclosed tokens are passed to the `format_args!` macro.
 ///
+/// ### Hyphenated Names
+///
+/// Tag and attribute names can by hyphenated. The underlying function and
+/// method names will have hyphens replaced with underscores. Multiple
+/// consecutive hyphens are not supported.
+///
 /// ## Fragments
 ///
 /// Fragments are opened with `<>` and closed with `</>`. Their only purpose is
@@ -238,8 +244,12 @@ impl MoxTag {
                 Ok(expr_path)
             }
             NodeName::Dash(punctuated) => {
-                // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
-                Err(syn::Error::new(punctuated.span(), "Dash tag name syntax isn't supported"))
+                let ident = dashes_to_underscores(punctuated);
+                let mut segments = Punctuated::new();
+                segments.push(ident.into());
+                let path = syn::Path { leading_colon: None, segments };
+
+                Ok(syn::ExprPath { attrs: vec![], qself: None, path })
             }
             NodeName::Colon(punctuated) => {
                 Err(syn::Error::new(punctuated.span(), "Colon tag name syntax isn't supported"))
@@ -321,13 +331,7 @@ impl MoxAttr {
                     _ => Err(invalid_error(segments.span())),
                 }
             }
-            NodeName::Dash(punctuated) => {
-                // TODO support dash tag name syntax, see `https://github.com/anp/moxie/issues/233`
-                Err(syn::Error::new(
-                    punctuated.span(),
-                    "Dash attribute name syntax isn't supported",
-                ))
-            }
+            NodeName::Dash(punctuated) => Ok(dashes_to_underscores(punctuated)),
             NodeName::Colon(punctuated) => Err(syn::Error::new(
                 punctuated.span(),
                 "Colon attribute name syntax isn't supported",
@@ -396,6 +400,25 @@ fn mangle_ident(ident: &mut syn::Ident) {
         "async" | "for" | "loop" | "type" => *ident = syn::Ident::new(&(name + "_"), ident.span()),
         _ => (),
     }
+}
+
+fn dashes_to_underscores(
+    punctuated: Punctuated<proc_macro2::Ident, syn_rsx::punctuation::Dash>,
+) -> syn::Ident {
+    let mut words = punctuated.iter();
+    let mut ident_name =
+        words.next().expect("There must be at least one ident in a punctuated list").to_string();
+
+    for w in words {
+        ident_name.push('_');
+        ident_name.push_str(&w.to_string());
+    }
+
+    if punctuated.trailing_punct() {
+        ident_name.push('_');
+    }
+
+    syn::Ident::new(&ident_name, punctuated.span())
 }
 
 fn node_span(node: &syn_rsx::Node) -> Span {
