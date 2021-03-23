@@ -4,7 +4,9 @@ use mox::mox;
 struct Tag();
 
 impl Tag {
-    fn single_dash(self, _value: &str) -> Self { self }
+    fn single_dash(self, _value: &str) -> Self {
+        self
+    }
 
     fn build(self) {}
 }
