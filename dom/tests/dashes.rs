@@ -5,15 +5,15 @@ use moxie_dom::elements::html::div;
 fn unused<T>(_x: T) {}
 
 #[test]
-pub fn single_word() {
+pub fn single_dash() {
     let custom_name = || div();
     unused(|| mox!(<custom-name/>));
 }
 
 #[test]
-pub fn multi_word() {
-    let custom_multi_word_name = || div();
-    unused(|| mox!(<custom-multi-word-name></custom-multi-word-name>));
+pub fn multi_dash() {
+    let custom_multi_dash_name = || div();
+    unused(|| mox!(<custom-multi-dash-name></custom-multi-dash-name>));
 }
 
 #[test]
