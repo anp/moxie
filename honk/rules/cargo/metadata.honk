@@ -99,6 +99,22 @@ def _package_dict_to_struct(package):
     )
 
 
+def _dep_is_local(metadata, dep):
+    for id in metadata.member_ids:
+        package = metadata.packages[id]
+        if package.name == dep.name:
+            return True
+    return False
+
+
+def package_workspace_deps(metadata, package):
+    local_deps = []
+    for dep in package.dependencies:
+        if _dep_is_local(metadata, dep):
+            local_deps.append(dep)
+    return local_deps
+
+
 def _metadata_dict_to_struct(metadata):
     packages = dict()
     for raw_package in metadata["packages"]:

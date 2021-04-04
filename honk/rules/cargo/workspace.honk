@@ -1,5 +1,8 @@
 load("//honk/rules/cargo/clippy.honk", "lint_crate")
-load("//honk/rules/cargo/metadata.honk", "cargo_metadata", "rust_files_in_package")
+load(
+    "//honk/rules/cargo/metadata.honk",
+    "cargo_metadata", "package_workspace_deps", "rust_files_in_package"
+)
 load("//honk/rules/cargo/rustfmt.honk", "format_crate")
 load("//honk/rules/cargo/wasm-pack.honk", "maybe_wasm_crate")
 
@@ -14,10 +17,15 @@ load("//honk/rules/cargo/wasm-pack.honk", "maybe_wasm_crate")
 # TODO add workspace dependencies between crates
 
 
-def test_crate(package):
+def test_crate(metadata, package):
     """
     Run `cargo test --all-targets -p ${package}`.
     """
+    deps = []
+    for local_dep in package_workspace_deps(metadata, package):
+        # TODO think of a way to distinguish target deps from path deps other than type
+        deps.append("test-" + local_dep.name)
+
     target(
         name="test-" + package.name,
         command=command(
@@ -28,6 +36,7 @@ def test_crate(package):
             # TODO automagically convert strings for inputs/outputs
             outputs=[path("target")],
         ),
+        deps=deps,
     )
 
 
@@ -83,6 +92,6 @@ def cargo_workspace(manifest):
         document_crate(package)
 
         # "tests"
-        test_crate(package)
+        test_crate(metadata, package)
         doctest_crate(package)
         lint_crate(package)
