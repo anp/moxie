@@ -51,14 +51,23 @@ impl Workspace {
         let mut loader = RevisionLoader(self, Revision::default());
         let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
-        let build = loader.1.resolve()?;
-        debug!(?build, "discovered targets");
+        let _build = loader.1.resolve()?;
+        info!("discovered targets");
+
+        // FIXME make this an actual web viewer via http server, right?
+        dump_graphviz(&_build);
 
         tracing::warn!("uh run some builds i guess?");
 
         info!("finished");
         Ok(())
     }
+}
+
+fn dump_graphviz(g: &revision::ActionGraph) {
+    use petgraph::dot::{Config, Dot};
+    let output = Dot::with_config(g, &[Config::EdgeNoLabel]);
+    println!("{}", output);
 }
 
 struct RevisionLoader<'w>(&'w Workspace, Revision);
