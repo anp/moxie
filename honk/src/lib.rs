@@ -1,6 +1,5 @@
 use starlark::{
-    environment::FrozenModule,
-    environment::Module,
+    environment::{FrozenModule, GlobalsBuilder, LibraryExtension, Module},
     eval::{Evaluator, FileLoader},
     syntax::{AstModule, Dialect},
 };
@@ -87,9 +86,7 @@ impl<'w> FileLoader for RevisionLoader<'w> {
 
         let ast: AstModule = AstModule::parse(path, root_contents.to_string(), &Dialect::Standard)?;
 
-        let globals = starlark::stdlib::standard_environment()
-            // TODO figure out how to add set() back
-            .with(starlark::stdlib::add_struct)
+        let globals = GlobalsBuilder::extended_by(&[LibraryExtension::StructType])
             .with(crate::builtins::register)
             .build();
         let module: Module = Module::new();

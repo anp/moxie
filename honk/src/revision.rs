@@ -1,8 +1,5 @@
 use crate::{
-    builtins::{
-        command::{HonkCommand, RefHonkCommand},
-        target::DepSet,
-    },
+    builtins::{command::HonkCommand, target::DepSet},
     graph::{ActionGraph, GraphBuilder},
 };
 use gazebo::any::AnyLifetime;
@@ -15,11 +12,11 @@ pub struct Revision {
 }
 
 impl Revision {
-    pub fn register_formatter(&self, name: &str, command: RefHonkCommand) {
+    pub fn register_formatter(&self, name: &str, command: &HonkCommand) {
         self.inner.lock().register_formatter(name, command);
     }
 
-    pub fn register_target(&self, name: &str, command: RefHonkCommand, deps: &DepSet) {
+    pub fn register_target(&self, name: &str, command: &HonkCommand, deps: &DepSet) {
         self.inner.lock().register_target(name, command, deps);
     }
 
@@ -35,7 +32,7 @@ struct RevisionState {
 }
 
 impl RevisionState {
-    fn register_formatter(&mut self, name: &str, command: RefHonkCommand) {
+    fn register_formatter(&mut self, name: &str, command: &HonkCommand) {
         let mut command = command.clone();
         // TODO find a better way to avoid cycles in the dep graph
         command.inputs.clear();
@@ -43,7 +40,7 @@ impl RevisionState {
         self.formatters.insert(name.to_owned(), (command, Default::default()));
     }
 
-    fn register_target(&mut self, name: &str, command: RefHonkCommand, deps: &DepSet) {
+    fn register_target(&mut self, name: &str, command: &HonkCommand, deps: &DepSet) {
         self.targets.insert(name.to_owned(), (command.clone(), deps.clone()));
     }
 

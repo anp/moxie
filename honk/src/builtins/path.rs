@@ -1,7 +1,7 @@
 use starlark::{
     environment::GlobalsBuilder,
-    starlark_immutable_value, starlark_type,
-    values::{list::List, AllocValue, Heap, TypedValue, Value},
+    starlark_simple_value, starlark_type,
+    values::{list::List, ARef, AllocValue, Heap, StarlarkValue, Value},
 };
 use starlark_module::starlark_module;
 use std::{
@@ -97,36 +97,36 @@ impl std::fmt::Display for HonkPath {
 
 #[starlark_module::starlark_module]
 fn register_path_methods(globals: &mut GlobalsBuilder) {
-    fn exists(this: RefHonkPath) -> bool {
+    fn exists(this: ARef<HonkPath>) -> bool {
         Ok(this.exists())
     }
 
-    fn parent(this: RefHonkPath) -> Value<'v> {
+    fn parent(this: ARef<HonkPath>) -> Value<'v> {
         Ok(opt_typed_val(heap, this.parent()))
     }
 
-    fn filename(this: RefHonkPath) -> Value<'v> {
+    fn filename(this: ARef<HonkPath>) -> Value<'v> {
         Ok(opt_typed_val(heap, this.filename()))
     }
 
-    fn join(this: RefHonkPath, to_join: &str) -> HonkPath {
+    fn join(this: ARef<HonkPath>, to_join: &str) -> HonkPath {
         Ok(this.join(&to_join))
     }
 
-    fn canonicalize(this: RefHonkPath) -> HonkPath {
+    fn canonicalize(this: ARef<HonkPath>) -> HonkPath {
         Ok(this.canonicalize())
     }
 
-    fn glob(this: RefHonkPath, pattern: &str) -> List<'v> {
+    fn glob(this: ARef<HonkPath>, pattern: &str) -> List<'v> {
         Ok(this.globs(heap, &[pattern]))
     }
 
-    fn globs(this: RefHonkPath, patterns: Vec<&str>) -> List<'v> {
+    fn globs(this: ARef<HonkPath>, patterns: Vec<&str>) -> List<'v> {
         Ok(this.globs(heap, &patterns))
     }
 }
 
-impl TypedValue<'_> for HonkPath {
+impl StarlarkValue<'_> for HonkPath {
     starlark_type!("path");
     declare_members!(register_path_methods);
 
@@ -142,4 +142,4 @@ impl TypedValue<'_> for HonkPath {
     }
 }
 
-starlark_immutable_value!(pub HonkPath);
+starlark_simple_value!(HonkPath);

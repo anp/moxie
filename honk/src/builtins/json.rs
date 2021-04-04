@@ -2,8 +2,8 @@ use serde_json::Value as JsonValue;
 use starlark::{
     collections::SmallMap,
     environment::GlobalsBuilder,
-    starlark_immutable_value,
-    values::{dict::Dict, list::List, Heap, TypedValue, Value},
+    starlark_simple_value,
+    values::{dict::Dict, list::List, ARef, Heap, StarlarkValue, Value},
 };
 use starlark_module::starlark_module;
 use std::convert::TryInto;
@@ -18,14 +18,14 @@ struct JsonModule;
 
 #[starlark_module]
 fn register_json_methods(globals: &mut GlobalsBuilder) {
-    fn decode(_this: RefJsonModule, x: String) -> Value<'v> {
+    fn decode(_this: ARef<JsonModule>, x: String) -> Value<'v> {
         Ok(json_to_starlark(heap, serde_json::from_str(&x)?))
     }
 }
 
-starlark_immutable_value!(JsonModule);
+starlark_simple_value!(JsonModule);
 
-impl TypedValue<'_> for JsonModule {
+impl StarlarkValue<'_> for JsonModule {
     starlark::starlark_type!("json");
     declare_members!(register_json_methods);
 }

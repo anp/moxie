@@ -1,15 +1,15 @@
-use crate::{builtins::command::RefHonkCommand, EvaluatorExt};
+use crate::{builtins::command::HonkCommand, EvaluatorExt};
 use starlark::{
     environment::GlobalsBuilder,
-    values::{none::NoneType, Value},
+    values::{none::NoneType, ARef, Value},
 };
 use std::collections::BTreeSet;
 
 #[starlark_module::starlark_module]
 pub fn register(globals: &mut GlobalsBuilder) {
-    fn target(name: &str, command: RefHonkCommand, deps: Option<Vec<Value<'_>>>) -> NoneType {
+    fn target(name: &str, command: ARef<HonkCommand>, deps: Option<Vec<Value<'_>>>) -> NoneType {
         let deps: DepSet = deps.into();
-        ctx.revision().register_target(name, command, &deps);
+        ctx.revision().register_target(name, &*command, &deps);
         Ok(NoneType)
     }
 }

@@ -1,11 +1,8 @@
-use crate::{
-    builtins::path::{HonkPath, RefHonkPath},
-    error::Error,
-};
+use crate::{builtins::path::HonkPath, error::Error};
 use starlark::{
     environment::GlobalsBuilder,
-    starlark_immutable_value,
-    values::{TypedValue, Value},
+    starlark_simple_value,
+    values::{ARef, StarlarkValue, Value},
 };
 use starlark_module::starlark_module;
 use tracing::instrument;
@@ -15,8 +12,8 @@ pub fn register(builder: &mut GlobalsBuilder) {
     fn command(
         command: String,
         _args: Vec<Value<'_>>,
-        inputs: Vec<RefHonkPath>,
-        outputs: Vec<RefHonkPath>,
+        inputs: Vec<ARef<HonkPath>>,
+        outputs: Vec<ARef<HonkPath>>,
     ) -> HonkCommand {
         let args = _args.iter().map(|a| a.to_str()).collect();
         let inputs = inputs.iter().map(|i| (*i).clone()).collect();
@@ -51,16 +48,16 @@ impl HonkCommand {
     }
 }
 
-starlark_immutable_value!(pub HonkCommand);
+starlark_simple_value!(HonkCommand);
 
 #[starlark_module::starlark_module]
 fn register_command_methods(globals: &mut GlobalsBuilder) {
-    fn run(this: RefHonkCommand) -> Output {
+    fn run(this: ARef<HonkCommand>) -> Output {
         Ok(this.run()?)
     }
 }
 
-impl TypedValue<'_> for HonkCommand {
+impl StarlarkValue<'_> for HonkCommand {
     starlark::starlark_type!("command");
     declare_members!(register_command_methods);
 
@@ -111,14 +108,14 @@ impl Output {
 
 #[starlark_module::starlark_module]
 fn register_output_methods(globals: &mut GlobalsBuilder) {
-    fn stdout(this: RefOutput) -> String {
+    fn stdout(this: ARef<Output>) -> String {
         Ok(this.stdout()?)
     }
 }
 
-starlark_immutable_value!(Output);
+starlark_simple_value!(Output);
 
-impl TypedValue<'_> for Output {
+impl StarlarkValue<'_> for Output {
     starlark::starlark_type!("Output");
     declare_members!(register_output_methods);
 }
