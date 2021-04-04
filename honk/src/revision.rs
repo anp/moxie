@@ -2,6 +2,7 @@ use crate::{
     builtins::{
         command::{HonkCommand, RefHonkCommand},
         path::HonkPath,
+        target::DepSet,
     },
     error::Error,
 };
@@ -23,8 +24,8 @@ impl Revision {
         self.inner.lock().register_formatter(name, command);
     }
 
-    pub fn register_target(&self, name: &str, command: RefHonkCommand) {
-        self.inner.lock().register_target(name, command);
+    pub fn register_target(&self, name: &str, command: RefHonkCommand, deps: &DepSet) {
+        self.inner.lock().register_target(name, command, deps);
     }
 
     pub fn resolve(&self) -> crate::Result<ActionGraph> {
@@ -34,8 +35,8 @@ impl Revision {
 
 #[derive(Debug, Default)]
 struct RevisionState {
-    formatters: BTreeMap<String, HonkCommand>,
-    targets: BTreeMap<String, HonkCommand>,
+    formatters: BTreeMap<String, (HonkCommand, DepSet)>,
+    targets: BTreeMap<String, (HonkCommand, DepSet)>,
 }
 
 impl RevisionState {
@@ -44,23 +45,23 @@ impl RevisionState {
         // TODO find a better way to avoid cycles in the dep graph
         command.inputs.clear();
         command.outputs.clear();
-        self.formatters.insert(name.to_owned(), command);
+        self.formatters.insert(name.to_owned(), (command, Default::default()));
     }
 
-    fn register_target(&mut self, name: &str, command: RefHonkCommand) {
-        self.targets.insert(name.to_owned(), command.clone());
+    fn register_target(&mut self, name: &str, command: RefHonkCommand, deps: &DepSet) {
+        self.targets.insert(name.to_owned(), (command.clone(), deps.clone()));
     }
 
     fn resolve(&mut self) -> crate::Result<ActionGraph> {
         let mut graph = GraphBuilder::new();
 
-        for (name, formatter) in &self.formatters {
-            let idx = graph.command(name, formatter);
+        for (name, (formatter, deps)) in &self.formatters {
+            let idx = graph.command(name, formatter, deps);
             graph.dep(graph.formatted(), idx);
         }
 
-        for (name, target) in &self.targets {
-            let idx = graph.command(name, target);
+        for (name, (target, deps)) in &self.targets {
+            let idx = graph.command(name, target, deps);
             graph.dep(idx, graph.formatted());
         }
 
@@ -94,20 +95,19 @@ impl GraphBuilder {
         }
     }
 
-    fn command(&mut self, name: &str, command: &HonkCommand) -> NodeIndex {
-        let idx = self.action(name, &command.command, &command.args[..]);
+    fn command(&mut self, name: &str, command: &HonkCommand, deps: &DepSet) -> NodeIndex {
+        let idx = self.action(
+            name,
+            &command.command,
+            &command.args[..],
+            &command.inputs[..],
+            &command.outputs[..],
+            deps,
+        );
 
         for input in &command.inputs {
-            todo!()
-            // match input {
-            //     Input::File(f) => {
-            //         let input = self.file(f);
-            //         self.dep(idx, input);
-            //     }
-                // Input::Target(t) => {
-                //     self.pending_target_name_deps.entry(t.to_string()).or_default().push(idx)
-                // }
-            // }
+            let input = self.file(input);
+            self.dep(idx, input);
         }
 
         for output in &command.outputs {
@@ -125,7 +125,15 @@ impl GraphBuilder {
         *indices.entry(node.clone()).or_insert_with(|| inner.add_node(node))
     }
 
-    fn action(&mut self, name: &str, command: &str, args: &[String]) -> NodeIndex {
+    fn action(
+        &mut self,
+        name: &str,
+        command: &str,
+        args: &[String],
+        inputs: &[HonkPath],
+        outputs: &[HonkPath],
+        deps: &DepSet,
+    ) -> NodeIndex {
         let Self { inner, indices, target_name_to_idx, .. } = self;
         // TODO less allocating?
         let args = args.iter().map(|a| a.to_string()).collect();
@@ -133,12 +141,20 @@ impl GraphBuilder {
             name: name.to_owned(),
             command: command.to_owned(),
             args,
+            inputs: inputs.to_vec(),
+            outputs: outputs.to_vec(),
         }));
-        *indices.entry(node.clone()).or_insert_with(|| {
+        let idx = *indices.entry(node.clone()).or_insert_with(|| {
             let idx = inner.add_node(node);
             target_name_to_idx.insert(name.to_owned(), idx);
             idx
-        })
+        });
+
+        for dep in deps {
+            self.pending_target_name_deps.entry(dep.to_string()).or_default().push(idx);
+        }
+
+        idx
     }
 
     fn formatted(&self) -> NodeIndex {
@@ -151,13 +167,11 @@ impl GraphBuilder {
 
     fn build(mut self) -> crate::Result<ActionGraph> {
         self.drain_pending()?;
-        let graph = rewrite_file_edges(self.inner);
+        let graph = self.collapse_non_action_edges()?;
 
         let num_components = petgraph::algo::connected_components(&graph);
         if num_components != 1 {
             Err(Error::GraphIsSplit { num_components })
-        } else if petgraph::algo::is_cyclic_directed(&graph) {
-            Err(Error::GraphContainsCycles)
         } else {
             Ok(graph)
         }
@@ -177,14 +191,52 @@ impl GraphBuilder {
 
         Ok(())
     }
+
+    fn collapse_non_action_edges(&mut self) -> crate::Result<ActionGraph> {
+        // for each non action edge, get all ins and all outs, make edges between
+        for i in self.inner.node_indices() {
+            if matches!(&*self.inner[i], Node::Action(..)) {
+                continue;
+            }
+
+            let mut in_neighbors = vec![];
+            add_all_action_indices(&self.inner, i, &mut in_neighbors, Direction::Incoming);
+
+            let mut out_neighbors = vec![];
+            add_all_action_indices(&self.inner, i, &mut out_neighbors, Direction::Outgoing);
+
+            for in_neighbor in in_neighbors {
+                for out_neighbor in &out_neighbors {
+                    self.inner.add_edge(in_neighbor, *out_neighbor, 0);
+                }
+            }
+        }
+
+        // produce a new graph without any file/formatted edges
+        let graph = self.inner.filter_map(
+            |_, n| match &**n {
+                Node::Action(a) => Some(a.clone()),
+                _ => None,
+            },
+            |_, e| Some(*e),
+        );
+
+        Ok(graph)
+    }
 }
 
-fn rewrite_file_edges(deps: DepGraph) -> ActionGraph {
-    let mut actions = ActionGraph::new();
-
-    // FIXME this leaves an empty graph lol
-    // graph.retain_nodes(|this, idx| !this[idx].is_file());
-    actions
+fn add_all_action_indices(
+    graph: &DepGraph,
+    node: NodeIndex,
+    neighbors: &mut Vec<NodeIndex>,
+    dir: Direction,
+) {
+    for neighbor in graph.neighbors_directed(node, dir) {
+        match &*graph[neighbor] {
+            Node::Action(..) => neighbors.push(neighbor),
+            _ => add_all_action_indices(graph, neighbor, neighbors, dir),
+        }
+    }
 }
 
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -197,12 +249,6 @@ pub enum Node {
     Action(Action),
 }
 
-impl Node {
-    fn is_file(&self) -> bool {
-        matches!(self, Self::File(..))
-    }
-}
-
 impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -213,11 +259,13 @@ impl std::fmt::Display for Node {
     }
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Action {
     name: String,
     command: String,
     args: Vec<String>,
+    inputs: Vec<HonkPath>,
+    outputs: Vec<HonkPath>,
 }
 
 impl std::fmt::Display for Action {

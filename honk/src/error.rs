@@ -29,8 +29,8 @@ pub enum Error {
     #[error("non utf-8 *.honk script encountered at {}", file.display())]
     ScriptEncoding { source: Utf8Error, file: PathBuf },
 
-    #[error("graph contains cycles but cycles are not allowed because fixpoints suuuuck")]
-    GraphContainsCycles,
+    #[error("graph contains cycle but cycles are not allowed because fixpoints suuuuck")]
+    GraphContainsCycles(petgraph::algo::Cycle<petgraph::prelude::NodeIndex>),
 
     #[error(
         "graph must have all nodes reachable as a single \
