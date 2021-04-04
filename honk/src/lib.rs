@@ -9,6 +9,7 @@ use tracing::{debug, error, info, instrument};
 
 pub mod builtins;
 pub mod error;
+pub mod graph;
 pub mod revision;
 pub mod vfs;
 
@@ -64,7 +65,7 @@ impl Workspace {
     }
 }
 
-fn dump_graphviz(g: &revision::ActionGraph) {
+fn dump_graphviz(g: &graph::ActionGraph) {
     use petgraph::dot::{Config, Dot};
     let output = Dot::with_config(g, &[Config::EdgeNoLabel]);
     println!("{}", output);
