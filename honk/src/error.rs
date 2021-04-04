@@ -37,6 +37,9 @@ pub enum Error {
         connected component, found {num_components} components"
     )]
     GraphIsSplit { num_components: usize },
+
+    #[error("couldn't find {target} in the dependency graph")]
+    GraphResolutionFailure { target: String },
 }
 
 impl From<Error> for ValueError {
