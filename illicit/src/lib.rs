@@ -360,7 +360,7 @@ impl Default for Layer {
             values = current.values.clone();
         });
 
-        Self { values, depth }
+        Self { depth, values }
     }
 }
 
