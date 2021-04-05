@@ -1,6 +1,6 @@
 extern crate proc_macro;
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::convert::TryFrom;
 use syn::{
@@ -10,7 +10,7 @@ use syn::{
     spanned::Spanned,
     token::Comma,
 };
-use syn_rsx::{NodeName, NodeType};
+use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 
 /// Accepts an XML-like expression and expands it to builder method calls.
 ///
@@ -402,9 +402,7 @@ fn mangle_ident(ident: &mut syn::Ident) {
     }
 }
 
-fn dashes_to_underscores(
-    punctuated: Punctuated<proc_macro2::Ident, syn_rsx::punctuation::Dash>,
-) -> syn::Ident {
+fn dashes_to_underscores(punctuated: Punctuated<Ident, Dash>) -> syn::Ident {
     let mut words = punctuated.iter();
     let mut ident_name =
         words.next().expect("There must be at least one ident in a punctuated list").to_string();
