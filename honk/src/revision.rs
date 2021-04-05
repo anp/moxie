@@ -4,6 +4,7 @@ use crate::{
 };
 use gazebo::any::AnyLifetime;
 use parking_lot::Mutex;
+use starlark::eval::Evaluator;
 use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(AnyLifetime, Clone, Debug, Default)]
@@ -58,5 +59,20 @@ impl RevisionState {
         }
 
         graph.build()
+    }
+}
+
+pub trait EvaluatorExt<'r> {
+    fn set_revision(&mut self, revision: &'r Revision);
+    fn revision(&self) -> &'r Revision;
+}
+
+impl<'a> EvaluatorExt<'a> for Evaluator<'_, 'a> {
+    fn set_revision(&mut self, revision: &'a Revision) {
+        self.extra = Some(revision);
+    }
+
+    fn revision(&self) -> &'a Revision {
+        self.extra.clone().unwrap().downcast_ref().unwrap()
     }
 }

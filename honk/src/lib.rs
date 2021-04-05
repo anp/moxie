@@ -13,7 +13,7 @@ pub mod revision;
 pub mod vfs;
 
 use error::Error;
-use revision::Revision;
+use revision::{EvaluatorExt, Revision};
 use vfs::Vfs;
 
 pub(crate) type Result<T> = color_eyre::eyre::Result<T, Error>;
@@ -99,20 +99,5 @@ impl<'w> FileLoader for RevisionLoader<'w> {
         let _res = eval.eval_module(ast)?;
 
         Ok(module.freeze())
-    }
-}
-
-pub trait EvaluatorExt<'r> {
-    fn set_revision(&mut self, revision: &'r Revision);
-    fn revision(&self) -> &'r Revision;
-}
-
-impl<'a> EvaluatorExt<'a> for Evaluator<'_, 'a> {
-    fn set_revision(&mut self, revision: &'a Revision) {
-        self.extra = Some(revision);
-    }
-
-    fn revision(&self) -> &'a Revision {
-        self.extra.clone().unwrap().downcast_ref().unwrap()
     }
 }
