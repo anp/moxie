@@ -12,7 +12,7 @@ use syn::{
 };
 use syn_rsx::{NodeName, NodeType};
 
-/// Accepts an XML-like expression and expands it to method calls.
+/// Accepts an XML-like expression and expands it to builder-like method calls.
 ///
 /// # Outputs
 ///
