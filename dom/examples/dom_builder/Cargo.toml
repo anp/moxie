@@ -1,0 +1,19 @@
+[package]
+name = "dom-builder-moxie-dom-fn"
+version = "0.1.0"
+publish = false
+description = "an example counter for moxie-dom using the DOM builder API"
+edition = "2018"
+license-file = "../../../../LICENSE-MIT"
+repository = "https://github.com/anp/moxie.git"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = [ "cdylib" ]
+
+[dependencies]
+moxie = { path = "../../.." }
+moxie-dom = { path = "../../" }
+wasm-bindgen = "0.2"

@@ -12,11 +12,11 @@ use syn::{
 };
 use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 
-/// Accepts an XML-like expression and expands it to builder method calls.
+/// Accepts an XML-like expression and expands it to builder-like method calls.
 ///
 /// # Outputs
 ///
-/// The `mox!` macro's contents are expanded to a nested builder pattern.
+/// The `mox!` macro's contents are expanded to method calls, with `.build()` called on the outmost expression.
 ///
 /// ## Tags
 ///
@@ -29,8 +29,6 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 /// A tag with children has each child passed as the argument to a call to
 /// `.child(...)`, one per child in order of declaration. The calls to `child`
 /// come after attributes.
-///
-/// After all attributes and children, `.build()` is called on the final value.
 ///
 /// ## Fragments
 ///
@@ -68,9 +66,6 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 ///
 /// Each child can be either another tag, a Rust literal, or a Rust block (an
 /// expression wrapped in `{` and `}`).
-///
-/// Literals and expressions have `.into_child()` appended to them before being
-/// passed to `.child(...)`.
 ///
 /// Block expressions can optionally be opened with `{%` to denote a "formatter"
 /// item. The enclosed tokens are passed to the `format_args!` macro.
@@ -114,8 +109,8 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 ///         self
 ///     }
 ///
-///     fn child(mut self, child: Tag) -> Self {
-///         self.children.push(child);
+///     fn child(mut self, child: TagBuilder) -> Self {
+///         self.children.push(child.build());
 ///         self
 ///     }
 ///
@@ -142,7 +137,7 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 #[proc_macro]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let item = parse_macro_input!(input as MoxItem);
-    quote!(#item).into()
+    quote!(#item .build()).into()
 }
 
 enum MoxItem {
@@ -280,7 +275,7 @@ impl ToTokens for MoxTag {
             }
         }
 
-        quote!({ #name() #contents .build() }).to_tokens(tokens);
+        quote!({ #name() #contents }).to_tokens(tokens);
     }
 }
 
@@ -373,7 +368,7 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
 impl ToTokens for MoxExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self { expr } = self;
-        quote!(#expr.into_child()).to_tokens(tokens);
+        quote!(#[allow(unused_braces)] #expr).to_tokens(tokens);
     }
 }
 

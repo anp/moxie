@@ -14,12 +14,6 @@ struct ToBuild {
     children: Vec<ToBuild>,
 }
 
-impl ToBuild {
-    fn into_child(self) -> Self {
-        self
-    }
-}
-
 impl ToBuildBuilder {
     fn child(mut self, child: ToBuild) -> Self {
         let children = if let Some(c) = self.children.as_mut() {

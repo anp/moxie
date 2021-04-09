@@ -22,8 +22,8 @@ impl TagBuilder {
         self
     }
 
-    fn child(mut self, child: Tag) -> Self {
-        self.children.push(child);
+    fn child(mut self, child: TagBuilder) -> Self {
+        self.children.push(child.build());
         self
     }
 
