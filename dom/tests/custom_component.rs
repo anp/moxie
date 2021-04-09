@@ -19,7 +19,7 @@ impl moxie_dom::interfaces::node::Child for Counter {
     }
 }
 
-fn counter() -> CounterBuilder {
+fn custom_counter() -> CounterBuilder {
     CounterBuilder::default()
 }
 
@@ -64,7 +64,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 pub async fn binds_to_div() {
-    let render_counter_as_child = || mox!(<div><counter button_text="child" value=9/></div>);
+    let render_counter_as_child = || mox!(<div><custom-counter button-text="child" value=9/></div>);
     let test_root = document().create_element("div");
     moxie_dom::boot(test_root.clone(), render_counter_as_child);
 
@@ -78,7 +78,7 @@ pub async fn binds_to_div() {
 
 #[wasm_bindgen_test]
 pub async fn renders_and_interacts() {
-    let render_counter = || mox!(<counter button_text="foo" value=0/>);
+    let render_counter = || mox!(<custom-counter button-text="foo" value=0/>);
     let test_root = document().create_element("div");
     moxie_dom::boot(test_root.clone(), render_counter);
 
