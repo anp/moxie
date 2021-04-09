@@ -342,9 +342,8 @@ impl ToTokens for MoxAttr {
     }
 }
 
-enum MoxExpr {
-    Text(syn::Expr),
-    Block(syn::Expr),
+struct MoxExpr {
+    expr: syn::Expr,
 }
 
 impl TryFrom<syn_rsx::Node> for MoxExpr {
@@ -357,18 +356,15 @@ impl TryFrom<syn_rsx::Node> for MoxExpr {
             | NodeType::Comment
             | NodeType::Doctype
             | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-            NodeType::Text => Ok(MoxExpr::Text(node.value.unwrap())),
-            NodeType::Block => Ok(MoxExpr::Block(node.value.unwrap())),
+            NodeType::Text | NodeType::Block => Ok(MoxExpr { expr: node.value.unwrap() }),
         }
     }
 }
 
 impl ToTokens for MoxExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            MoxExpr::Text(expr) => expr.to_tokens(tokens),
-            MoxExpr::Block(block) => quote!(#[allow(unused_braces)] #block).to_tokens(tokens),
-        }
+        let Self { expr } = self;
+        quote!(#[allow(unused_braces)] #expr).to_tokens(tokens);
     }
 }
 
