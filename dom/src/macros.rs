@@ -112,7 +112,7 @@ macro_rules! element {
         impl crate::interfaces::node::NodeWrapper for [<$name:camel Builder>] {}
 
         impl $crate::interfaces::node::NodeBuilder for [<$name:camel>] {
-            type Target = Self;
+            type Output = Self;
 
             /// Initialize the element with all of the attributes so far.
             fn build(self) -> Self {
@@ -121,7 +121,7 @@ macro_rules! element {
         }
 
         impl $crate::interfaces::node::NodeBuilder for [<$name:camel Builder>] {
-            type Target = [<$name:camel>];
+            type Output = [<$name:camel>];
 
             /// Initialize the element with all of the attributes so far.
             fn build(self) -> [<$name:camel>] {

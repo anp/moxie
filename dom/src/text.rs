@@ -23,9 +23,9 @@ pub fn text(s: impl AsRef<str>) -> Text {
 pub struct Text(CachedNode);
 
 impl NodeBuilder for Text {
-    type Target = Self;
+    type Output = Self;
 
-    fn build(self) -> Self::Target {
+    fn build(self) -> Self::Output {
         self
     }
 }

@@ -42,7 +42,7 @@ impl CounterBuilder {
 }
 
 impl NodeBuilder for CounterBuilder {
-    type Target = Counter;
+    type Output = Counter;
 
     #[topo::nested]
     fn build(self) -> Counter {

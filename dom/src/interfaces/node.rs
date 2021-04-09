@@ -49,19 +49,19 @@ pub trait Child: Sized {
 /// A builder for DOM nodes
 pub trait NodeBuilder {
     /// The type of the DOM node
-    type Target;
+    type Output;
 
     /// Build, returning the output.
-    fn build(self) -> Self::Target;
+    fn build(self) -> Self::Output;
 }
 
 impl<T> NodeBuilder for T
 where
     T: Display,
 {
-    type Target = Text;
+    type Output = Text;
 
-    fn build(self) -> Self::Target {
+    fn build(self) -> Self::Output {
         // TODO rely on format_args, see [`(fmt_as_str #74442)`](https://github.com/rust-lang/rust/issues/74442)
         text(format!("{}", self))
     }
@@ -82,7 +82,7 @@ where
 /// custom components to be bound directly to DOM types.
 pub trait Parent<C: Child>: NodeWrapper {
     /// Add a child to this node.
-    fn child<T: NodeBuilder<Target = C>>(self, child: T) -> Self {
+    fn child<T: NodeBuilder<Output = C>>(self, child: T) -> Self {
         self.node().ensure_child_attached(child.build().to_bind());
         self
     }
