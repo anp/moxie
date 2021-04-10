@@ -32,8 +32,12 @@ impl Workspace {
 
     pub fn new(root: impl AsRef<Path>) -> Self {
         let state = WorkspaceState {
-            root: root.as_ref().to_path_buf(),
-            inner: Arc::new(Mutex::new(InnerState { vfs: Vfs::new() })),
+            inner: Arc::new(Mutex::new(InnerState {
+                vfs: Vfs::new(),
+                root: root.as_ref().to_path_buf(),
+                current_revision: Default::default(),
+                _prev_revision: Default::default(),
+            })),
         };
         Self { state }
     }
@@ -49,13 +53,14 @@ impl Workspace {
         }
     }
 
-    #[instrument(level = "info", skip(self), fields(root = %self.state.root.display()))]
+    #[instrument(level = "info", skip(self), fields(root = %self.state.inner.lock().root.display()))]
     fn converge(&self) -> crate::Result<()> {
         debug!("constructing workspace env");
-        let mut loader = RevisionLoader(self.state.clone(), Revision::default());
-        let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
+        let mut state = self.state.inner.lock();
+        state.start_new_revision();
+        let _workspace_env = state.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
-        let _build = loader.1.resolve()?;
+        let _build = state.current_revision.resolve()?;
         info!("discovered targets");
 
         // FIXME make this an actual web viewer via http server, right?
@@ -70,15 +75,24 @@ impl Workspace {
 
 #[derive(Clone)]
 pub struct WorkspaceState {
-    /// Path to `workspace.honk`.
-    root: PathBuf,
-
     inner: Arc<Mutex<InnerState>>,
 }
 
 struct InnerState {
+    /// Path to `workspace.honk`.
+    root: PathBuf,
+
     /// Tracks changes to files we've read.
     vfs: Vfs,
+
+    current_revision: Revision,
+    _prev_revision: Revision,
+}
+
+impl InnerState {
+    fn start_new_revision(&mut self) {
+        self._prev_revision = std::mem::replace(&mut self.current_revision, Revision::default());
+    }
 }
 
 fn dump_graphviz(g: &graph::ActionGraph) {
@@ -87,18 +101,16 @@ fn dump_graphviz(g: &graph::ActionGraph) {
     println!("{}", output);
 }
 
-struct RevisionLoader(WorkspaceState, Revision);
-
-impl FileLoader for RevisionLoader {
+impl FileLoader for InnerState {
     #[instrument(skip(self))]
     fn load(&mut self, path: &str) -> anyhow::Result<FrozenModule> {
         // TODO smarter way to resolve assets etc
         // TODO handle relative paths somehow?
         let path = path.strip_prefix("//").unwrap_or(path);
-        let file = self.0.root.join(path);
+        let file = self.root.join(path);
         debug!(file = %file.display(), "loading");
 
-        let root_contents = self.0.inner.lock().vfs.read(&file)?;
+        let root_contents = self.vfs.read(&file)?;
         let root_contents = std::str::from_utf8(&*root_contents)?;
 
         let ast: AstModule = AstModule::parse(path, root_contents.to_string(), &Dialect::Standard)?;
@@ -110,7 +122,7 @@ impl FileLoader for RevisionLoader {
         let mut eval: Evaluator = Evaluator::new(&module, &globals);
         eval.disable_gc(); // we're going to drop this right away
 
-        let revision = self.1.clone();
+        let revision = self.current_revision.clone();
         eval.set_revision(&revision);
         eval.set_loader(self);
         let _res = eval.eval_module(ast)?;
