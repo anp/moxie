@@ -1,9 +1,13 @@
+use parking_lot::Mutex;
 use starlark::{
     environment::{FrozenModule, GlobalsBuilder, LibraryExtension, Module},
     eval::{Evaluator, FileLoader},
     syntax::{AstModule, Dialect},
 };
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tracing::{debug, error, info, instrument};
 
 pub mod builtins;
@@ -19,11 +23,7 @@ use vfs::Vfs;
 pub(crate) type Result<T> = color_eyre::eyre::Result<T, Error>;
 
 pub struct Workspace {
-    /// Path to `workspace.honk`.
-    root: PathBuf,
-
-    /// Tracks changes to files we've read.
-    vfs: Vfs,
+    state: WorkspaceState,
 }
 
 impl Workspace {
@@ -31,7 +31,11 @@ impl Workspace {
     const ASSET_PATH: &'static str = "WORKSPACE.honk";
 
     pub fn new(root: impl AsRef<Path>) -> Self {
-        Self { root: root.as_ref().to_path_buf(), vfs: Vfs::new() }
+        let state = WorkspaceState {
+            root: root.as_ref().to_path_buf(),
+            inner: Arc::new(Mutex::new(InnerState { vfs: Vfs::new() })),
+        };
+        Self { state }
     }
 
     pub fn maintain(self) -> crate::Result<()> {
@@ -41,14 +45,14 @@ impl Workspace {
             if let Err(error) = self.converge() {
                 error!(%error, "couldn't converge current workspace revision");
             }
-            self.vfs.wait_for_changes();
+            self.state.inner.lock().vfs.wait_for_changes();
         }
     }
 
-    #[instrument(level = "info", skip(self), fields(root = %self.root.display()))]
+    #[instrument(level = "info", skip(self), fields(root = %self.state.root.display()))]
     fn converge(&self) -> crate::Result<()> {
         debug!("constructing workspace env");
-        let mut loader = RevisionLoader(self, Revision::default());
+        let mut loader = RevisionLoader(self.state.clone(), Revision::default());
         let _workspace_env = loader.load(Self::ASSET_PATH).map_err(Error::StarlarkError)?;
 
         let _build = loader.1.resolve()?;
@@ -64,15 +68,28 @@ impl Workspace {
     }
 }
 
+#[derive(Clone)]
+pub struct WorkspaceState {
+    /// Path to `workspace.honk`.
+    root: PathBuf,
+
+    inner: Arc<Mutex<InnerState>>,
+}
+
+struct InnerState {
+    /// Tracks changes to files we've read.
+    vfs: Vfs,
+}
+
 fn dump_graphviz(g: &graph::ActionGraph) {
     use petgraph::dot::{Config, Dot};
     let output = Dot::with_config(g, &[Config::EdgeNoLabel]);
     println!("{}", output);
 }
 
-struct RevisionLoader<'w>(&'w Workspace, Revision);
+struct RevisionLoader(WorkspaceState, Revision);
 
-impl<'w> FileLoader for RevisionLoader<'w> {
+impl FileLoader for RevisionLoader {
     #[instrument(skip(self))]
     fn load(&mut self, path: &str) -> anyhow::Result<FrozenModule> {
         // TODO smarter way to resolve assets etc
@@ -81,7 +98,7 @@ impl<'w> FileLoader for RevisionLoader<'w> {
         let file = self.0.root.join(path);
         debug!(file = %file.display(), "loading");
 
-        let root_contents = self.0.vfs.read(&file)?;
+        let root_contents = self.0.inner.lock().vfs.read(&file)?;
         let root_contents = std::str::from_utf8(&*root_contents)?;
 
         let ast: AstModule = AstModule::parse(path, root_contents.to_string(), &Dialect::Standard)?;
