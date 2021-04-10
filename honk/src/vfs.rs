@@ -12,26 +12,28 @@ impl Vfs {
         Self { inner: MemoVfs::new_default() }
     }
 
-    pub fn wait_for_changes(&self) {
+    pub fn spawn_wait_for_changes(&self) -> std::thread::JoinHandle<()> {
         let changes = self.inner.event_receiver();
-        match changes.recv().unwrap() {
-            VfsEvent::Create(created) => info!(created = %created.display()),
-            VfsEvent::Write(modified) => info!(modified = %modified.display()),
-            VfsEvent::Remove(removed) => info!(removed = %removed.display()),
-            _ => unimplemented!("unrecognized filesystem event"),
-        }
+        std::thread::spawn(move || {
+            match changes.recv().unwrap() {
+                VfsEvent::Create(created) => info!(created = %created.display()),
+                VfsEvent::Write(modified) => info!(modified = %modified.display()),
+                VfsEvent::Remove(removed) => info!(removed = %removed.display()),
+                _ => unimplemented!("unrecognized filesystem event"),
+            }
 
-        // TODO figure out how much memofs debounces, make sure its enough or we do some
-        debug!("draining other fs events until quiescent");
-        loop {
-            match changes.try_recv() {
-                Ok(event) => trace!(?event, "discarding"),
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => {
-                    unreachable!("other end is kept alive by ourselves")
+            // TODO figure out how much memofs debounces, make sure its enough or we do some
+            debug!("draining other fs events until quiescent");
+            loop {
+                match changes.try_recv() {
+                    Ok(event) => trace!(?event, "discarding"),
+                    Err(TryRecvError::Empty) => break,
+                    Err(TryRecvError::Disconnected) => {
+                        unreachable!("other end is kept alive by ourselves")
+                    }
                 }
             }
-        }
+        })
     }
 }
 

@@ -44,13 +44,18 @@ impl WorkspaceState {
         self.inner.lock().current_revision.clone()
     }
 
+    pub fn resolve(&self) -> crate::Result<crate::graph::ActionGraph> {
+        self.inner.lock().current_revision.resolve()
+    }
+
     pub fn start_new_revision(&self) {
         self.inner.lock().start_new_revision()
     }
 
     pub fn wait_for_changes(&self) {
-        // TODO undo this lock lol
-        self.inner.lock().vfs.wait_for_changes()
+        // can't one-liner because we need the lock to be dropped
+        let spawned = { self.inner.lock().spawn_wait_for_changes() };
+        spawned.join().unwrap();
     }
 }
 
@@ -68,6 +73,10 @@ struct InnerState {
 impl InnerState {
     fn start_new_revision(&mut self) {
         self._prev_revision = std::mem::replace(&mut self.current_revision, Revision::default());
+    }
+
+    fn spawn_wait_for_changes(&mut self) -> std::thread::JoinHandle<()> {
+        self.vfs.spawn_wait_for_changes()
     }
 }
 

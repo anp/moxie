@@ -1,4 +1,5 @@
-use std::path::Path;
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use std::{path::Path, thread::JoinHandle};
 use tracing::{debug, error, info, instrument};
 
 pub mod builtins;
@@ -28,6 +29,7 @@ impl Workspace {
     pub fn maintain(self) -> crate::Result<()> {
         // TODO change current directory to workspace root?
         info!("maintaining workspace");
+        spawn_server(self.state.clone());
         loop {
             if let Err(error) = self.converge() {
                 error!(%error, "couldn't converge current workspace revision");
@@ -42,11 +44,8 @@ impl Workspace {
         self.state.start_new_revision();
         let _workspace_env = self.state.load(Self::ASSET_PATH)?;
 
-        let _build = self.state.current_revision().resolve()?;
+        let _build = self.state.resolve()?;
         info!("discovered targets");
-
-        // FIXME make this an actual web viewer via http server, right?
-        dump_graphviz(&_build);
 
         tracing::warn!("uh run some builds i guess?");
 
@@ -55,8 +54,25 @@ impl Workspace {
     }
 }
 
-fn dump_graphviz(g: &crate::graph::ActionGraph) {
+pub fn spawn_server(state: crate::WorkspaceState) -> JoinHandle<std::io::Result<()>> {
+    info!("spawning server");
+    std::thread::spawn(move || {
+        actix_web::rt::System::new("honk_workspace_server").block_on(async move {
+            HttpServer::new(move || App::new().data(state.clone()).service(http_root))
+                // FIXME make this configurable
+                .bind("[::1]:8080")?
+                .run()
+                .await
+        })
+    })
+}
+
+#[get("/")]
+async fn http_root(data: web::Data<WorkspaceState>) -> impl Responder {
     use petgraph::dot::{Config, Dot};
-    let output = Dot::with_config(g, &[Config::EdgeNoLabel]);
-    println!("{}", output);
+    HttpResponse::Ok().body(format!(
+        "Hello world! from {}\n\n{}",
+        data.root().display(),
+        Dot::with_config(&data.resolve().unwrap(), &[Config::EdgeNoLabel]),
+    ))
 }
