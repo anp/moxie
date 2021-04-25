@@ -86,11 +86,10 @@ impl Todo {
 pub fn setup_tracing() {
     static SETUP: std::sync::Once = std::sync::Once::new();
     SETUP.call_once(|| {
-        tracing_wasm::set_as_global_default_with_config(tracing_wasm::WASMLayerConfig {
-            report_logs_in_console: true,
-            report_logs_in_timings: false,
-            use_console_color: false,
-        });
+        let config = tracing_wasm::WASMLayerConfigBuilder::new()
+            .set_console_config(tracing_wasm::ConsoleConfig::ReportWithoutConsoleColor)
+            .build();
+        tracing_wasm::set_as_global_default_with_config(config);
         std::panic::set_hook(Box::new(|info| {
             error!(?info, "crashed");
         }));

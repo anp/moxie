@@ -20,7 +20,7 @@ mox = { path = "../../../mox" }
 moxie-dom = { path = "../../" }
 topo = { path = "../../../topo" }
 tracing = { version = "^0.1", features = [ "log" ] }
-tracing-wasm = "0.1.0"
+tracing-wasm = "0.2.0"
 wasm-bindgen = "0.2"
 
 [dev-dependencies]
