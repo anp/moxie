@@ -52,7 +52,6 @@ docs-all = "doc --workspace --no-deps --all-features"
 dom-flow = """
 watch --clear
     -x build-dom-counter-fn
-    -x build-dom-counter-struct
     -x build-dom-dom-builder
     -x build-dom-todo
     -x build-dom-hacking
@@ -61,7 +60,6 @@ watch --clear
     -x test-dom-doc
     -x test-augdom
     -x test-dom-counter-fn
-    -x test-dom-counter-struct
     -x test-dom-dom-builder
     -x test-dom-todo
     -x test-dom-lib-browser
@@ -76,7 +74,6 @@ wa-test = "wa-pack test --chrome --headless"
 
 build-dom-lib = "wa-pack-build dom"
 build-dom-counter-fn = "wa-pack-build dom/examples/counter_fn"
-build-dom-counter-struct = "wa-pack-build dom/examples/counter_struct"
 build-dom-dom-builder = "wa-pack-build dom/examples/dom_builder"
 build-dom-hacking = "wa-pack-build dom/examples/hacking"
 build-dom-todo = "wa-pack-build dom/examples/todo"
@@ -85,7 +82,6 @@ build-dom-todo = "wa-pack-build dom/examples/todo"
 test-augdom = "wa-test dom/augdom"
 test-prettiest = "wa-test dom/prettiest"
 test-dom-counter-fn = "wa-test dom/examples/counter_fn"
-test-dom-counter-struct = "wa-test dom/examples/counter_struct"
 test-dom-dom-builder = "wa-test dom/examples/dom_builder"
 test-dom-lib-browser = "wa-test dom"
 test-dom-drivertest = "wa-test dom/examples/drivertest"
