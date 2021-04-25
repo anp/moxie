@@ -1,15 +1,16 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use crate::{error::Error, revision::EvaluatorExt, state::WorkspaceState};
+use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
+use juniper_actix::graphql_handler;
 use std::{path::Path, thread::JoinHandle};
 use tracing::{debug, error, info, instrument};
 
 pub mod builtins;
 pub mod error;
+pub mod gql;
 pub mod graph;
 pub mod revision;
 pub mod state;
 pub mod vfs;
-
-use crate::{error::Error, revision::EvaluatorExt, state::WorkspaceState};
 
 pub(crate) type Result<T> = color_eyre::eyre::Result<T, Error>;
 
@@ -58,11 +59,26 @@ pub fn spawn_server(state: crate::WorkspaceState) -> JoinHandle<std::io::Result<
     info!("spawning server");
     std::thread::spawn(move || {
         actix_web::rt::System::new("honk_workspace_server").block_on(async move {
-            HttpServer::new(move || App::new().data(state.clone()).service(http_root))
-                // FIXME make this configurable
-                .bind("[::1]:8080")?
-                .run()
-                .await
+            HttpServer::new(move || {
+                App::new()
+                    .wrap(middleware::Compress::default())
+                    .wrap(middleware::Logger::default())
+                    .data(state.clone())
+                    .service(http_root)
+                    .service(
+                        web::resource("/graphgl")
+                            .route(web::post().to(gql::graphql_route))
+                            .route(web::get().to(gql::graphql_route)),
+                    )
+                    .service(
+                        web::resource("/playground").route(web::get().to(gql::playground_route)),
+                    )
+                    .service(web::resource("/graphiql").route(web::get().to(gql::graphiql_route)))
+            })
+            // FIXME make this configurable
+            .bind("[::1]:8080")?
+            .run()
+            .await
         })
     })
 }
