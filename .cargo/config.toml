@@ -8,6 +8,7 @@ watch --clear
     -w illicit
     -w mox
     -w src
+    -w tests
     -w topo
     -w Cargo.toml
     -x clippy-core

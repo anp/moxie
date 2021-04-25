@@ -28,7 +28,7 @@ impl<Input, Output> CacheCell<Input, Output> {
         Arg: PartialEq<Input> + ?Sized,
         Input: Borrow<Arg>,
     {
-        self.dep.root(dependent);
+        self.dep.root_read(dependent);
         if input == &self.input {
             Ok(&self.output)
         } else {
@@ -37,8 +37,8 @@ impl<Input, Output> CacheCell<Input, Output> {
     }
 
     /// Store a new input/output and mark the storage live.
-    pub fn store(&mut self, input: Input, output: Output, dependent: Dependent) {
-        self.dep.root(dependent);
+    pub fn store(&mut self, input: Input, output: Output, dependent: Dependent, revision: u64) {
+        self.dep.root_write(dependent, revision);
         self.input = input;
         self.output = output;
     }
@@ -47,8 +47,8 @@ impl<Input, Output> CacheCell<Input, Output> {
         self.dep.is_known_live()
     }
 
-    pub fn update_liveness(&mut self) {
-        self.dep.update_liveness();
+    pub fn update_liveness(&mut self, current_revision: u64) {
+        self.dep.update_liveness(current_revision);
     }
 
     pub fn mark_dead(&mut self) {

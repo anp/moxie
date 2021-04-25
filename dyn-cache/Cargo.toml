@@ -1,6 +1,6 @@
 [package]
 name = "dyn-cache"
-version = "0.12.1"
+version = "0.12.2"
 description = "Query cache indexed by type."
 categories = ["caching", "rust-patterns"]
 keywords = ["incremental", "memoize", "intern", "cache"]

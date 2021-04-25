@@ -31,8 +31,8 @@ impl<'k, K: ?Sized, I, H> KeyMiss<'k, K, I, H> {
         Self { inner: Ok(h), node, dependent, input }
     }
 
-    pub(crate) fn just_key(k: &'k K, input: I, dependent: Dependent) -> Self {
-        let node = DepNode::new(dependent);
+    pub(crate) fn just_key(k: &'k K, input: I, dependent: Dependent, revision: u64) -> Self {
+        let node = DepNode::new(dependent, revision);
         let dependent = node.as_dependent();
         Self { inner: Err(k), dependent, node: Some(node), input }
     }
@@ -137,6 +137,7 @@ where
         key: &'k Key,
         arg: &Arg,
         dependent: Dependent,
+        revision: u64,
     ) -> Result<&Output, KeyMiss<'k, Key, Input, H>>
     where
         Key: Eq + Hash + ?Sized,
@@ -148,13 +149,13 @@ where
         if let Some((_, cell)) = self.entry(&hashed) {
             cell.get(arg, dependent).map_err(|d| KeyMiss::hashed(hashed, arg.to_owned(), None, d))
         } else {
-            let node = DepNode::new(dependent);
+            let node = DepNode::new(dependent, revision);
             let new_dep = node.as_dependent();
             Err(KeyMiss::hashed(hashed, arg.to_owned(), Some(node), new_dep))
         }
     }
 
-    pub fn store<Key>(&mut self, miss: KeyMiss<'_, Key, Input, H>, output: Output)
+    pub fn store<Key>(&mut self, miss: KeyMiss<'_, Key, Input, H>, output: Output, revision: u64)
     where
         Key: Eq + Hash + ToOwned<Owned = Scope> + ?Sized,
         Scope: Borrow<Key>,
@@ -164,7 +165,7 @@ where
         match self.entry_mut(&hashed) {
             RawEntryMut::Occupied(occ) => {
                 assert!(miss.node.is_none(), "mustn't create nodes that aren't used");
-                occ.into_mut().store(miss.input, output, dependent);
+                occ.into_mut().store(miss.input, output, dependent, revision);
             }
             RawEntryMut::Vacant(vac) => {
                 vac.insert(
@@ -187,8 +188,8 @@ where
     Output: 'static,
     H: 'static,
 {
-    fn mark(&mut self) {
-        self.inner.values_mut().for_each(CacheCell::update_liveness);
+    fn mark(&mut self, revision: u64) {
+        self.inner.values_mut().for_each(|c| c.update_liveness(revision));
     }
 
     fn sweep(&mut self) {

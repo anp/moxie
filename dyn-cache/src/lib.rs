@@ -432,7 +432,7 @@ pub mod sync {
 /// A type which can contain values of varying liveness.
 trait Storage: Downcast + Debug {
     /// Traverse stored values, identifying roots.
-    fn mark(&mut self);
+    fn mark(&mut self, revision: u64);
 
     /// Remove dead entries.
     fn sweep(&mut self);

@@ -5,6 +5,14 @@ invocations.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.12.2] - 2021-04-25
+
+### Fixed
+
+- Cached values no longer inherit liveness from their dependents if those dependents were
+  initialized in the current GC revision. This prevented some values from being GC'd at the correct
+  time. See [#238](https://github.com/anp/moxie/issues/238).
+
 ## [0.12.1] - 2020-12-28
 
 ### Added
