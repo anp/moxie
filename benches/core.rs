@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::{Criterion, ParameterizedBenchmark};
+use criterion::{BenchmarkId, Criterion};
 use moxie::{
     once,
     runtime::{Revision, RunLoop},
@@ -32,12 +32,9 @@ fn run_n_times_empty(b: &mut criterion::Bencher, n: &usize) {
 }
 
 fn run_repeated(c: &mut Criterion) {
-    c.bench(
-        "run_repeated",
-        ParameterizedBenchmark::new(
-            "run_once called several times",
-            run_n_times_empty,
-            vec![2, 7, 23],
-        ),
-    );
+    let mut group = c.benchmark_group("run_repeated");
+    for input in &[2, 7, 23] {
+        group.bench_with_input(BenchmarkId::from_parameter(input), input, run_n_times_empty);
+    }
+    group.finish();
 }

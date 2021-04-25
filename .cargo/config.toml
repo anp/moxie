@@ -4,6 +4,7 @@
 
 core-flow = """
 watch --clear
+    -w benches
     -w dyn-cache
     -w illicit
     -w mox

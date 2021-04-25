@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::{Criterion, ParameterizedBenchmark};
+use criterion::{BenchmarkId, Criterion};
 
 fn get_id(c: &mut Criterion) {
     c.bench_function("id from env", |b| {
@@ -85,14 +85,11 @@ fn call_topo_fns_to_depth(b: &mut criterion::Bencher, depth: &usize) {
 }
 
 fn call_depths(c: &mut Criterion) {
-    c.bench(
-        "call_depths",
-        ParameterizedBenchmark::new(
-            "topo calls nested to depth",
-            call_topo_fns_to_depth,
-            vec![1, 3, 9, 12],
-        ),
-    );
+    let mut group = c.benchmark_group("call_depths");
+    for input in &[1, 3, 9, 12] {
+        group.bench_with_input(BenchmarkId::from_parameter(input), input, call_topo_fns_to_depth);
+    }
+    group.finish();
 }
 
 criterion::criterion_group!(benches, get_id, call_and_get_id, call, call_depths,);
