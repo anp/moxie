@@ -28,8 +28,7 @@ pub struct RunOpts {
 
 impl RunOpts {
     pub fn run(self, root_path: PathBuf) -> Result<(), Error> {
-        let mut server = super::ServerOpts::default();
-        server.port = self.port;
+        let mut server = super::ServerOpts { port: self.port, ..Default::default() };
         server.watch_changes = false;
 
         let _server = spawn(move || {

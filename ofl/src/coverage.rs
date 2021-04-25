@@ -163,13 +163,11 @@ fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
             );
 
             let mut path_mapping = path_mapping.lock().unwrap();
-            *path_mapping = if path_mapping_file != "" {
+            *path_mapping = if !path_mapping_file.is_empty() {
                 let file = File::open(path_mapping_file).unwrap();
                 Some(serde_json::from_reader(file).unwrap())
-            } else if let Some(producer_path_mapping_buf) = producer_path_mapping_buf {
-                Some(serde_json::from_slice(&producer_path_mapping_buf).unwrap())
             } else {
-                None
+                producer_path_mapping_buf.map(|b| serde_json::from_slice(&b).unwrap())
             };
         })
     };

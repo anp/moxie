@@ -60,11 +60,11 @@ impl Workspace {
 }
 
 fn metadata_for_directory(dir: impl AsRef<Path>) -> Result<Metadata, Error> {
-    Ok(cargo_metadata::MetadataCommand::new()
+    cargo_metadata::MetadataCommand::new()
         .manifest_path(dir.as_ref().join("Cargo.toml"))
         .current_dir(dir.as_ref())
         .exec()
-        .context("collecting workspace metadata")?)
+        .context("collecting workspace metadata")
 }
 
 fn local_metadata_members_reverse_topo(metadata: &Metadata) -> Vec<PackageId> {
