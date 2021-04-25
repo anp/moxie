@@ -13,14 +13,23 @@ pub(crate) struct DepNode {
 }
 
 impl DepNode {
-    pub fn new(dependent: Dependent) -> Self {
+    pub fn new(dependent: Dependent, revision: u64) -> Self {
         let this = Self { inner: Arc::new(Mutex::new(Default::default())) };
-        this.root(dependent);
+        this.root_write(dependent, revision);
         this
     }
 
-    pub fn root(&self, dependent: Dependent) {
-        self.inner.lock().root(dependent);
+    /// Mark this node as having been read in the current GC revision. If it hasn't been updated at
+    /// all before a GC, then its dependencies will inherit its liveness.
+    pub fn root_read(&self, dependent: Dependent) {
+        self.inner.lock().root_read(dependent);
+    }
+
+    /// Mark this node as having been written to in the current GC revision. This indicates that the
+    /// liveness of its dependencies should be assessed on their own, because they'll have had a
+    /// chance to execute (or not) this revision.
+    pub fn root_write(&self, dependent: Dependent, revision: u64) {
+        self.inner.lock().root_write(dependent, revision);
     }
 
     pub fn as_dependent(&self) -> Dependent {
@@ -36,10 +45,31 @@ impl DepNode {
         }
     }
 
-    pub fn update_liveness(&mut self) {
+    fn should_inherit_liveness(&self, current_revision: u64) -> bool {
+        if let Some(l) = self.inner.try_lock() {
+            // if the dependent was updated during this revision, then our dependency should only
+            // consider *its own* liveness. consider the following pseudocode:
+            //
+            //     cache.cache_with(unique_value(), |_| {
+            //         if externally_modifiable_bool() {
+            //              cache.hold_with((), |v| op(v));
+            //         }
+            //     });
+            //
+            // in this case, the inner hold_with() call should not be retained if
+            // externally_modifiable_bool() returns false. to achieve this, we want the
+            // cache_with call's liveness to never propagate when the initialization closure
+            // executes.
+            l.updated_at_revision != current_revision
+        } else {
+            false
+        }
+    }
+
+    pub fn update_liveness(&mut self, current_revision: u64) {
         // TODO(#174) find a better way to handle cycles
         if let Some(mut this) = self.inner.try_lock() {
-            this.update_liveness();
+            this.update_liveness(current_revision);
         }
     }
 
@@ -58,25 +88,31 @@ impl_common_traits_for_type_with_addr!(DepNode);
 #[derive(Debug)]
 struct InnerDepNode {
     liveness: Liveness,
+    updated_at_revision: u64,
     dependents: Vec<Dependent>,
 }
 
 impl Default for InnerDepNode {
     fn default() -> Self {
-        Self { liveness: Liveness::Live, dependents: Vec::new() }
+        Self { liveness: Liveness::Live, updated_at_revision: 0, dependents: Vec::new() }
     }
 }
 
 impl InnerDepNode {
-    /// Root this dep node in the current revision with the given `dependent`.
-    fn root(&mut self, dependent: Dependent) {
+    fn root_read(&mut self, dependent: Dependent) {
         self.dependents.push(dependent);
         self.liveness = Liveness::Live;
     }
 
+    fn root_write(&mut self, dependent: Dependent, revision: u64) {
+        self.dependents.push(dependent);
+        self.liveness = Liveness::Live;
+        self.updated_at_revision = revision;
+    }
+
     /// Check incoming dependents for roots, marking ourselves live if a root
     /// exists. Drops stale dependents.
-    fn update_liveness(&mut self) {
+    fn update_liveness(&mut self, current_revision: u64) {
         self.dependents.sort_unstable();
         self.dependents.dedup();
 
@@ -90,8 +126,9 @@ impl InnerDepNode {
             let mut keep = false;
 
             if let Some(mut dependent) = dependent.upgrade() {
-                dependent.update_liveness();
-                if dependent.is_known_live() {
+                dependent.update_liveness(current_revision);
+                if dependent.should_inherit_liveness(current_revision) && dependent.is_known_live()
+                {
                     has_root = true;
                 }
                 keep = true;

@@ -75,7 +75,7 @@ through [`" stringify!($shared) "::cache_with`] and [`" stringify!($shared) "::g
 > `" stringify!($cache) "` is not itself a generic type.
 
 Storage is sharded by the type of the query. The type of a query has three parts:
- 
+
 The query scope is the value which indexes the storage for a particular query type, it has the
 bound `Scope: 'static + Eq + Hash" $(" + " stringify!($bound))? "`.
 
@@ -102,6 +102,7 @@ pub struct $cache {
     /// We use a [`hash_hasher::HashBuildHasher`] here because we know that `TypeId`s
     /// are globally unique and pre-hashed courtesy of rustc.
     inner: HashMap<TypeId, Box<dyn Storage $(+ $bound)?>, HashBuildHasher>,
+    revision: u64,
 }}
 
 impl $cache {
@@ -129,9 +130,11 @@ a [`CacheEntry`] to pass to [`" stringify!($cache) "::store`].
         let query = Query::new(self.inner.hasher());
 
         if let Some(ns) = self.get_namespace(&query) {
-            ns.get(key, arg, dependent).map_err(|key_miss| CacheMiss { query, key_miss })
+            ns.get(key, arg, dependent, self.revision)
+                .map_err(|key_miss| CacheMiss { query, key_miss })
         } else {
-            Err(CacheMiss { query, key_miss: KeyMiss::just_key(key, arg.to_owned(), dependent) })
+            let key_miss = KeyMiss::just_key(key, arg.to_owned(), dependent, self.revision);
+            Err(CacheMiss { query, key_miss, })
         }
     }}
 
@@ -149,11 +152,12 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
         Input: 'static $(+ $bound)?,
         Output: 'static $(+ $bound)?,
     {
+        let revision = self.revision; // avoid double-borrowing self
         let CacheEntry {
             miss: CacheMiss { query, key_miss },
             output,
         } = entry;
-        self.get_namespace_mut(&query).store(key_miss, output);
+        self.get_namespace_mut(&query).store(key_miss, output, revision);
     }}
 
     fn get_namespace<Scope, Input, Output>(
@@ -193,8 +197,10 @@ Call [`" stringify!($cache) "::get`] to get a [`CacheMiss`] and [`CacheMiss::ini
 
     /// Drop any values which have not been marked alive since the last call to this method.
     pub fn gc(&mut self) {
-        self.inner.values_mut().for_each(|ns| ns.mark());
+        let prev = self.revision; // avoid double-borrowing self
+        self.inner.values_mut().for_each(|ns| ns.mark(prev));
         self.inner.values_mut().for_each(|namespace| namespace.sweep());
+        self.revision += 1;
     }
 }
 
@@ -332,7 +338,7 @@ See [`" stringify!($shared) "::cache_with`] for a lower-level version which does
 doc_comment!{r"
 Caches the result of `init(arg)` once per `key`, re-running it when `arg` changes.
 
-Does not return any reference to the cached value. See [`" stringify!($shared) "::cache`] 
+Does not return any reference to the cached value. See [`" stringify!($shared) "::cache`]
 for similar functionality that returns a copy of `Output` or
 [`" stringify!($shared) "::cache_with`] which allows specifying other pre-return functions.
 "=>
@@ -378,7 +384,10 @@ impl std::panic::RefUnwindSafe for $shared {}
 #[cfg(test)]
 mod $test_mod {
     use super::*;
-    use std::sync::Arc;
+    use std::sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc,
+    };
     use parking_lot::Mutex;
 
     #[test]
@@ -538,6 +547,58 @@ mod $test_mod {
         assert_counts!(1, 0);
         storage.gc();
         assert_counts!(1, 0);
+        storage.gc();
+        assert_counts!(1, 1); // prior GC had no accesses, should be dropped
+    }
+
+    struct CountDrops {
+        num_drops: Arc<AtomicU32>,
+    }
+
+    impl Drop for CountDrops {
+        fn drop(&mut self) {
+            self.num_drops.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn issue_238_cache_call_incorrectly_preserves_child() {
+        // counts the number of times the once() call below is made
+        let once_calls = Arc::new(AtomicU32::new(0));
+
+        // counts the number of times the value returned from once() below is GC'd
+        let once_drops = Arc::new(AtomicU32::new(0));
+
+        let mut storage = $shared::default();
+
+        let mut i = 0; // a unique value for the cache
+        let i = &mut i;
+        let adder = once_calls.clone();
+        let drop_adder = once_drops.clone();
+        let mut tick = move |should_hold, storage: &mut $shared| {
+            storage.cache_with(&(), &*i, |_| {
+                if should_hold {
+                    storage.hold(&(), &(), |_| {
+                        adder.fetch_add(1, Ordering::SeqCst);
+                        Arc::new(CountDrops { num_drops: drop_adder.clone() })
+                    });
+                }
+            }, |_| {});
+            storage.gc();
+            *i += 1;
+        };
+
+        tick(false, &mut storage);
+        assert_eq!(once_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(once_drops.load(Ordering::SeqCst), 0);
+
+        tick(true, &mut storage);
+        assert_eq!(once_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(once_drops.load(Ordering::SeqCst), 0);
+
+        tick(false, &mut storage);
+        assert_eq!(once_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(once_drops.load(Ordering::SeqCst), 1);
     }
 }
     };
