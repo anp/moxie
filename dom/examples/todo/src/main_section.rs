@@ -4,12 +4,14 @@ use moxie_dom::{
     elements::{html::*, sectioning::Section, text_content::Ul, text_semantics::Span},
     prelude::*,
 };
+use tracing::info;
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) -> Span {
     let todos = todos.clone();
-    let onclick = move |_| {
+    let onchange = move |_| {
+        info!("toggling item completions");
         todos.update(|t| {
             Some(
                 t.iter()
@@ -25,8 +27,8 @@ pub fn toggle(default_checked: bool) -> Span {
 
     mox! {
         <span>
-            <input class="toggle-all" type="checkbox" checked=default_checked />
-            <label onclick />
+            <input id="toggle" class="toggle-all" type="checkbox" checked=default_checked onchange />
+            <label for="toggle" />
         </span>
     }
 }
@@ -47,7 +49,7 @@ pub fn todo_list() -> Ul {
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn main_section() -> Option<Section> {
     if !todos.is_empty() {
-    let num_complete = todos.iter().filter(|t| t.completed).count();
+        let num_complete = todos.iter().filter(|t| t.completed).count();
 
         Some(mox! {
           <section class="main">
@@ -80,9 +82,9 @@ mod tests {
             r#"<div>
   <section class="main">
     <span>
-      <input class="toggle-all" type="checkbox" checked="false">
+      <input id="toggle" class="toggle-all" type="checkbox" checked="false">
       </input>
-      <label>
+      <label for="toggle">
       </label>
     </span>
     <ul class="todo-list">
