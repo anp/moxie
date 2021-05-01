@@ -45,21 +45,20 @@ pub fn todo_list() -> Ul {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn main_section() -> Section {
+pub fn main_section() -> Option<Section> {
+    if !todos.is_empty() {
     let num_complete = todos.iter().filter(|t| t.completed).count();
 
-    let mut section = section().class("main");
-
-    if !todos.is_empty() {
-        section = section.child(toggle(num_complete == todos.len()));
+        Some(mox! {
+          <section class="main">
+              { toggle(num_complete == todos.len()) }
+              { todo_list() }
+              { filter_footer(num_complete, todos.len() - num_complete) }
+          </section>
+        })
+    } else {
+        None
     }
-    section = section.child(todo_list());
-
-    if !todos.is_empty() {
-        section = section.child(filter_footer(num_complete, todos.len() - num_complete));
-    }
-
-    section.build()
 }
 
 #[cfg(test)]
@@ -73,7 +72,7 @@ mod tests {
         crate::App::boot_fn(
             &[Todo::new("first"), Todo::new("second"), Todo::new("third")],
             root.clone(),
-            main_section,
+            || main_section().unwrap(),
         );
 
         assert_eq!(
