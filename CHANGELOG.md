@@ -6,7 +6,7 @@ reuse of arbitrary work, state change notifications, and async loaders.
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
-## [0.7.1] - unreleased
+## [0.7.1] - 2021-05-05
 
 ### Added
 
@@ -14,6 +14,14 @@ reuse of arbitrary work, state change notifications, and async loaders.
 - `#[moxie::updater(...)]` attribute macro supports creating a `Key` wrapper with shorthand for
   mutating methods.
 - `wasm-bindgen` cargo feature which enables correct usage of parking_lot on wasm32 targets.
+
+### Fixed
+
+- Some new clippy lints.
+
+### Changed
+
+- No longer requires a nightly cargo to build.
 
 ## [0.7.0] - 2020-09-27
 

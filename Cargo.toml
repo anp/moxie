@@ -1,6 +1,6 @@
 [package]
 name = "moxie"
-version = "0.7.1-pre"
+version = "0.7.1"
 description = "Incremental runtime for interactive software."
 categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
 keywords = ["incremental", "memoize", "intern", "reactive"]
