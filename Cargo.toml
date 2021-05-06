@@ -50,6 +50,7 @@ members = [
     "topo/macro",
 ]
 exclude = [
+    "honk",
     "ofl",
 ]
 

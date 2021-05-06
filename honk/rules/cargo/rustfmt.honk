@@ -1,0 +1,24 @@
+load("//honk/rules/cargo/metadata.honk", "rust_files_in_target")
+
+
+def format_crate(package, check=False):
+    """
+    Runs `rustfmt --edition ${package.edition} [--check] ${target.src_path}` for each target
+    in ${package}.
+    """
+
+    args = ["--edition", package.edition]
+    if check:
+        args += "--check"
+
+    for target in package.targets:
+        target_files = rust_files_in_target(package.manifest_path, target)
+        formatter(
+            name="format-" + package.name + "-" + target.name,
+            command=command(
+                "rustfmt",
+                args=args + [target.src_path],
+                inputs=target_files,
+                outputs=target_files,
+            ),
+        )

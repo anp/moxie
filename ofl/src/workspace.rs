@@ -7,6 +7,7 @@ use tracing::info;
 pub struct Workspace {
     pub metadata: Metadata,
     pub ofl_metadata: Metadata,
+    pub honk_metadata: Metadata,
     pub repo: Repository,
 }
 
@@ -17,6 +18,7 @@ impl Workspace {
         Ok(Self {
             metadata: metadata_for_directory(project_root)?,
             ofl_metadata: metadata_for_directory(project_root.join("ofl"))?,
+            honk_metadata: metadata_for_directory(project_root.join("honk"))?,
             repo: Repository::open(project_root)?,
         })
     }
@@ -27,6 +29,10 @@ impl Workspace {
 
     pub fn ofl_members(&self) -> Vec<PackageId> {
         local_metadata_members_reverse_topo(&self.ofl_metadata)
+    }
+
+    pub fn honk_members(&self) -> Vec<PackageId> {
+        local_metadata_members_reverse_topo(&self.honk_metadata)
     }
 
     /// Returns a list of all crates which express a dependency upon `id` in

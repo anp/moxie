@@ -13,6 +13,9 @@ repository = "https://github.com/anp/moxie.git"
 authors = ["Adam Perry <lol@anp.lol>"]
 edition = "2018"
 
+[package.metadata.honk]
+browser-tests = true
+
 [dependencies]
 js-sys = "0.3.25"
 scopeguard = "1.1.0"

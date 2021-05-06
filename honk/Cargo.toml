@@ -1,0 +1,36 @@
+[package]
+name = "honk"
+version = "7.0.0"
+description = "An awful billed system."
+categories = []
+keywords = ["build", "task", "cargo", "make"]
+readme = "README.md"
+
+# update here, update everywhere!
+license = "MIT/Apache-2.0"
+homepage = "https://moxie.rs"
+repository = "https://github.com/anp/moxie.git"
+authors = ["Adam Perry <lol@anp.lol>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "3"
+anyhow = "1"
+argh = "0.1.4"
+color-eyre = "0.5.6"
+crossbeam-channel = "0.4.0"
+gazebo = "0.2.0"
+glob = "0.3.0"
+juniper = "0.15"
+juniper_actix = { version = "0.2", features = ["subscriptions"] }
+memofs = "0.1.2"
+once_cell = "1"
+parking_lot = "0.11.1"
+petgraph = "0.5.1"
+serde_json = "1.0.59"
+starlark = "0.4"
+starlark_module = "0.4"
+thiserror = "1.0.21"
+tracing = "0.1.21"
+tracing-error = "0.1.2"
+tracing-subscriber = { version = "0.2.15", features = ["fmt"] }

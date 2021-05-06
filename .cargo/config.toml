@@ -128,3 +128,10 @@ ofl-fmt-project = "ofl fmt"
 clippy-ofl = "clippy --manifest-path ofl/Cargo.toml --workspace"
 test-ofl = "test --manifest-path ofl/Cargo.toml --workspace"
 docs-ofl = "doc --manifest-path ofl/Cargo.toml --workspace --no-deps"
+
+####################################################################################################
+# honk
+
+honk = "run --manifest-path honk/Cargo.toml --release --"
+fmt-honk = "fmt --manifest-path honk/Cargo.toml"
+honk-flow = "watch -w honk/src -w honk/Cargo.toml -w Cargo.toml -x fmt-honk -x honk"

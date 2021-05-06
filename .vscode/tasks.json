@@ -1,5 +1,5 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
@@ -11,7 +11,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -30,7 +30,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -49,7 +49,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -68,7 +68,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -85,7 +85,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -104,7 +104,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -127,7 +127,7 @@
                 "panel": "dedicated"
             },
             "runOptions": {
-                "runOn": "folderOpen"
+                // "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "npx",
