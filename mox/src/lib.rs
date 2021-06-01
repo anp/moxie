@@ -337,7 +337,7 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
                 let name = MoxAttr::validate_name(node.name.unwrap())?;
 
                 let attr = match node.value {
-                    Some(value) => MoxAttr::KeyValue { name: name.clone(), value },
+                    Some(value) => MoxAttr::KeyValue { name, value },
                     None => MoxAttr::Punned(name),
                 };
 
@@ -379,7 +379,7 @@ impl MoxAttr {
             })
             .and_then(try_get_stmt)
             .and_then(try_get_call)
-            .map(|call| MoxAttr::MethodCall(call))
+            .map(MoxAttr::MethodCall)
     }
 
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
