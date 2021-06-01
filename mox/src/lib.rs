@@ -369,7 +369,7 @@ impl MoxAttr {
       let try_get_call = |stmt: Stmt| match stmt {
           Stmt::Expr(Expr::Call(call)) => Ok(call),
           Stmt::Semi(_, Semi { spans: [semi] }) => Err(Error::new(semi, "Remove this semicolon")),
-          _ => Err(Error::new(node_span(&node), "Only method calls are supported in the attribute position.\ne.g. `foo()`")),
+          _ => Err(Error::new(node_span(&node), "Only method calls are supported in the attribute position.\ne.g. `<foo {bar()}>`")),
       };
 
       node.value_as_block()
