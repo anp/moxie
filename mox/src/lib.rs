@@ -166,8 +166,10 @@ enum MoxBlock {
   Block,
 }
 
-impl MoxBlock {
-    pub fn parse(parse_stream: ParseStream) -> syn::Result<MoxBlock> {
+impl<'a> TryFrom<ParseStream<'a>> for MoxBlock {
+    type Error = syn::Error;
+
+    fn try_from(parse_stream: ParseStream) -> syn::Result<MoxBlock> {
         if parse_stream.peek(syn::Token![%]) {
             parse_stream.parse::<syn::Token![%]>()?;
             let arguments: Punctuated<syn::Expr, Comma> =
@@ -192,7 +194,7 @@ enum MoxItem {
 impl Parse for MoxItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         fn parse_block(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
-            match MoxBlock::parse(parse_stream).map_err(|e| {eprintln!("MoxBlock failed"); e})? {
+            match MoxBlock::try_from(parse_stream)? {
                 MoxBlock::Block => Ok(None),
                 MoxBlock::FormatExpr(arguments) => Ok(Some(quote!(format_args!(#arguments))))
             }
