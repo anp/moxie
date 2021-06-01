@@ -317,9 +317,10 @@ impl ToTokens for MoxTag {
 
 enum MoxAttr {
   MethodCall(syn::ExprCall),
+  Punned(syn::Ident),
   KeyValue {
     name: syn::Ident,
-    value: Option<syn::Expr>,
+    value: syn::Expr,
   }
 }
 
@@ -335,7 +336,12 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
             | NodeType::Doctype
             | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Attribute => {
-                Ok(MoxAttr::KeyValue { name: MoxAttr::validate_name(node.name.unwrap())?, value: node.value })
+                let name = MoxAttr::validate_name(node.name.unwrap())?;
+                let attr = node.value
+                    .map(|value| MoxAttr::KeyValue{ name: name.clone(), value })
+                    .unwrap_or_else(|| MoxAttr::Punned(name));
+
+                Ok(attr)
             }
         }
     }
@@ -405,8 +411,8 @@ impl MoxAttr {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let call = match self {
-          Self::KeyValue {name, value: Some(value)} => quote!(.#name(#value)),
-          Self::KeyValue {name, value: None} => quote!(.#name(#name)),
+          Self::KeyValue {name, value} => quote!(.#name(#value)),
+          Self::Punned(name) => quote!(.#name(#name)),
           Self::MethodCall(call) => quote!(.#call),
         };
 
