@@ -30,16 +30,12 @@ impl TagBuilder {
     }
 
     fn optional(mut self) -> Self {
-      self.optional = true;
-      self
+        self.optional = true;
+        self
     }
 
     fn build(self) -> Tag {
-      Tag {
-        name: self.name.unwrap(),
-        children: self.children,
-        optional: self.optional,
-      }
+        Tag { name: self.name.unwrap(), children: self.children, optional: self.optional }
     }
 }
 
@@ -47,13 +43,7 @@ impl TagBuilder {
 fn method_syntax() {
     let expected = Tag {
         name: String::from("alice"),
-        children: vec![
-          Tag {
-            name: String::from("bob"),
-            children: vec![],
-            optional: false,
-          }
-        ],
+        children: vec![Tag { name: String::from("bob"), children: vec![], optional: false }],
         optional: true,
     };
 

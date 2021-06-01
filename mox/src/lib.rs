@@ -160,10 +160,10 @@ pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 enum MoxBlock {
-  /// {% ...format_args }
-  FormatExpr(Punctuated<syn::Expr, Comma>),
-  /// Arbitrary Rust expression
-  Block,
+    /// {% ...format_args }
+    FormatExpr(Punctuated<syn::Expr, Comma>),
+    /// Arbitrary Rust expression
+    Block,
 }
 
 impl<'a> TryFrom<ParseStream<'a>> for MoxBlock {
@@ -196,13 +196,12 @@ impl Parse for MoxItem {
         fn parse_block(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
             match MoxBlock::try_from(parse_stream)? {
                 MoxBlock::Block => Ok(None),
-                MoxBlock::FormatExpr(arguments) => Ok(Some(quote!(format_args!(#arguments))))
+                MoxBlock::FormatExpr(arguments) => Ok(Some(quote!(format_args!(#arguments)))),
             }
         }
 
-        let parse_config = syn_rsx::ParserConfig::new()
-            .transform_block(parse_block)
-            .number_of_top_level_nodes(1);
+        let parse_config =
+            syn_rsx::ParserConfig::new().transform_block(parse_block).number_of_top_level_nodes(1);
 
         let parser = syn_rsx::Parser::new(parse_config);
         let node = parser.parse(input)?.remove(0);
@@ -318,12 +317,9 @@ impl ToTokens for MoxTag {
 }
 
 enum MoxAttr {
-  MethodCall(syn::ExprCall),
-  Punned(syn::Ident),
-  KeyValue {
-    name: syn::Ident,
-    value: syn::Expr,
-  }
+    MethodCall(syn::ExprCall),
+    Punned(syn::Ident),
+    KeyValue { name: syn::Ident, value: syn::Expr },
 }
 
 impl TryFrom<syn_rsx::Node> for MoxAttr {
@@ -355,28 +351,35 @@ impl MoxAttr {
     /// Parse inline method call syntax, e.g.
     /// `<foo {bar()} />` -> `foo().bar().build()`
     fn try_parse_method_syntax(node: syn_rsx::Node) -> syn::Result<Self> {
-      use syn::{Expr, ExprBlock, Error, Stmt, token::Semi};
+        use syn::{token::Semi, Error, Expr, ExprBlock, Stmt};
 
-      let try_get_stmt = |mut block: ExprBlock| if block.block.stmts.len() == 1 {
-              Ok(block.block.stmts.pop().unwrap())
-          } else {
-              Err(syn::Error::new(
-                  node_span(&node),
-                  "method syntax must only contain a single statement."
-              ))
-          };
+        let try_get_stmt = |mut block: ExprBlock| {
+            if block.block.stmts.len() == 1 {
+                Ok(block.block.stmts.pop().unwrap())
+            } else {
+                Err(syn::Error::new(
+                    node_span(&node),
+                    "method syntax must only contain a single statement.",
+                ))
+            }
+        };
 
-      let try_get_call = |stmt: Stmt| match stmt {
-          Stmt::Expr(Expr::Call(call)) => Ok(call),
-          Stmt::Semi(_, Semi { spans: [semi] }) => Err(Error::new(semi, "Remove this semicolon")),
-          _ => Err(Error::new(node_span(&node), "Only method calls are supported in the attribute position.\ne.g. `<foo {bar()}>`")),
-      };
+        let try_get_call = |stmt: Stmt| match stmt {
+            Stmt::Expr(Expr::Call(call)) => Ok(call),
+            Stmt::Semi(_, Semi { spans: [semi] }) => Err(Error::new(semi, "Remove this semicolon")),
+            _ => Err(Error::new(
+                node_span(&node),
+                "Only method calls are supported in the attribute position.\ne.g. `<foo {bar()}>`",
+            )),
+        };
 
-      node.value_as_block()
-          .ok_or_else(|| unreachable!("`try_parse_method_syntax` should only ever be called on block nodes."))
-          .and_then(try_get_stmt)
-          .and_then(try_get_call)
-          .map(|call| MoxAttr::MethodCall(call))
+        node.value_as_block()
+            .ok_or_else(|| {
+                unreachable!("`try_parse_method_syntax` should only ever be called on block nodes.")
+            })
+            .and_then(try_get_stmt)
+            .and_then(try_get_call)
+            .map(|call| MoxAttr::MethodCall(call))
     }
 
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
@@ -415,9 +418,9 @@ impl MoxAttr {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let call = match self {
-          Self::KeyValue {name, value} => quote!(.#name(#value)),
-          Self::Punned(name) => quote!(.#name(#name)),
-          Self::MethodCall(call) => quote!(.#call),
+            Self::KeyValue { name, value } => quote!(.#name(#value)),
+            Self::Punned(name) => quote!(.#name(#name)),
+            Self::MethodCall(call) => quote!(.#call),
         };
 
         tokens.extend(call);
@@ -502,29 +505,28 @@ fn node_span(node: &syn_rsx::Node) -> Span {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn fails() {
-      fn assert_error(input: TokenStream) {
-          match syn::parse2::<MoxItem>(input) {
-              Ok(_) => unreachable!(),
-              Err(error) => println!("{}", error),
-          }
-      }
-  
-      println!();
-      assert_error(quote! { <foo {let x = 12;} /> });
-      assert_error(quote! { <foo {use std;} /> });
-      assert_error(quote! { <foo {"str"} /> });
-      assert_error(quote! { <foo {nullary_1();} /> });
-      assert_error(quote! { <foo {nullary_1(); nullary_2();} /> });
-      assert_error(quote! { <colon:tag:name /> });
-      assert_error(quote! { <{"block tag name"} /> });
-      assert_error(quote! { <some::tag colon:attribute:name=() /> });
-      assert_error(quote! { <some::tag path::attribute::name=() /> });
-      assert_error(quote! { {% "1: {}; 2: {}", var1, var2 tail } });
-      println!();
-  }
+    #[test]
+    fn fails() {
+        fn assert_error(input: TokenStream) {
+            match syn::parse2::<MoxItem>(input) {
+                Ok(_) => unreachable!(),
+                Err(error) => println!("{}", error),
+            }
+        }
 
+        println!();
+        assert_error(quote! { <foo {let x = 12;} /> });
+        assert_error(quote! { <foo {use std;} /> });
+        assert_error(quote! { <foo {"str"} /> });
+        assert_error(quote! { <foo {nullary_1();} /> });
+        assert_error(quote! { <foo {nullary_1(); nullary_2();} /> });
+        assert_error(quote! { <colon:tag:name /> });
+        assert_error(quote! { <{"block tag name"} /> });
+        assert_error(quote! { <some::tag colon:attribute:name=() /> });
+        assert_error(quote! { <some::tag path::attribute::name=() /> });
+        assert_error(quote! { {% "1: {}; 2: {}", var1, var2 tail } });
+        println!();
+    }
 }
