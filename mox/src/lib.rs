@@ -339,9 +339,11 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
             | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Attribute => {
                 let name = MoxAttr::validate_name(node.name.unwrap())?;
-                let attr = node.value
-                    .map(|value| MoxAttr::KeyValue{ name: name.clone(), value })
-                    .unwrap_or_else(|| MoxAttr::Punned(name));
+
+                let attr = match node.value {
+                    Some(value) => MoxAttr::KeyValue { name: name.clone(), value },
+                    None => MoxAttr::Punned(name),
+                };
 
                 Ok(attr)
             }
