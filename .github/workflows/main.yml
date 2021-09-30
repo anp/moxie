@@ -2,7 +2,7 @@ env:
   RUSTFLAGS: -D warnings
   # coverage collection depends on unstable features.
   # we want the CI results to all be from the same toolchain, so we set it up here.
-  RUSTUP_TOOLCHAIN: nightly-2021-03-24
+  RUSTUP_TOOLCHAIN: nightly-2021-10-30
 on:
   push:
     branches:
