@@ -30,6 +30,7 @@ impl DomLoop {
 
         let mut inner = RunLoop::new(Box::new(move || {
             let parent = CachedNode::new(parent.clone());
+            #[allow(clippy::redundant_closure)] // removing the closure syntax makes this FnOnce
             let new_root = topo::call(|| root());
 
             parent.ensure_child_attached(new_root.to_bind());

@@ -64,7 +64,7 @@ impl crate::Dom for Rc<VirtNode> {
             }
             VirtData::Text(t) => {
                 writer
-                    .write_event(Event::Text(BytesText::from_plain_str(&t)))
+                    .write_event(Event::Text(BytesText::from_plain_str(t)))
                     .expect("writing text node");
             }
         }
