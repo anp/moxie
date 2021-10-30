@@ -161,7 +161,7 @@ impl Debug for Prettified {
                         continue;
                     }
 
-                    if let Ok(value) = Reflect::get(&obj, &raw_key) {
+                    if let Ok(value) = Reflect::get(obj, &raw_key) {
                         props_seen.insert(key.clone());
                         if value.is_function() {
                             functions.insert(key);

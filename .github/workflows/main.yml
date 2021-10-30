@@ -2,7 +2,7 @@ env:
   RUSTFLAGS: -D warnings
   # coverage collection depends on unstable features.
   # we want the CI results to all be from the same toolchain, so we set it up here.
-  RUSTUP_TOOLCHAIN: nightly-2021-03-24
+  RUSTUP_TOOLCHAIN: nightly-2021-10-30
 on:
   push:
     branches:
@@ -19,13 +19,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
-    - name: ensure lockfile up to date
-      run: cargo generate-lockfile --manifest-path ofl/Cargo.toml
-    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install gnu-tar
-        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
@@ -62,11 +55,6 @@ jobs:
 
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
-    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install gnu-tar
-        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
@@ -105,11 +93,6 @@ jobs:
 
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
-    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install gnu-tar
-        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
@@ -152,11 +135,6 @@ jobs:
 
     - name: ensure lockfile up to date
       run: cargo generate-lockfile
-    - name: install gnu tar to work around https://github.com/actions/cache/issues/403
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install gnu-tar
-        echo PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
         key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2

@@ -74,7 +74,7 @@ impl Collect {
     pub fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
         let mut command = Command::new("cargo");
         command
-            .env("RUSTFLAGS", "-Zinstrument-coverage")
+            .env("RUSTFLAGS", "-Zinstrument-coverage -Ccodegen-units=1")
             .env(
                 "LLVM_PROFILE_FILE",
                 project_root

@@ -40,7 +40,7 @@ where
 
 fn inject_script_tag(body: &str) -> Option<String> {
     lol_html::rewrite_str(
-        &body,
+        body,
         RewriteStrSettings {
             element_content_handlers: vec![element!("head", |head| {
                 info!("inserting script tag");

@@ -33,7 +33,7 @@ impl<State> Var<State> {
 
     /// Returns a reference to the latest value, pending or committed.
     pub fn latest(&self) -> &State {
-        &self.pending.as_ref().unwrap_or(&self.current)
+        self.pending.as_ref().unwrap_or(&self.current)
     }
 
     /// Initiate a commit to the state variable. The commit will actually
