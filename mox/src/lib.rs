@@ -375,7 +375,7 @@ impl ToTokens for MoxExpr {
 trait NodeConvertError {
     fn node_convert_error(node: &syn_rsx::Node) -> syn::Error {
         syn::Error::new(
-            node_span(&node),
+            node_span(node),
             format_args!("Cannot convert {} to {}", node.node_type, std::any::type_name::<Self>(),),
         )
     }

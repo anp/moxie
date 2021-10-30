@@ -474,8 +474,6 @@ impl From<&'static Location<'static>> for Callsite {
 struct Scope {
     /// current id
     id: CallId,
-    /// source location for this scope's root
-    callsite: Callsite,
     /// # times each callsite's type has been observed during this scope.
     callsite_counts: RefCell<Vec<(Callsite, u32)>>,
 }
@@ -491,7 +489,6 @@ impl Scope {
     {
         self.increment_count(callsite);
         let child_point = Self {
-            callsite,
             callsite_counts: RefCell::new(Default::default()),
             id: self.id.child(callsite, slot),
         };
@@ -523,7 +520,7 @@ impl Scope {
 
 impl Default for Scope {
     fn default() -> Self {
-        Self { id: CallId::root(), callsite: Callsite::here(), callsite_counts: Default::default() }
+        Self { id: CallId::root(), callsite_counts: Default::default() }
     }
 }
 
