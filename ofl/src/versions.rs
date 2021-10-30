@@ -135,14 +135,14 @@ fn update_dependency_version<'doc>(
     }
 
     let dep_version: &mut toml_edit::Value =
-        if let Some(dep) = dependencies[&package_name].as_table_mut() {
+        if let Some(dep) = dependencies[package_name].as_table_mut() {
             if dep.contains_key("version") {
                 dep["version"].as_value_mut().unwrap()
             } else {
                 // it's a table but it only specifies path or something else weird
                 return false;
             }
-        } else if let Some(dep) = dependencies[&package_name].as_value_mut() {
+        } else if let Some(dep) = dependencies[package_name].as_value_mut() {
             if let Some(inline) = dep.as_inline_table_mut() {
                 if let Some(version) = inline.get_mut("version") {
                     version
