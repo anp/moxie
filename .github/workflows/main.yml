@@ -19,8 +19,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
-    - name: ensure lockfile up to date
-      run: cargo generate-lockfile --manifest-path ofl/Cargo.toml
     - name: install gnu tar to work around https://github.com/actions/cache/issues/403
       if: matrix.os == 'macos-latest'
       run: |
