@@ -20,12 +20,12 @@ fn call(c: &mut Criterion) {
 fn call_topo_fns_to_depth(b: &mut criterion::Bencher, depth: &usize) {
     macro_rules! mk {
         (go $depth_spec:ident) => {
-            b.iter(|| topo::call(|| mk!(pass $depth_spec 0)));
+            b.iter(|| topo::call(|| mk!(pass $depth_spec 0)))
         };
         (pass $depth_spec:ident $call_depth:expr) => {
             topo::call(|| {
                 mk!(cur $depth_spec ($call_depth + 1));
-            });
+            })
         };
         (cur twelve $depth:expr) => {
             mk!(pass eleven $depth);
