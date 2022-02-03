@@ -1,5 +1,5 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
@@ -9,9 +9,6 @@
             "presentation": {
                 "group": "main",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -29,9 +26,6 @@
                 "group": "main",
                 "panel": "dedicated"
             },
-            "runOptions": {
-                "runOn": "folderOpen"
-            },
             "isBackground": true,
             "command": "cargo",
             "args": [
@@ -47,9 +41,6 @@
             "presentation": {
                 "group": "tools",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -67,9 +58,6 @@
                 "group": "tools",
                 "panel": "dedicated"
             },
-            "runOptions": {
-                "runOn": "folderOpen"
-            },
             "isBackground": true,
             "command": "cargo",
             "args": [
@@ -83,9 +71,6 @@
             "presentation": {
                 "group": "tools",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -102,9 +87,6 @@
             "presentation": {
                 "group": "tools",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "cargo",
@@ -125,9 +107,6 @@
             "presentation": {
                 "group": "tools",
                 "panel": "dedicated"
-            },
-            "runOptions": {
-                "runOn": "folderOpen"
             },
             "isBackground": true,
             "command": "npx",

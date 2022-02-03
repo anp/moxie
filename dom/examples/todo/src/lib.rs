@@ -5,7 +5,6 @@ use header::input_header;
 use main_section::main_section;
 
 use illicit::AsContext;
-use mox::mox;
 use moxie_dom::{
     elements::sectioning::{section, Section},
     interfaces::element::Element,
@@ -24,12 +23,11 @@ pub mod main_section;
 
 #[topo::nested]
 fn todo_app() -> Section {
-    mox! {
-        <section class="todoapp">
-            { input_header() }
-            { main_section() }
-        </section>
+    let mut app = section().class("todoapp").child(input_header());
+    if let Some(m) = main_section() {
+        app = app.child(m);
     }
+    app.build()
 }
 
 pub(crate) struct App {
