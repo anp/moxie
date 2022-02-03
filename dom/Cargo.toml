@@ -17,6 +17,9 @@ edition = "2018"
 default-target = "wasm32-unknown-unknown"
 all-features = true
 
+[package.metadata.honk]
+browser-tests = true
+
 [lib]
 crate-type = [ "cdylib", "rlib", ]
 
