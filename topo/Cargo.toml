@@ -25,7 +25,7 @@ parking_lot = "0.11.0"
 topo-macro = { path = "macro", version = "0.10.0"}
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4"
 
 [[bench]]
 name = "simple_calls"

@@ -19,7 +19,7 @@ owning_ref = "0.4"
 scopeguard = "1"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4"
 insta = "1.0.0"
 
 [[bench]]
