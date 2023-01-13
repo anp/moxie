@@ -96,6 +96,8 @@ pub fn setup_tracing() {
         info!("tracing initialized");
     });
     console_error_panic_hook::set_once();
+    use moxie_dom::raw::sys::window;
+    boot(window().unwrap().document().unwrap().get_element_by_id("content").unwrap().into());
 }
 
 #[wasm_bindgen]
