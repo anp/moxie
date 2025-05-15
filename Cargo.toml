@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "dom",
+    "dom/augdom",
+    "dom/examples/counter_fn",
+    "dom/examples/dom_builder",
+    "dom/examples/drivertest",
+    "dom/examples/hacking",
+    "dom/examples/ssr",
+    "dom/examples/todo",
+    "dom/prettiest",
+    "dom/raf",
+]
+exclude = ["ofl"]
