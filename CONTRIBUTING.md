@@ -23,19 +23,32 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 
 * [rustup](https://rustup.rs)
 * [bazelisk](https://bazel.build/install/bazelisk)
+  * usually a good idea to set this as `bazel` in your `PATH`
 * [buildifier](https://github.com/bazelbuild/buildtools/blob/main/buildifier/README.md)
+* (optional) [bazel-watcher](https://github.com/bazelbuild/bazel-watcher/releases)
+  * the project readme has install instructions and they upload binaries to github releases
 
 ### Workflows
+
+Note: if you haven't installed `bazel-watcher` replace `ibazel` with `bazel` below and rerun the command when you've made changes you'd like to see reflected in test outputs.
+
+#### Formatting
+
+If your editor isn't configured to format-on-save, you can run
+
+```shell
+bazel run @rules_rust//:rustfmt
+```
+
+to run `rustfmt` on all the source files the build system knows about.
 
 #### Core libraries
 
 From the project root, this command will run the default development loop:
 
 ```shell
-$ cargo core-flow
+$ ibazel test //:core_library_tests
 ```
-
-See [its definition](./.cargo/config) for details.
 
 #### moxie-dom
 
