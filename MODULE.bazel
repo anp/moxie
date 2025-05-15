@@ -2,8 +2,6 @@
 
 bazel_dep(name = "rules_rust", version = "0.61.0")
 
-# FIXME add a bazelversion file
-
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
 
 crate.spec(package = "criterion", version = "0.3")
