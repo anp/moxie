@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,9 +36,15 @@ rust_test(
     crate = "topo",
 )
 
+rust_doc_test(
+    name = "topo_doc_tests",
+    crate = "topo",
+)
+
 test_suite(
     name = "tests",
     tests = [
+        ":topo_doc_tests",
         ":topo_unit_tests",
         "//topo/benches",
         "//topo/macro:tests",

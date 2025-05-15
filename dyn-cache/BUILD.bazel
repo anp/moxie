@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -35,6 +35,11 @@ rust_library(
     # wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
 )
 
+rust_doc_test(
+    name = "dyn-cache_doc_tests",
+    crate = "dyn-cache",
+)
+
 rust_test(
     name = "dyn-cache_unit_tests",
     crate = "dyn-cache",
@@ -46,6 +51,7 @@ rust_test(
 test_suite(
     name = "tests",
     tests = [
+        ":dyn-cache_doc_tests",
         ":dyn-cache_unit_tests",
     ],
 )

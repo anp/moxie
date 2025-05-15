@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_proc_macro", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,9 +27,15 @@ rust_test(
     crate = "mox",
 )
 
+rust_doc_test(
+    name = "mox_doc_tests",
+    crate = "mox",
+)
+
 test_suite(
     name = "tests",
     tests = [
+        ":mox_doc_tests",
         ":mox_unit_tests",
         "//mox/tests",
     ],

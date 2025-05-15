@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_proc_macro", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,9 +25,15 @@ rust_test(
     crate = "illicit-macro",
 )
 
+rust_doc_test(
+    name = "illicit-macro_doc_tests",
+    crate = "illicit-macro",
+)
+
 test_suite(
     name = "tests",
     tests = [
+        ":illicit-macro_doc_tests",
         ":illicit-macro_unit_tests",
     ],
 )
