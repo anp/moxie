@@ -2,6 +2,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# FIXME why doesn't this produce results?
 rust_test(
     name = "illicit_bench",
     srcs = [
@@ -12,5 +13,12 @@ rust_test(
     deps = [
         "//illicit",
         "@crates//:criterion",
+    ],
+)
+
+test_suite(
+    name = "benches",
+    tests = [
+        ":illicit_bench",
     ],
 )

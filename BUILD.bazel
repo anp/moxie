@@ -1,1 +1,14 @@
 # FIXME define some useful test groups to replace cargo aliases
+
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+
+test_suite(
+    name = "core_library_tests",
+    tests = [
+        "//illicit:tests",
+    ],
+)
