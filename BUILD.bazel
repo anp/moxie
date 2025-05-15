@@ -34,6 +34,8 @@ rust_lint_config(
     },
     rustc = {
         "missing_docs": "warn",
+        # FIXME make conditional on CI or something?
+        # "warnings": "deny",
     },
 )
 
