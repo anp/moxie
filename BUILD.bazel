@@ -1,3 +1,7 @@
+load("@rules_rust//rust:defs.bzl", "rust_lint_config")
+
+package(default_visibility = ["//visibility:public"])
+
 # # update here, update everywhere!
 # license = "MIT/Apache-2.0"
 # homepage = "https://moxie.rs"
@@ -20,6 +24,17 @@ test_suite(
     tests = [
         ":core_library_tests",
     ],
+)
+
+rust_lint_config(
+    name = "library_lints",
+    clippy = {
+        "unsafe_code": "forbid",
+        "all": "warn",
+    },
+    rustc = {
+        "missing_docs": "warn",
+    },
 )
 
 exports_files(

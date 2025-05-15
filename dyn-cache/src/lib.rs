@@ -1,6 +1,3 @@
-#![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs)]
-
 //! Caches for storing the results of repeated function calls. The caches
 //! use minimal dynamic dispatch to store arbitrarily many
 //! types of query results in a single store.

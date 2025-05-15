@@ -11,6 +11,7 @@ rust_proc_macro(
         "src/lib.rs",
     ],
     edition = "2018",
+    lint_config = "//:library_lints",
     version = "0.10.0",
     deps = [
         "@crates//:quote",

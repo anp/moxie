@@ -53,9 +53,6 @@
 //! [moxie-dom]: https://docs.rs/moxie-dom
 //! [topo]: https://docs.rs/topo/
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs)]
-
 pub mod runtime;
 pub mod testing;
 

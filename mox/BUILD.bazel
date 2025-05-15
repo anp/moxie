@@ -13,6 +13,7 @@ rust_proc_macro(
     # keywords = ["jsx", "xml", "builder"]
     # readme = "CHANGELOG.md"
     edition = "2018",
+    lint_config = "//:library_lints",
     deps = [
         "@crates//:proc-macro2",
         "@crates//:quote",

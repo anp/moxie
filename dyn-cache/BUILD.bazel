@@ -17,6 +17,7 @@ rust_library(
         "src/namespace.rs",
     ],
     edition = "2018",
+    lint_config = "//:library_lints",
     proc_macro_deps = [
         "@crates//:paste",
     ],

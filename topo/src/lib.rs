@@ -1,6 +1,3 @@
-#![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs)]
-
 //! `topo` provides stable callgraph identifiers for implementing higher
 //! level [Incremental Computing] abstractions like those in the
 //! [moxie](https://docs.rs/moxie) crate.

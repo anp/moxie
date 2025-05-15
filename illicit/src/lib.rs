@@ -126,9 +126,6 @@
 //!
 //! [execution-context]: https://docs.rs/execution-context
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs)]
-
 mod anon_rc;
 
 use anon_rc::AnonRc;

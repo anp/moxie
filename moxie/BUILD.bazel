@@ -18,6 +18,7 @@ rust_library(
         "src/testing.rs",
     ],
     edition = "2018",
+    lint_config = "//:library_lints",
     version = "0.7.1",
     deps = [
         "//dyn-cache",
