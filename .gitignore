@@ -10,4 +10,4 @@ pkg/
 cargo-timing*.html
 **/cypress/screenshots
 **/cypress/videos
-bazel-*/
+bazel-*
