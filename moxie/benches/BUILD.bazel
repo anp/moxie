@@ -1,0 +1,24 @@
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME why doesn't this produce results?
+rust_test(
+    name = "moxie_core_bench",
+    srcs = [
+        "core.rs",
+    ],
+    edition = "2018",
+    use_libtest_harness = False,
+    deps = [
+        "//moxie",
+        "@crates//:criterion",
+    ],
+)
+
+test_suite(
+    name = "benches",
+    tests = [
+        ":moxie_core_bench",
+    ],
+)

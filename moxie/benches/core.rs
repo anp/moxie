@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate criterion;
-
 use criterion::{BenchmarkId, Criterion};
 use moxie::{
     once,

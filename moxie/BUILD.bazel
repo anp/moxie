@@ -46,6 +46,7 @@ test_suite(
     name = "tests",
     tests = [
         ":moxie_unit_tests",
+        "//moxie/benches",
         "//moxie/tests",
     ],
 )
