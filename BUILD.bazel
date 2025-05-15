@@ -14,3 +14,11 @@ test_suite(
         "//topo:tests",
     ],
 )
+
+test_suite(
+    name = "all_tests",
+    tests = [
+        ":core_library_tests",
+        "//dom:tests",
+    ],
+)

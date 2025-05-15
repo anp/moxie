@@ -23,6 +23,7 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 
 * [rustup](https://rustup.rs)
 * [bazelisk](https://bazel.build/install/bazelisk)
+* [buildifier](https://github.com/bazelbuild/buildtools/blob/main/buildifier/README.md)
 
 ### Workflows
 
