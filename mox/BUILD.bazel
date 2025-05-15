@@ -1,0 +1,35 @@
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_proc_macro(
+    name = "mox",
+    srcs = [
+        "src/lib.rs",
+    ],
+    # FIXME translate this metadata somehow
+    # description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
+    # categories = ["gui", "rust-patterns"]
+    # keywords = ["jsx", "xml", "builder"]
+    # readme = "CHANGELOG.md"
+    edition = "2018",
+    deps = [
+        "@crates//:proc-macro2",
+        "@crates//:quote",
+        "@crates//:syn",
+        "@crates//:syn-rsx",
+    ],
+)
+
+rust_test(
+    name = "mox_unit_tests",
+    crate = "mox",
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":mox_unit_tests",
+        "//mox/tests",
+    ],
+)
