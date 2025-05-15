@@ -1,29 +1,19 @@
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
-# FIXME translate this all somehow
-# [package]
-# name = "dyn-cache"
-# version = "0.12.2"
-# description = "Query cache indexed by type."
-# categories = ["caching", "rust-patterns"]
-# keywords = ["incremental", "memoize", "intern", "cache"]
-# readme = "CHANGELOG.md"
-
-# # update here, update everywhere!
-# license = "MIT/Apache-2.0"
-# homepage = "https://moxie.rs"
-# repository = "https://github.com/anp/moxie.git"
-# authors = ["Adam Perry <lol@anp.lol>"]
-# edition = "2018"
-
+# FIXME translate these features somehow
 # [features]
 # default = []
 # wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
 
 rust_library(
     name = "dyn-cache",
+    # FIXME translate this metadata somehow
+    # description = "Query cache indexed by type."
+    # categories = ["caching", "rust-patterns"]
+    # keywords = ["incremental", "memoize", "intern", "cache"]
+    # readme = "CHANGELOG.md"
     srcs = [
         "src/cache_cell.rs",
         "src/definition.rs",
@@ -45,5 +35,17 @@ rust_library(
     ],
 )
 
-# [dev-dependencies]
-# scopeguard = "1"
+rust_test(
+    name = "dyn-cache_unit_tests",
+    crate = "dyn-cache",
+    deps = [
+        "@crates//:scopeguard",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":dyn-cache_unit_tests",
+    ],
+)

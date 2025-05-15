@@ -9,6 +9,7 @@
 test_suite(
     name = "core_library_tests",
     tests = [
+        "//dyn-cache:tests",
         "//illicit:tests",
     ],
 )
