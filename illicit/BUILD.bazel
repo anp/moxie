@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,10 +34,7 @@ rust_library(
     ],
 )
 
-# [dev-dependencies]
-# criterion = "0.3"
-# insta = "1.0.0"
-
-# [[bench]]
-# name = "basic_env"
-# harness = false
+rust_test(
+    name = "illicit_unit_tests",
+    crate = "illicit",
+)

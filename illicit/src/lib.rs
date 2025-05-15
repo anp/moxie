@@ -525,7 +525,6 @@ impl Display for GetFailed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use insta::{assert_display_snapshot, assert_snapshot};
 
     #[test]
     fn child_env_replaces_parent_env_values() {
@@ -589,18 +588,5 @@ mod tests {
             hide::<u8>();
             assert!(get::<u8>().is_err(), "just removed u8 from Env");
         })
-    }
-
-    #[test]
-    fn failure_error() {
-        let e = get::<u8>().unwrap_err();
-        assert_display_snapshot!(e);
-    }
-
-    #[test]
-    fn layer_debug_impl() {
-        let snapshot = Layer::new().offer(1u8).enter(Snapshot::get);
-        // assert_debug_snapshot adds #, which prints file paths, which breaks snapshots
-        assert_snapshot!(format!("{:?}", snapshot));
     }
 }

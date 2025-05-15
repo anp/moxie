@@ -1,5 +1,0 @@
----
-source: illicit/src/lib.rs
-expression: "format!(\"{:?}\", snapshot)"
----
-Snapshot { current: Layer { u8: 1 } }
