@@ -11,5 +11,6 @@ test_suite(
     tests = [
         "//dyn-cache:tests",
         "//illicit:tests",
+        "//topo:tests",
     ],
 )

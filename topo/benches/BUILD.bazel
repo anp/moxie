@@ -1,0 +1,24 @@
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME why doesn't this produce results?
+rust_test(
+    name = "topo_bench",
+    srcs = [
+        "simple_calls.rs",
+    ],
+    edition = "2018",
+    use_libtest_harness = False,
+    deps = [
+        "//topo",
+        "@crates//:criterion",
+    ],
+)
+
+test_suite(
+    name = "benches",
+    tests = [
+        ":topo_bench",
+    ],
+)
