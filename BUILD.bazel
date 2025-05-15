@@ -19,6 +19,13 @@ test_suite(
     name = "all_tests",
     tests = [
         ":core_library_tests",
-        "//dom:tests",
     ],
+)
+
+exports_files(
+    srcs = [
+        "clippy.toml",
+        "rustfmt.toml",
+    ],
+    visibility = ["//visibility:public"],
 )

@@ -347,9 +347,9 @@ where
 /// The topmost parent or "root" of a callgraph can be defined in two ways:
 ///
 /// 1. a [`call`] or [`call_in_slot`] invocation with no parent implicitly
-/// creates its own root
+///    creates its own root
 /// 2. an explicit call to [`root`] creates a new subgraph regardless of the
-/// current parent
+///    current parent
 ///
 /// See [`root`] for examples.
 ///
@@ -501,7 +501,7 @@ impl Scope {
         F: FnOnce(&Scope) -> Out,
     {
         if let Ok(current) = illicit::get::<Scope>() {
-            op(&*current)
+            op(&current)
         } else {
             op(&Scope::default())
         }
@@ -631,8 +631,8 @@ mod tests {
     #[test]
     fn threads_and_ids() {
         let returns_two_ids = || {
-            let first = call(|| CallId::current());
-            let second = call(|| CallId::current());
+            let first = call(CallId::current);
+            let second = call(CallId::current);
             assert_ne!(first, second, "these are always distinct calls");
             (first, second)
         };

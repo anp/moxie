@@ -26,6 +26,10 @@ macro_rules! impl_common_traits_for_type_with_addr {
         }
         impl Eq for $type_ {}
 
+        #[allow(
+            clippy::non_canonical_partial_ord_impl,
+            reason = "we want to use the address for ordering"
+        )]
         impl PartialOrd for $type_ {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 self.addr().partial_cmp(&other.addr())
@@ -34,7 +38,7 @@ macro_rules! impl_common_traits_for_type_with_addr {
 
         impl Ord for $type_ {
             fn cmp(&self, other: &Self) -> Ordering {
-                self.addr().cmp(&other.addr())
+                self.partial_cmp(other).unwrap_or(Ordering::Equal)
             }
         }
     };

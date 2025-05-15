@@ -12,7 +12,7 @@ use std::{
     any::type_name,
     borrow::Borrow,
     fmt::{Debug, Formatter, Result as FmtResult},
-    hash::{BuildHasher, Hash, Hasher},
+    hash::{BuildHasher, Hash},
     marker::PhantomData,
 };
 
@@ -42,7 +42,7 @@ impl<'k, K: ?Sized, I, H> KeyMiss<'k, K, I, H> {
     }
 }
 
-impl<'k, K, I, H> Debug for KeyMiss<'k, K, I, H>
+impl<K, I, H> Debug for KeyMiss<'_, K, I, H>
 where
     K: Debug + ?Sized,
     I: Debug,
@@ -105,15 +105,10 @@ where
     where
         Key: Hash + ?Sized,
     {
-        let mut hasher = self.inner.hasher().build_hasher();
-        key.hash(&mut hasher);
-        Hashed { key, hash: hasher.finish(), hasher: PhantomData }
+        Hashed { key, hash: self.inner.hasher().hash_one(key), hasher: PhantomData }
     }
 
-    fn entry<'k, Key>(
-        &self,
-        hashed: &Hashed<&'k Key, H>,
-    ) -> Option<(&Scope, &CacheCell<Input, Output>)>
+    fn entry<Key>(&self, hashed: &Hashed<&Key, H>) -> Option<(&Scope, &CacheCell<Input, Output>)>
     where
         Key: Eq + ?Sized,
         Scope: Borrow<Key>,
@@ -121,9 +116,9 @@ where
         self.inner.raw_entry().from_hash(hashed.hash, |q| q.borrow().eq(hashed.key))
     }
 
-    fn entry_mut<'k, Key>(
+    fn entry_mut<Key>(
         &mut self,
-        hashed: &Hashed<&'k Key, H>,
+        hashed: &Hashed<&Key, H>,
     ) -> RawEntryMut<Scope, CacheCell<Input, Output>, H>
     where
         Key: Eq + ?Sized,

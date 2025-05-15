@@ -330,7 +330,7 @@ use hashbrown::hash_map::DefaultHashBuilder;
 use std::{
     any::TypeId,
     fmt::{Debug, Formatter, Result as FmtResult},
-    hash::{BuildHasher, Hash, Hasher},
+    hash::{BuildHasher, Hash},
     marker::PhantomData,
 };
 
@@ -391,7 +391,7 @@ impl<'k, Key: ?Sized, Scope, Input, Output, H> CacheMiss<'k, Key, Scope, Input, 
     }
 }
 
-impl<'k, Key, Scope, Input, Output, H> Debug for CacheMiss<'k, Key, Scope, Input, Output, H>
+impl<Key, Scope, Input, Output, H> Debug for CacheMiss<'_, Key, Scope, Input, Output, H>
 where
     Key: Debug + ?Sized,
     Scope: Debug,
@@ -468,9 +468,7 @@ where
     fn new(build: &H) -> Self {
         // this is a bit unrustic but it lets us keep the typeid defined once
         let mut new = Query { ty: PhantomData, hasher: PhantomData, hash: 0 };
-        let mut hasher = build.build_hasher();
-        new.ty().hash(&mut hasher);
-        new.hash = hasher.finish();
+        new.hash = build.hash_one(new.ty());
         new
     }
 

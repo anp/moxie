@@ -2,12 +2,12 @@ use criterion::{BenchmarkId, Criterion};
 
 fn get_id(c: &mut Criterion) {
     c.bench_function("id from env", |b| {
-        topo::call(|| b.iter(|| topo::CallId::current()));
+        topo::call(|| b.iter(topo::CallId::current));
     });
 }
 
 fn call_and_get_id(c: &mut Criterion) {
-    c.bench_function("call and get id", |b| b.iter(|| topo::call(|| topo::CallId::current())));
+    c.bench_function("call and get id", |b| b.iter(|| topo::call(topo::CallId::current)));
 }
 
 fn call(c: &mut Criterion) {

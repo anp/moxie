@@ -70,7 +70,7 @@ where
 
 impl<T> Clone for Slot<T> {
     fn clone(&self) -> Self {
-        Self { index: self.index, ty: PhantomData }
+        *self
     }
 }
 
@@ -105,6 +105,7 @@ impl<T> PartialEq for Slot<T> {
 }
 impl<T> Eq for Slot<T> {}
 
+#[allow(clippy::non_canonical_partial_ord_impl, reason = "we want to use the index for ordering")]
 impl<T> PartialOrd for Slot<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.index.partial_cmp(&other.index)
@@ -112,7 +113,7 @@ impl<T> PartialOrd for Slot<T> {
 }
 impl<T> Ord for Slot<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.index.cmp(&other.index)
+        self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
