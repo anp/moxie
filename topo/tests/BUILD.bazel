@@ -1,0 +1,20 @@
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_test(
+    name = "topo_simple_integration_test",
+    srcs = [
+        "simple.rs",
+    ],
+    deps = [
+        "//topo",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":topo_simple_integration_test",
+    ],
+)

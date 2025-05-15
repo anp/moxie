@@ -2,11 +2,6 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
-# FIXME translate these features somehow
-# [features]
-# default = []
-# wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
-
 rust_library(
     name = "dyn-cache",
     # FIXME translate this metadata somehow
@@ -33,6 +28,10 @@ rust_library(
         "@crates//:hashbrown",
         "@crates//:parking_lot",
     ],
+    # FIXME translate these features somehow
+    # [features]
+    # default = []
+    # wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
 )
 
 rust_test(
