@@ -9,6 +9,7 @@ use syn::{
     Attribute, FnArg, ItemFn, Local, PatType, Stmt, Token, Type, TypeReference,
 };
 
+/// FIXME add docs
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn from_env(args: TokenStream, input: TokenStream) -> TokenStream {

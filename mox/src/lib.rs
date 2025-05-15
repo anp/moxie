@@ -1,3 +1,5 @@
+//! Library for the `mox!` macro which provides an XML-like syntax for the builder pattern.
+
 extern crate proc_macro;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -16,7 +18,8 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 ///
 /// # Outputs
 ///
-/// The `mox!` macro's contents are expanded to method calls, with `.build()` called on the outmost expression.
+/// The `mox!` macro's contents are expanded to method calls, with `.build()` called on the outmost
+/// expression.
 ///
 /// ## Tags
 ///

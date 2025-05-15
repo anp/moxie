@@ -6,6 +6,7 @@ use syn::{
     NestedMeta,
 };
 
+/// FIXME add docs
 #[proc_macro_attribute]
 pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
     let args: AttributeArgs = parse_macro_input!(args);
