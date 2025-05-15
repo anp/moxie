@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate criterion;
-
 use criterion::Criterion;
 
 fn enter_small_env(c: &mut Criterion) {

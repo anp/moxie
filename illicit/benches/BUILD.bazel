@@ -1,0 +1,16 @@
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_test(
+    name = "illicit_bench",
+    srcs = [
+        "basic_env.rs",
+    ],
+    edition = "2018",
+    use_libtest_harness = False,
+    deps = [
+        "//illicit",
+        "@crates//:criterion",
+    ],
+)
