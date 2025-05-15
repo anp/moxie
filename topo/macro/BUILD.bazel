@@ -1,0 +1,28 @@
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate this all somehow
+# [package]
+# description = "procedural macros for the topo crate"
+# readme = "../CHANGELOG.md"
+
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+
+rust_proc_macro(
+    name = "topo-macro",
+    srcs = [
+        "src/lib.rs",
+    ],
+    edition = "2018",
+    version = "0.10.0",
+    deps = [
+        "@crates//:quote",
+        "@crates//:syn",
+    ],
+)

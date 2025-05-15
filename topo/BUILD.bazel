@@ -21,3 +21,29 @@ package(default_visibility = ["//visibility:public"])
 # [features]
 # default = []
 # wasm-bindgen = [ "dyn-cache/wasm-bindgen", "parking_lot/wasm-bindgen" ]
+
+rust_library(
+    name = "topo",
+    srcs = [
+        "src/lib.rs",
+        "src/slot.rs",
+    ],
+    edition = "2018",
+    proc_macro_deps = [
+        "//topo/macro:topo-macro",
+    ],
+    version = "0.13.2",
+    deps = [
+        "//dyn-cache",
+        "//illicit",
+        "@crates//:once_cell",
+        "@crates//:parking_lot",
+    ],
+)
+
+# [dev-dependencies]
+# criterion = "0.3"
+
+# [[bench]]
+# name = "simple_calls"
+# harness = false
