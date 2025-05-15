@@ -1,30 +1,14 @@
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
-# FIXME translate this all somehow
-#
-# [package]
-# name = "moxie"
-# version = "0.7.1"
-# description = "Incremental runtime for interactive software."
-# categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
-# keywords = ["incremental", "memoize", "intern", "reactive"]
-# readme = "CHANGELOG.md"
-#
-# # update here, update everywhere!
-# license = "MIT/Apache-2.0"
-# homepage = "https://moxie.rs"
-# repository = "https://github.com/anp/moxie.git"
-# authors = ["Adam Perry <lol@anp.lol>"]
-# edition = "2018"
-#
-# [features]
-# default = []
-# wasm-bindgen = [ "dyn-cache/wasm-bindgen", "parking_lot/wasm-bindgen", "topo/wasm-bindgen" ]
-
 rust_library(
     name = "moxie",
+    # FIXME translate this metadata somehow
+    # description = "Incremental runtime for interactive software."
+    # categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
+    # keywords = ["incremental", "memoize", "intern", "reactive"]
+    # readme = "CHANGELOG.md"
     srcs = [
         "src/lib.rs",
         "src/runtime.rs",
@@ -44,8 +28,23 @@ rust_library(
         "@crates//:scopeguard",
         "@crates//:tracing",
     ],
+    # FIXME translate features somehow
+    # [features]
+    # default = []
+    # wasm-bindgen = [ "dyn-cache/wasm-bindgen", "parking_lot/wasm-bindgen", "topo/wasm-bindgen" ]
 )
 
-# [dev-dependencies]
-# criterion = "0.3"
-# tracing-subscriber = { version = "0.3.1", features = [ "env-filter" ] }
+rust_test(
+    name = "moxie_unit_tests",
+    crate = "moxie",
+    deps = [
+        "@crates//:tracing-subscriber",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":moxie_unit_tests",
+    ],
+)
