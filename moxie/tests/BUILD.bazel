@@ -1,0 +1,20 @@
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_test(
+    name = "moxie_issue_238_regression_test",
+    srcs = [
+        "issue_238.rs",
+    ],
+    deps = [
+        "//moxie",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":moxie_issue_238_regression_test",
+    ],
+)
