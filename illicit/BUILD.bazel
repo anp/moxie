@@ -1,0 +1,43 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# [package]
+# name = "illicit"
+# version = "1.1.2"
+# description = "An implicit thread-local environment which is indexed by type."
+# categories = ["rust-patterns"]
+# keywords = ["context", "environment", "global", "singleton"]
+# readme = "CHANGELOG.md"
+
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+
+rust_library(
+    name = "illicit",
+    srcs = [
+        "src/anon_rc.rs",
+        "src/lib.rs",
+    ],
+    edition = "2018",
+    proc_macro_deps = [
+        "//illicit/macro:illicit-macro",
+    ],
+    version = "1.1.2",
+    deps = [
+        "@crates//:owning_ref",
+        "@crates//:scopeguard",
+    ],
+)
+
+# [dev-dependencies]
+# criterion = "0.3"
+# insta = "1.0.0"
+
+# [[bench]]
+# name = "basic_env"
+# harness = false

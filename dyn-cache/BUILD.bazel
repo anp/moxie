@@ -1,0 +1,49 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate this all somehow
+# [package]
+# name = "dyn-cache"
+# version = "0.12.2"
+# description = "Query cache indexed by type."
+# categories = ["caching", "rust-patterns"]
+# keywords = ["incremental", "memoize", "intern", "cache"]
+# readme = "CHANGELOG.md"
+
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+
+# [features]
+# default = []
+# wasm-bindgen = [ "parking_lot/wasm-bindgen" ]
+
+rust_library(
+    name = "dyn-cache",
+    srcs = [
+        "src/cache_cell.rs",
+        "src/definition.rs",
+        "src/dep_node.rs",
+        "src/lib.rs",
+        "src/namespace.rs",
+    ],
+    edition = "2018",
+    proc_macro_deps = [
+        "@crates//:paste",
+    ],
+    version = "0.12.2",
+    deps = [
+        "//illicit",
+        "@crates//:downcast-rs",
+        "@crates//:hash_hasher",
+        "@crates//:hashbrown",
+        "@crates//:parking_lot",
+    ],
+)
+
+# [dev-dependencies]
+# scopeguard = "1"

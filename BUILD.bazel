@@ -1,0 +1,51 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate this all somehow
+#
+# [package]
+# name = "moxie"
+# version = "0.7.1"
+# description = "Incremental runtime for interactive software."
+# categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
+# keywords = ["incremental", "memoize", "intern", "reactive"]
+# readme = "CHANGELOG.md"
+#
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+#
+# [features]
+# default = []
+# wasm-bindgen = [ "dyn-cache/wasm-bindgen", "parking_lot/wasm-bindgen", "topo/wasm-bindgen" ]
+
+rust_library(
+    name = "moxie",
+    srcs = [
+        "src/lib.rs",
+        "src/runtime.rs",
+        "src/runtime/context.rs",
+        "src/runtime/runloop.rs",
+        "src/runtime/var.rs",
+        "src/testing.rs",
+    ],
+    edition = "2018",
+    version = "0.7.1",
+    deps = [
+        "//dyn-cache",
+        "//illicit",
+        "//topo",
+        "@crates//:futures",
+        "@crates//:parking_lot",
+        "@crates//:scopeguard",
+        "@crates//:tracing",
+    ],
+)
+
+# [dev-dependencies]
+# criterion = "0.3"
+# tracing-subscriber = { version = "0.3.1", features = [ "env-filter" ] }

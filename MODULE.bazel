@@ -1,1 +1,28 @@
+"""moxie workspace configuration."""
+
 bazel_dep(name = "rules_rust", version = "0.61.0")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+# crate.spec(package = "futures", version = "0.3.5")
+# crate.spec(package = "parking_lot", version = "0.11")
+
+crate.spec(package = "criterion", version = "0.3")
+crate.spec(package = "downcast-rs", version = "1.1.1")
+crate.spec(package = "hash_hasher", version = "2.0.3")
+crate.spec(package = "hashbrown", version = "0.12.0")
+crate.spec(package = "insta", version = "1.0.0")
+crate.spec(package = "owning_ref", version = "0.4")
+crate.spec(package = "parking_lot", version = "0.11.0")
+crate.spec(package = "paste", version = "1.0.0")
+crate.spec(package = "proc-macro-error", version = "1.0.0")
+crate.spec(package = "quote", version = "1.0")
+crate.spec(package = "scopeguard", version = "1")
+crate.spec(package = "syn", version = "1.0", features = ["full"])
+
+# moxie
+# tracing = "^0.1"
+# tracing-subscriber = { version = "0.3.1", features = [ "env-filter" ] }
+
+crate.from_specs()
+use_repo(crate, "crates")

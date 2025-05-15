@@ -1,0 +1,23 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate this all somehow
+# [package]
+# name = "topo"
+# version = "0.13.2"
+# description = "Tools for incrementally computing repeated callgraphs."
+# categories = ["caching", "data-structures", "gui", "memory-management", "rust-patterns"]
+# keywords = ["cache", "memoize", "intern", "topology", "incremental"]
+# readme = "CHANGELOG.md"
+
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+
+# [features]
+# default = []
+# wasm-bindgen = [ "dyn-cache/wasm-bindgen", "parking_lot/wasm-bindgen" ]

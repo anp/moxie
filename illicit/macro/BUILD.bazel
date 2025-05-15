@@ -1,0 +1,32 @@
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate this all somehow
+#
+# [package]
+# name = "illicit-macro"
+# version = "1.0.0"
+# description = "procedural macros for the illicit crate"
+# readme = "../CHANGELOG.md"
+#
+# # update here, update everywhere!
+# license = "MIT/Apache-2.0"
+# homepage = "https://moxie.rs"
+# repository = "https://github.com/anp/moxie.git"
+# authors = ["Adam Perry <lol@anp.lol>"]
+# edition = "2018"
+
+rust_proc_macro(
+    name = "illicit-macro",
+    srcs = [
+        "src/lib.rs",
+    ],
+    edition = "2018",
+    version = "1.0.0",
+    deps = [
+        "@crates//:proc-macro-error",
+        "@crates//:quote",
+        "@crates//:syn",
+    ],
+)

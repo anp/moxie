@@ -1,16 +1,6 @@
 # Contributing to moxie
 
-Hello! The project is still very early but we're so excited to see you here!
-
-The core bits have only recently stabilized enough to invite contribution, and we're still working
-on a body of starter issues and docs that can enable more participation. If this doesn't scare you
-away, then read on.
-
-The project currently uses a [Discord server](https://discord.gg/vTAzk3d) for chat and we
-recommend joining if you're interested in contributing at this phase. If you would be interested in
-contributing but prefer other communications media, please let us know! It's certainly not
-required to contribute, but GitHub issues are a bit constraining for the level of ambiguity in the
-project today.
+GitHub issues are used for tracking and the project has a [Discord server](https://discord.gg/vTAzk3d).
 
 ## Code of Conduct
 
@@ -32,8 +22,7 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 ### Requirements
 
 * [rustup](https://rustup.rs)
-  * `rustup component add clippy rustfmt`
-* [cargo-watch](https://crates.io/crates/cargo-watch)
+* [bazelisk](https://bazel.build/install/bazelisk)
 
 ### Workflows
 
