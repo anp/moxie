@@ -6,3 +6,7 @@ build --output_groups=+clippy_checks
 build --@rules_rust//rust/settings:rustfmt.toml=//:rustfmt.toml
 build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
 build --output_groups=+rustfmt_checks
+
+# # FIXME limit these to windows? also document developer mode in contributing guide
+# startup --windows_enable_symlinks
+# build --enable_runfiles
