@@ -13,10 +13,20 @@
     },
     "settings": {
         "bazel.executable": "bazelisk",
-        "[rust]": {
-            "editor.rulers": [
-                100
+        "editor.rulers": [
+            100
+        ],
+        "rust-analyzer.workspace.discoverConfig": {
+            "command": [
+                "build/discover_config_for_rust_analyzer.sh"
             ],
+            "progressLabel": "rust_analyzer",
+            "filesToWatch": [
+                ".bazelrc",
+                ".bazelversion",
+                "BUILD.bazel",
+                "MODULE.bazel",
+            ]
         },
     },
     "tasks": {
