@@ -2,49 +2,6 @@
 ####################################################################################################
 # core crates
 
-core-flow = """
-watch --clear
-    -w benches
-    -w dyn-cache
-    -w illicit
-    -w mox
-    -w src
-    -w tests
-    -w topo
-    -w Cargo.toml
-    -x clippy-core
-    -x test-core
-    -x test-core-doc
-"""
-
-clippy-core = """clippy
---package dyn-cache
---package illicit
---package illicit-macro
---package mox
---package moxie
---package topo
---package topo-macro
-"""
-test-core = """test --all-targets
---package dyn-cache
---package illicit
---package illicit-macro
---package mox
---package moxie
---package topo
---package topo-macro
-"""
-test-core-doc = """test --doc
---package dyn-cache
---package illicit
---package illicit-macro
---package mox
---package moxie
---package topo
---package topo-macro
-"""
-
 docs-all = "doc --workspace --no-deps --all-features"
 
 ####################################################################################################
