@@ -1,6 +1,7 @@
 # Contributing to moxie
 
-GitHub issues are used for tracking and the project has a [Discord server](https://discord.gg/vTAzk3d).
+GitHub issues are used for tracking and the project has a [Discord
+server](https://discord.gg/vTAzk3d).
 
 ## Code of Conduct
 
@@ -13,7 +14,9 @@ CI is run via [GitHub Actions](https://github.com/anp/moxie/actions), and
 
 ### Landing PRs
 
-GitHub now offers an option to require that a branch is up-to-date before it is merged in a PR, which is enabled for the repository to aid in implementing [The Not Rocket Science Rule of Software Engineering](https://graydon.livejournal.com/186550.html):
+GitHub now offers an option to require that a branch is up-to-date before it is merged in a PR,
+which is enabled for the repository to aid in implementing [The Not Rocket Science Rule of Software
+Engineering](https://graydon.livejournal.com/186550.html):
 
 > automatically maintain a repository of code that always passes all the tests
 
@@ -30,9 +33,15 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 * (optional) [bazel-watcher](https://github.com/bazelbuild/bazel-watcher)
   * also <https://github.com/bazelbuild/bazel-watcher/releases>, drop it in `PATH`
 
+### VSCode users
+
+Open the `moxie.code-workspace` file as a workspace to get a preconfigured setup for the bazel
+build.
+
 ### Workflows
 
-Note: if you haven't installed `bazel-watcher` replace `ibazel` with `bazel` below and rerun the command when you've made changes you'd like to see reflected in test outputs.
+Note: if you haven't installed `bazel-watcher` replace `ibazel` with `bazel` below and rerun the
+command when you've made changes you'd like to see reflected in test outputs.
 
 #### Build everything
 
