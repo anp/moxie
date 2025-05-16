@@ -11,3 +11,4 @@ cargo-timing*.html
 **/cypress/screenshots
 **/cypress/videos
 bazel-*
+.vscode/
