@@ -22,15 +22,33 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 ### Requirements
 
 * [rustup](https://rustup.rs)
-* [bazelisk](https://bazel.build/install/bazelisk)
+* [bazelisk](https://github.com/bazelbuild/bazelisk?tab=readme-ov-file#installation)
   * usually a good idea to set this as `bazel` in your `PATH`
+  * see <https://github.com/bazelbuild/bazelisk/issues/571> for potential installation improvements
 * [buildifier](https://github.com/bazelbuild/buildtools/blob/main/buildifier/README.md)
-* (optional) [bazel-watcher](https://github.com/bazelbuild/bazel-watcher/releases)
-  * the project readme has install instructions and they upload binaries to github releases
+  * also <https://github.com/bazelbuild/buildtools/releases>, drop it in `PATH`
+* (optional) [bazel-watcher](https://github.com/bazelbuild/bazel-watcher)
+  * also <https://github.com/bazelbuild/bazel-watcher/releases>, drop it in `PATH`
 
 ### Workflows
 
 Note: if you haven't installed `bazel-watcher` replace `ibazel` with `bazel` below and rerun the command when you've made changes you'd like to see reflected in test outputs.
+
+#### Build everything
+
+The default build task in vscode, or:
+
+```shell
+ibazel build //...
+```
+
+#### Test everything
+
+The default test task in vscode, or:
+
+```shell
+ibazel test //...
+```
 
 #### Formatting
 
@@ -47,7 +65,7 @@ to run `rustfmt` on all the source files the build system knows about.
 From the project root, this command will run the default development loop:
 
 ```shell
-$ ibazel test //:core_library_tests
+ibazel test //:core_library_tests
 ```
 
 #### moxie-dom
@@ -55,13 +73,13 @@ $ ibazel test //:core_library_tests
 The main workflow for the dom library:
 
 ```shell
-$ cargo dom-flow
+cargo dom-flow
 ```
 
 To view examples, in a separate terminal:
 
 ```shell
-$ cargo server
+cargo server
 ```
 
 This will start a local HTTP server providing access to the project directory. It also watches the
@@ -74,9 +92,9 @@ connection to listen for changes, reloading when changes occur.
 The TodoMVC example app has some e2e tests which use [cypress.io] and thus require a recent Node/npm
 installation.
 
-```
-$ cd dom/examples/todo/e2e
-$ npx cypress open
+```shell
+cd dom/examples/todo/e2e
+npx cypress open
 ```
 
 Alternatively, there is a project-local VSCode task configured which will open cypress when the

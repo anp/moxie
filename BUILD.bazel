@@ -19,23 +19,16 @@ test_suite(
     ],
 )
 
-test_suite(
-    name = "all_tests",
-    tests = [
-        ":core_library_tests",
-    ],
-)
-
 rust_lint_config(
     name = "library_lints",
     clippy = {
-        "unsafe_code": "forbid",
         "all": "warn",
     },
     rustc = {
+        "unsafe_code": "forbid",
         "missing_docs": "warn",
         # FIXME make conditional on CI or something?
-        # "warnings": "deny",
+        "warnings": "deny",
     },
 )
 

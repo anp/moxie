@@ -4,11 +4,28 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run all tests",
+            "label": "Build everything",
+            "type": "bazel",
+            "command": "build",
+            "targets": [
+                "//..."
+            ],
+            "presentation": {
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Test everything",
             "type": "bazel",
             "command": "test",
             "targets": [
-                "//:all_tests"
+                "//..."
             ],
             "presentation": {
                 "panel": "dedicated",
