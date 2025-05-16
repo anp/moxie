@@ -1,5 +1,6 @@
 test_suite(
     name = "tests",
     tests = [
+        "//web/raf:tests",
     ],
 )

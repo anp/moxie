@@ -19,17 +19,30 @@ test_suite(
     ],
 )
 
+clippy_lint_config = {
+    "all": "warn",
+}
+
+default_rustc_lint_config = {
+    "missing_docs": "warn",
+    # FIXME make conditional on CI or something?
+    "warnings": "deny",
+}
+
+deny_unsafe_rustc_lint = {"unsafe_code": "deny"}
+
+forbid_unsafe_rustc_lint = {"unsafe_code": "deny"}
+
 rust_lint_config(
     name = "library_lints",
-    clippy = {
-        "all": "warn",
-    },
-    rustc = {
-        "unsafe_code": "forbid",
-        "missing_docs": "warn",
-        # FIXME make conditional on CI or something?
-        "warnings": "deny",
-    },
+    clippy = clippy_lint_config,
+    rustc = default_rustc_lint_config | forbid_unsafe_rustc_lint,
+)
+
+rust_lint_config(
+    name = "library_lints_allowing_unsafe",
+    clippy = clippy_lint_config,
+    rustc = default_rustc_lint_config | deny_unsafe_rustc_lint,
 )
 
 exports_files(

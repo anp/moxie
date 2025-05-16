@@ -92,8 +92,9 @@ impl<T: Tick + Waking> AnimationFrameScheduler<T> {
     }
 }
 
-// don't send these to workers until have a fix :P
+#[allow(unsafe_code, reason = "FIXME gotta fix this")]
 unsafe impl<Cb> Send for AnimationFrameScheduler<Cb> {}
+#[allow(unsafe_code, reason = "FIXME gotta fix this")]
 unsafe impl<Cb> Sync for AnimationFrameScheduler<Cb> {}
 
 struct AnimationFrameHandle {

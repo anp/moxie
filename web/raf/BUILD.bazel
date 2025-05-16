@@ -1,0 +1,41 @@
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "raf",
+    # FIXME translate this metadata somehow
+    # description = "browser event loop scheduler using requestAnimationFrame"
+    # categories = ["asynchronous", "concurrency", "gui", "wasm", "web-programming"]
+    # keywords = ["scheduler", "events", "requestAnimationFrame"]
+    # readme = "CHANGELOG.md"
+    srcs = [
+        "src/lib.rs",
+    ],
+    edition = "2018",
+    lint_config = "//:library_lints_allowing_unsafe",
+    version = "0.2.0-pre",
+    deps = [
+        "@crates//:futures",
+        "@crates//:wasm-bindgen",
+        "@crates//:web-sys",
+    ],
+)
+
+rust_test(
+    name = "raf_unit_tests",
+    crate = "raf",
+)
+
+rust_doc_test(
+    name = "raf_doc_tests",
+    crate = "raf",
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        ":raf_doc_tests",
+        ":raf_unit_tests",
+    ],
+)
