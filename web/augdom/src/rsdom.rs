@@ -71,7 +71,7 @@ impl crate::Dom for Rc<VirtNode> {
     }
 
     fn first_child(&self) -> Option<Self> {
-        self.children.borrow().get(0).cloned()
+        self.children.borrow().first().cloned()
     }
 
     fn next_sibling(&self) -> Option<Self> {

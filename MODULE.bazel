@@ -22,6 +22,7 @@ crate.spec(package = "criterion", version = "0.3")
 crate.spec(package = "derive_builder", version = "0.10")
 crate.spec(package = "downcast-rs", version = "1.1.1")
 crate.spec(package = "futures", version = "0.3.5")
+crate.spec(package = "gloo-timers", version = "0.2.1", features = ["futures"])
 crate.spec(package = "hash_hasher", version = "2.0.3")
 crate.spec(package = "hashbrown", version = "0.12.0")
 crate.spec(package = "js-sys", version = "0.3.25")
@@ -31,8 +32,10 @@ crate.spec(package = "parking_lot", version = "0.11.0")
 crate.spec(package = "paste", version = "1.0.0")
 crate.spec(package = "proc-macro-error", version = "1.0.0")
 crate.spec(package = "proc-macro2", version = "1")
+crate.spec(package = "quick-xml", version = "0.22")
 crate.spec(package = "quote", version = "1.0")
 crate.spec(package = "scopeguard", version = "1")
+crate.spec(package = "static_assertions", version = "1")
 crate.spec(package = "syn", version = "1.0", features = ["full"])
 crate.spec(package = "syn-rsx", version = "0.8.0-beta.2")
 crate.spec(package = "tracing", version = "^0.1")
@@ -40,14 +43,95 @@ crate.spec(package = "tracing-subscriber", version = "0.3.1", features = ["env-f
 crate.spec(package = "wasm-bindgen", version = wasm_bindgen_version)
 crate.spec(package = "wasm-bindgen-test", version = "0.3")
 crate.spec(package = "web-sys", version = "0.3.28", features = [
+    # dom types
+    "Attr",
+    "CharacterData",
     "Document",
     "Element",
-    "Event",
     "EventTarget",
     "HtmlElement",
+    "HtmlHeadElement",
+    "NamedNodeMap",
+    "Node",
+    "NodeList",
+    "Text",
+    "Window",
+
+    # event types
+    "AnimationEvent",
+    "AnimationEventInit",
+    "BlobEvent",
+    "BlobEventInit",
+    "CloseEvent",
+    "CloseEventInit",
+    "CompositionEvent",
+    "CompositionEventInit",
+    "DeviceMotionEvent",
+    "DeviceMotionEventInit",
+    "DeviceOrientationEvent",
+    "DeviceOrientationEventInit",
+    "DragEvent",
+    "DragEventInit",
+    "ErrorEvent",
+    "ErrorEventInit",
+    "Event",
+    "EventInit",
+    "FetchEvent",
+    "FetchEventInit",
+    "FocusEvent",
+    "FocusEventInit",
+    "GamepadEvent",
+    "GamepadEventInit",
+    "HashChangeEvent",
+    "HashChangeEventInit",
+    "IdbVersionChangeEvent",
+    "IdbVersionChangeEventInit",
     "KeyboardEvent",
     "KeyboardEventInit",
-    "Window",
+    "MessageEvent",
+    "MessageEventInit",
+    "MouseEvent",
+    "MouseEventInit",
+    "NotificationEvent",
+    "NotificationEventInit",
+    "OfflineAudioCompletionEvent",
+    "OfflineAudioCompletionEventInit",
+    "PageTransitionEvent",
+    "PageTransitionEventInit",
+    "PointerEvent",
+    "PointerEventInit",
+    "PopStateEvent",
+    "PopStateEventInit",
+    "ProgressEvent",
+    "ProgressEventInit",
+    "PushEvent",
+    "PushEventInit",
+    "SpeechRecognitionEvent",
+    "SpeechRecognitionEventInit",
+    "SpeechSynthesisEvent",
+    "SpeechSynthesisEventInit",
+    "SpeechSynthesisErrorEvent",
+    "SpeechSynthesisErrorEventInit",
+    "StorageEvent",
+    "StorageEventInit",
+    "TouchEvent",
+    "TouchEventInit",
+    "TransitionEvent",
+    "TransitionEventInit",
+    "UiEvent",
+    "UiEventInit",
+    "UserProximityEvent",
+    "UserProximityEventInit",
+    "WheelEvent",
+    "WheelEventInit",
+
+    # testing types,
+    "MutationObserver",
+    "MutationObserverInit",
+    "MutationRecord",
+
+    # Element types
+    "HtmlInputElement",
 ])
 
 crate.from_specs()

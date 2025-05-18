@@ -2,12 +2,12 @@
 //! utilities are similar in design:
 //!
 //! > The more your tests resemble the way your software is used, the more
-//! confidence they can give you.
+//! > confidence they can give you.
 //!
 //! > As part of this goal, the utilities this library provides facilitate
-//! querying the DOM in the same way the user would. Finding form elements by
-//! their label text (just like a user would), finding links and buttons from
-//! their text (like a user would), and more.
+//! > querying the DOM in the same way the user would. Finding form elements by
+//! > their label text (just like a user would), finding links and buttons from
+//! > their text (like a user would), and more.
 //!
 //! These tools lend themselves to this basic test design:
 //!
@@ -108,11 +108,11 @@ impl TargetExt for Node {
         };
 
         let mut down = KeyDown::new();
-        down.key(key_str);
+        down.set_key(key_str);
         self.event(down.build());
 
         let mut up = KeyUp::new();
-        up.key(key_str);
+        up.set_key(key_str);
         self.event(up.build());
     }
 
@@ -169,7 +169,7 @@ pub struct Finder<'n, N> {
     target: &'n N,
 }
 
-impl<'n, N: Debug> Debug for Finder<'n, N> {
+impl<N: Debug> Debug for Finder<'_, N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:#?}", &self.target)
     }
@@ -302,13 +302,10 @@ where
         match self.strat {
             Text => Some(node.get_inner_text()),
             // TODO(#120) add tests and make sure this is correct
-            LabelText => node
-                .get_attribute("id")
-                .map(|id| {
-                    let selector = format!("label[for={}]", id);
-                    self.finder.target.query_selector(&selector).map(|l| l.get_inner_text())
-                })
-                .flatten(),
+            LabelText => node.get_attribute("id").and_then(|id| {
+                let selector = format!("label[for={}]", id);
+                self.finder.target.query_selector(&selector).map(|l| l.get_inner_text())
+            }),
             AltText => node.get_attribute("alt"),
             Title => node.get_attribute("title"),
             DisplayValue => node.get_attribute("value"),
