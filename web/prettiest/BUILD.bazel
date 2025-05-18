@@ -6,9 +6,7 @@ package(default_visibility = ["//visibility:public"])
 
 rust_shared_library(
     name = "prettiest",
-    srcs = [
-        "src/lib.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     # categories = ["web"],
     # description = "Pretty-printer for JS values from wasm-bindgen.",
     edition = "2018",

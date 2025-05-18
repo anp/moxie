@@ -9,14 +9,7 @@ rust_library(
     # categories = ["asynchronous", "caching", "concurrency", "gui", "rust-patterns"]
     # keywords = ["incremental", "memoize", "intern", "reactive"]
     # readme = "CHANGELOG.md"
-    srcs = [
-        "src/lib.rs",
-        "src/runtime.rs",
-        "src/runtime/context.rs",
-        "src/runtime/runloop.rs",
-        "src/runtime/var.rs",
-        "src/testing.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints",
     version = "0.7.1",

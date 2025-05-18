@@ -7,9 +7,7 @@ rust_proc_macro(
     # FIXME translate this metadata somehow
     # description = "procedural macros for the topo crate"
     # readme = "../CHANGELOG.md"
-    srcs = [
-        "src/lib.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints",
     version = "0.10.0",

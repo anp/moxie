@@ -4,9 +4,7 @@ package(default_visibility = ["//visibility:public"])
 
 rust_proc_macro(
     name = "mox",
-    srcs = [
-        "src/lib.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     # FIXME translate this metadata somehow
     # description = "Mockery Of X(ML): a JSX-alike syntax for the builder pattern."
     # categories = ["gui", "rust-patterns"]

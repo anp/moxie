@@ -10,9 +10,7 @@ rust_shared_library(
     # categories = ["asynchronous", "concurrency", "gui", "wasm", "web-programming"]
     # keywords = ["scheduler", "events", "requestAnimationFrame"]
     # readme = "CHANGELOG.md"
-    srcs = [
-        "src/lib.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints_allowing_unsafe",
     version = "0.2.0-pre",

@@ -9,10 +9,7 @@ rust_library(
     # categories = ["rust-patterns"]
     # keywords = ["context", "environment", "global", "singleton"]
     # readme = "CHANGELOG.md"
-    srcs = [
-        "src/anon_rc.rs",
-        "src/lib.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints",
     proc_macro_deps = [

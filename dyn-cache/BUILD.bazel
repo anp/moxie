@@ -9,13 +9,7 @@ rust_library(
     # categories = ["caching", "rust-patterns"]
     # keywords = ["incremental", "memoize", "intern", "cache"]
     # readme = "CHANGELOG.md"
-    srcs = [
-        "src/cache_cell.rs",
-        "src/definition.rs",
-        "src/dep_node.rs",
-        "src/lib.rs",
-        "src/namespace.rs",
-    ],
+    srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints",
     proc_macro_deps = [
