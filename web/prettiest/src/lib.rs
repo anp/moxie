@@ -14,7 +14,9 @@ use std::{
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Document, Element, Window};
 
+/// A type which can be pretty-printed.
 pub trait Pretty {
+    /// Convert this value into a pretty-printing wrapper.
     fn pretty(&self) -> Prettified;
 }
 
