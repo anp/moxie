@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_shared_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
 load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen", "rust_wasm_bindgen_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -13,52 +13,74 @@ package(default_visibility = ["//visibility:public"])
 # rsdom = ["illicit"]
 # webdom = ["gloo-timers", "js-sys", "prettiest", "wasm-bindgen", "web-sys"]
 
-rust_shared_library(
+version = "0.2.0-pre"
+
+edition = "2018"
+
+library_lints = "//:library_lints"
+
+# FIXME actually expand the test matrix
+crate_features = [
+    "rsdom",
+    "webdom",
+]
+
+lib_srcs = glob(["src/**/*.rs"])
+
+lib_deps = [
+    "@crates//:gloo-timers",
+    "@crates//:quick-xml",
+    "@crates//:static_assertions",
+    "@crates//:tracing",
+    "@crates//:futures",
+
+    # rsdom dependencies FIXME make optional
+    "//illicit",
+
+    # webdom dependencies FIXME make optional
+    "//web/prettiest",
+    "@crates//:js-sys",
+    "@crates//:wasm-bindgen",
+    "@crates//:web-sys",
+]
+
+lib_proc_macro_deps = [
+    "@crates//:paste",
+]
+
+rust_library(
     name = "augdom",
-    srcs = glob(["src/**/*.rs"]),
-    crate_features = [
-        "rsdom",
-        "webdom",
-    ],
+    srcs = lib_srcs,
+    crate_features = crate_features,
     # description = "DOM API usable both inside of a browser (web-sys) and outside (emulation)."
     # categories = ["api-bindings", "emulators", "gui", "wasm", "web-programming"]
     # keywords = ["dom", "incremental"]
     # readme = "CHANGELOG.md"
-    edition = "2018",
-    lint_config = "//:library_lints",
-    proc_macro_deps = [
-        "@crates//:paste",
-    ],
-    version = "0.2.0-pre",
-    deps = [
-        "@crates//:gloo-timers",
-        "@crates//:quick-xml",
-        "@crates//:static_assertions",
-        "@crates//:tracing",
-        "@crates//:futures",
+    edition = edition,
+    lint_config = library_lints,
+    proc_macro_deps = lib_proc_macro_deps,
+    version = version,
+    deps = lib_deps,
+)
 
-        # rsdom dependencies FIXME make optional
-        "//illicit",
-
-        # webdom dependencies FIXME make optional
-        "//web/prettiest",
-        "@crates//:js-sys",
-        "@crates//:wasm-bindgen",
-        "@crates//:web-sys",
-    ],
+rust_shared_library(
+    name = "augdom_shared",
+    srcs = lib_srcs,
+    crate_features = crate_features,
+    edition = edition,
+    lint_config = library_lints,
+    proc_macro_deps = lib_proc_macro_deps,
+    deps = lib_deps,
 )
 
 rust_wasm_bindgen(
     name = "augdom_wasm_bindgen",
     target = "web",
-    wasm_file = ":augdom",
+    wasm_file = ":augdom_shared",
 )
 
 rust_wasm_bindgen_test(
     name = "augdom_wasm_bindgen_test",
-    crate_features = [
-        "rsdom",
-        "webdom",
-    ],
+    crate_features = crate_features,
     wasm = "augdom_wasm_bindgen",
 )
