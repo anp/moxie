@@ -1,9 +1,15 @@
-load("@rules_rust//rust:defs.bzl", "rust_shared_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
 load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen", "rust_wasm_bindgen_test")
 
 package(default_visibility = ["//visibility:public"])
 
-rust_shared_library(
+lib_deps = [
+    "@crates//:futures",
+    "@crates//:wasm-bindgen",
+    "@crates//:web-sys",
+]
+
+rust_library(
     name = "raf",
     # FIXME translate this metadata somehow
     # description = "browser event loop scheduler using requestAnimationFrame"
@@ -14,17 +20,22 @@ rust_shared_library(
     edition = "2018",
     lint_config = "//:library_lints_allowing_unsafe",
     version = "0.2.0-pre",
-    deps = [
-        "@crates//:futures",
-        "@crates//:wasm-bindgen",
-        "@crates//:web-sys",
-    ],
+    deps = lib_deps,
+)
+
+rust_shared_library(
+    name = "raf_shared",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2018",
+    lint_config = "//:library_lints_allowing_unsafe",
+    version = "0.2.0-pre",
+    deps = lib_deps,
 )
 
 rust_wasm_bindgen(
     name = "raf_wasm_bindgen",
     target = "web",
-    wasm_file = ":raf",
+    wasm_file = ":raf_shared",
 )
 
 rust_wasm_bindgen_test(
