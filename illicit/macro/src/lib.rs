@@ -6,7 +6,7 @@ use proc_macro_error::{abort, abort_call_site, proc_macro_error};
 use quote::quote;
 use syn::{
     parse::Parser, parse_macro_input, parse_quote, punctuated::Punctuated, spanned::Spanned,
-    Attribute, FnArg, ItemFn, Local, PatType, Stmt, Token, Type, TypeReference,
+    Attribute, FnArg, ItemFn, Local, LocalInit, PatType, Stmt, Token, Type, TypeReference,
 };
 
 /// FIXME add docs
@@ -77,14 +77,22 @@ fn bind_env_reference(arg: &PatType) -> ([Local; 2], Attribute) {
         attrs: vec![],
         let_token: Token![let](arg_span),
         pat: name.clone(),
-        init: Some((Token![=](arg_span), Box::new(init_expr))),
+        init: Some(LocalInit {
+            eq_token: Token![=](arg_span),
+            expr: Box::new(init_expr),
+            diverge: None,
+        }),
         semi_token: Token![;](arg_span),
     };
     let derefd = Local {
         attrs: vec![],
         let_token: Token![let](arg_span),
         pat: name,
-        init: Some((Token![=](arg_span), Box::new(deref_expr))),
+        init: Some(LocalInit {
+            eq_token: Token![=](arg_span),
+            expr: Box::new(deref_expr),
+            diverge: None,
+        }),
         semi_token: Token![;](arg_span),
     };
 

@@ -2,17 +2,20 @@
 
 extern crate proc_macro;
 
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Punct, TokenStream};
 use quote::{quote, ToTokens};
+use rstml::node::{
+    AttributeValueExpr, CustomNode, KVAttributeValue, KeyedAttribute, KeyedAttributeValue, Node,
+    NodeAttribute, NodeBlock, NodeElement, NodeName, NodeNameFragment,
+};
 use std::convert::TryFrom;
 use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
+    parse::ParseStream,
+    punctuated::{Pair, Punctuated},
     spanned::Spanned,
     token::Comma,
+    LitStr,
 };
-use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 
 /// Accepts an XML-like expression and expands it to builder-like method calls.
 ///
@@ -139,52 +142,63 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 /// [JSX]: https://facebook.github.io/jsx/
 #[proc_macro]
 pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let item = parse_macro_input!(input as MoxItem);
-    quote!(#item .build()).into()
+    match mox_inner(input.into()) {
+        Ok(item) => quote!(#item .build()).into(),
+        Err(err) => err.to_compile_error().to_token_stream().into(),
+    }
+}
+
+fn mox_inner(input: proc_macro2::TokenStream) -> Result<MoxItem, syn::Error> {
+    let parse_config =
+        rstml::ParserConfig::new().transform_block(parse_fmt_expr).number_of_top_level_nodes(1);
+    let parser = rstml::Parser::new(parse_config);
+    let node = parser.parse_simple(input)?.remove(0);
+    MoxItem::try_from(node)
+}
+
+fn parse_fmt_expr(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
+    if parse_stream.peek(syn::Token![%]) {
+        parse_stream.parse::<syn::Token![%]>()?;
+        let arguments: Punctuated<syn::Expr, Comma> =
+            Punctuated::parse_separated_nonempty(parse_stream)?;
+        if parse_stream.is_empty() {
+            Ok(Some(quote!(format_args!(#arguments))))
+        } else {
+            Err(parse_stream.error(format!("Expected the end, found `{}`", parse_stream)))
+        }
+    } else {
+        Ok(None)
+    }
 }
 
 enum MoxItem {
     Tag(MoxTag),
-    Expr(MoxExpr),
+    Text(LitStr),
+    Block(NodeBlock),
     None,
 }
 
-impl Parse for MoxItem {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        fn parse_fmt_expr(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
-            if parse_stream.peek(syn::Token![%]) {
-                parse_stream.parse::<syn::Token![%]>()?;
-                let arguments: Punctuated<syn::Expr, Comma> =
-                    Punctuated::parse_separated_nonempty(parse_stream)?;
-                if parse_stream.is_empty() {
-                    Ok(Some(quote!(format_args!(#arguments))))
-                } else {
-                    Err(parse_stream.error(format!("Expected the end, found `{}`", parse_stream)))
-                }
-            } else {
-                Ok(None)
-            }
-        }
-
-        let parse_config = syn_rsx::ParserConfig::new()
-            .transform_block(parse_fmt_expr)
-            .number_of_top_level_nodes(1);
-        let parser = syn_rsx::Parser::new(parse_config);
-        let node = parser.parse(input)?.remove(0);
-
-        MoxItem::try_from(node)
-    }
-}
-
-impl TryFrom<syn_rsx::Node> for MoxItem {
+impl<C: CustomNode> TryFrom<Node<C>> for MoxItem {
     type Error = syn::Error;
 
-    fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        match node.node_type {
-            NodeType::Element => MoxTag::try_from(node).map(MoxItem::Tag),
-            NodeType::Attribute | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-            NodeType::Text | NodeType::Block => MoxExpr::try_from(node).map(MoxItem::Expr),
-            NodeType::Comment | NodeType::Doctype => Ok(MoxItem::None),
+    fn try_from(node: Node<C>) -> Result<Self, Self::Error> {
+        match node {
+            Node::Element(elem) => MoxTag::try_from(elem).map(Self::Tag),
+            Node::Text(text) => Ok(Self::Text(text.value)),
+            Node::Block(block) => Ok(Self::Block(block)),
+            // FIXME emit comments for when people expand macros?
+            Node::Comment(_) | Node::Doctype(_) => Ok(MoxItem::None),
+            Node::Fragment(fragment) => Err(syn::Error::new_spanned(
+                fragment,
+                "Fragments are not supported as top-level nodes",
+            )),
+            Node::RawText(text) => {
+                Err(syn::Error::new_spanned(text, "Fragments are not supported as top-level nodes"))
+            }
+            Node::Custom(_) => Err(syn::Error::new_spanned(
+                node,
+                "Custom nodes are not supported as top-level nodes",
+            )),
         }
     }
 }
@@ -193,7 +207,11 @@ impl ToTokens for MoxItem {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             MoxItem::Tag(tag) => tag.to_tokens(tokens),
-            MoxItem::Expr(expr) => expr.to_tokens(tokens),
+            MoxItem::Text(text) => text.to_tokens(tokens),
+            MoxItem::Block(block) => {
+                quote!(#[allow(unused_braces)]).to_tokens(tokens);
+                block.to_tokens(tokens);
+            }
             MoxItem::None => (),
         }
     }
@@ -205,52 +223,51 @@ struct MoxTag {
     children: Vec<MoxItem>,
 }
 
-impl TryFrom<syn_rsx::Node> for MoxTag {
+impl<C> TryFrom<NodeElement<C>> for MoxTag
+where
+    MoxItem: TryFrom<Node<C>, Error = syn::Error>,
+{
     type Error = syn::Error;
 
-    fn try_from(mut node: syn_rsx::Node) -> syn::Result<Self> {
-        match node.node_type {
-            NodeType::Element => Ok(Self {
-                name: MoxTag::validate_name(node.name.unwrap())?,
-                attributes: node
-                    .attributes
-                    .drain(..)
-                    .map(MoxAttr::try_from)
-                    .collect::<syn::Result<Vec<_>>>()?,
-                children: node
-                    .children
-                    .drain(..)
-                    .map(MoxItem::try_from)
-                    .collect::<syn::Result<Vec<_>>>()?,
-            }),
-            NodeType::Attribute
-            | NodeType::Text
-            | NodeType::Block
-            | NodeType::Comment
-            | NodeType::Doctype
-            // TODO(#232) implement
-            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-        }
+    fn try_from(mut elem: NodeElement<C>) -> syn::Result<Self> {
+        Ok(Self {
+            name: MoxTag::validate_name(elem.open_tag.name)?,
+            attributes: elem
+                .open_tag
+                .attributes
+                .drain(..)
+                .map(MoxAttr::try_from)
+                .collect::<syn::Result<Vec<_>>>()?,
+            children: elem
+                .children
+                .drain(..)
+                .map(MoxItem::try_from)
+                .collect::<syn::Result<Vec<_>>>()?,
+        })
     }
 }
 
+fn unsupported_err(
+    name: &'static str,
+    spanned: impl syn::spanned::Spanned + quote::ToTokens,
+) -> syn::Error {
+    syn::Error::new_spanned(spanned, format!("{} is not supported", name))
+}
+
 impl MoxTag {
-    fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::ExprPath> {
+    fn validate_name(name: NodeName) -> syn::Result<syn::ExprPath> {
         match name {
             NodeName::Path(mut expr_path) => {
                 mangle_expr_path(&mut expr_path);
                 Ok(expr_path)
             }
-            NodeName::Dash(punctuated) => {
-                let ident = dashes_to_underscores(punctuated);
+            NodeName::Punctuated(punctuated) => {
+                let ident = dashes_to_underscores(punctuated)?;
                 let mut segments = Punctuated::new();
                 segments.push(ident.into());
                 let path = syn::Path { leading_colon: None, segments };
 
                 Ok(syn::ExprPath { attrs: vec![], qself: None, path })
-            }
-            NodeName::Colon(punctuated) => {
-                Err(syn::Error::new(punctuated.span(), "Colon tag name syntax isn't supported"))
             }
             NodeName::Block(block) => {
                 Err(syn::Error::new(block.span(), "Block expression as a tag name isn't supported"))
@@ -284,32 +301,36 @@ impl ToTokens for MoxTag {
 
 struct MoxAttr {
     name: syn::Ident,
-    value: Option<syn::Expr>,
+    value: syn::Expr,
 }
 
-impl TryFrom<syn_rsx::Node> for MoxAttr {
+impl TryFrom<NodeAttribute> for MoxAttr {
     type Error = syn::Error;
 
-    fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        match node.node_type {
-            NodeType::Element
-            | NodeType::Text
-            | NodeType::Block
-            | NodeType::Comment
-            | NodeType::Doctype
-            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-            NodeType::Attribute => {
-                Ok(MoxAttr { name: MoxAttr::validate_name(node.name.unwrap())?, value: node.value })
+    fn try_from(attr: NodeAttribute) -> syn::Result<Self> {
+        match attr {
+            NodeAttribute::Attribute(KeyedAttribute {
+                key,
+                possible_value:
+                    KeyedAttributeValue::Value(AttributeValueExpr {
+                        token_eq: _,
+                        value: KVAttributeValue::Expr(value),
+                    }),
+            }) => Ok(MoxAttr { name: MoxAttr::validate_name(key)?, value }),
+            NodeAttribute::Attribute(KeyedAttribute { key: _, possible_value }) => {
+                Err(unsupported_err("Non-keyed-expression attribute value", possible_value))
             }
+            NodeAttribute::Block(block) => Err(syn::Error::new(
+                block.span(),
+                "Block expression as an attribute value isn't supported",
+            )),
         }
     }
 }
 
 impl MoxAttr {
-    fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
+    fn validate_name(name: NodeName) -> syn::Result<syn::Ident> {
         use syn::{punctuated::Pair, PathSegment};
-
-        let invalid_error = |span| syn::Error::new(span, "Invalid name for an attribute");
 
         match name {
             NodeName::Path(syn::ExprPath {
@@ -325,16 +346,23 @@ impl MoxAttr {
                         mangle_ident(&mut ident);
                         Ok(ident)
                     }
-                    // TODO improve error handling, see `https://github.com/stoically/syn-rsx/issues/12`
-                    _ => Err(invalid_error(segments.span())),
+                    _ => Err(syn::Error::new_spanned(
+                        pair,
+                        "Single-segment names must not have punctuation",
+                    )),
                 }
             }
-            NodeName::Dash(punctuated) => Ok(dashes_to_underscores(punctuated)),
-            NodeName::Colon(punctuated) => Err(syn::Error::new(
-                punctuated.span(),
-                "Colon attribute name syntax isn't supported",
+            NodeName::Path(path) => {
+                Err(syn::Error::new_spanned(path, "Only single-segment names are supported"))
+            }
+            NodeName::Punctuated(punctuated) => {
+                let ident = dashes_to_underscores(punctuated)?;
+                Ok(ident)
+            }
+            NodeName::Block(block) => Err(syn::Error::new(
+                block.span(),
+                "Block expression as an attribute name isn't supported",
             )),
-            name => Err(invalid_error(name.span())),
         }
     }
 }
@@ -342,49 +370,9 @@ impl MoxAttr {
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self { name, value } = self;
-        match value {
-            Some(value) => tokens.extend(quote!(.#name(#value))),
-            None => tokens.extend(quote!(.#name(#name))),
-        };
+        tokens.extend(quote!(.#name(#value)));
     }
 }
-
-struct MoxExpr {
-    expr: syn::Expr,
-}
-
-impl TryFrom<syn_rsx::Node> for MoxExpr {
-    type Error = syn::Error;
-
-    fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
-        match node.node_type {
-            NodeType::Element
-            | NodeType::Attribute
-            | NodeType::Comment
-            | NodeType::Doctype
-            | NodeType::Fragment => Err(Self::node_convert_error(&node)),
-            NodeType::Text | NodeType::Block => Ok(MoxExpr { expr: node.value.unwrap() }),
-        }
-    }
-}
-
-impl ToTokens for MoxExpr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { expr } = self;
-        quote!(#[allow(unused_braces)] #expr).to_tokens(tokens);
-    }
-}
-
-trait NodeConvertError {
-    fn node_convert_error(node: &syn_rsx::Node) -> syn::Error {
-        syn::Error::new(
-            node_span(node),
-            format_args!("Cannot convert {} to {}", node.node_type, std::any::type_name::<Self>(),),
-        )
-    }
-}
-
-impl<T> NodeConvertError for T where T: TryFrom<syn_rsx::Node> {}
 
 fn mangle_expr_path(name: &mut syn::ExprPath) {
     for segment in name.path.segments.iter_mut() {
@@ -400,12 +388,36 @@ fn mangle_ident(ident: &mut syn::Ident) {
     }
 }
 
-fn dashes_to_underscores(punctuated: Punctuated<Ident, Dash>) -> syn::Ident {
-    let mut words = punctuated.iter();
-    let mut ident_name =
-        words.next().expect("There must be at least one ident in a punctuated list").to_string();
+fn dashes_to_underscores(
+    punctuated: Punctuated<NodeNameFragment, Punct>,
+) -> syn::Result<syn::Ident> {
+    let mut words = punctuated.pairs();
+    let first = words.next().expect("There must be at least one ident in a punctuated list");
 
-    for w in words {
+    let mut ident_name = match first {
+        Pair::Punctuated(first_word, first_punct) => {
+            if first_punct.as_char() != '-' {
+                return Err(syn::Error::new_spanned(
+                    first_punct,
+                    "Only hyphenated names are supported",
+                ));
+            }
+            first_word
+        }
+        Pair::End(first_word) => first_word,
+    }
+    .to_string();
+
+    for pair in words {
+        let w = match pair {
+            Pair::Punctuated(w, p) => {
+                if p.as_char() != '-' {
+                    return Err(syn::Error::new_spanned(p, "Only hyphenated names are supported"));
+                }
+                w
+            }
+            Pair::End(w) => w,
+        };
         ident_name.push('_');
         ident_name.push_str(&w.to_string());
     }
@@ -414,22 +426,14 @@ fn dashes_to_underscores(punctuated: Punctuated<Ident, Dash>) -> syn::Ident {
         ident_name.push('_');
     }
 
-    syn::Ident::new(&ident_name, punctuated.span())
-}
-
-fn node_span(node: &syn_rsx::Node) -> Span {
-    // TODO get the span for the whole node, see `https://github.com/stoically/syn-rsx/issues/14`
-    // Prioritize name's span then value's span then call site's span.
-    node.name_span()
-        .or_else(|| node.value.as_ref().map(|value| value.span()))
-        .unwrap_or_else(Span::call_site)
+    Ok(syn::Ident::new(&ident_name, punctuated.span()))
 }
 
 #[cfg(test)]
 #[test]
 fn fails() {
     fn assert_error(input: TokenStream) {
-        match syn::parse2::<MoxItem>(input) {
+        match mox_inner(input) {
             Ok(_) => unreachable!(),
             Err(error) => println!("{}", error),
         }

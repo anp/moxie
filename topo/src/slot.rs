@@ -121,12 +121,13 @@ impl<T> Ord for Slot<T> {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub(crate) struct OpaqueSlot {
     ty: TypeId,
+    ty_name: &'static str,
     index: u32,
 }
 
 impl<T: 'static> From<Slot<T>> for OpaqueSlot {
     fn from(token: Slot<T>) -> Self {
-        OpaqueSlot { index: token.index, ty: TypeId::of::<T>() }
+        OpaqueSlot { index: token.index, ty: TypeId::of::<T>(), ty_name: type_name::<T>() }
     }
 }
 

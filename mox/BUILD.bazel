@@ -15,8 +15,8 @@ rust_proc_macro(
     deps = [
         "@crates//:proc-macro2",
         "@crates//:quote",
+        "@crates//:rstml",
         "@crates//:syn",
-        "@crates//:syn-rsx",
     ],
 )
 

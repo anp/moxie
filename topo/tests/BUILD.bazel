@@ -11,3 +11,13 @@ rust_test(
         "//topo",
     ],
 )
+
+rust_test(
+    name = "topo_syn2_upgrade_failure",
+    srcs = [
+        "syn2_upgrade_failure.rs",
+    ],
+    deps = [
+        "//topo",
+    ],
+)

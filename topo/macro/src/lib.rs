@@ -1,19 +1,35 @@
 //! Procedural macro support crate for the `topo` crate.
 
 use proc_macro::TokenStream;
-use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, AttributeArgs, Expr, ItemFn, Lit, Meta,
-    NestedMeta,
-};
+use syn::{parse_macro_input, parse_quote, spanned::Spanned, Ident, ItemFn};
 
 /// FIXME add docs
 #[proc_macro_attribute]
 pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
-    let args: AttributeArgs = parse_macro_input!(args);
-    let mut input_fn: ItemFn = syn::parse(input).unwrap();
+    let mut slot: Option<Ident> = None;
+    let slot_parser = syn::meta::parser(|meta| {
+        if !meta.path.is_ident("slot") {
+            return Err(meta.error("only `slot` argument is supported"));
+        }
+        if slot.is_some() {
+            return Err(meta.error("only one `slot` argument is supported"));
+        }
+        slot = Some(ident_from_ident_or_string(meta.value()?)?);
+        Ok(())
+    });
+
+    parse_macro_input!(args with slot_parser);
+    match nested_inner(slot, input) {
+        Ok(tokens) => tokens,
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+fn nested_inner(slot: Option<Ident>, input: TokenStream) -> syn::Result<TokenStream> {
+    let mut input_fn: ItemFn = syn::parse(input)?;
 
     let inner_block = input_fn.block;
-    input_fn.block = if let Some(slot_expr) = slot_from_args(&args) {
+    input_fn.block = if let Some(slot_expr) = slot {
         parse_quote! {{
             topo::call_in_slot(#slot_expr, move || #inner_block)
         }}
@@ -21,30 +37,18 @@ pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
         parse_quote! {{ topo::call(move || #inner_block) }}
     };
 
-    quote::quote_spanned!(input_fn.span()=>
+    Ok(quote::quote_spanned!(input_fn.span()=>
         #[track_caller]
         #input_fn
     )
-    .into()
+    .into())
 }
 
-/// parse the attribute arguments, retrieving an an expression to use as part of
-/// the slot
-fn slot_from_args(args: &[NestedMeta]) -> Option<Expr> {
-    assert!(args.len() <= 1);
-
-    args.first().map(|arg| match arg {
-        NestedMeta::Meta(Meta::NameValue(kv)) => {
-            assert!(
-                kv.path.is_ident("slot"),
-                "only `slot = \"...\" argument is supported by #[nested]"
-            );
-
-            match &kv.lit {
-                Lit::Str(l) => l.parse().unwrap(),
-                _ => panic!("`slot` argument accepts a string literal"),
-            }
-        }
-        _ => panic!("only `slot = \"...\" argument is supported by #[nested]"),
-    })
+fn ident_from_ident_or_string(input: &syn::parse::ParseBuffer<'_>) -> syn::Result<Ident> {
+    if let Ok(ident) = input.parse::<Ident>() {
+        return Ok(ident);
+    }
+    let string: syn::LitStr = input.parse()?;
+    let ident = Ident::new(&string.value(), string.span());
+    Ok(ident)
 }
