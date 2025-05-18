@@ -1,8 +1,22 @@
 """moxie workspace configuration."""
 
 bazel_dep(name = "rules_rust", version = "0.61.0")
+bazel_dep(name = "rules_rust_wasm_bindgen", version = "0.61.0")
+
+rust_host_tools_nightly = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools_nightly.host_tools(
+    name = "rust_host_tools_nightly",
+    # FIXME pick a specific nightly
+    version = "nightly",
+)
+use_repo(
+    rust_host_tools_nightly,
+    "rust_host_tools_nightly",
+)
 
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+wasm_bindgen_version = "0.2.100"
 
 crate.spec(package = "criterion", version = "0.3")
 crate.spec(package = "derive_builder", version = "0.10")
@@ -10,6 +24,7 @@ crate.spec(package = "downcast-rs", version = "1.1.1")
 crate.spec(package = "futures", version = "0.3.5")
 crate.spec(package = "hash_hasher", version = "2.0.3")
 crate.spec(package = "hashbrown", version = "0.12.0")
+crate.spec(package = "js-sys", version = "0.3.25")
 crate.spec(package = "once_cell", version = "1.4.0")
 crate.spec(package = "owning_ref", version = "0.4")
 crate.spec(package = "parking_lot", version = "0.11.0")
@@ -22,8 +37,31 @@ crate.spec(package = "syn", version = "1.0", features = ["full"])
 crate.spec(package = "syn-rsx", version = "0.8.0-beta.2")
 crate.spec(package = "tracing", version = "^0.1")
 crate.spec(package = "tracing-subscriber", version = "0.3.1", features = ["env-filter"])
-crate.spec(package = "wasm-bindgen", version = "0.2.48")
-crate.spec(package = "web-sys", version = "0.3.28", features = ["Window"])
+crate.spec(package = "wasm-bindgen", version = wasm_bindgen_version)
+crate.spec(package = "wasm-bindgen-test", version = "0.3")
+crate.spec(package = "web-sys", version = "0.3.28", features = [
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlElement",
+    "KeyboardEvent",
+    "KeyboardEventInit",
+    "Window",
+])
 
 crate.from_specs()
 use_repo(crate, "crates")
+
+bindeps = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+
+bindeps.spec(package = "wasm-bindgen-cli", version = wasm_bindgen_version, artifact = "bin")
+bindeps.annotation(crate = "wasm-bindgen-cli", gen_all_binaries = True)
+
+bindeps.from_specs(
+    name = "bindeps",
+    host_tools = "@rust_host_tools_nightly",
+)
+use_repo(bindeps, "bindeps")
+
+register_toolchains("//build/toolchains:wasm_bindgen_toolchain")

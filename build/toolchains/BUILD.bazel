@@ -1,0 +1,24 @@
+load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen_toolchain")
+
+rust_wasm_bindgen_toolchain(
+    name = "wasm_bindgen_toolchain_impl",
+    browser = "@rules_rust_wasm_bindgen//:chrome",
+    browser_args = [
+        "--enable-logging=stderr",
+        "--log-level=ALL",
+        "--v=2",
+    ],
+    browser_type = "chrome",
+    wasm_bindgen_cli = "@bindeps//:wasm-bindgen-cli__wasm-bindgen",
+    wasm_bindgen_test = "@crates//:wasm-bindgen-test",
+    wasm_bindgen_test_runner = "@rules_rust_wasm_bindgen//3rdparty:wasm_bindgen_test_runner",
+    webdriver = "@rules_rust_wasm_bindgen//:chromedriver",
+    webdriver_args = ["--verbose"],
+    webdriver_json = "webdriver.json",
+)
+
+toolchain(
+    name = "wasm_bindgen_toolchain",
+    toolchain = "wasm_bindgen_toolchain_impl",
+    toolchain_type = "@rules_rust_wasm_bindgen//:toolchain_type",
+)

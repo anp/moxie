@@ -1,8 +1,9 @@
-load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_shared_library")
+load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen", "rust_wasm_bindgen_test")
 
 package(default_visibility = ["//visibility:public"])
 
-rust_library(
+rust_shared_library(
     name = "raf",
     # FIXME translate this metadata somehow
     # description = "browser event loop scheduler using requestAnimationFrame"
@@ -22,20 +23,13 @@ rust_library(
     ],
 )
 
-rust_test(
-    name = "raf_unit_tests",
-    crate = "raf",
+rust_wasm_bindgen(
+    name = "raf_wasm_bindgen",
+    target = "web",
+    wasm_file = ":raf",
 )
 
-rust_doc_test(
-    name = "raf_doc_tests",
-    crate = "raf",
-)
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":raf_doc_tests",
-        ":raf_unit_tests",
-    ],
+rust_wasm_bindgen_test(
+    name = "raf_wasm_bindgen_unit_tests",
+    wasm = "raf_wasm_bindgen",
 )

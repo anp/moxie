@@ -1,0 +1,41 @@
+load("@rules_rust//rust:defs.bzl", "rust_shared_library")
+load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen", "rust_wasm_bindgen_test")
+# load("//:build/wasm_bindgen_test.bzl", "rust_wasm_bindgen_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_shared_library(
+    name = "prettiest",
+    srcs = [
+        "src/lib.rs",
+    ],
+    # categories = ["web"],
+    # description = "Pretty-printer for JS values from wasm-bindgen.",
+    edition = "2018",
+    # keywords = [
+    #     "debug",
+    #     "pretty",
+    #     "javascript",
+    # ],
+    lint_config = "//:library_lints",
+    # readme = "CHANGELOG.md",
+    version = "0.2.1",
+    deps = [
+        "@crates//:futures",
+        "@crates//:js-sys",
+        "@crates//:scopeguard",
+        "@crates//:wasm-bindgen",
+        "@crates//:web-sys",
+    ],
+)
+
+rust_wasm_bindgen(
+    name = "prettiest_wasm_bindgen",
+    target = "web",
+    wasm_file = ":prettiest",
+)
+
+rust_wasm_bindgen_test(
+    name = "prettiest_wasm_bindgen_test",
+    wasm = "prettiest_wasm_bindgen",
+)

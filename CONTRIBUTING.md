@@ -33,6 +33,12 @@ Engineering](https://graydon.livejournal.com/186550.html):
 * (optional) [bazel-watcher](https://github.com/bazelbuild/bazel-watcher)
   * also <https://github.com/bazelbuild/bazel-watcher/releases>, drop it in `PATH`
 
+#### Web crates
+
+* Chromedriver dependencies
+  * Linux
+    * libnss3 (e.g. `sudo apt install libnss3`)
+
 ### VSCode users
 
 Open the `moxie.code-workspace` file as a workspace to get a preconfigured setup for the bazel

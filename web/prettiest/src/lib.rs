@@ -292,15 +292,14 @@ mod tests {
         target.add_event_listener_with_callback(event_type, callback.dyn_ref().unwrap()).unwrap();
 
         // create & dispatch an event to the input element
-        let sent_event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(
-            event_type,
-            web_sys::KeyboardEventInit::new()
-                .char_code(b'F' as u32)
-                .bubbles(true)
-                .cancelable(true)
-                .view(Some(&window)),
-        )
-        .unwrap();
+        let keyboard_event = web_sys::KeyboardEventInit::new();
+        keyboard_event.set_char_code(b'F' as u32);
+        keyboard_event.set_bubbles(true);
+        keyboard_event.set_cancelable(true);
+        keyboard_event.set_view(Some(&window));
+        let sent_event =
+            web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(event_type, &keyboard_event)
+                .unwrap();
         let sent: &Event = sent_event.as_ref();
         assert!(target.dispatch_event(sent).unwrap());
 
@@ -345,13 +344,6 @@ mod tests {
     currentTarget: null,
     defaultPrevented: false,
     eventPhase: 0,
-    path: [
-        <input/>,
-        <body/>,
-        <html/>,
-        [Document],
-        [Window],
-    ],
     returnValue: true,
     srcElement: <input/>,
     target: <input/>,
