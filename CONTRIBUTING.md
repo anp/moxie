@@ -75,14 +75,6 @@ bazel run @rules_rust//:rustfmt
 
 to run `rustfmt` on all the source files the build system knows about.
 
-#### Core libraries
-
-From the project root, this command will run the default development loop:
-
-```shell
-ibazel test //:core_library_tests
-```
-
 #### moxie-dom
 
 The main workflow for the dom library:

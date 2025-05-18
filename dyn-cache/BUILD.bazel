@@ -47,11 +47,3 @@ rust_test(
         "@crates//:scopeguard",
     ],
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":dyn-cache_doc_tests",
-        ":dyn-cache_unit_tests",
-    ],
-)

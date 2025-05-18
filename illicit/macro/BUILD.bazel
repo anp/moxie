@@ -29,11 +29,3 @@ rust_doc_test(
     name = "illicit-macro_doc_tests",
     crate = "illicit-macro",
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":illicit-macro_doc_tests",
-        ":illicit-macro_unit_tests",
-    ],
-)

@@ -8,17 +8,6 @@ package(default_visibility = ["//visibility:public"])
 # repository = "https://github.com/anp/moxie.git"
 # authors = ["Adam Perry <lol@anp.lol>"]
 
-test_suite(
-    name = "core_library_tests",
-    tests = [
-        "//dyn-cache:tests",
-        "//illicit:tests",
-        "//mox:tests",
-        "//moxie:tests",
-        "//topo:tests",
-    ],
-)
-
 clippy_lint_config = {
     "all": "warn",
 }

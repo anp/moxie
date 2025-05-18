@@ -15,10 +15,3 @@ rust_test(
         "@crates//:criterion",
     ],
 )
-
-test_suite(
-    name = "benches",
-    tests = [
-        ":moxie_core_bench",
-    ],
-)

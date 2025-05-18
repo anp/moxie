@@ -47,13 +47,3 @@ rust_doc_test(
     name = "moxie_doc_tests",
     crate = "moxie",
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":moxie_doc_tests",
-        ":moxie_unit_tests",
-        "//moxie/benches",
-        "//moxie/tests",
-    ],
-)

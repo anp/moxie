@@ -11,10 +11,3 @@ rust_test(
         "//topo",
     ],
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":topo_simple_integration_test",
-    ],
-)

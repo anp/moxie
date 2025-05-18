@@ -11,10 +11,3 @@ rust_test(
         "//moxie",
     ],
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":moxie_issue_238_regression_test",
-    ],
-)

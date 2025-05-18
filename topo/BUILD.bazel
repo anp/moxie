@@ -40,14 +40,3 @@ rust_doc_test(
     name = "topo_doc_tests",
     crate = "topo",
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":topo_doc_tests",
-        ":topo_unit_tests",
-        "//topo/benches",
-        "//topo/macro:tests",
-        "//topo/tests",
-    ],
-)

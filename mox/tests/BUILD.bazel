@@ -28,12 +28,3 @@ rust_test(
         "//mox",
     ],
 )
-
-test_suite(
-    name = "tests",
-    tests = [
-        ":mox_dashes_integration_test",
-        ":mox_derive_builder_integration_test",
-        ":mox_simple_builder_integration_test",
-    ],
-)
