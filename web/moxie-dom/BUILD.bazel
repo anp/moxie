@@ -1,0 +1,97 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
+load("@rules_rust_wasm_bindgen//:defs.bzl", "rust_wasm_bindgen", "rust_wasm_bindgen_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# FIXME translate
+# [package.metadata.docs.rs]
+# default-target = "wasm32-unknown-unknown"
+# all-features = true
+
+# [lib]
+# crate-type = [ "cdylib", "rlib", ]
+
+# [features]
+# default = ["webdom"]
+# rsdom = ["augdom/rsdom"]
+# webdom = [
+#     "augdom/webdom",
+#     "moxie/wasm-bindgen",
+#     "raf",
+#     "topo/wasm-bindgen",
+#     "wasm-bindgen",
+#     "wasm-bindgen-futures",
+# ]
+
+version = "0.3.0-pre"
+
+edition = "2018"
+
+library_lints = "//:library_lints"
+
+# FIXME actually expand the test matrix
+crate_features = [
+    "rsdom",
+    "webdom",
+]
+
+lib_srcs = glob(["src/**/*.rs"])
+
+lib_deps = [
+    "//web/augdom",
+    "//illicit",
+    "//moxie",
+    "//topo",
+    "@crates//:scopeguard",
+    "@crates//:futures",
+
+    # webdom dependencies FIXME make optional
+    "//web/raf",
+    "@crates//:wasm-bindgen",
+    "@crates//:wasm-bindgen-futures",
+]
+
+lib_proc_macro_deps = [
+    "@crates//:paste",
+]
+
+rust_library(
+    name = "moxie-dom",
+    # description = "Incrementally interactive HTML applications."
+    # categories = ["asynchronous", "concurrency", "gui", "wasm", "web-programming"]
+    # keywords = ["dom", "web", "incremental", "interactive"]
+    # readme = "CHANGELOG.md"
+    srcs = lib_srcs,
+    crate_features = crate_features,
+    edition = edition,
+    lint_config = library_lints,
+    proc_macro_deps = lib_proc_macro_deps,
+    version = version,
+    deps = lib_deps,
+)
+
+rust_shared_library(
+    name = "moxie-dom_shared",
+    srcs = lib_srcs,
+    crate_features = crate_features,
+    edition = edition,
+    lint_config = library_lints,
+    proc_macro_deps = lib_proc_macro_deps,
+    deps = lib_deps,
+)
+
+rust_wasm_bindgen(
+    name = "moxie-dom_wasm_bindgen",
+    target = "web",
+    wasm_file = ":moxie-dom_shared",
+)
+
+rust_wasm_bindgen_test(
+    name = "moxie-dom_wasm_bindgen_test",
+    crate_features = crate_features,
+    proc_macro_deps = ["//mox"],
+    wasm = "moxie-dom_wasm_bindgen",
+    deps = [
+        "@crates//:pretty_assertions",
+    ],
+)

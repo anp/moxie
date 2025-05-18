@@ -4,7 +4,6 @@ rust_wasm_bindgen_toolchain(
     name = "wasm_bindgen_toolchain_impl",
     browser = "@rules_rust_wasm_bindgen//:chrome",
     browser_args = [
-        "--enable-logging=stderr",
         "--log-level=ALL",
         "--v=2",
     ],
