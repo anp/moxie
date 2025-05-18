@@ -15,7 +15,7 @@ rust_library(
     proc_macro_deps = [
         "//topo/macro:topo-macro",
     ],
-    version = "0.13.2",
+    version = "0.14.0-pre",
     deps = [
         "//dyn-cache",
         "//illicit",

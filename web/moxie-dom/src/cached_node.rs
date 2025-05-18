@@ -29,7 +29,7 @@ impl CachedNode {
     }
 
     // TODO accept PartialEq+ToString implementors
-    #[topo::nested(slot = "&(self.id, name)")]
+    #[topo::nested(slot = &(self.id, name))]
     pub(crate) fn set_attribute(&self, name: &'static str, value: &str) {
         let mut should_set = false;
         cache_with(

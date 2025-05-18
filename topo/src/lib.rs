@@ -101,7 +101,7 @@
 /// is then passed directly as the first argument to [`call_in_slot`]:
 ///
 /// ```
-/// #[topo::nested(slot = "name")]
+/// #[topo::nested(slot = name)]
 /// fn get_name_id(name: &str, _value: &str) -> topo::CallId {
 ///     topo::CallId::current()
 /// }

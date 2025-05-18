@@ -10,7 +10,7 @@ rust_proc_macro(
     srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     lint_config = "//:library_lints",
-    version = "0.10.0",
+    version = "0.14.0-pre",
     deps = [
         "@crates//:quote",
         "@crates//:syn",

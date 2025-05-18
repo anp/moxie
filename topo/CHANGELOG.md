@@ -6,6 +6,12 @@ to implement a form of [incremental computing](https://en.wikipedia.org/wiki/Inc
 
 <!-- categories: Added, Removed, Changed, Deprecated, Fixed, Security -->
 
+## [0.14.0] - 2025-05-18
+
+### Changed
+
+- `#[topo::nested]` macro now accepts literal expressions instead of parsing strings.
+
 ## [0.13.2] - 2021-02-01
 
 ### Changed
