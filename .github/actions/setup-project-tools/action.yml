@@ -16,10 +16,12 @@ runs:
       sudo apt-get update
       sudo apt-get install -y libssl-dev
   - uses: jdx/mise-action@v4
-  # mise activates the Rust version from rust-toolchain.toml, while rustup owns
-  # the associated components and targets. Re-run rustup against the active
-  # override so CI installs rustfmt, clippy, llvm-tools-preview, and wasm32 from
-  # the shared toolchain file instead of relying on runner image defaults.
+  # mise exports RUSTUP_TOOLCHAIN after reading rust-toolchain.toml, but that
+  # environment override makes rustup ignore the file's component/target list.
+  # Unset it only for this command so rustup reconciles the shared toolchain
+  # file instead of relying on runner image defaults.
   - name: install Rust components and targets
     shell: bash
-    run: rustup toolchain install --no-self-update
+    run: |
+      unset RUSTUP_TOOLCHAIN
+      rustup toolchain install --no-self-update
