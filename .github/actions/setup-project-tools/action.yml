@@ -17,4 +17,4 @@ runs:
       sudo apt-get install -y libssl-dev
   - uses: jdx/mise-action@v4
     with:
-      cache_key_prefix: mise-v2
+      cache_key_prefix: mise-v3
