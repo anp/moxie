@@ -11,6 +11,11 @@ node = "16.20.2"
 # `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`.
 "cargo:cargo-watch" = "8.5.3"
 
+# wasm-pack 0.9.1 needs wasm-bindgen-cli 0.2.69 for this toolchain. Install it
+# with Rust 1.65.0: new enough for mise's cargo backend syntax, old enough for
+# this wasm-bindgen release.
+"cargo:wasm-bindgen-cli" = { version = "0.2.69", install_env = { RUSTUP_TOOLCHAIN = "1.65.0" } }
+
 # Node CLIs referenced by repo docs/CI. The TodoMVC e2e package still has its
 # own package-lock.json; run `npm ci` from dom/examples/todo/e2e for that app's
 # local test dependencies.
