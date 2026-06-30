@@ -1,8 +1,5 @@
 env:
   RUSTFLAGS: -D warnings
-  # coverage collection depends on unstable features.
-  # we want the CI results to all be from the same toolchain, so we set it up here.
-  RUSTUP_TOOLCHAIN: nightly-2021-10-30
 on:
   push:
     branches:
@@ -18,10 +15,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup toolchain install
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
+        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -43,8 +40,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
-    - run: rustup component add llvm-tools-preview
+    - run: rustup toolchain install
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -57,7 +53,7 @@ jobs:
       run: cargo generate-lockfile
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
+        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -82,7 +78,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup toolchain install
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -95,7 +91,7 @@ jobs:
       run: cargo generate-lockfile
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
+        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -124,7 +120,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup toolchain install
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -137,7 +133,7 @@ jobs:
       run: cargo generate-lockfile
     - uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ env.RUSTUP_TOOLCHAIN }}-2
+        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -162,8 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
-    - run: rustup component add rustfmt
+    - run: rustup toolchain install
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}
@@ -179,8 +174,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
-    - run: rustup component add clippy
+    - run: rustup toolchain install
     - run: cargo clippy-ofl
     - run: cargo clippy-core
     - run: cargo clippy-dom
@@ -191,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }}
+    - run: rustup toolchain install
     - uses: actions/download-artifact@v2
       with:
         name: ofl-${{ runner.os }}

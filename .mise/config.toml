@@ -1,0 +1,21 @@
+[tools]
+# Let mise read Rust's idiomatic version file while rustup uses the same file for
+# components and targets.
+
+# The TodoMVC e2e lockfile is npm v6-era and pins Cypress 5.2.0. Node 16 is the
+# oldest practical LTS here with official darwin-arm64 builds, avoiding a local
+# Node-from-source compile on Apple Silicon.
+node = "16.20.2"
+
+# External cargo subcommands used by project aliases such as `cargo core-flow`,
+# `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`.
+"cargo:cargo-watch" = "8.5.3"
+
+# Node CLIs referenced by repo docs/CI. The TodoMVC e2e package still has its
+# own package-lock.json; run `npm ci` from dom/examples/todo/e2e for that app's
+# local test dependencies.
+"npm:cypress" = { version = "5.2.0", npm_args = "--ignore-scripts=false" }
+"npm:netlify-cli" = "12.14.0"
+
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
