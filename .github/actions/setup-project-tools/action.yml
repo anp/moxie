@@ -16,11 +16,11 @@ runs:
       sudo apt-get update
       sudo apt-get install -y libssl-dev
   - uses: jdx/mise-action@v4
-  # mise exports RUSTUP_TOOLCHAIN after reading rust-toolchain.toml, but rustup
-  # does not apply the file's component/target list when that environment
-  # override is active. Read the shared toolchain file here so CI installs the
-  # same channel, profile, components, and targets without relying on runner
-  # image defaults.
+  # mise exports RUSTUP_TOOLCHAIN after reading rust-toolchain.toml. rustup then
+  # treats that variable as the selected toolchain and does not reconcile the
+  # file's component/target lists. Read the shared toolchain file here so CI
+  # installs the same channel, profile, components, and targets without relying
+  # on runner image defaults.
   - name: install Rust components and targets
     shell: bash
     run: |
