@@ -16,26 +16,3 @@ runs:
       sudo apt-get update
       sudo apt-get install -y libssl-dev
   - uses: jdx/mise-action@v4
-  # mise exports RUSTUP_TOOLCHAIN after reading rust-toolchain.toml. rustup then
-  # treats that variable as the selected toolchain and does not reconcile the
-  # file's component/target lists. Read the shared toolchain file here so CI
-  # installs the same channel, profile, components, and targets without relying
-  # on runner image defaults.
-  - name: install Rust components and targets
-    shell: bash
-    run: |
-      toolchain="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
-      profile="$(sed -n 's/^profile = "\(.*\)"/\1/p' rust-toolchain.toml)"
-      components="$(sed -n 's/^components = \[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d ' "')"
-      targets="$(sed -n 's/^targets = \[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d ' "')"
-
-      test -n "$toolchain"
-      test -n "$profile"
-      test -n "$components"
-      test -n "$targets"
-
-      rustup toolchain install "$toolchain" \
-        --profile "$profile" \
-        --component "$components" \
-        --target "$targets" \
-        --no-self-update

@@ -1,6 +1,12 @@
 [tools]
-# Let mise read Rust's idiomatic version file while rustup uses the same file for
-# components and targets.
+# Canonical Rust toolchains for this project. The first entry is the active
+# project toolchain; the additional stable toolchains are used to install older
+# cargo-managed CLIs below.
+rust = [
+  { version = "nightly-2021-10-30", components = "clippy,rustfmt,llvm-tools-preview", targets = "wasm32-unknown-unknown", profile = "minimal" },
+  { version = "1.75.0", profile = "minimal" },
+  { version = "1.65.0", profile = "minimal" },
+]
 
 # The TodoMVC e2e lockfile is npm v6-era and pins Cypress 5.2.0. Node 16 is the
 # oldest practical LTS here with official darwin-arm64 builds, avoiding a local
@@ -10,19 +16,20 @@ node = "16.20.2"
 # External cargo subcommands used by project aliases such as `cargo core-flow`,
 # `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`. cargo-watch's locked
 # deps require Rust 1.75.0.
-"cargo:cargo-watch" = { version = "8.5.3", install_env = { RUSTUP_TOOLCHAIN = "1.75.0" } }
+"cargo:cargo-watch" = { version = "8.5.3", depends = [
+  "rust@1.75.0",
+], install_env = { RUSTUP_TOOLCHAIN = "1.75.0" } }
 
 # wasm-pack 0.9.1 needs wasm-bindgen-cli 0.2.69 for this toolchain. Install it
 # with Rust 1.65.0: new enough for mise's cargo backend syntax, old enough for
 # this wasm-bindgen release. Vendored OpenSSL keeps this old transitive
 # openssl-sys version building on modern Linux runners.
-"cargo:wasm-bindgen-cli" = { version = "0.2.69", features = "vendored-openssl", install_env = { RUSTUP_TOOLCHAIN = "1.65.0" } }
+"cargo:wasm-bindgen-cli" = { version = "0.2.69", depends = [
+  "rust@1.65.0",
+], features = "vendored-openssl", install_env = { RUSTUP_TOOLCHAIN = "1.65.0" } }
 
 # Node CLIs referenced by repo docs/CI. The TodoMVC e2e package still has its
 # own package-lock.json; run `npm ci` from dom/examples/todo/e2e for that app's
 # local test dependencies.
 "npm:cypress" = { version = "5.2.0", npm_args = "--ignore-scripts=false" }
 "npm:netlify-cli" = "12.14.0"
-
-[settings]
-idiomatic_version_file_enable_tools = ["rust"]

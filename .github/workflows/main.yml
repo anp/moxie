@@ -18,7 +18,7 @@ jobs:
     - uses: ./.github/actions/setup-project-tools
     - uses: actions/cache@v4
       with:
-        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
+        key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('.mise/config.toml') }}-3
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -45,7 +45,7 @@ jobs:
 
     - uses: actions/cache@v4
       with:
-        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
+        key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('.mise/config.toml') }}-3
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -75,7 +75,7 @@ jobs:
 
     - uses: actions/cache@v4
       with:
-        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
+        key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('.mise/config.toml') }}-3
         path: |
           ~/.cargo/git
           ~/.cargo/registry
@@ -109,7 +109,7 @@ jobs:
 
     - uses: actions/cache@v4
       with:
-        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
+        key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('.mise/config.toml') }}-3
         path: |
           ~/.cargo/git
           ~/.cargo/registry

@@ -31,10 +31,10 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 
 ### Requirements
 
-* [rustup](https://rustup.rs)
-  * Rust is pinned in [`rust-toolchain.toml`](./rust-toolchain.toml); run
-    `rustup toolchain install` to install that channel, components, and targets.
-* [cargo-watch](https://crates.io/crates/cargo-watch)
+* [mise](https://mise.jdx.dev)
+  * Rust, Node, cargo subcommands, and npm CLIs are pinned in
+    [`.mise/config.toml`](./.mise/config.toml); run `mise install` from the
+    project root to install them.
 
 ### Workflows
 
