@@ -1,0 +1,16 @@
+name: download ofl
+description: Download the ofl artifact for the current runner.
+
+runs:
+  using: composite
+  steps:
+  - uses: actions/download-artifact@v4
+    with:
+      name: ofl-${{ runner.os }}
+      path: bin/
+  # Artifact downloads do not preserve executable bits, so restore the Unix
+  # bit here rather than spreading that implementation detail through jobs.
+  - name: restore ofl executable bit
+    if: runner.os != 'Windows'
+    shell: bash
+    run: chmod +x bin/ofl

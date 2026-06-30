@@ -15,8 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
+    - uses: ./.github/actions/setup-project-tools
     - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
@@ -41,15 +40,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: ofl-${{ runner.os }}
-        path: bin/
-    - name: restore ofl executable bit
-      if: runner.os != 'Windows'
-      run: chmod +x bin/ofl
+    - uses: ./.github/actions/setup-project-tools
+    - uses: ./.github/actions/download-ofl
 
     - uses: actions/cache@v4
       with:
@@ -78,15 +70,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: ofl-${{ runner.os }}
-        path: bin/
-    - name: restore ofl executable bit
-      if: runner.os != 'Windows'
-      run: chmod +x bin/ofl
+    - uses: ./.github/actions/setup-project-tools
+    - uses: ./.github/actions/download-ofl
 
     - uses: actions/cache@v4
       with:
@@ -119,15 +104,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: ofl-${{ runner.os }}
-        path: bin/
-    - name: restore ofl executable bit
-      if: runner.os != 'Windows'
-      run: chmod +x bin/ofl
+    - uses: ./.github/actions/setup-project-tools
+    - uses: ./.github/actions/download-ofl
 
     - uses: actions/cache@v4
       with:
@@ -156,14 +134,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: ofl-${{ runner.os }}
-        path: bin/
-    - name: restore ofl executable bit
-      run: chmod +x bin/ofl
+    - uses: ./.github/actions/setup-project-tools
+    - uses: ./.github/actions/download-ofl
     - run: bin/ofl fmt --check
 
   clippy:
@@ -173,8 +145,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
+    - uses: ./.github/actions/setup-project-tools
     - run: cargo clippy-ofl
     - run: cargo clippy-core
     - run: cargo clippy-dom
@@ -185,14 +156,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-system-dependencies
-    - uses: jdx/mise-action@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: ofl-${{ runner.os }}
-        path: bin/
-    - name: restore ofl executable bit
-      run: chmod +x bin/ofl
+    - uses: ./.github/actions/setup-project-tools
+    - uses: ./.github/actions/download-ofl
     - uses: actions/download-artifact@v4
       with:
         name: website

@@ -1,0 +1,8 @@
+name: setup project tools
+description: Install host packages and mise-managed project tools.
+
+runs:
+  using: composite
+  steps:
+  - uses: ./.github/actions/setup-system-dependencies
+  - uses: jdx/mise-action@v4
