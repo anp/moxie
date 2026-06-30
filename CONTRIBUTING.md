@@ -32,7 +32,8 @@ GitHub now offers an option to require that a branch is up-to-date before it is 
 ### Requirements
 
 * [rustup](https://rustup.rs)
-  * `rustup toolchain install`
+  * Rust is pinned in [`rust-toolchain.toml`](./rust-toolchain.toml); run
+    `rustup toolchain install` to install that channel, components, and targets.
 * [cargo-watch](https://crates.io/crates/cargo-watch)
 
 ### Workflows
