@@ -14,10 +14,10 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
@@ -28,7 +28,7 @@ jobs:
       working-directory: ofl
     - run: cargo test --release
       working-directory: ofl
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: ofl/target/release/ofl*
@@ -40,10 +40,10 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: bin/
@@ -51,9 +51,7 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
-    - name: ensure lockfile up to date
-      run: cargo generate-lockfile
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-coverage-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
@@ -68,7 +66,7 @@ jobs:
     - run: bin/ofl coverage report
     - run: bin/ofl coverage cleanup
 
-    - uses: codecov/codecov-action@v1
+    - uses: codecov/codecov-action@v5
       with:
         file: ./target/coverage/lcov.info
 
@@ -79,10 +77,10 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: bin/
@@ -90,9 +88,7 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
-    - name: ensure lockfile up to date
-      run: cargo generate-lockfile
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-dom-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
@@ -122,10 +118,10 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: bin/
@@ -133,9 +129,7 @@ jobs:
     - run: chmod +x bin/ofl
       if: runner.os != 'Windows'
 
-    - name: ensure lockfile up to date
-      run: cargo generate-lockfile
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-website-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-2
         path: |
@@ -151,7 +145,7 @@ jobs:
     - run: cargo docs-all
     - run: cargo docs-ofl
     - run: bin/ofl website build target/website
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       if: runner.os == 'Linux'
       with:
         name: website
@@ -161,10 +155,10 @@ jobs:
     needs: ofl
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: bin/
@@ -178,7 +172,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
     - run: cargo clippy-ofl
@@ -190,16 +184,16 @@ jobs:
     needs: [clippy, coverage, dom, fmt, ofl, website]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: install Rust toolchain from rust-toolchain.toml
       run: rustup toolchain install
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
         path: bin/
     # TODO(actions/download-artifact#14) undo hack
     - run: chmod +x bin/ofl
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: website
         path: target/website
