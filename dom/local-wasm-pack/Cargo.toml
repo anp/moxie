@@ -11,6 +11,8 @@ path = "wasm-pack.rs"
 name = "wasm-pack"
 
 [dependencies]
+# Force old wasm-pack's native-tls stack to use vendored OpenSSL on CI hosts.
+openssl = { version = "0.10.26", features = ["vendored"] }
 pretty_env_logger = "0.3"
 structopt = "0.2"
 
