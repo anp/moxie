@@ -19,8 +19,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - uses: actions/cache@v4
       with:
         key: ${{ runner.os }}-ofl-${{ hashFiles('ofl/Cargo.lock') }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.mise/config.toml') }}-3
@@ -46,8 +44,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
@@ -84,8 +80,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
@@ -101,11 +95,6 @@ jobs:
           ~/.cargo/git
           ~/.cargo/registry
           target
-    - name: install wasm-bindgen CLI from mise config
-      if: runner.os == 'macOS'
-      run: |
-        mise install rust@1.65.0
-        mise install cargo:wasm-bindgen-cli
 
     - run: cargo test-prettiest
     - run: cargo test-augdom
@@ -131,8 +120,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
@@ -149,11 +136,6 @@ jobs:
           ~/.cargo/registry
           ofl/target/doc
           target
-    - name: install wasm-bindgen CLI from mise config
-      if: runner.os == 'macOS'
-      run: |
-        mise install rust@1.65.0
-        mise install cargo:wasm-bindgen-cli
 
     - run: cargo build-dom-counter-fn
     - run: cargo build-dom-dom-builder
@@ -174,8 +156,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
@@ -192,8 +172,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust
     - run: cargo clippy-ofl
     - run: cargo clippy-core
     - run: cargo clippy-dom
@@ -205,10 +183,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v4
-      with:
-        install_args: rust node
-    - name: install Netlify CLI from mise config
-      run: mise install npm:netlify-cli
     - uses: actions/download-artifact@v4
       with:
         name: ofl-${{ runner.os }}
