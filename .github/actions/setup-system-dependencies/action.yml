@@ -1,0 +1,17 @@
+name: setup system dependencies
+description: Install the minimal host packages not managed by mise.
+
+runs:
+  using: composite
+  steps:
+  # Keep this action intentionally tiny. Every package here is outside mise and
+  # makes the CI runner image part of the build contract, so prefer project
+  # manifests, .mise/config.toml, or tool-managed installs whenever possible.
+  # Only add OS packages that are true header/linker/runtime requirements for
+  # current CI jobs and cannot reasonably be provisioned by the project tools.
+  - name: install Linux system dependencies
+    if: runner.os == 'Linux'
+    shell: bash
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y libssl-dev
