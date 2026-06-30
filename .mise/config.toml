@@ -8,8 +8,9 @@
 node = "16.20.2"
 
 # External cargo subcommands used by project aliases such as `cargo core-flow`,
-# `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`.
-"cargo:cargo-watch" = "8.5.3"
+# `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`. cargo-watch's locked
+# deps require Rust 1.75.0.
+"cargo:cargo-watch" = { version = "8.5.3", install_env = { RUSTUP_TOOLCHAIN = "1.75.0" } }
 
 # wasm-pack 0.9.1 needs wasm-bindgen-cli 0.2.69 for this toolchain. Install it
 # with Rust 1.65.0: new enough for mise's cargo backend syntax, old enough for

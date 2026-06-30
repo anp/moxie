@@ -1,5 +1,8 @@
 env:
   RUSTFLAGS: -D warnings
+  MISE_AUTO_INSTALL: "false"
+  MISE_EXEC_AUTO_INSTALL: "false"
+  MISE_NOT_FOUND_AUTO_INSTALL: "false"
 on:
   push:
     branches:
