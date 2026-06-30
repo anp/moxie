@@ -150,9 +150,35 @@ jobs:
     - run: cargo clippy-core
     - run: cargo clippy-dom
 
+  blocking-ci:
+    name: blocking CI
+    if: always()
+    needs: [clippy, coverage, dom, fmt, ofl, website]
+    runs-on: ubuntu-latest
+    steps:
+    - name: report CI results
+      run: |
+        echo "clippy: ${{ needs.clippy.result }}"
+        echo "coverage: ${{ needs.coverage.result }}"
+        echo "dom: ${{ needs.dom.result }}"
+        echo "fmt: ${{ needs.fmt.result }}"
+        echo "ofl: ${{ needs.ofl.result }}"
+        echo "website: ${{ needs.website.result }}"
+    - name: require successful CI
+      run: |
+        if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          exit 1
+        fi
+        if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          exit 1
+        fi
+        if [[ "${{ contains(needs.*.result, 'skipped') }}" == "true" ]]; then
+          exit 1
+        fi
+
   publish:
     if: github.ref == 'refs/heads/main'
-    needs: [clippy, coverage, dom, fmt, ofl, website]
+    needs: blocking-ci
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
