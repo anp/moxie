@@ -95,6 +95,9 @@ jobs:
           ~/.cargo/git
           ~/.cargo/registry
           target
+    - name: install wasm-bindgen CLI from its published lockfile
+      if: runner.os == 'macOS'
+      run: cargo install --force wasm-bindgen-cli --version 0.2.69 --locked
 
     - run: cargo test-prettiest
     - run: cargo test-augdom
@@ -137,6 +140,9 @@ jobs:
           ~/.cargo/registry
           ofl/target/doc
           target
+    - name: install wasm-bindgen CLI from its published lockfile
+      if: runner.os == 'macOS'
+      run: cargo install --force wasm-bindgen-cli --version 0.2.69 --locked
 
     - run: cargo build-dom-counter-fn
     - run: cargo build-dom-dom-builder
