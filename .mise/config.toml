@@ -33,9 +33,3 @@ node = "16.20.2"
 # local test dependencies.
 "npm:cypress" = { version = "5.2.0", npm_args = "--ignore-scripts=false" }
 "npm:netlify-cli" = "12.14.0"
-
-[env]
-# Keep rustup's component/toolchain state inside mise's data dir so
-# jdx/mise-action's cache contains the Rust installs that mise manages.
-MISE_RUSTUP_HOME = "{{env.HOME}}/.local/share/mise/rustup"
-RUSTUP_HOME = "{{env.HOME}}/.local/share/mise/rustup"
