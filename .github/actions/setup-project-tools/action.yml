@@ -19,6 +19,8 @@ runs:
   # components outside mise's install metadata by default. Keep rustup's state
   # under mise's OS-specific data dir here so jdx/mise-action's cache restores
   # the clippy/rustfmt/target components that the project tool config requests.
+  # The Rust backend also shares a cached rustup-init binary across all Rust
+  # entries, so install serially to avoid concurrent first-run permission races.
   - name: configure mise-managed rustup cache
     shell: bash
     run: |
@@ -31,6 +33,7 @@ runs:
       {
         echo "MISE_RUSTUP_HOME=$rustup_home"
         echo "RUSTUP_HOME=$rustup_home"
+        echo "MISE_JOBS=1"
       } >> "$GITHUB_ENV"
   - uses: jdx/mise-action@v4
     with:
