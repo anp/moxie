@@ -108,7 +108,7 @@ impl crate::Dom for sys::Node {
 
     fn get_attribute(&self, name: &str) -> Option<String> {
         let e: Option<&sys::Element> = self.dyn_ref();
-        e.map(|e| sys::Element::get_attribute(e, name)).flatten()
+        e.and_then(|e| sys::Element::get_attribute(e, name))
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
@@ -222,11 +222,11 @@ impl Mutations {
             sender.unbounded_send(records).unwrap();
         });
         let observer = crate::sys::MutationObserver::new(_callback.as_fn()).unwrap();
-        let mut options = crate::sys::MutationObserverInit::new();
-        options.attributes(true);
-        options.character_data(true);
-        options.child_list(true);
-        options.subtree(true);
+        let options = crate::sys::MutationObserverInit::new();
+        options.set_attributes(true);
+        options.set_character_data(true);
+        options.set_child_list(true);
+        options.set_subtree(true);
         observer.observe_with_options(node, &options).unwrap();
 
         Self { observer, _callback, records }

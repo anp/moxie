@@ -32,7 +32,7 @@ pub fn nested(args: TokenStream, input: TokenStream) -> TokenStream {
 fn slot_from_args(args: &[NestedMeta]) -> Option<Expr> {
     assert!(args.len() <= 1);
 
-    args.get(0).map(|arg| match arg {
+    args.first().map(|arg| match arg {
         NestedMeta::Meta(Meta::NameValue(kv)) => {
             assert!(
                 kv.path.is_ident("slot"),

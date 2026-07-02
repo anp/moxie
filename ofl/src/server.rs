@@ -119,7 +119,7 @@ fn http_server(
     .run()
 }
 
-#[allow(clippy::drop_copy, clippy::zero_ptr)] // wtf crossbeam
+#[allow(dropping_copy_types, clippy::zero_ptr)] // wtf crossbeam
 fn pump_channels(
     root: PathBuf,
     uri_rx: Receiver<Uri>,
@@ -167,7 +167,7 @@ fn consume_fs_event(
         return;
     }
 
-    if let Some(path) = event.paths.get(0) {
+    if let Some(path) = event.paths.first() {
         let changed = path.display().to_string();
 
         info!("file change detected at {}", &changed);

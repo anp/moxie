@@ -43,7 +43,7 @@ impl DistOpts {
     }
 
     fn build_website_dist(self, root_path: &Path) -> Result<(), Error> {
-        let md = MDBook::load(&root_path.join("book")).map_err(SyncFailure::new)?;
+        let md = MDBook::load(root_path.join("book")).map_err(SyncFailure::new)?;
         md.build().map_err(SyncFailure::new)?;
         self.copy_to_target_dir(root_path)
     }
@@ -62,7 +62,7 @@ impl DistOpts {
             debug!({ %rel_path }, "copying path");
             let destination = output_path.join(relative);
             let parent = destination.parent().unwrap();
-            std::fs::create_dir_all(&parent)
+            std::fs::create_dir_all(parent)
                 .with_context(|| format!("creating {}", parent.display()))?;
 
             // note: can't use std::fs::copy here because it generates filesystem notifs
@@ -123,7 +123,7 @@ struct SyncFailure<E>(Mutex<E>);
 
 impl<E> SyncFailure<E>
 where
-    E: std::error::Error,
+    E: std::fmt::Debug + std::fmt::Display + Send + 'static,
 {
     fn new(e: E) -> Self {
         Self(Mutex::new(e))
@@ -132,11 +132,14 @@ where
 
 impl<E> std::fmt::Display for SyncFailure<E>
 where
-    E: std::error::Error,
+    E: std::fmt::Debug + std::fmt::Display + Send + 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.lock().unwrap().fmt(f)
     }
 }
 
-impl<E> std::error::Error for SyncFailure<E> where E: std::error::Error {}
+impl<E> std::error::Error for SyncFailure<E> where
+    E: std::fmt::Debug + std::fmt::Display + Send + 'static
+{
+}

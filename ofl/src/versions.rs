@@ -122,8 +122,8 @@ impl Versions {
 }
 
 /// returns true if an update was made, false if not
-fn update_dependency_version<'doc>(
-    manifest: &'doc mut Document,
+fn update_dependency_version(
+    manifest: &mut Document,
     package_name: &str,
     new_version: &toml_edit::Value,
 ) -> bool {

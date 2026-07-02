@@ -28,7 +28,7 @@ macro_rules! impl_common_traits_for_type_with_addr {
 
         impl PartialOrd for $type_ {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                self.addr().partial_cmp(&other.addr())
+                Some(self.cmp(other))
             }
         }
 

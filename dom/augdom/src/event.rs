@@ -116,7 +116,6 @@ macro_rules! event_ty {
         $builder:ident, $init_ty:ty
     ) => {
         $(#[$attr])*
-        #[wasm_bindgen]
         pub struct $name($parent_ty);
 
         /// A builder for events.
@@ -131,6 +130,12 @@ macro_rules! event_ty {
         impl AsRef<JsValue> for $name {
             fn as_ref(&self) -> &JsValue {
                 self.0.as_ref()
+            }
+        }
+
+        impl From<$name> for JsValue {
+            fn from(event: $name) -> Self {
+                event.0.into()
             }
         }
 

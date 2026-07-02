@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Error};
 use gumdrop::Options;
 use std::{
-    fs::{create_dir, File},
+    fs::{create_dir, create_dir_all, File},
     path::Path,
     process::Command,
     sync::{Arc, Mutex},
@@ -72,18 +72,13 @@ pub struct Collect {
 
 impl Collect {
     pub fn run(&self, project_root: impl AsRef<Path>) -> Result<(), Error> {
+        let coverage_dir = project_root.as_ref().join("target").join("coverage").join("raw");
+        create_dir_all(&coverage_dir).context("creating raw coverage directory")?;
+
         let mut command = Command::new("cargo");
         command
-            .env("RUSTFLAGS", "-Zinstrument-coverage -Ccodegen-units=1")
-            .env(
-                "LLVM_PROFILE_FILE",
-                project_root
-                    .as_ref()
-                    .join("target")
-                    .join("coverage")
-                    .join("raw")
-                    .join("coverage-%p-%m.profraw"),
-            )
+            .env("RUSTFLAGS", "-Cinstrument-coverage -Ccodegen-units=1")
+            .env("LLVM_PROFILE_FILE", coverage_dir.join("coverage-%p-%m.profraw"))
             .args(&self.args);
         info!({ ?command }, "running");
 
@@ -133,6 +128,7 @@ fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
     let is_llvm = true;
     let branch_enabled = true;
     let path_mapping_file = "";
+    let use_filter = false;
     let filter_option = None;
     let prefix_dir = source_root.clone();
     let mut to_ignore_dirs = vec![];
@@ -154,13 +150,8 @@ fn parse_coverage(source_root: impl AsRef<Path>) -> grcov::CovResultIter {
         let path_mapping = Arc::clone(&path_mapping);
 
         std::thread::spawn(move || {
-            let producer_path_mapping_buf = grcov::producer(
-                &tmp_path,
-                &paths,
-                &sender,
-                filter_option.is_some() && filter_option.unwrap(),
-                is_llvm,
-            );
+            let producer_path_mapping_buf =
+                grcov::producer(&tmp_path, &paths, &sender, use_filter, is_llvm);
 
             let mut path_mapping = path_mapping.lock().unwrap();
             *path_mapping = if !path_mapping_file.is_empty() {

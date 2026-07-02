@@ -70,7 +70,7 @@ where
 
 impl<T> Clone for Slot<T> {
     fn clone(&self) -> Self {
-        Self { index: self.index, ty: PhantomData }
+        *self
     }
 }
 
@@ -107,7 +107,7 @@ impl<T> Eq for Slot<T> {}
 
 impl<T> PartialOrd for Slot<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.index.partial_cmp(&other.index)
+        Some(self.cmp(other))
     }
 }
 impl<T> Ord for Slot<T> {

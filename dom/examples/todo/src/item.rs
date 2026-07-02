@@ -17,7 +17,7 @@ fn item_edit_input(todo: Todo, editing: Key<bool>) -> Input {
         editing.set(false);
         todos.update(|todos| {
             let mut todos = todos.to_vec();
-            if let Some(mut todo) = todos.iter_mut().find(|t| t.id == todo.id) {
+            if let Some(todo) = todos.iter_mut().find(|t| t.id == todo.id) {
                 todo.title = value;
             }
             Some(todos)

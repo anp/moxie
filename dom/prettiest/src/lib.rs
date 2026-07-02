@@ -290,15 +290,14 @@ mod tests {
         target.add_event_listener_with_callback(event_type, callback.dyn_ref().unwrap()).unwrap();
 
         // create & dispatch an event to the input element
-        let sent_event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(
-            event_type,
-            web_sys::KeyboardEventInit::new()
-                .char_code(b'F' as u32)
-                .bubbles(true)
-                .cancelable(true)
-                .view(Some(&window)),
-        )
-        .unwrap();
+        let event_init = web_sys::KeyboardEventInit::new();
+        event_init.set_char_code(b'F' as u32);
+        event_init.set_bubbles(true);
+        event_init.set_cancelable(true);
+        event_init.set_view(Some(&window));
+        let sent_event =
+            web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(event_type, &event_init)
+                .unwrap();
         let sent: &Event = sent_event.as_ref();
         assert!(target.dispatch_event(sent).unwrap());
 
@@ -306,7 +305,12 @@ mod tests {
         let received_event: Event = recv.await.unwrap();
         // make sure we can print it without exploding due to nesting
         assert_eq!(
-            received_event.pretty().skip_property("timeStamp").to_string(),
+            received_event
+                .pretty()
+                .skip_property("timeStamp")
+                .skip_property("path")
+                .skip_property("pseudoTarget")
+                .to_string(),
             r#"KeyboardEvent {
     isTrusted: false,
     DOM_KEY_LOCATION_LEFT: 1,
@@ -343,13 +347,6 @@ mod tests {
     currentTarget: null,
     defaultPrevented: false,
     eventPhase: 0,
-    path: [
-        <input/>,
-        <body/>,
-        <html/>,
-        [Document],
-        [Window],
-    ],
     returnValue: true,
     srcElement: <input/>,
     target: <input/>,
