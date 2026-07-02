@@ -9,17 +9,12 @@ use moxie_dom::{
 };
 use Visibility::{Active, All, Completed};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Visibility {
+    #[default]
     All,
     Active,
     Completed,
-}
-
-impl Default for Visibility {
-    fn default() -> Self {
-        All
-    }
 }
 
 impl std::fmt::Display for Visibility {

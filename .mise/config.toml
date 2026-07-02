@@ -1,11 +1,7 @@
 [tools]
-# Canonical Rust toolchains for this project. The first entry is the active
-# project toolchain; the additional stable toolchains are used to install older
-# cargo-managed CLIs below.
+# Canonical Rust toolchain for this project.
 rust = [
-  { version = "nightly-2021-10-30", components = "clippy,rustfmt,llvm-tools-preview", targets = "wasm32-unknown-unknown", profile = "minimal" },
-  { version = "1.75.0", profile = "minimal" },
-  { version = "1.65.0", profile = "minimal" },
+  { version = "1.96.0", components = "clippy,rustfmt,llvm-tools-preview", targets = "wasm32-unknown-unknown", profile = "minimal" },
 ]
 
 # The TodoMVC e2e lockfile is npm v6-era and pins Cypress 5.2.0. Node 16 is the
@@ -14,19 +10,16 @@ rust = [
 node = "16.20.2"
 
 # External cargo subcommands used by project aliases such as `cargo core-flow`,
-# `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`. cargo-watch's locked
-# deps require Rust 1.75.0.
+# `cargo dom-flow`, `cargo server`, and `cargo ofl-flow`.
 "cargo:cargo-watch" = { version = "8.5.3", depends = [
-  "rust@1.75.0",
-], install_env = { RUSTUP_TOOLCHAIN = "1.75.0" } }
+  "rust@1.96.0",
+], install_env = { RUSTUP_TOOLCHAIN = "1.96.0" } }
 
-# wasm-pack 0.9.1 needs wasm-bindgen-cli 0.2.69 for this toolchain. Install it
-# with Rust 1.65.0: new enough for mise's cargo backend syntax, old enough for
-# this wasm-bindgen release. Vendored OpenSSL keeps this old transitive
-# openssl-sys version building on modern Linux runners.
-"cargo:wasm-bindgen-cli" = { version = "0.2.69", depends = [
-  "rust@1.65.0",
-], features = "vendored-openssl", install_env = { RUSTUP_TOOLCHAIN = "1.65.0" } }
+# Keep the CLI in sync with the wasm-bindgen crates locked for browser tests.
+# Vendored OpenSSL keeps native-tls builds insulated from CI runner images.
+"cargo:wasm-bindgen-cli" = { version = "0.2.126", depends = [
+  "rust@1.96.0",
+], features = "vendored-openssl", install_env = { RUSTUP_TOOLCHAIN = "1.96.0" } }
 
 # Node CLIs referenced by repo docs/CI. The TodoMVC e2e package still has its
 # own package-lock.json; run `npm ci` from dom/examples/todo/e2e for that app's

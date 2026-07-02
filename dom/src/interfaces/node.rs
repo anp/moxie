@@ -79,7 +79,7 @@ where
 /// A node which accepts children.
 ///
 /// > Note: `C` is constrained by `Child` rather than `NodeWrapper` to allow
-/// custom components to be bound directly to DOM types.
+/// > custom components to be bound directly to DOM types.
 pub trait Parent<C: Child>: NodeWrapper {
     /// Add a child to this node.
     fn child<T: NodeBuilder<Output = C>>(self, child: T) -> Self {

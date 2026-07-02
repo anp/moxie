@@ -1,6 +1,9 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 fn main() {
     pretty_env_logger::formatted_timed_builder().init();
-    wasm_pack::command::run_wasm_pack(wasm_pack::Cli::from_args().cmd).unwrap();
+    let args = wasm_pack::Cli::parse();
+    wasm_pack::PBAR.set_log_level(args.log_level);
+    wasm_pack::PBAR.set_quiet(args.quiet);
+    wasm_pack::command::run_wasm_pack(args.cmd).unwrap();
 }
