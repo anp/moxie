@@ -58,6 +58,13 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 /// If the attribute's name is `async`, `for`, `loop`, or `type` an underscore
 /// is appended to avoid colliding with the Rust keyword.
 ///
+/// #### Alternate syntax
+///
+/// To allow calling methods with 0 or more than 1 arguments,
+/// an inline method call syntax is available
+///
+/// e.g. `<foo {bar()} {baz(123)} />` expands to `foo().bar().baz(123).build()`
+///
 /// ### Children
 ///
 /// Tags have zero or more nested items (tags, fragments, content) as children.
@@ -90,6 +97,7 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 /// #[derive(Debug, PartialEq)]
 /// struct Tag {
 ///     name: String,
+///     is_optional: bool,
 ///     children: Vec<Tag>,
 /// }
 ///
@@ -100,6 +108,7 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 /// #[derive(Default)]
 /// struct TagBuilder {
 ///     name: Option<String>,
+///     is_optional: bool,
 ///     children: Vec<Tag>,
 /// }
 ///
@@ -114,21 +123,31 @@ use syn_rsx::{punctuation::Dash, NodeName, NodeType};
 ///         self
 ///     }
 ///
+///     fn optional(mut self) -> Self {
+///         self.is_optional = true;
+///         self
+///     }
+///
 ///     fn build(self) -> Tag {
-///         Tag { name: self.name.unwrap(), children: self.children }
+///         Tag {
+///             name: self.name.unwrap(),
+///             children: self.children,
+///             is_optional: self.is_optional,
+///         }
 ///     }
 /// }
 ///
 /// assert_eq!(
 ///     mox! {
-///         <built name="alice">
+///         <built name="alice" {optional()}>
 ///             <!-- "This is a comment" -->
 ///             <built name="bob"/>
 ///         </built>
 ///     },
 ///     Tag {
 ///         name: String::from("alice"),
-///         children: vec![Tag { name: String::from("bob"), children: vec![] }],
+///         is_optional: true,
+///         children: vec![Tag { name: String::from("bob"), is_optional: false, children: vec![] }],
 ///     },
 /// );
 /// ```
@@ -140,6 +159,32 @@ pub fn mox(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     quote!(#item .build()).into()
 }
 
+enum MoxBlock {
+    /// {% ...format_args }
+    FormatExpr(Punctuated<syn::Expr, Comma>),
+    /// Arbitrary Rust expression
+    Block,
+}
+
+impl<'a> TryFrom<ParseStream<'a>> for MoxBlock {
+    type Error = syn::Error;
+
+    fn try_from(parse_stream: ParseStream) -> syn::Result<MoxBlock> {
+        if parse_stream.peek(syn::Token![%]) {
+            parse_stream.parse::<syn::Token![%]>()?;
+            let arguments: Punctuated<syn::Expr, Comma> =
+                Punctuated::parse_separated_nonempty(parse_stream)?;
+            if parse_stream.is_empty() {
+                Ok(MoxBlock::FormatExpr(arguments))
+            } else {
+                Err(parse_stream.error(format!("Expected the end, found `{}`", parse_stream)))
+            }
+        } else {
+            Ok(MoxBlock::Block)
+        }
+    }
+}
+
 enum MoxItem {
     Tag(MoxTag),
     Expr(MoxExpr),
@@ -148,24 +193,16 @@ enum MoxItem {
 
 impl Parse for MoxItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        fn parse_fmt_expr(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
-            if parse_stream.peek(syn::Token![%]) {
-                parse_stream.parse::<syn::Token![%]>()?;
-                let arguments: Punctuated<syn::Expr, Comma> =
-                    Punctuated::parse_separated_nonempty(parse_stream)?;
-                if parse_stream.is_empty() {
-                    Ok(Some(quote!(format_args!(#arguments))))
-                } else {
-                    Err(parse_stream.error(format!("Expected the end, found `{}`", parse_stream)))
-                }
-            } else {
-                Ok(None)
+        fn parse_block(parse_stream: ParseStream) -> syn::Result<Option<TokenStream>> {
+            match MoxBlock::try_from(parse_stream)? {
+                MoxBlock::Block => Ok(None),
+                MoxBlock::FormatExpr(arguments) => Ok(Some(quote!(format_args!(#arguments)))),
             }
         }
 
-        let parse_config = syn_rsx::ParserConfig::new()
-            .transform_block(parse_fmt_expr)
-            .number_of_top_level_nodes(1);
+        let parse_config =
+            syn_rsx::ParserConfig::new().transform_block(parse_block).number_of_top_level_nodes(1);
+
         let parser = syn_rsx::Parser::new(parse_config);
         let node = parser.parse(input)?.remove(0);
 
@@ -279,9 +316,10 @@ impl ToTokens for MoxTag {
     }
 }
 
-struct MoxAttr {
-    name: syn::Ident,
-    value: Option<syn::Expr>,
+enum MoxAttr {
+    MethodCall(syn::ExprCall),
+    Punned(syn::Ident),
+    KeyValue { name: syn::Ident, value: syn::Expr },
 }
 
 impl TryFrom<syn_rsx::Node> for MoxAttr {
@@ -289,20 +327,61 @@ impl TryFrom<syn_rsx::Node> for MoxAttr {
 
     fn try_from(node: syn_rsx::Node) -> syn::Result<Self> {
         match node.node_type {
+            NodeType::Block => Self::try_parse_method_syntax(node),
             NodeType::Element
             | NodeType::Text
-            | NodeType::Block
             | NodeType::Comment
             | NodeType::Doctype
             | NodeType::Fragment => Err(Self::node_convert_error(&node)),
             NodeType::Attribute => {
-                Ok(MoxAttr { name: MoxAttr::validate_name(node.name.unwrap())?, value: node.value })
+                let name = MoxAttr::validate_name(node.name.unwrap())?;
+
+                let attr = match node.value {
+                    Some(value) => MoxAttr::KeyValue { name, value },
+                    None => MoxAttr::Punned(name),
+                };
+
+                Ok(attr)
             }
         }
     }
 }
 
 impl MoxAttr {
+    /// Parse inline method call syntax, e.g.
+    /// `<foo {bar()} />` -> `foo().bar().build()`
+    fn try_parse_method_syntax(node: syn_rsx::Node) -> syn::Result<Self> {
+        use syn::{token::Semi, Error, Expr, ExprBlock, Stmt};
+
+        let try_get_stmt = |mut block: ExprBlock| {
+            if block.block.stmts.len() == 1 {
+                Ok(block.block.stmts.pop().unwrap())
+            } else {
+                Err(syn::Error::new(
+                    node_span(&node),
+                    "method syntax must only contain a single statement.",
+                ))
+            }
+        };
+
+        let try_get_call = |stmt: Stmt| match stmt {
+            Stmt::Expr(Expr::Call(call)) => Ok(call),
+            Stmt::Semi(_, Semi { spans: [semi] }) => Err(Error::new(semi, "Remove this semicolon")),
+            _ => Err(Error::new(
+                node_span(&node),
+                "Only method calls are supported in the attribute position.\ne.g. `<foo {bar()}>`",
+            )),
+        };
+
+        node.value_as_block()
+            .ok_or_else(|| {
+                unreachable!("`try_parse_method_syntax` should only ever be called on block nodes.")
+            })
+            .and_then(try_get_stmt)
+            .and_then(try_get_call)
+            .map(MoxAttr::MethodCall)
+    }
+
     fn validate_name(name: syn_rsx::NodeName) -> syn::Result<syn::Ident> {
         use syn::{punctuated::Pair, PathSegment};
 
@@ -338,11 +417,13 @@ impl MoxAttr {
 
 impl ToTokens for MoxAttr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { name, value } = self;
-        match value {
-            Some(value) => tokens.extend(quote!(.#name(#value))),
-            None => tokens.extend(quote!(.#name(#name))),
+        let call = match self {
+            Self::KeyValue { name, value } => quote!(.#name(#value)),
+            Self::Punned(name) => quote!(.#name(#name)),
+            Self::MethodCall(call) => quote!(.#call),
         };
+
+        tokens.extend(call);
     }
 }
 
@@ -423,20 +504,29 @@ fn node_span(node: &syn_rsx::Node) -> Span {
 }
 
 #[cfg(test)]
-#[test]
-fn fails() {
-    fn assert_error(input: TokenStream) {
-        match syn::parse2::<MoxItem>(input) {
-            Ok(_) => unreachable!(),
-            Err(error) => println!("{}", error),
-        }
-    }
+mod tests {
+    use super::*;
 
-    println!();
-    assert_error(quote! { <colon:tag:name /> });
-    assert_error(quote! { <{"block tag name"} /> });
-    assert_error(quote! { <some::tag colon:attribute:name=() /> });
-    assert_error(quote! { <some::tag path::attribute::name=() /> });
-    assert_error(quote! { {% "1: {}; 2: {}", var1, var2 tail } });
-    println!();
+    #[test]
+    fn fails() {
+        fn assert_error(input: TokenStream) {
+            match syn::parse2::<MoxItem>(input) {
+                Ok(_) => unreachable!(),
+                Err(error) => println!("{}", error),
+            }
+        }
+
+        println!();
+        assert_error(quote! { <foo {let x = 12;} /> });
+        assert_error(quote! { <foo {use std;} /> });
+        assert_error(quote! { <foo {"str"} /> });
+        assert_error(quote! { <foo {nullary_1();} /> });
+        assert_error(quote! { <foo {nullary_1(); nullary_2();} /> });
+        assert_error(quote! { <colon:tag:name /> });
+        assert_error(quote! { <{"block tag name"} /> });
+        assert_error(quote! { <some::tag colon:attribute:name=() /> });
+        assert_error(quote! { <some::tag path::attribute::name=() /> });
+        assert_error(quote! { {% "1: {}; 2: {}", var1, var2 tail } });
+        println!();
+    }
 }
