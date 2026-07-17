@@ -4,12 +4,14 @@ use moxie_dom::{
     elements::{html::*, sectioning::Section, text_content::Ul, text_semantics::Span},
     prelude::*,
 };
+use tracing::info;
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
 pub fn toggle(default_checked: bool) -> Span {
     let todos = todos.clone();
-    let onclick = move |_| {
+    let onchange = move |_| {
+        info!("toggling item completions");
         todos.update(|t| {
             Some(
                 t.iter()
@@ -25,8 +27,8 @@ pub fn toggle(default_checked: bool) -> Span {
 
     mox! {
         <span>
-            <input class="toggle-all" type="checkbox" checked=default_checked />
-            <label onclick />
+            <input id="toggle" class="toggle-all" type="checkbox" checked=default_checked onchange />
+            <label for="toggle" />
         </span>
     }
 }
@@ -45,21 +47,20 @@ pub fn todo_list() -> Ul {
 
 #[topo::nested]
 #[illicit::from_env(todos: &Key<Vec<Todo>>)]
-pub fn main_section() -> Section {
-    let num_complete = todos.iter().filter(|t| t.completed).count();
-
-    let mut section = section().class("main");
-
+pub fn main_section() -> Option<Section> {
     if !todos.is_empty() {
-        section = section.child(toggle(num_complete == todos.len()));
-    }
-    section = section.child(todo_list());
+        let num_complete = todos.iter().filter(|t| t.completed).count();
 
-    if !todos.is_empty() {
-        section = section.child(filter_footer(num_complete, todos.len() - num_complete));
+        Some(mox! {
+          <section class="main">
+              { toggle(num_complete == todos.len()) }
+              { todo_list() }
+              { filter_footer(num_complete, todos.len() - num_complete) }
+          </section>
+        })
+    } else {
+        None
     }
-
-    section.build()
 }
 
 #[cfg(test)]
@@ -73,7 +74,7 @@ mod tests {
         crate::App::boot_fn(
             &[Todo::new("first"), Todo::new("second"), Todo::new("third")],
             root.clone(),
-            main_section,
+            || main_section().unwrap(),
         );
 
         assert_eq!(
@@ -81,9 +82,9 @@ mod tests {
             r#"<div>
   <section class="main">
     <span>
-      <input class="toggle-all" type="checkbox" checked="false">
+      <input id="toggle" class="toggle-all" type="checkbox" checked="false">
       </input>
-      <label>
+      <label for="toggle">
       </label>
     </span>
     <ul class="todo-list">
