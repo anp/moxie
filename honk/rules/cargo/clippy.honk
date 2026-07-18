@@ -1,0 +1,22 @@
+load("//honk/rules/cargo/metadata.honk", "rust_files_in_package")
+
+
+def lint_crate(package):
+    """
+    Run clippy on ${package}.
+    """
+    target(
+        name="lint-" + package.name,
+        command=command(
+            "cargo",
+            args=[
+                "clippy",
+                "--all-targets",
+                "--all-features",
+                "--package",
+                package.name,
+            ],
+            inputs=rust_files_in_package(package),
+            outputs=[],
+        ),
+    )

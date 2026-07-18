@@ -32,6 +32,11 @@ impl Format {
             command.args(ofl_targets.iter().map(|t| &t.src_path));
         }
 
+        for honk_member in workspace.honk_members() {
+            let honk_targets = &workspace.honk_metadata[&honk_member].targets;
+            command.args(honk_targets.iter().map(|t| &t.src_path));
+        }
+
         debug!({ ?command }, "running rustfmt");
 
         let status = command.status().context("running rustfmt command")?;
