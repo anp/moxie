@@ -20,14 +20,6 @@
         <p>Created by <a href="http://blog.anp.lol">anp</a></p>
         <p>Part of <a href="http://moxie.rs">moxie-dom</a></p>
     </footer>
-
-    <script type="module">
-        import init, { boot } from './pkg/index.js';
-        (async () => {
-            await init();
-            await boot(document.querySelector('#content'));
-        })();
-    </script>
 </body>
 
 </html>

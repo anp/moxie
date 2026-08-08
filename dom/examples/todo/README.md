@@ -4,14 +4,11 @@ Commands all assume the working directory is the repository root.
 
 ## Serving
 
-Build the example and start the project's local HTTP server:
+First install [Trunk](https://trunkrs.dev/).
 
 ```
-$ cargo build-dom-todo     # for live-watching rebuilds use `cargo dom-flow`
-$ cargo ofl serve
+$ trunk serve
 ```
-
-In VSCode the same can be accomplished by running the `dom crates` and `project server` tasks.
 
 ## Using
 
